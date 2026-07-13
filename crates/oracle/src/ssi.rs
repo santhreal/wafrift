@@ -9,11 +9,11 @@
 //! # Validation strategy
 //!
 //! A valid SSI payload must contain:
-//! 1. **The opening prefix** `<!--#` — without this Apache never enters
+//! 1. **The opening prefix** `<!--#`: without this Apache never enters
 //!    SSI parsing.
-//! 2. **A recognised directive name** — `exec`, `include`, `echo`,
+//! 2. **A recognised directive name**: `exec`, `include`, `echo`,
 //!    `set`, `config`, `fsize`, `flastmod`, `printenv`. Case-insensitive.
-//! 3. **A closing `-->`** — open-ended directives produce HTML
+//! 3. **A closing `-->`**: open-ended directives produce HTML
 //!    text-node leakage and never execute.
 //!
 //! Directive semantics are then preserved if the same directive name
@@ -65,7 +65,7 @@ impl PayloadOracle for SsiOracle {
 
         // If the original had a recognised directive, the transform
         // must preserve THE SAME directive (substituting `include` for
-        // `exec` changes the attack class — caller should re-classify
+        // `exec` changes the attack class, caller should re-classify
         // not mark as semantically-equivalent).
         match (original_dir, transformed_dir) {
             (Some(orig), Some(new)) => orig == new,
@@ -126,7 +126,7 @@ mod tests {
     }
 
     /// LAW 12 anti-rig: directive identity matters. An `exec` that
-    /// became an `include` is a different attack class — the oracle
+    /// became an `include` is a different attack class, the oracle
     /// MUST refuse this mutation rather than rubber-stamp it.
     #[test]
     fn directive_substitution_rejected() {
@@ -189,7 +189,7 @@ mod tests {
         assert!(!oracle.is_semantically_valid(r#"<!--#exec cmd="ls" -->"#, ""));
     }
 
-    /// LAW 12: oracle name is a pinned public string — consumer code
+    /// LAW 12: oracle name is a pinned public string, consumer code
     /// may filter on it.
     #[test]
     fn oracle_name_is_pinned() {

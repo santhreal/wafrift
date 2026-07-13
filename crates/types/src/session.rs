@@ -40,7 +40,7 @@ pub enum CsrfInjectionLocation {
 /// JWT attack mode applied to Bearer tokens in session-authenticated scans.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum JwtManipulation {
-    /// Remove the `alg` header claim — tests for `alg:none` acceptance (CVE class).
+    /// Remove the `alg` header claim (tests for `alg:none` acceptance (CVE class)).
     StripAlg,
     /// Re-sign the token with an HMAC-SHA256 key supplied in `SessionConfig::jwt_signing_key`.
     Hs256WithKey,

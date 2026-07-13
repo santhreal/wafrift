@@ -29,11 +29,11 @@ async fn test_is_waf_block_status() {
     assert!(is_waf_block_status(406), "406 should be considered a block");
     assert!(
         !is_waf_block_status(429),
-        "429 is rate-limit, not a block — engine must back off"
+        "429 is rate-limit, not a block, engine must back off"
     );
     assert!(
         !is_waf_block_status(451),
-        "451 is legal takedown, not a block — evasion cannot bypass law"
+        "451 is legal takedown, not a block, evasion cannot bypass law"
     );
     assert!(is_waf_block_status(503), "503 should be considered a block");
 

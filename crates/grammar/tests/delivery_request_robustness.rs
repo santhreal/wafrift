@@ -72,7 +72,7 @@ proptest! {
                 );
                 prop_assert!(
                     !v.contains('\r') && !v.contains('\n'),
-                    "header {k:?} value carries CRLF — header injection"
+                    "header {k:?} value carries CRLF, header injection"
                 );
             }
 
@@ -126,7 +126,7 @@ fn multipart_payload_cannot_forge_extra_parts() {
         let body = String::from_utf8_lossy(req.body.as_deref().unwrap());
         // Exactly ONE opening boundary + ONE closing boundary are
         // emitted BY THE RENDERER. The payload echoing the boundary
-        // bytes is inert data inside the single part — the renderer
+        // bytes is inert data inside the single part, the renderer
         // must not itself add structure around it.
         let opens = body.matches(&format!("--{MP_BOUNDARY}\r\n")).count();
         let closes = body.matches(&format!("--{MP_BOUNDARY}--")).count();

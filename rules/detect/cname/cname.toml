@@ -8,8 +8,8 @@
 # the divergence in the indicators list.
 #
 # Source legend:
-#   * "live-dns 2026-05-21" — first-hand resolver capture
-#   * vendor docs / SOA registrar — public reference
+#   * "live-dns 2026-05-21", first-hand resolver capture
+#   * vendor docs / SOA registrar, public reference
 #
 # Adding a new vendor: register one [[cname]] block per vendor.
 # Each [[cname.signature]] gets a host-pattern regex (matched
@@ -22,7 +22,7 @@ name = "Fastly (CNAME)"
 vendor = "Fastly"
 confidence_threshold = 0.5
 evasions = ["CaseAlternation", "SqlCommentInsertion", "DoubleUrlEncode", "ContentTypeSwitch"]
-source = "live-dns 2026-05-21 — reddit.map.fastly.net, nytimes.map.fastly.net"
+source = "live-dns 2026-05-21, reddit.map.fastly.net, nytimes.map.fastly.net"
 [[cname.signature]]
   # Customer-routing alias (most common Fastly pattern).
   host_regex = "\\.map\\.fastly\\.net$"
@@ -33,7 +33,7 @@ source = "live-dns 2026-05-21 — reddit.map.fastly.net, nytimes.map.fastly.net"
   host_regex = "\\.fastly\\.net$"
   weight = 0.4
 [[cname.signature]]
-  # Fastly's secondary edge domain — used for cert-coordinated
+  # Fastly's secondary edge domain, used for cert-coordinated
   # services and apex-flattening setups.
   host_regex = "\\.fastlylb\\.net$"
   weight = 0.5
@@ -43,9 +43,9 @@ name = "Akamai (CNAME)"
 vendor = "Akamai"
 confidence_threshold = 0.5
 evasions = ["CaseAlternation", "SqlCommentInsertion", "DoubleUrlEncode", "ContentTypeSwitch"]
-source = "live-dns 2026-05-21 — www.ebay.com → e88167.a.akamaiedge.net"
+source = "live-dns 2026-05-21, www.ebay.com → e88167.a.akamaiedge.net"
 [[cname.signature]]
-  # Modern Akamai edge alias — primary delivery domain.
+  # Modern Akamai edge alias (primary delivery domain).
   host_regex = "\\.akamaiedge\\.net$"
   weight = 0.7
 [[cname.signature]]
@@ -60,7 +60,7 @@ source = "live-dns 2026-05-21 — www.ebay.com → e88167.a.akamaiedge.net"
   host_regex = "\\.akamaitechnologies\\.com$"
   weight = 0.5
 [[cname.signature]]
-  # Edge-Suite (legacy CDN) — still in production at Microsoft,
+  # Edge-Suite (legacy CDN), still in production at Microsoft,
   # Dropbox, and historical Akamai tenants.
   host_regex = "\\.edgesuite\\.net$"
   weight = 0.6
@@ -69,7 +69,7 @@ source = "live-dns 2026-05-21 — www.ebay.com → e88167.a.akamaiedge.net"
   host_regex = "\\.edgekey\\.net$"
   weight = 0.6
 [[cname.signature]]
-  # mPulse RUM endpoints — implies Akamai is in the path even
+  # mPulse RUM endpoints, implies Akamai is in the path even
   # when the leaf hop is a customer-branded alias.
   host_regex = "\\.akadns\\.net$"
   weight = 0.5
@@ -79,7 +79,7 @@ name = "Cloudfront (CNAME)"
 vendor = "Amazon"
 confidence_threshold = 0.5
 evasions = ["CaseAlternation", "SqlCommentInsertion", "DoubleUrlEncode", "ContentTypeSwitch"]
-source = "live-dns 2026-05-21 — aws.amazon.com → dr49lng3n1n2s.cloudfront.net"
+source = "live-dns 2026-05-21, aws.amazon.com → dr49lng3n1n2s.cloudfront.net"
 [[cname.signature]]
   # Every Cloudfront distribution gets a *.cloudfront.net leaf.
   host_regex = "\\.cloudfront\\.net$"
@@ -293,20 +293,20 @@ source = "vendor docs"
 # These fire when the forward CNAME chain is opaque (origin-direct
 # or customer-private DNS) but the leaf IP's reverse-DNS name
 # carries vendor identity.  PTR works for origins that strip every
-# HTTP banner — Stripe being the canonical example.
+# HTTP banner: Stripe being the canonical example.
 
 [[cname]]
 name = "Stripe (origin-direct)"
 vendor = "Stripe"
 confidence_threshold = 0.5
-source = "live-dns 2026-05-21 — 198.137.150.111 PTR → *.s.stripe.com; ASN 395812 STRIPE-AS"
+source = "live-dns 2026-05-21: 198.137.150.111 PTR → *.s.stripe.com; ASN 395812 STRIPE-AS"
 [[cname.signature]]
   host_regex = "\\.s\\.stripe\\.com$"
   weight = 0.8
 [[cname.signature]]
   # cymru.com ASN name lookup returns this string verbatim for any
   # IP allocated to Stripe's ASN (395812).  This is the catch for
-  # Stripe's main IPs which strip PTR — `cymru` is the layer below.
+  # Stripe's main IPs which strip PTR: `cymru` is the layer below.
   host_regex = "^STRIPE-AS"
   weight = 0.8
 
@@ -320,7 +320,7 @@ source = "live-dns 2026-05-21 — 198.137.150.111 PTR → *.s.stripe.com; ASN 39
 name = "Amazon (ASN)"
 vendor = "Amazon"
 confidence_threshold = 0.5
-source = "cymru ASN — Amazon's main ASNs (16509, 14618, etc.)"
+source = "cymru ASN: Amazon's main ASNs (16509, 14618, etc.)"
 [[cname.signature]]
   host_regex = "^AMAZON-"
   weight = 0.8
@@ -350,7 +350,7 @@ source = "cymru ASN 54113 FASTLY"
 name = "Akamai (ASN)"
 vendor = "Akamai"
 confidence_threshold = 0.5
-source = "cymru ASN — Akamai's main ASNs (16625, 20940, etc.)"
+source = "cymru ASN: Akamai's main ASNs (16625, 20940, etc.)"
 [[cname.signature]]
   host_regex = "^AKAMAI-"
   weight = 0.8
@@ -380,7 +380,7 @@ source = "cymru ASN 8075 MICROSOFT-CORP-MSN-AS-BLOCK"
 name = "Dropbox (ASN)"
 vendor = "Dropbox"
 confidence_threshold = 0.5
-source = "cymru ASN 19679 — `DROPBOX - Dropbox, Inc., US`"
+source = "cymru ASN 19679: `DROPBOX - Dropbox, Inc., US`"
 [[cname.signature]]
   # Cymru sometimes returns the full org name (`DROPBOX -
   # Dropbox, Inc., US`), other times the short tag.  Match the
@@ -448,7 +448,7 @@ source = "AWS PTR allocation"
   host_regex = "\\.compute-[0-9]+\\.amazonaws\\.com$"
   weight = 0.7
 [[cname.signature]]
-  # PTR leaf prefix — `ec2-N-N-N-N.` — additive when the regional
+  # PTR leaf prefix: `ec2-N-N-N-N.`: additive when the regional
   # part matches one of the patterns above.
   host_regex = "^ec2-[0-9-]+\\."
   weight = 0.3
@@ -470,7 +470,7 @@ source = "GCP PTR allocation"
 name = "WordPress VIP"
 vendor = "Automattic"
 confidence_threshold = 0.5
-source = "live-dns 2026-05-21 — harvard.edu → harvard-edu.go-vip.net"
+source = "live-dns 2026-05-21, harvard.edu → harvard-edu.go-vip.net"
 [[cname.signature]]
   host_regex = "\\.go-vip\\.net$"
   weight = 0.8
@@ -485,7 +485,7 @@ source = "live-dns 2026-05-21 — harvard.edu → harvard-edu.go-vip.net"
 name = "GitHub Edge"
 vendor = "GitHub"
 confidence_threshold = 0.5
-source = "live-dns 2026-05-21 — github.com PTR → lb-*.github.com"
+source = "live-dns 2026-05-21, github.com PTR → lb-*.github.com"
 [[cname.signature]]
   host_regex = "^lb-[0-9-]+-[a-z]+\\.github\\.com$"
   weight = 0.8
@@ -493,7 +493,7 @@ source = "live-dns 2026-05-21 — github.com PTR → lb-*.github.com"
   host_regex = "\\.githubusercontent\\.com$"
   weight = 0.6
 
-# DigitalOcean — `*.cloud.digitalocean.com` or `do.co.cdn.cloudflare.net`.
+# DigitalOcean: `*.cloud.digitalocean.com` or `do.co.cdn.cloudflare.net`.
 [[cname]]
 name = "DigitalOcean"
 vendor = "DigitalOcean"
@@ -506,7 +506,7 @@ source = "DigitalOcean public DNS schema"
   host_regex = "\\.ondigitalocean\\.app$"
   weight = 0.7
 
-# Hetzner — most-common European hoster, identifies via PTR
+# Hetzner: most-common European hoster, identifies via PTR
 # `static.X.X.X.X.clients.your-server.de`.
 [[cname]]
 name = "Hetzner"
@@ -517,7 +517,7 @@ source = "Hetzner PTR schema"
   host_regex = "\\.your-server\\.de$"
   weight = 0.8
 
-# OVH — `*.ovh.net` or `vps-X.ovh.net` PTRs.
+# OVH: `*.ovh.net` or `vps-X.ovh.net` PTRs.
 [[cname]]
 name = "OVH"
 vendor = "OVH"

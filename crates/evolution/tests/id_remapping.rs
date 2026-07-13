@@ -87,7 +87,7 @@ fn map_elites_grid_fills_through_engine_round_trip() {
     let snapshot = engine.population_snapshot();
     assert!(
         !snapshot.is_empty(),
-        "MapElites population_snapshot is empty after {total_evals} evals — \
+        "MapElites population_snapshot is empty after {total_evals} evals. \
          the algorithm's grid was never updated. Pre-fix bug confirmed."
     );
 }

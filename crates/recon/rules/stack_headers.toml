@@ -42,7 +42,7 @@ header = "x-generator"
 value_contains = "drupal"
 
 # R73 pass-21 §3 CAPABILITY: WAFs that `wafrift_oracle::markers` knows
-# about but `wafrift_recon` did NOT — leading to `wafrift detect` /
+# about but `wafrift_recon` did NOT, leading to `wafrift detect` /
 # `wafrift recon` returning "unknown WAF" while the oracle separately
 # would have flagged the same target. Closing the cross-subsystem
 # drift identified in the innovation+capability audit.

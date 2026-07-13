@@ -1,4 +1,4 @@
-//! Per-host evasion state — tracks what works and what doesn't.
+//! Per-host evasion state (tracks what works and what doesn't).
 //!
 //! One struct, one job: maintain a per-host record of which techniques
 //! have been tried, which succeeded, and how aggressively we need
@@ -43,17 +43,17 @@ const DRIFT_BLOCK_LIMIT: u32 = 2;
 ///
 /// Canonical source: [`wafrift_types::HOST_TECHNIQUE_HINTS_CAP`].
 /// `wafrift-transport` enforces the same cap when merging inbound
-/// WAF profile signals — if this value is changed, that site auto-
+/// WAF profile signals, if this value is changed, that site auto-
 /// follows because both alias the same workspace constant.
 const MAX_HINTS_PER_LIST: usize = wafrift_types::HOST_TECHNIQUE_HINTS_CAP;
 
-/// Hard cap on `technique_stats` and `winner_consecutive_blocks` —
+/// Hard cap on `technique_stats` and `winner_consecutive_blocks` 
 /// per-host structures that key on the technique name. With ~100
 /// distinct names in the standard catalogue, 500 is generous headroom
 /// while still bounding worst-case adversarial growth. Audit (2026-05-10).
 const MAX_TECHNIQUE_STATS: usize = 500;
 
-/// Per-host evasion state — tracks what works and what doesn't.
+/// Per-host evasion state (tracks what works and what doesn't).
 #[derive(Debug, Default, Clone)]
 pub struct HostState {
     /// Number of requests blocked.
@@ -77,7 +77,7 @@ pub struct HostState {
     /// Techniques with a proven bypass rate above the internal winner threshold.
     /// The proxy rotates only these once the discovery phase ends.
     pub proven_winners: Vec<String>,
-    /// Techniques that consistently fail — never used again unless
+    /// Techniques that consistently fail, never used again unless
     /// the winner pool is exhausted and a full re-discovery is needed.
     pub blocklisted: Vec<String>,
     /// Round-robin index into `proven_winners`.
@@ -101,7 +101,7 @@ pub struct HostState {
     /// WAF inspection model hint (e.g. "`single_pass_url_decode`",
     /// "`multi_regex_scoring`"). Informs which encoding dimensions to explore.
     pub inspection_model: Option<String>,
-    /// Number of rate-limit (429) responses seen — drives backoff, not
+    /// Number of rate-limit (429) responses seen, drives backoff, not
     /// technique change.
     pub rate_limits: u32,
     /// Number of JS challenges (Cloudflare captcha pages, etc.) seen.
@@ -209,7 +209,7 @@ impl HostState {
             .iter_mut()
             .find(|(n, _, _)| n == technique_name)
         {
-            // saturating_add avoids the u32 overflow audit finding —
+            // saturating_add avoids the u32 overflow audit finding 
             // pre-fix `stat.2 += 1` would panic in debug or wrap in
             // release after 2^32 attempts.
             stat.2 = stat.2.saturating_add(1);
@@ -362,7 +362,7 @@ impl HostState {
 
     /// Get the next encoding strategy to try (one we haven't tried yet
     /// and isn't blocklisted). Blocklist comparison uses the canonical
-    /// `Strategy::as_str()` name — same form `record_block_for_many` /
+    /// `Strategy::as_str()` name, same form `record_block_for_many` /
     /// proxy gene-bank persistence use everywhere else. (Earlier
     /// versions used `format!("{s:?}")` here, which produced `PascalCase`
     /// debug names that did not match the kebab-case strings stored on
@@ -450,7 +450,7 @@ impl HostState {
             self.discovery_complete = true;
         }
 
-        // Only add newly-discovered blocked techniques — don't
+        // Only add newly-discovered blocked techniques, don't
         // remove existing blocklist entries.
         for blocked in new_blocked {
             if !self.blocklisted.contains(&blocked) {
@@ -497,7 +497,7 @@ impl HostState {
     // ── Rich response signal API ────────────────────────────────────
     //
     // Mirrors `wafrift_transport::signal::BlockClass` via boolean flags
-    // instead of importing the type — the strategy crate must not depend
+    // instead of importing the type, the strategy crate must not depend
     // on transport (transport already depends on strategy). The proxy
     // destructures the transport `ResponseSignal` and passes the fields
     // through here.
@@ -517,15 +517,15 @@ impl HostState {
     ///
     /// # Arguments
     ///
-    /// * `is_hard_block` — WAF returned 403/406/etc.
-    /// * `is_soft_block` — 200 OK but body contains WAF block markers.
-    /// * `is_rate_limit` — 429 or equivalent — back off, don't change technique.
-    /// * `is_challenge` — JS challenge / captcha — back off, don't change technique.
-    /// * `matched_waf` — Which WAF profile matched (e.g. "Cloudflare").
-    /// * `prioritize` — Techniques the profile recommends.
-    /// * `avoid` — Techniques the profile says to skip.
-    /// * `inspection_model` — WAF's inspection strategy hint.
-    /// * `technique_keys` — The techniques that were applied to this request.
+    /// * `is_hard_block`: WAF returned 403/406/etc.
+    /// * `is_soft_block`: 200 OK but body contains WAF block markers.
+    /// * `is_rate_limit`: 429 or equivalent (back off, don't change technique).
+    /// * `is_challenge`: JS challenge / captcha (back off, don't change technique).
+    /// * `matched_waf`: Which WAF profile matched (e.g. "Cloudflare").
+    /// * `prioritize`: Techniques the profile recommends.
+    /// * `avoid`: Techniques the profile says to skip.
+    /// * `inspection_model`: WAF's inspection strategy hint.
+    /// * `technique_keys`: The techniques that were applied to this request.
     #[allow(clippy::too_many_arguments)]
     pub fn record_signal(
         &mut self,
@@ -541,7 +541,7 @@ impl HostState {
     ) {
         if is_rate_limit {
             // Rate limit is NOT a technique failure. Don't penalize
-            // the current technique — the WAF is telling us to slow
+            // the current technique, the WAF is telling us to slow
             // down, not that our payload was caught.
             self.rate_limits = self.rate_limits.saturating_add(1);
         } else if is_challenge {
@@ -549,14 +549,14 @@ impl HostState {
             // this isn't a technique failure, it's a bot detection.
             self.challenges = self.challenges.saturating_add(1);
         } else if is_hard_block || is_soft_block {
-            // Real technique failure — the WAF caught the payload.
+            // Real technique failure (the WAF caught the payload).
             self.blocks = self.blocks.saturating_add(1);
             for name in technique_keys {
                 self.bump_block_attempt_for_technique(name);
             }
             self.prune();
         } else {
-            // Pass — bypass confirmed.
+            // Pass (bypass confirmed).
             self.successes = self.successes.saturating_add(1);
             // Success attribution is handled by the caller via
             // record_success_for_many() since it needs the full
@@ -738,7 +738,7 @@ mod tests {
     fn best_technique_needs_two_attempts() {
         let mut state = HostState::default();
         state.record_success(Technique::PayloadEncoding("DoubleUrlEncode".into()));
-        // One attempt — should not be returned
+        // One attempt, should not be returned
         assert!(state.best_technique().is_none());
     }
 
@@ -779,10 +779,10 @@ mod tests {
     fn evaluate_pools_promotes_winners() {
         let mut state = HostState {
             technique_stats: vec![
-                ("GoodTech".into(), 9, 10), // 90% — should be winner
-                ("OkTech".into(), 7, 10),   // 70% — should be winner
-                ("BadTech".into(), 1, 10),  // 10% — should be blocklisted
-                ("TooFew".into(), 2, 2),    // 100% but only 2 attempts — skip
+                ("GoodTech".into(), 9, 10), // 90%, should be winner
+                ("OkTech".into(), 7, 10),   // 70%, should be winner
+                ("BadTech".into(), 1, 10),  // 10%, should be blocklisted
+                ("TooFew".into(), 2, 2),    // 100% but only 2 attempts, skip
             ],
             ..Default::default()
         };
@@ -797,7 +797,7 @@ mod tests {
 
     #[test]
     fn evaluate_pools_skips_insufficient_data() {
-        // Only 5 total attempts — not enough to declare discovery.
+        // Only 5 total attempts (not enough to declare discovery).
         let mut state = HostState {
             technique_stats: vec![("T1".into(), 3, 5)],
             ..Default::default()
@@ -855,10 +855,10 @@ mod tests {
 
         // One block.
         state.record_block_for("encoding:Tech");
-        // Then a success — should reset the drift counter.
+        // Then a success (should reset the drift counter).
         state.record_success(Technique::PayloadEncoding("Tech".into()));
 
-        // Another block — should NOT evict because counter was reset.
+        // Another block (should NOT evict because counter was reset).
         state.record_block_for("encoding:Tech");
         assert!(state.proven_winners.contains(&"encoding:Tech".to_string()));
     }
@@ -889,7 +889,7 @@ mod tests {
     fn full_lifecycle_discover_rotate_drift_rediscover() {
         let mut state = HostState::default();
 
-        // Phase 1: Discovery — simulate 15 technique observations.
+        // Phase 1: Discovery (simulate 15 technique observations).
         for _ in 0..5 {
             state.record_success(Technique::PayloadEncoding("Winner".into()));
         }
@@ -913,11 +913,11 @@ mod tests {
                     .contains(&"encoding:AlsoGood".to_string())
         );
 
-        // Phase 2: Rotation — get next winner.
+        // Phase 2: Rotation (get next winner).
         let w = state.next_winner();
         assert!(w.is_some());
 
-        // Phase 3: Drift — block a winner twice.
+        // Phase 3: Drift (block a winner twice).
         let winner_name = state.proven_winners[0].clone();
         state.record_block_for(&winner_name);
         state.record_block_for(&winner_name);
@@ -1057,7 +1057,7 @@ mod tests {
             None,
             &[],
         );
-        // Union — no duplicates.
+        // Union (no duplicates).
         assert_eq!(state.prioritized_techniques, vec!["A", "B", "C"]);
         assert_eq!(state.avoided_techniques, vec!["X", "Y"]);
     }
@@ -1112,7 +1112,7 @@ mod tests {
             None,
             &[],
         );
-        // First detection wins — don't flip-flop.
+        // First detection wins (don't flip-flop).
         assert_eq!(state.waf_name.as_deref(), Some("Cloudflare"));
     }
 
@@ -1129,7 +1129,7 @@ mod tests {
         state
             .technique_stats
             .push(("encoding:Test".to_string(), u32::MAX - 1, u32::MAX - 1));
-        // Record one more success — this used to plain-add, now saturates.
+        // Record one more success (this used to plain-add, now saturates).
         state.bump_success_for_technique(&Technique::PayloadEncoding("Test".into()));
         let stat = state
             .technique_stats
@@ -1259,16 +1259,16 @@ mod tests {
     #[test]
     fn success_and_block_paths_symmetric_cap_enforcement() {
         // Both paths must refuse to insert beyond MAX_TECHNIQUE_STATS.
-        // Fill to cap, then try one of each — neither may grow the vec.
+        // Fill to cap, then try one of each (neither may grow the vec).
         let mut state = HostState::default();
 
         for i in 0..MAX_TECHNIQUE_STATS {
             state.technique_stats.push((format!("pre:{i}"), 0, 1));
         }
 
-        // Success path — new technique.
+        // Success path (new technique).
         state.bump_success_for_technique(&Technique::PayloadEncoding("SuccessNew".into()));
-        // Block path — new technique name.
+        // Block path (new technique name).
         state.bump_block_attempt_for_technique("BlockNew");
 
         assert_eq!(

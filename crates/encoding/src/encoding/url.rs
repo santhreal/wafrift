@@ -1,7 +1,7 @@
 //! URL-based encoding strategies.
 use std::fmt::Write as _;
 
-/// RFC 3986 unreserved characters — O(1) lookup table.
+/// RFC 3986 unreserved characters: O(1) lookup table.
 ///
 /// §1 SPEED: replaced the old `UNRESERVED: &[u8]` + `slice::contains` (O(66) linear
 /// scan per byte) with a 256-entry compile-time lookup table (O(1) index). For a
@@ -47,7 +47,7 @@ fn is_unreserved(b: u8) -> bool {
     UNRESERVED_TABLE[b as usize]
 }
 
-/// Standard URL encoding — only encodes reserved and non-unreserved bytes.
+/// Standard URL encoding (only encodes reserved and non-unreserved bytes).
 #[must_use]
 pub fn url_encode(payload: impl AsRef<[u8]>) -> String {
     let payload = payload.as_ref();
@@ -79,7 +79,7 @@ pub fn url_encode_lower(payload: impl AsRef<[u8]>) -> String {
     out
 }
 
-/// Double URL encoding — every byte becomes `%25XX`.
+/// Double URL encoding (every byte becomes `%25XX`).
 ///
 /// Bypasses WAFs that decode URL encoding once before matching.
 /// Pre-encoded `%XX` sequences are detected and only the `%` is
@@ -108,7 +108,7 @@ pub fn double_url_encode(payload: impl AsRef<[u8]>) -> String {
     result
 }
 
-/// Triple URL encoding — every byte becomes `%2525XX`.
+/// Triple URL encoding (every byte becomes `%2525XX`).
 ///
 /// For WAFs that decode URL encoding twice before rule matching.
 /// Detects existing `%2525XX` sequences to avoid quadruple-encoding.

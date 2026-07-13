@@ -1,7 +1,7 @@
 //! Per-request scope filtering for the proxy.
 //!
 //! Without a scope filter, the proxy evades *every* outbound request a
-//! client makes — login flows, oauth callbacks, static assets, telemetry
+//! client makes, login flows, oauth callbacks, static assets, telemetry
 //! beacons. That behaviour is correct for a focused scan but wrong for a
 //! security practitioner who has dropped wafrift-proxy in front of Burp
 //! and is browsing a target normally. Out-of-scope requests are forwarded
@@ -43,7 +43,7 @@ impl ScopeFilter {
         }
     }
 
-    /// Returns true when no scoping at all is configured — callers can
+    /// Returns true when no scoping at all is configured, callers can
     /// skip the filter check entirely.
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -74,7 +74,7 @@ impl ScopeFilter {
         // would NOT match because `:8443` is an unexpected suffix.
         // Out-of-scope requests to non-standard ports could pass the
         // filter unguarded. IPv6 literals `[::1]:443` are also covered
-        // — split on the LAST `:` keeps the bracketed v6 intact.
+        //: split on the LAST `:` keeps the bracketed v6 intact.
         let host_no_port = strip_port(host);
         if !self.only_hosts.is_empty()
             && !self.only_hosts.iter().any(|p| glob_match(p, host_no_port))
@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn only_host_does_not_match_substring_smuggling() {
         // Defends against "evil-api.example.com.attacker.tld" sneaking
-        // through "*.example.com" — the glob anchors the whole string.
+        // through "*.example.com" (the glob anchors the whole string).
         let f = ScopeFilter::new(vec!["*.example.com".into()], vec![], vec![], vec![], vec![]);
         assert!(!f.allows("api.example.com.attacker.tld", "/", &Method::from("GET")));
     }
@@ -252,7 +252,7 @@ mod tests {
     #[test]
     fn strip_port_leaves_non_numeric_suffix_alone() {
         // `:something-not-a-port` is part of the host (defensive
-        // against malformed input — keep it visible).
+        // against malformed input (keep it visible)).
         assert_eq!(
             strip_port("api.example.com:notaport"),
             "api.example.com:notaport"
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn allows_skip_host_match_after_port_strip() {
-        // Skip-host also benefits — an attacker can't bypass a
+        // Skip-host also benefits, an attacker can't bypass a
         // skip rule by adding a port.
         let f = ScopeFilter::new(
             vec![],
@@ -335,17 +335,17 @@ mod tests {
         assert!(glob_match("a**b", "aXXb"));
     }
 
-    /// ReDoS guard — attacker-controlled host/path as subject.
+    /// ReDoS guard (attacker-controlled host/path as subject).
     ///
     /// The OLD recursive impl was O(|s|^k) with k wildcards. A pattern
     /// like `*a*a*a*a*a*a` (6 wildcards) against `bbbbbbbbbbbbbbbb`
     /// (16 bytes) would require ~16^6 ≈ 16M recursive calls. With 30
-    /// wildcards and a 128-byte non-matching subject that is 128^30 —
+    /// wildcards and a 128-byte non-matching subject that is 128^30 
     /// effectively infinite. The iterative two-pointer algorithm is
     /// O(|p|·|s|) = O(30×128) = 3840 steps.
     ///
     /// This test uses 30 `*a` pairs (30 wildcards) and a 128-byte
-    /// all-`b` subject — the worst-case combination for the old impl —
+    /// all-`b` subject, the worst-case combination for the old impl 
     /// and asserts completion in under 100 ms (the iterative impl
     /// completes in microseconds on any modern CPU).
     #[test]
@@ -359,7 +359,7 @@ mod tests {
         assert!(!result, "expected no match on all-b subject");
         assert!(
             elapsed.as_millis() < 100,
-            "glob_match took {elapsed:?} — iterative O(|p|·|s|) impl required, not recursive"
+            "glob_match took {elapsed:?}, iterative O(|p|·|s|) impl required, not recursive"
         );
     }
 }

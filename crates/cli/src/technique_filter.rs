@@ -6,7 +6,7 @@
 //! Every encoding `Strategy` enum variant has exactly one canonical leaf path.
 //!
 //! Scope (v0.1): toggles cover families that flow through the scan/evade
-//! variant builder — `encoding/*` (strategy-level) and the `grammar` family
+//! variant builder: `encoding/*` (strategy-level) and the `grammar` family
 //! switch. Smuggling, content-type, and fingerprint are roadmap items and
 //! intentionally not surfaced here yet.
 
@@ -97,7 +97,7 @@ pub(crate) fn strategy_path(strategy: Strategy) -> &'static str {
 /// `tamper/*` is recognised so `wafrift evade --only tamper/<name>`
 /// validates instead of error-exiting on an unknown selector.  The
 /// underlying tamper application currently runs only inside
-/// `wafrift scan` (Step 3b — "Tamper probing"); a future revision
+/// `wafrift scan` (Step 3b: "Tamper probing"); a future revision
 /// will fan tampers into `evade` as well.
 const KNOWN_FAMILIES: &[&str] = &["encoding", "grammar", "tamper"];
 
@@ -111,7 +111,7 @@ pub(crate) struct TechniqueFilter {
 impl TechniqueFilter {
     /// Build a filter. Empty `only` means "include everything by default".
     /// Returns `Err` listing any selectors that don't match a known family
-    /// or leaf — fail-fast rather than silently drop.
+    /// or leaf (fail-fast rather than silently drop).
     pub fn parse(only: &[String], exclude: &[String]) -> Result<Self, String> {
         // Issue-9 fix (dogfood R29 cohort): the legacy `encoding::Foo`
         // form was emitted in evade output ahead of the canonical
@@ -135,7 +135,7 @@ impl TechniqueFilter {
                 .collect();
             if !dups.is_empty() {
                 eprintln!(
-                    "warn: --{label} list contained duplicate selector(s) — deduplicated: {}",
+                    "warn: --{label} list contained duplicate selector(s), deduplicated: {}",
                     dups.join(", ")
                 );
             }
@@ -171,7 +171,7 @@ impl TechniqueFilter {
         }
         // Contradiction guard (dogfood B7): a real contradiction is
         // when an `--exclude` selector COVERS (is ancestor of or
-        // equal to) an `--only` selector — that drowns the only
+        // equal to) an `--only` selector, that drowns the only
         // and yields zero variants. `--only encoding/url
         // --exclude encoding/url/triple` is NOT a contradiction:
         // only is the ancestor, exclude just trims one leaf.
@@ -194,7 +194,7 @@ impl TechniqueFilter {
         Ok(Self { only, exclude })
     }
 
-    /// True if no selectors were supplied — caller can take a fast path.
+    /// True if no selectors were supplied (caller can take a fast path).
     pub fn is_default(&self) -> bool {
         self.only.is_empty() && self.exclude.is_empty()
     }
@@ -256,7 +256,7 @@ fn all_known_paths() -> Vec<&'static str> {
     for &s in wafrift_encoding::encoding::all_strategies() {
         paths.push(strategy_path(s));
     }
-    // Tamper family — every registered tamper exposes a
+    // Tamper family, every registered tamper exposes a
     // `tamper/<name>` selector.  Names come from the
     // `wafrift_encoding::tamper::all_tamper_names()` static list
     // so adding a tamper is a one-line change in the registry; the
@@ -323,7 +323,7 @@ pub(crate) fn render_tree() -> String {
         out.push_str(p);
         out.push('\n');
     }
-    // Tamper family — surfaced for visibility under `techniques
+    // Tamper family, surfaced for visibility under `techniques
     // list` even though the tamper application currently runs
     // only inside `wafrift scan`.
     out.push_str("tamper                         (scan-only payload tampers)\n");
@@ -338,7 +338,7 @@ pub(crate) fn render_tree() -> String {
         out.push('\n');
     }
     // Issue-6 fix (dogfood R43 cohort): the HTTP/3 evasion family
-    // was reachable only via `--format json` listing — text-mode
+    // was reachable only via `--format json` listing, text-mode
     // operators had no idea these techniques existed and couldn't
     // discover them via `--only`. The text section now mirrors
     // every variant the engine exposes.
@@ -456,7 +456,7 @@ mod tests {
 
     #[test]
     fn tamper_family_selector_is_recognized() {
-        // `tamper` as a bare family must be a valid selector — it
+        // `tamper` as a bare family must be a valid selector, it
         // shouldn't error out with "unknown selector".
         let f = TechniqueFilter::parse(&["tamper".into()], &[]).expect("parses tamper");
         assert!(!f.is_default());
@@ -524,7 +524,7 @@ mod tests {
     #[test]
     fn frontier_2026_tampers_are_recognised() {
         // Specific guard for the SIX frontier-2026 tampers shipped
-        // in this release (keyword_comment_split was removed —
+        // in this release (keyword_comment_split was removed 
         // see encoding::tamper::tests::obsolete_keyword_comment_split_tamper_was_removed
         // for the parser-correctness rationale).
         for name in [

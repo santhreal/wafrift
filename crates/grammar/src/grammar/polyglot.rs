@@ -1,8 +1,8 @@
-//! Polyglot payload generator — payloads valid across multiple contexts.
+//! Polyglot payload generator (payloads valid across multiple contexts).
 //!
 //! Combines delimiter-sets from multiple payload types to create cross-context
 //! bypasses (e.g., SQL + XSS, CMD + XSS, SSTI + XSS). These exploit WAFs that
-//! only classify a payload as one type and only apply rules for that type —
+//! only classify a payload as one type and only apply rules for that type 
 //! a polyglot triggers in whichever context the application actually uses.
 //!
 //! The polyglot table is community-contributed via

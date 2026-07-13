@@ -52,7 +52,7 @@ jobs:
               echo "ModSec PL4 is up (HTTP $code)"
               exit 0
             fi
-            echo "  attempt $i — HTTP $code, retrying in 2 s…"
+            echo "  attempt $i: HTTP $code, retrying in 2 s…"
             sleep 2
           done
           echo "::error::ModSec PL4 did not become healthy within 60 s"
@@ -97,7 +97,7 @@ jobs:
           echo "$summary" >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$regressed" -eq 1 ]; then
-            echo "::error::Bypass rate regressed by more than 2 pp — block merge."
+            echo "::error::Bypass rate regressed by more than 2 pp (block merge)."
             echo "  current:  ${current_pct}%"
             echo "  baseline: ${baseline_pct}%"
             echo "  delta:    ${delta_pct} pp  (threshold: -2.0 pp)"

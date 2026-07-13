@@ -1,4 +1,4 @@
-//! Tests for [`super`] (the `multi_vector` module) — pulled into
+//! Tests for [`super`] (the `multi_vector` module), pulled into
 //! their own file so `mod.rs` carries only production code.
 //!
 //! Grouped by what they exercise:
@@ -165,7 +165,7 @@ fn build_post_json_as_plain_uses_text_plain_content_type() {
         "text/plain",
         "the CT-lying vector MUST declare text/plain"
     );
-    // Body shape stays JSON — the lie is in the header only.
+    // Body shape stays JSON (the lie is in the header only).
     let body = req.body().and_then(|b| b.as_bytes()).unwrap_or(b"");
     let s = std::str::from_utf8(body).unwrap();
     assert!(s.starts_with("{") && s.contains("\"q\""));
@@ -181,7 +181,7 @@ fn build_post_form_br_emits_content_encoding_br() {
         .unwrap();
     assert_eq!(req.headers().get("content-encoding").unwrap(), "br");
     let body = req.body().and_then(|b| b.as_bytes()).unwrap_or(b"");
-    // Brotli output must DIFFER from the plain bytes — the
+    // Brotli output must DIFFER from the plain bytes, the
     // whole point of the vector.
     assert_ne!(body, b"q=abc");
 }
@@ -209,7 +209,7 @@ fn build_post_json_gz_round_trips_under_gzip() {
 
 #[test]
 fn build_request_returns_none_for_unknown_vector() {
-    // Defence in depth — a misspelled vector key must not
+    // Defence in depth, a misspelled vector key must not
     // silently match a default builder.
     let h = http();
     let bogus = Vector {
@@ -375,7 +375,7 @@ fn build_post_xml_escapes_payload_chars_that_would_break_xml() {
     // Payload containing < / > / & must be entity-escaped so
     // the XML stays well-formed at the wire layer; the
     // backend's parser un-escapes back to the original bytes
-    // — exactly what every other delivery shape preserves.
+    //: exactly what every other delivery shape preserves.
     let h = http();
     let v = VECTORS.iter().find(|v| v.name == "POST-xml").unwrap();
     let req = build_request_for_vector(v, &h, "http://x/", "q", "<script>", 0)
@@ -407,7 +407,7 @@ fn build_post_multipart_dupbound_uses_two_distinct_boundaries() {
     // Header-declared boundary must appear in the Content-Type header.
     let ct = req.headers().get("content-type").unwrap().to_str().unwrap();
     assert!(ct.starts_with("multipart/form-data; boundary="));
-    // The body must contain TWO distinct boundary strings —
+    // The body must contain TWO distinct boundary strings 
     // one in the header, one decoy. Both prefixed by --.
     assert!(body.contains("WafRiftA"));
     assert!(body.contains("WafRiftB"));
@@ -437,7 +437,7 @@ async fn run_phase_exits_immediately_when_cancelled() {
         max_fires: 0, // 0 = unlimited
     })
     .await;
-    // Cancelled before any fire — total_fired_delta stays 0
+    // Cancelled before any fire, total_fired_delta stays 0
     // and the per-vector loop bails on the first iteration.
     assert_eq!(outcome.total_fired_delta, 0);
 }
@@ -496,7 +496,7 @@ fn build_post_form_with_unicode_payload_round_trips_via_url_decode() {
 
 #[test]
 fn build_post_json_handles_payload_with_quotes_and_backslashes() {
-    // JSON-escape must survive — backslash and quote in
+    // JSON-escape must survive, backslash and quote in
     // payload that would otherwise break the JSON wrapper.
     let h = http();
     let v = VECTORS.iter().find(|v| v.name == "POST-json").unwrap();
@@ -566,7 +566,7 @@ fn build_post_json_dupkey_first_value_is_benign_x() {
         .unwrap();
     let body = req.body().and_then(|b| b.as_bytes()).unwrap_or(b"");
     let s = std::str::from_utf8(body).unwrap();
-    // The literal-bytes shape is `{"q":"x","q":"attack"}` — first
+    // The literal-bytes shape is `{"q":"x","q":"attack"}`: first
     // value is the harmless decoy.
     let first_quote_after_colon = s.find(":\"").unwrap();
     let benign_check = &s[first_quote_after_colon + 2..first_quote_after_colon + 3];
@@ -856,7 +856,7 @@ fn build_post_method_override_get_does_not_set_x_method_to_post() {
 
 #[test]
 fn build_post_method_override_does_not_replace_actual_method() {
-    // The on-the-wire method is STILL POST — only the header
+    // The on-the-wire method is STILL POST, only the header
     // expresses the override.
     let h = http();
     for name in ["POST-method-override-GET", "POST-method-override-PUT"] {
@@ -941,7 +941,7 @@ fn every_vector_has_either_a_content_type_or_no_body() {
 
 #[test]
 fn vector_catalogue_has_no_two_aliases_for_same_attack() {
-    // (name, content_type) pairs must be unique — two rows
+    // (name, content_type) pairs must be unique, two rows
     // with the same content_type and similar shape would be
     // dead-weight against the bench scoreboard.
     let mut seen = std::collections::HashSet::new();
@@ -980,7 +980,7 @@ fn variant_id_base_zero_yields_first_variant_id_one() {
     // first ID is base+1. The const is enforced by the
     // outcome assertions in the integration tests; here we
     // lock the doc comment in via assertion-on-comment-text
-    // — not feasible. Instead, assert the field exists.
+    //: not feasible. Instead, assert the field exists.
     let _: usize = PhaseInput {
         http: &http(),
         target: "x",
@@ -999,7 +999,7 @@ fn variant_id_base_zero_yields_first_variant_id_one() {
 
 #[tokio::test]
 async fn run_phase_tags_rescue_bypasses_distinctly_from_top_bypasses() {
-    // Pure rescue path — when the only payloads supplied are
+    // Pure rescue path, when the only payloads supplied are
     // rescue, the technique tag must be `vector::<name>::rescue`,
     // NOT `vector::<name>`. Lets the operator audit "what got
     // rescued vs what was already winning". The actual fire is
@@ -1046,7 +1046,7 @@ fn build_post_form_utf7_declares_charset_in_content_type() {
 
 #[test]
 fn build_post_form_utf7_body_is_plain_url_encoded_form() {
-    // The lie is the charset header — the body stays utf-8
+    // The lie is the charset header, the body stays utf-8
     // url-encoded form so a lenient backend still parses it.
     let h = http();
     let v = VECTORS.iter().find(|v| v.name == "POST-form-utf7").unwrap();
@@ -1684,7 +1684,7 @@ fn build_hpp_semicolon_url_separates_with_semicolon_not_ampersand() {
     assert!(url.contains("q=harmless"), "url={url}");
     assert!(url.contains("q=attack"), "url={url}");
     // The separator between them must be `;`, not `&`. URL
-    // encoding may turn it into `%3B` — accept either.
+    // encoding may turn it into `%3B`: accept either.
     let between_marker = url
         .find("q=harmless")
         .and_then(|i| url.get(i + "q=harmless".len()..(i + "q=harmless".len() + 3)));
@@ -1769,7 +1769,7 @@ fn build_post_cbor_body_contains_payload_bytes_intact() {
         .build()
         .unwrap();
     let body = req.body().and_then(|b| b.as_bytes()).unwrap_or(b"");
-    // The payload bytes must appear verbatim — CBOR text-string
+    // The payload bytes must appear verbatim. CBOR text-string
     // major type stores UTF-8 unmodified.
     let needle = b"ATTACK_MARKER";
     assert!(
@@ -1798,7 +1798,7 @@ fn new_method_and_axis_vectors_are_in_catalogue() {
 
 #[test]
 fn build_post_text_xml_uses_text_xml_mime_not_application() {
-    // The whole point of this vector — CRS xml-body anchors
+    // The whole point of this vector. CRS xml-body anchors
     // on `application/xml`; this one MUST say `text/xml`.
     let h = http();
     let v = VECTORS.iter().find(|v| v.name == "POST-text-xml").unwrap();
@@ -1813,7 +1813,7 @@ fn build_post_text_xml_uses_text_xml_mime_not_application() {
 
 #[test]
 fn build_post_text_xml_body_shape_matches_application_xml() {
-    // Body shape is identical to POST-xml — only the
+    // Body shape is identical to POST-xml, only the
     // Content-Type changes. Same parser eats the bytes.
     let h = http();
     let v = VECTORS.iter().find(|v| v.name == "POST-text-xml").unwrap();
@@ -1862,7 +1862,7 @@ fn build_post_multipart_filename_carries_payload_in_filename_param() {
 
 #[test]
 fn build_post_multipart_filename_part_body_is_benign_placeholder() {
-    // The part value MUST be benign — the attack lives in the
+    // The part value MUST be benign, the attack lives in the
     // filename. Anti-rig against a refactor that put the
     // payload back in the body where the WAF will see it.
     let h = http();
@@ -1885,13 +1885,13 @@ fn build_post_multipart_filename_part_body_is_benign_placeholder() {
         part_body, "x",
         "part body must be benign placeholder, got {part_body:?}"
     );
-    // The attack appears EXACTLY once — in the filename field.
+    // The attack appears EXACTLY once (in the filename field).
     assert_eq!(s.matches("ATTACK_MARKER").count(), 1);
 }
 
 #[test]
 fn build_post_multipart_filename_escapes_quotes_in_payload() {
-    // Filename per RFC 7578 is a quoted-string — a literal `"`
+    // Filename per RFC 7578 is a quoted-string, a literal `"`
     // in the payload would terminate the field early. Confirm
     // the builder backslash-escapes them so the multipart parse
     // stays valid.
@@ -1973,7 +1973,7 @@ fn build_authorization_basic_encodes_payload_as_username_half() {
         .decode(b64)
         .unwrap();
     let s = std::str::from_utf8(&decoded).unwrap();
-    // Username:password — payload MUST be the user half.
+    // Username:password (payload MUST be the user half).
     assert!(s.starts_with("' OR 1=1--:"));
 }
 
@@ -1993,7 +1993,7 @@ fn build_authorization_basic_uses_get_method() {
 
 #[test]
 fn build_authorization_basic_attaches_query_param_too() {
-    // The endpoint URL still gets the query param — the
+    // The endpoint URL still gets the query param, the
     // Authorization carries an EXTRA payload location. Some
     // backends pass-through both for logging; either side
     // could land.
@@ -2119,7 +2119,7 @@ fn build_path_segment_percent_encodes_payload() {
         .build()
         .unwrap();
     let url = req.url().to_string();
-    // Space in payload MUST be url-encoded — otherwise the
+    // Space in payload MUST be url-encoded, otherwise the
     // URL is malformed and reqwest will refuse / mangle.
     assert!(
         url.contains("a%20b") || url.contains("a+b"),
@@ -2172,7 +2172,7 @@ fn build_x_rewrite_url_uses_distinct_header_name() {
 #[test]
 fn build_x_original_url_request_line_still_targets_original_path() {
     // The wire request-line URI must STILL be the operator's
-    // target — the override goes only in the header. Anti-rig:
+    // target, the override goes only in the header. Anti-rig:
     // a refactor that put the override into the URL too would
     // double-up and hit the WAF rules anyway.
     let h = http();
@@ -2379,7 +2379,7 @@ fn build_post_json_key_as_payload_value_is_the_param_name() {
 
 #[test]
 fn build_post_json_key_as_payload_handles_payload_with_quotes() {
-    // The payload becomes a JSON key — quotes / backslashes
+    // The payload becomes a JSON key, quotes / backslashes
     // in it must be escaped or the JSON breaks.
     let h = http();
     let v = VECTORS
@@ -2429,7 +2429,7 @@ fn build_forwarded_uses_get_method() {
 
 #[test]
 fn build_forwarded_does_not_set_x_forwarded_for_header() {
-    // The 7239 header is distinct from XFF — confirm the
+    // The 7239 header is distinct from XFF, confirm the
     // builder doesn't accidentally set BOTH (which would
     // give the WAF a chance to match on the well-known XFF
     // header).
@@ -2642,7 +2642,7 @@ fn build_post_json_dupkey_bom_starts_with_bom_then_dupkey_shape() {
     assert_eq!(&body[..3], &[0xEF, 0xBB, 0xBF]);
     let s = std::str::from_utf8(&body[3..]).unwrap();
     assert_eq!(s.matches("\"q\":").count(), 2, "must emit q twice: {s}");
-    // Benign first, attack second — same as plain dupkey.
+    // Benign first, attack second (same as plain dupkey).
     let first_pos = s.find("\"q\":").unwrap();
     let second_pos = s.rfind("\"q\":").unwrap();
     assert!(first_pos < second_pos);
@@ -2653,7 +2653,7 @@ fn build_post_json_dupkey_bom_starts_with_bom_then_dupkey_shape() {
 #[test]
 fn build_post_json_dupkey_bom_body_after_bom_parses_as_json() {
     // Strip the BOM, the remaining bytes are valid JSON with
-    // two q keys — serde_json takes the LAST one.
+    // two q keys (serde_json takes the LAST one).
     let h = http();
     let v = VECTORS
         .iter()
@@ -2760,7 +2760,7 @@ fn build_post_json5_comment_body_carries_decoy_first_attack_after_comment() {
 #[test]
 fn build_post_json5_comment_body_is_invalid_strict_json() {
     // Strict serde_json should refuse a body with /* */
-    // comments — that's the whole bypass: a WAF using strict
+    // comments, that's the whole bypass: a WAF using strict
     // JSON parsing falls through to no inspection.
     let h = http();
     let v = VECTORS
@@ -2880,7 +2880,7 @@ fn build_post_json_as_form_body_lacks_form_kv_separator() {
         .build()
         .unwrap();
     let body = std::str::from_utf8(req.body().and_then(|b| b.as_bytes()).unwrap_or(b"")).unwrap();
-    // `q=` (literal) must not appear — only `"q":` (JSON shape) does.
+    // `q=` (literal) must not appear (only `"q":` (JSON shape) does).
     assert!(
         !body.contains("q="),
         "no form-shape KV pair in body: {body}"
@@ -2943,7 +2943,7 @@ fn build_post_multipart_qp_encodes_non_ascii_bytes() {
     let body = std::str::from_utf8(req.body().and_then(|b| b.as_bytes()).unwrap_or(b"")).unwrap();
     // Encoded `1=2` becomes `1=3D2`.
     assert!(body.contains("1=3D2"), "QP must rewrite `=`: {body}");
-    // Raw `1=2` must NOT appear on the wire — that's the bypass.
+    // Raw `1=2` must NOT appear on the wire (that's the bypass).
     assert!(
         !body.contains("\r\n\r\n1=2\r\n"),
         "raw payload leaked: {body}"

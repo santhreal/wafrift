@@ -77,7 +77,7 @@ impl TamperRegistry {
         // multi-GB tar pretending to be a TOML file. But metadata is
         // advisory only: a symlink to /dev/zero reports len=0 and
         // would pass this gate. The bounded read below is
-        // authoritative — it enforces the cap DURING the read.
+        // authoritative (it enforces the cap DURING the read).
         let meta = std::fs::metadata(path_ref).map_err(|e| {
             TamperError::LoadError(format!("Failed to stat {}: {e}", path_ref.display()))
         })?;

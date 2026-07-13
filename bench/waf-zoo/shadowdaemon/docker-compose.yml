@@ -1,4 +1,4 @@
-# Shadow Daemon WAF — modular web application firewall.
+# Shadow Daemon WAF: modular web application firewall.
 #
 # Redesigned 2026-05-25: replaced non-existent zecure/shadowd_php image with a
 # PostgreSQL-backed stack where the PHP connector app is built from our Dockerfile.
@@ -12,9 +12,9 @@
 #                                                          └──PostgreSQL DB
 #
 # Three services:
-#   db       — postgres:15-alpine; schema + bench profile seeded via init scripts
-#   shadowd  — zecure/shadowd daemon (reads DB; listens on port 9115)
-#   app      — built from Dockerfile: nginx + PHP-FPM + shadowd PHP connector
+#   db: postgres:15-alpine; schema + bench profile seeded via init scripts
+#   shadowd: zecure/shadowd daemon (reads DB; listens on port 9115)
+#   app: built from Dockerfile: nginx + PHP-FPM + shadowd PHP connector
 #
 # Image digest pinned 2026-05-25:
 #   docker pull zecure/shadowd:latest

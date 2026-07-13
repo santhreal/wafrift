@@ -1,6 +1,6 @@
 //! Regression coverage for the 2026-05-10 swarm-audit (kimi
 //! evolution sub-batch):
-//!   `in_flight` grew without TTL — every dropped evaluation
+//!   `in_flight` grew without TTL, every dropped evaluation
 //!   permanently consumed a `max_requests` budget slot. Long scans
 //!   would terminate prematurely with budget exhausted while the
 //!   `in_flight` map silently accumulated zombie entries.

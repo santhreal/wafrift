@@ -1,4 +1,4 @@
-# Tier-B WAF ruleset — OWASP CRS-derived XSS (941) + SQLi (942) core.
+# Tier-B WAF ruleset: OWASP CRS-derived XSS (941) + SQLi (942) core.
 #
 # These patterns are faithful to the OWASP CRS detection anchors.
 # Modeling bound (documented, not rigging): the Rust `regex` crate is

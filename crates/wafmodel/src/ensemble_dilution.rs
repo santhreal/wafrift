@@ -4,11 +4,11 @@
 //! compute a *total anomaly score* as the sum of sub-scores from several
 //! independent rule groups:
 //!
-//! - **Group A** — SQLi rules (OWASP 942xxx)
-//! - **Group B** — XSS rules (OWASP 941xxx)
-//! - **Group C** — LFI/RFI rules (OWASP 930xxx/931xxx)
-//! - **Group D** — RCE/injection rules (OWASP 932xxx)
-//! - **Group E** — Scanner/probe detection rules
+//! - **Group A**: SQLi rules (OWASP 942xxx)
+//! - **Group B**: XSS rules (OWASP 941xxx)
+//! - **Group C**: LFI/RFI rules (OWASP 930xxx/931xxx)
+//! - **Group D**: RCE/injection rules (OWASP 932xxx)
+//! - **Group E**: Scanner/probe detection rules
 //!
 //! The action threshold (block/allow) is applied to the *total*:
 //! `if total >= threshold { block }`. Dilution exploits this: if our
@@ -18,18 +18,18 @@
 //!
 //! This module provides:
 //!
-//! 1. **[`SubScoreEstimator`]** — given a series of (payload, observed_total)
+//! 1. **[`SubScoreEstimator`]**: given a series of (payload, observed_total)
 //!    pairs, fit a per-group coefficient vector via online least-squares.
 //!    The regression learns "how much does a token in group G contribute to
 //!    the total?" from the oracle's anomaly-header responses (`X-WAF-Score`,
 //!    `X-Wafaflare-Score`, etc.).
 //!
-//! 2. **[`DilutionPlanner`]** — given a target group to keep active (the one
+//! 2. **[`DilutionPlanner`]**: given a target group to keep active (the one
 //!    carrying the attack signal) and the rest to suppress, enumerate payload
 //!    mutations that zero-out the suppressed groups' sub-scores while leaving
 //!    the target group's contribution unchanged.
 //!
-//! 3. **[`EnsembleDilutionResult`]** — the search outcome, carrying the best
+//! 3. **[`EnsembleDilutionResult`]**: the search outcome, carrying the best
 //!    candidate payload, its predicted total, and whether the oracle confirmed
 //!    a bypass.
 //!
@@ -48,13 +48,13 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum RuleGroup {
-    /// OWASP 942xxx — SQL Injection.
+    /// OWASP 942xxx: SQL Injection.
     SqlInjection,
-    /// OWASP 941xxx — Cross-Site Scripting.
+    /// OWASP 941xxx: Cross-Site Scripting.
     CrossSiteScripting,
-    /// OWASP 930xxx/931xxx — Local/Remote File Inclusion.
+    /// OWASP 930xxx/931xxx: Local/Remote File Inclusion.
     FileInclusion,
-    /// OWASP 932xxx — Remote Code Execution.
+    /// OWASP 932xxx: Remote Code Execution.
     RemoteCodeExecution,
     /// Protocol enforcement (OWASP 920xxx).
     ProtocolViolation,
@@ -135,7 +135,7 @@ impl RuleGroup {
             groups.push(Self::ScannerProbe);
         }
         if groups.is_empty() {
-            // No signal — unknown, map to ProtocolViolation as a catch-all.
+            // No signal (unknown, map to ProtocolViolation as a catch-all).
             groups.push(Self::ProtocolViolation);
         }
         groups
@@ -166,7 +166,7 @@ pub struct ScoreObservation {
 /// where `feature[G]` is 1.0 if the payload triggers group G, else 0.0.
 ///
 /// Uses an exponentially-weighted moving average (EWMA) to adapt to
-/// target-specific rule tuning. `alpha` ∈ (0, 1) — higher = faster adaptation.
+/// target-specific rule tuning. `alpha` ∈ (0, 1) (higher = faster adaptation).
 #[derive(Debug, Clone)]
 pub struct SubScoreEstimator {
     /// Per-group coefficient estimates.
@@ -206,7 +206,7 @@ impl SubScoreEstimator {
         let error = obs.total_score - predicted;
 
         if obs.groups.is_empty() {
-            // No group triggered — update baseline.
+            // No group triggered (update baseline).
             self.baseline += self.alpha * error;
             return;
         }
@@ -237,7 +237,7 @@ impl SubScoreEstimator {
         self.coeffs.get(&group).copied().unwrap_or(0.0)
     }
 
-    /// Identify the group with the lowest score contribution — the best
+    /// Identify the group with the lowest score contribution, the best
     /// "hiding group" for an attack that must trigger exactly one group.
     #[must_use]
     pub fn lowest_contribution_group(&self) -> Option<RuleGroup> {
@@ -685,7 +685,7 @@ mod tests {
     #[test]
     fn score_estimator_coeff_never_negative() {
         let mut est = SubScoreEstimator::new(5.0, 0.5);
-        // Observe a very low score — would push coeff negative without clamp.
+        // Observe a very low score (would push coeff negative without clamp).
         let obs = ScoreObservation {
             payload: "test".into(),
             total_score: -100.0, // pathological input
@@ -755,7 +755,7 @@ mod tests {
         let mut est = SubScoreEstimator::new(5.0, 0.1);
         // Make SQLi contribution very low to simulate a well-tuned dilution.
         *est.coeffs.get_mut(&RuleGroup::SqlInjection).unwrap() = 2.0;
-        // XSS contribution remains 5.0 — if we suppress XSS we predict 2.0.
+        // XSS contribution remains 5.0 (if we suppress XSS we predict 2.0).
         let planner = DilutionPlanner::new(est.clone(), 10.0);
         let groups = vec![RuleGroup::SqlInjection, RuleGroup::CrossSiteScripting];
         let strategies = planner.plan("' OR 1=1<script>", &groups);
@@ -815,7 +815,7 @@ mod tests {
     #[test]
     fn dilute_returns_none_for_benign() {
         let est = SubScoreEstimator::new(5.0, 0.1);
-        // Benign payload — classifies to ProtocolViolation (single group).
+        // Benign payload (classifies to ProtocolViolation (single group)).
         // Plan will produce strategies, but let's just ensure no panic.
         let _ = dilute("hello world", &est, 40.0);
     }

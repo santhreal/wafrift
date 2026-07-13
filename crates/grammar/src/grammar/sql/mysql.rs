@@ -53,7 +53,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<String> {
     }
 
     // ── @variable injection ──
-    // Set a variable then use it — WAFs don't track variable state
+    // Set a variable then use it. WAFs don't track variable state
     if lower.contains("' or ") || lower.contains("' and ") {
         results.push(format!(
             "'; SET @a=1; SELECT @a;{}",

@@ -145,7 +145,7 @@ fn verdict_tag(v: &Verdict) -> &'static str {
 pub fn technique_tag(t: &Technique) -> String {
     // Technique is a large enum with many variants; we encode each
     // via its Debug repr lower-cased and kebab-cased. The variant
-    // name is the only stable part of the Debug repr — any payload
+    // name is the only stable part of the Debug repr, any payload
     // (tuple or struct fields) comes after the first `(` or `{` and
     // MUST be excluded from the tag so tags remain stable regardless
     // of what string the caller put inside.
@@ -153,7 +153,7 @@ pub fn technique_tag(t: &Technique) -> String {
     // Bug (pre-fix): the loop broke only on `' '` (the separator
     // before struct-variant fields, e.g. `MlEvasion { .. }`), so
     // tuple variants like `HeaderObfuscation("case-mixing")` bled
-    // their payload into the tag — changing tag value with every
+    // their payload into the tag, changing tag value with every
     // different string argument and breaking downstream filters.
     let raw = format!("{t:?}");
     let mut out = String::with_capacity(raw.len() + 9);
@@ -548,7 +548,7 @@ mod tests {
                 tag.starts_with("technique-"),
                 "tag `{tag}` must start with technique-"
             );
-            // No spaces in tags — they must be valid kebab-case.
+            // No spaces in tags (they must be valid kebab-case).
             assert!(!tag.contains(' '), "tag `{tag}` must not contain spaces");
         }
     }

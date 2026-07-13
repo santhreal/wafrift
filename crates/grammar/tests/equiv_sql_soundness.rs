@@ -3,7 +3,7 @@
 //! The generator's contract: it emits an (effectively infinite) space
 //! of payloads, EVERY one of which still executes the original
 //! exploit, and it can NEVER emit a non-attack. These tests prove that
-//! at scale — including a real boolean evaluator that proves the
+//! at scale, including a real boolean evaluator that proves the
 //! generated tautologies are *actually true* (truth, not shape).
 
 use wafrift_grammar::grammar::equiv::sql as esql;
@@ -213,7 +213,7 @@ fn delivery_labels_are_stable() {
                 // valid for SQL too where transport-legal.
                 "header_value",
                 "cookie",
-                // 0.2.18 third-body-axis + depth-defeat + GraphQL —
+                // 0.2.18 third-body-axis + depth-defeat + GraphQL 
                 // shared delivery_set, sound for SQL identically (the
                 // backend SQL sink receives the same payload bytes
                 // regardless of the JSON/XML/GraphQL transport envelope).

@@ -4,8 +4,8 @@
 //! Shared helpers for integration tests: TCP capture + HTTP/1.1 framing parsers.
 //!
 //! Two body-framing modes model **desynchronization**:
-//! - [`BodyFraming::Rfc7230`] — `Transfer-Encoding: chunked` overrides `Content-Length`.
-//! - [`BodyFraming::ContentLengthOnly`] — ignore `Transfer-Encoding` and take exactly
+//! - [`BodyFraming::Rfc7230`]. `Transfer-Encoding: chunked` overrides `Content-Length`.
+//! - [`BodyFraming::ContentLengthOnly`], ignore `Transfer-Encoding` and take exactly
 //!   `Content-Length` octets (simulates a front-end that uses CL while the back-end uses TE).
 
 use httparse::{EMPTY_HEADER, Header, Request};
@@ -29,10 +29,10 @@ impl std::fmt::Display for WireParseError {
         match self {
             WireParseError::Incomplete => write!(
                 f,
-                "Fix: buffer incomplete HTTP message — append bytes or close the socket."
+                "Fix: buffer incomplete HTTP message (append bytes or close the socket)."
             ),
-            WireParseError::Httparse(e) => write!(f, "Fix: invalid HTTP — httparse: {e:?}"),
-            WireParseError::Chunked(e) => write!(f, "Fix: malformed chunked body — {e}"),
+            WireParseError::Httparse(e) => write!(f, "Fix: invalid HTTP, httparse: {e:?}"),
+            WireParseError::Chunked(e) => write!(f, "Fix: malformed chunked body. {e}"),
             WireParseError::LeftoverGarbage(g) => write!(
                 f,
                 "Fix: trailing bytes are not consumed as HTTP ({:?})",

@@ -1,4 +1,4 @@
-# SSTI introspection markers — substrings that indicate active
+# SSTI introspection markers, substrings that indicate active
 # template-injection exploitation, not just a probe. Append a new
 # `[[marker]]` for new framework primitives (Jinja2, FreeMarker,
 # Velocity, Smarty, Pebble, Thymeleaf, Twig, Mako, …).

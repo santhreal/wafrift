@@ -1,10 +1,10 @@
 //! The learned-model artifact: a decompiled WAF, serialized.
 //!
-//! This is the *product* of P1 — not a log line, an artifact. It is
+//! This is the *product* of P1, not a log line, an artifact. It is
 //! Tier-B TOML (human-inspectable, diffable, checked into a repo) and
 //! it is **provenance-stamped**: which WAF it decompiled (ruleset
 //! fingerprint), what it cost (membership queries / equivalence
-//! rounds), and — when sampling certified equivalence — the honest
+//! rounds), and, when sampling certified equivalence, the honest
 //! [`PacBound`] (ε, δ). A `None` PAC field means equivalence was
 //! certified by a *guarantee* (W-method), not a probability.
 //!
@@ -65,7 +65,7 @@ pub struct LearnedModel {
     alphabet: Vec<u8>,
     /// Provenance and cost (sub-table).
     pub provenance: Provenance,
-    /// States (array of tables) — must serialize last.
+    /// States (array of tables) (must serialize last).
     state: Vec<StateRow>,
 }
 

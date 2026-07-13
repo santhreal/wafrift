@@ -1,4 +1,4 @@
-//! Blunt WAF-bypass verdict for scan output — one answer: did we beat the WAF?
+//! Blunt WAF-bypass verdict for scan output (one answer: did we beat the WAF)?
 //!
 //! Legacy `bypass_rate_pct` counted pass-through on uninspected parameters.
 //! Consumers should read `waf_bypass` first; treat `bypass_rate_pct` as deprecated
@@ -16,21 +16,21 @@ pub(crate) enum WafBypassVerdictKind {
     BypassConfirmed,
     /// WAF blocked (active/selective) but no variant beat it on this run.
     WafActiveNoBypass,
-    /// No WAF engagement on this injection point — bypass counts are invalid.
+    /// No WAF engagement on this injection point (bypass counts are invalid).
     WafNotInPlay,
     /// Could not reach target to assess engagement.
     Inconclusive,
 }
 
 // NOTE (§7 DEDUP): a hand-rolled `as_str()` returning "bypass_confirmed" /
-// "waf_active_no_bypass" / … was removed — `#[serde(rename_all =
+// "waf_active_no_bypass" / … was removed: `#[serde(rename_all =
 // "snake_case")]` on the enum above already emits those exact strings as the
 // single source of truth, and `as_str` had zero callers. One mapping, one home.
 
 /// Primary scan outcome for WAF bypass missions.
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct WafBypassVerdict {
-    /// True when engagement is `active` or `selective` — a WAF is fighting on this param.
+    /// True when engagement is `active` or `selective`: a WAF is fighting on this param.
     pub waf_in_play: bool,
     /// Variants that beat a block signal while `waf_in_play` (same as `meaningful_bypassed`).
     pub bypass_confirmed: u32,
@@ -78,18 +78,18 @@ pub(crate) fn compute(
 
     let headline = match verdict {
         WafBypassVerdictKind::BypassConfirmed => format!(
-            "WAF BYPASS CONFIRMED — {bypass_confirmed} evasion(s) beat {} on this surface",
+            "WAF BYPASS CONFIRMED: {bypass_confirmed} evasion(s) beat {} on this surface",
             waf_name_engagement(level)
         ),
         WafBypassVerdictKind::WafActiveNoBypass => format!(
-            "WAF IN PLAY — no bypass found ({waf_blocked} blocked); retest other params or --auto-escalate surfaces"
+            "WAF IN PLAY, no bypass found ({waf_blocked} blocked); retest other params or --auto-escalate surfaces"
         ),
         WafBypassVerdictKind::WafNotInPlay => format!(
-            "NO WAF ON THIS PARAM ({}) — not a bypass measurement; use --auto-escalate or scan forms/API paths",
+            "NO WAF ON THIS PARAM ({}), not a bypass measurement; use --auto-escalate or scan forms/API paths",
             level.as_str()
         ),
         WafBypassVerdictKind::Inconclusive => {
-            "INCONCLUSIVE — baseline transport failed; fix reachability and retry".to_string()
+            "INCONCLUSIVE, baseline transport failed; fix reachability and retry".to_string()
         }
     };
 
@@ -176,7 +176,7 @@ mod tests {
     fn exit_code_contract_matches_documented_readme_table() {
         // §10 COHERENCE / claims-integrity: this is the single source of
         // truth for the README "Exit codes (CI-friendly)" table. If the
-        // mapping changes, the README row must change with it — and vice
+        // mapping changes, the README row must change with it, and vice
         // versa. Pins every documented scan exit code so a silent drift
         // (e.g. collapsing 6 back into 0, the bug that motivated documenting
         // 6) turns this test red. Precedence: timeout (7) > rate-limit (5) >
@@ -191,7 +191,7 @@ mod tests {
             exit_code_for_verdict(WafBypassVerdictKind::WafActiveNoBypass, false, false),
             4
         );
-        // 6 = inconclusive / no WAF on the param — NOT 0. Both verdict kinds
+        // 6 = inconclusive / no WAF on the param. NOT 0. Both verdict kinds
         // map here (the README documents 6 as "could not measure").
         assert_eq!(
             exit_code_for_verdict(WafBypassVerdictKind::WafNotInPlay, false, false),
@@ -202,7 +202,7 @@ mod tests {
             6
         );
         // Precedence: a wall-clock timeout (7) and a rate-limit abort (5)
-        // outrank the verdict, even a "bypass confirmed" one — the run did
+        // outrank the verdict, even a "bypass confirmed" one, the run did
         // not complete cleanly, so CI must see the partial-run code.
         assert_eq!(
             exit_code_for_verdict(WafBypassVerdictKind::WafNotInPlay, true, false),

@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn sort_preserves_stable_order_on_full_tie() {
-        // Two pipelines with identical (cost, weight) — sort
+        // Two pipelines with identical (cost, weight), sort
         // must not panic, and we trust slice::sort_by is stable.
         let p1 = vec![(Technique::PayloadEncoding("a".into()), 3u16)];
         let p2 = vec![(Technique::PayloadEncoding("b".into()), 3u16)];
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn sort_handles_pipelines_of_different_lengths() {
-        // 3-step pipeline vs 1-step — both eligible regardless
+        // 3-step pipeline vs 1-step, both eligible regardless
         // of length; cost-effectiveness compares totals.
         let long = vec![
             (Technique::PayloadEncoding("a".into()), 2u16),

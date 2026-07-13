@@ -3,7 +3,7 @@
 //! rustls 0.23 panics ("no process-level CryptoProvider available") when a
 //! `ClientConfig` is built before a default crypto provider is installed.
 //! `trailer_diff_cmd::exchange_https` builds a `ClientConfig` directly, so
-//! EVERY https target crashed the process (exit 101) at the builder call —
+//! EVERY https target crashed the process (exit 101) at the builder call 
 //! before any handshake. `main()` now installs the ring provider at
 //! startup; this test pins that the https path runs without panicking.
 //!
@@ -44,7 +44,7 @@ fn trailer_diff_https_does_not_panic_on_crypto_provider() {
     assert_ne!(
         out.status.code(),
         Some(101),
-        "trailer-diff exited 101 (panic) on an https target — rustls provider regression.\nstderr:\n{stderr}"
+        "trailer-diff exited 101 (panic) on an https target, rustls provider regression.\nstderr:\n{stderr}"
     );
     assert!(
         !stderr.contains("CryptoProvider"),

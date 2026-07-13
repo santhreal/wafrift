@@ -1,4 +1,4 @@
-//! WAF engagement assessment — distinguish real bypasses from unguarded parameters.
+//! WAF engagement assessment (distinguish real bypasses from unguarded parameters).
 //!
 //! A high `bypass_rate_pct` against a query parameter the WAF never inspects
 //! (identical benign vs attack responses) is a **measurement artifact**, not a
@@ -33,7 +33,7 @@ impl ResponseFingerprint {
         }
     }
 
-    /// Same status and body hash — WAF/edge treated attack like benign.
+    /// Same status and body hash. WAF/edge treated attack like benign.
     #[must_use]
     pub(crate) fn matches(&self, other: &Self) -> bool {
         self.status == other.status && self.body_digest == other.body_digest
@@ -44,7 +44,7 @@ impl ResponseFingerprint {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum WafEngagementLevel {
-    /// Raw attack payload was blocked — evasion targets an active rule set.
+    /// Raw attack payload was blocked (evasion targets an active rule set).
     Active,
     /// Baseline passed but differential probes show selective blocking.
     Selective,
@@ -52,7 +52,7 @@ pub(crate) enum WafEngagementLevel {
     Unguarded,
     /// Parameter changes the response but nothing was blocked (reflection / routing).
     ParamLiveNoWaf,
-    /// Baseline transport failed — engagement unknown.
+    /// Baseline transport failed (engagement unknown).
     Unknown,
 }
 
@@ -142,7 +142,7 @@ pub(crate) fn assess(
     if !baseline.transport_ok {
         return WafEngagementReport {
             level: WafEngagementLevel::Unknown,
-            reason: "baseline transport failed — cannot assess WAF engagement on this parameter"
+            reason: "baseline transport failed, cannot assess WAF engagement on this parameter"
                 .to_string(),
             attack_fingerprint: attack_fp,
             benign_fingerprint: benign_fp,
@@ -154,7 +154,7 @@ pub(crate) fn assess(
     if baseline.blocked {
         return WafEngagementReport {
             level: WafEngagementLevel::Active,
-            reason: "raw attack payload was blocked — WAF is inspecting this injection point"
+            reason: "raw attack payload was blocked. WAF is inspecting this injection point"
                 .to_string(),
             attack_fingerprint: attack_fp,
             benign_fingerprint: benign_fp,
@@ -167,7 +167,7 @@ pub(crate) fn assess(
         return WafEngagementReport {
             level: WafEngagementLevel::Selective,
             reason: format!(
-                "differential probes blocked {differential_blocked}/{differential_total} patterns — \
+                "differential probes blocked {differential_blocked}/{differential_total} patterns. \
                  WAF selectively inspects this parameter"
             ),
             attack_fingerprint: attack_fp,
@@ -181,7 +181,7 @@ pub(crate) fn assess(
         if attack.matches(&benign) {
             return WafEngagementReport {
                 level: WafEngagementLevel::Unguarded,
-                reason: "benign and attack responses are identical (status + body) — \
+                reason: "benign and attack responses are identical (status + body). \
                           this parameter is not WAF-inspected; pass-through is not a bypass"
                     .to_string(),
                 attack_fingerprint: Some(attack),
@@ -192,7 +192,7 @@ pub(crate) fn assess(
         }
         return WafEngagementReport {
             level: WafEngagementLevel::ParamLiveNoWaf,
-            reason: "parameter changes the response but no probe was blocked — \
+            reason: "parameter changes the response but no probe was blocked. \
                       not a WAF bypass measurement (retest on API/form fields)"
                 .to_string(),
             attack_fingerprint: Some(attack),
@@ -205,7 +205,7 @@ pub(crate) fn assess(
     WafEngagementReport {
         level: WafEngagementLevel::Unguarded,
         reason:
-            "no block signal and fingerprints unavailable — treating as unguarded (conservative)"
+            "no block signal and fingerprints unavailable, treating as unguarded (conservative)"
                 .to_string(),
         attack_fingerprint: attack_fp,
         benign_fingerprint: benign_fp,

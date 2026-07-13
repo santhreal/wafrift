@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift init`.
 //!
-//! All tests are purely offline — no HTTP, no mock server.  Each test that
+//! All tests are purely offline, no HTTP, no mock server.  Each test that
 //! writes a file uses a unique temp-file path (via `std::env::temp_dir()`)
 //! and cleans up after itself so tests are safe to run in parallel.
 //!

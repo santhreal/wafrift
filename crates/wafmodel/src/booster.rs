@@ -202,7 +202,7 @@ impl WafBoosterScorer {
     ///
     /// Increments weights for every feature extracted from `payload`.
     /// `rule_id` is accepted for future per-rule conditioning but does not
-    /// affect weight updates in the current implementation — it is recorded
+    /// affect weight updates in the current implementation, it is recorded
     /// so the API is forwards-compatible with per-rule tracking.
     pub fn observe_block(&mut self, payload: &str, _rule_id: Option<&str>) {
         self.apply_decay();
@@ -391,7 +391,7 @@ mod tests {
         let payload = "' UNION SELECT--";
         scorer.observe_block(payload, None);
         let s1 = scorer.score_candidate(payload);
-        // Observe something else — with decay=1.0 the original weights must
+        // Observe something else, with decay=1.0 the original weights must
         // not change (only new features are updated).
         scorer.observe_block("completely unrelated qwerty", None);
         let s2 = scorer.score_candidate(payload);
@@ -516,7 +516,7 @@ mod tests {
         let s_gamma = scorer.score_candidate("gamma delta");
         let s_both = scorer.score_candidate("alpha beta gamma delta");
 
-        // The combined payload shares features with both — so its score
+        // The combined payload shares features with both, so its score
         // should be higher than either component in isolation.
         assert!(
             s_both >= s_alpha.max(s_gamma),

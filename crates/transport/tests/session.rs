@@ -1,4 +1,4 @@
-//! Session handling tests — cookie jars, CSRF extraction, injection.
+//! Session handling tests (cookie jars, CSRF extraction, injection).
 
 use authjar::{AuthSession, SessionSettings, SessionStore};
 use wafrift_transport::session::{SessionError, extract_csrf, inject_csrf, load_jar, save_jar};

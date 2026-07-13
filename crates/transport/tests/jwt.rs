@@ -1,4 +1,4 @@
-//! JWT manipulation tests — alg:none, HS256 confusion, JWK embed.
+//! JWT manipulation tests (alg:none, HS256 confusion, JWK embed).
 
 use wafrift_transport::jwt::{JwtError, b64url_encode, decode_b64url_json, manipulate};
 use wafrift_types::session::JwtManipulation;
@@ -116,7 +116,7 @@ fn jwk_embed_invalid_json_graceful() {
     // about their broken input), NOT silently swallowed as `jwk: null`.
     // The earlier "graceful fallback to null" behavior silently produced
     // a useless token when the operator typo'd a JWK and gave no
-    // feedback — strict validation surfaces the typo at the boundary.
+    // feedback (strict validation surfaces the typo at the boundary).
     // The "graceful" in the test name refers to "no panic", which is
     // still satisfied by the Err return path.
     let token = valid_rs256_jwt();
@@ -205,7 +205,7 @@ fn strip_alg_on_hs256_preserves_payload() {
 }
 
 /// Hs256WithKey on an HS256-signed token (same algorithm): the output must
-/// still carry alg:HS256 and a non-empty signature — the manipulation is
+/// still carry alg:HS256 and a non-empty signature, the manipulation is
 /// idempotent for the header algorithm field.
 #[test]
 fn hs256_with_key_on_hs256_token_roundtrips_alg() {

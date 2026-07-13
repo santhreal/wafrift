@@ -1,4 +1,4 @@
-//! Integration tests for #127 — AST-MCTS wired into EvolutionEngine.
+//! Integration tests for #127: AST-MCTS wired into EvolutionEngine.
 //!
 //! Covers:
 //!  - `EvolutionEngine::with_algorithm("ast_mcts")` succeeds and produces candidates.
@@ -280,7 +280,7 @@ fn ast_mcts_algorithm_checkpoint_roundtrip() {
 
     // Simulate a bypass by submitting a bypass verdict so bypass_found
     // transitions to true via the public API (private field is not accessible
-    // from integration tests — we test the observable contract instead).
+    // from integration tests (we test the observable contract instead)).
     let candidates = alg.request_evaluations(2, &mut rng);
     if !candidates.is_empty() {
         alg.submit_evaluations(vec![(candidates[0].id, bypass_verdict())]);

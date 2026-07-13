@@ -4,7 +4,7 @@
 //! server (axum) that returns 200, then pounds the proxy with 200 concurrent
 //! clients × 50 requests each. Asserts:
 //!
-//!  1. Every response is either 200 (origin up) or 502/504 (origin timeout) —
+//!  1. Every response is either 200 (origin up) or 502/504 (origin timeout) 
 //!     NEVER a connection hang past 30 s, NEVER a 500 from the proxy itself.
 //!  2. The host-state map stays at or below 10 000 (the proxy's DoS cap).
 //!  3. No tokio task panics (any unhandled panic propagates to JoinSet).
@@ -51,7 +51,7 @@ async fn proxy_concurrent_200_clients_50_requests_each() {
     // Launch proxy pointing at the in-process origin.
     // --allow-private-upstream is required because the origin is on loopback
     // (127.0.0.1), which is in the bogon set.  This is the correct flag for
-    // lab/test scenarios — it does NOT disable TLS or other checks.
+    // lab/test scenarios (it does NOT disable TLS or other checks).
     // start_proxy_on_free_port re-picks the port if the pick→bind race is lost
     // to a proxy spawned by another parallel test binary.
     let (mut proxy, proxy_port) = start_proxy_on_free_port(&["--allow-private-upstream"])
@@ -86,11 +86,11 @@ async fn proxy_concurrent_200_clients_50_requests_each() {
                     Ok(Ok(resp)) => {
                         let status = resp.status().as_u16();
                         // 200 = success, 403/502/504 = proxy/WAF rejection
-                        // (acceptable under test load — key invariant is
+                        // (acceptable under test load, key invariant is
                         // no hang, no panic, no 500 from the proxy itself)
                         assert!(
                             matches!(status, 200 | 403 | 502 | 503 | 504),
-                            "unexpected status {status} from proxy — proxy panicked or returned unexpected error"
+                            "unexpected status {status} from proxy, proxy panicked or returned unexpected error"
                         );
                         ok.fetch_add(1, Ordering::Relaxed);
                     }
@@ -101,14 +101,14 @@ async fn proxy_concurrent_200_clients_50_requests_each() {
                     }
                     Err(_timeout) => {
                         // Hangs beyond 30 s are a hard failure.
-                        panic!("proxy request hung for >30 s — deadlock or goroutine leak");
+                        panic!("proxy request hung for >30 s, deadlock or goroutine leak");
                     }
                 }
             }
         });
     }
 
-    // Collect all tasks — any panic propagates here.
+    // Collect all tasks (any panic propagates here).
     while let Some(result) = set.join_next().await {
         result.expect("client task panicked");
     }
@@ -128,7 +128,7 @@ async fn proxy_concurrent_200_clients_50_requests_each() {
     let total = ok + errs;
     assert!(
         total > 0,
-        "no requests completed at all (total=0) — client or proxy misconfigured"
+        "no requests completed at all (total=0), client or proxy misconfigured"
     );
     // At least 50% of all attempts must have produced an HTTP response (not
     // just a connection error), even under high load.

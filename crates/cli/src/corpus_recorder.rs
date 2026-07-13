@@ -58,7 +58,7 @@ pub(crate) struct CorpusRecorder {
     corpus: RuleBypassCorpus,
     /// Cross-region CF edge POP coverage.
     coverage: EdgePopCoverage,
-    /// HackerOne dedup archive — pre-populated by the operator with
+    /// HackerOne dedup archive, pre-populated by the operator with
     /// already-submitted bypass fingerprints.
     h1_archive: H1Archive,
     /// Where the corpus is persisted.
@@ -109,7 +109,7 @@ impl CorpusRecorder {
     /// it is attached to the just-recorded corpus entry so `wafrift
     /// harvest` can re-fire the EXACT request that beat the WAF. `None`
     /// (or the payload-mutation strategies that have no equivalence
-    /// shape) leaves the corpus entry's delivery empty — harvest then
+    /// shape) leaves the corpus entry's delivery empty, harvest then
     /// falls back to the standard delivery shapes.
     pub fn record(
         &mut self,
@@ -202,7 +202,7 @@ impl CorpusRecorder {
 /// turns the recorder on with these paths) and the READ side
 /// (`wafrift harvest` loads the corpus from the same path). If these
 /// ever diverged, harvest would silently read an empty corpus while
-/// hunt filled a different file — so both MUST call this one helper.
+/// hunt filled a different file (so both MUST call this one helper).
 ///
 /// Keyed by a sanitized target slug (ASCII-alphanumeric, others → `_`,
 /// capped at 120 chars) so a path-traversal-shaped `base_url` can never
@@ -221,7 +221,7 @@ pub(crate) fn default_corpus_paths(base_url: &str) -> (PathBuf, PathBuf) {
 /// Canonical sanitized target slug: ASCII-alphanumeric kept, every other
 /// byte → `_`, capped at 120 chars. SINGLE source shared by corpus-path
 /// derivation (write side: hunt) and `wafrift harvest`'s default report
-/// dir (read side) — so a path-traversal-shaped `base_url` can never
+/// dir (read side), so a path-traversal-shaped `base_url` can never
 /// escape `~/.wafrift`, and the two sides can never disagree on where a
 /// target's artifacts live.
 pub(crate) fn target_slug(base_url: &str) -> String {
@@ -232,13 +232,13 @@ pub(crate) fn target_slug(base_url: &str) -> String {
         .collect()
 }
 
-/// FNV-1a 64-bit hash of a byte slice — used by
+/// FNV-1a 64-bit hash of a byte slice, used by
 /// [`CorpusRecorder::record`] to derive a stable response-body
 /// fingerprint for corpus dedup of near-identical "blocked" pages.
 ///
 /// Delegates to `wafrift_types::hash::fnv1a_64`, the canonical
 /// single home for the algorithm in this workspace. R57 pass-21 §7
-/// DEDUP — three byte-for-byte copies collapsed.
+/// DEDUP (three byte-for-byte copies collapsed).
 fn fnv1a_64(bytes: &[u8]) -> u64 {
     wafrift_types::hash::fnv1a_64(bytes)
 }
@@ -402,7 +402,7 @@ mod tests {
             ProbeOutcome::Bypass,
             None,
         );
-        // The cf-ray sets POP=SJC and ruleset_hint absent (`?`) — the
+        // The cf-ray sets POP=SJC and ruleset_hint absent (`?`), the
         // pre-seeded fingerprint with key "cf:SJC:?" matches.
         assert!(!is_novel, "fingerprint must be flagged as known");
         assert_eq!(r.novel_bypass_count(), 0);
@@ -422,7 +422,7 @@ mod tests {
     #[test]
     fn record_attaches_delivery_shape_to_bypass() {
         // The delivery shape passed on a Bypass must land on the corpus
-        // entry — this is what lets `wafrift harvest` re-fire faithfully.
+        // entry (this is what lets `wafrift harvest` re-fire faithfully).
         let corpus_p = tmp("corpus_deliv");
         let coverage_p = tmp("coverage_deliv");
         let mut r = CorpusRecorder::new("t", corpus_p.clone(), coverage_p.clone(), None);

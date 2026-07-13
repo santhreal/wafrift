@@ -3,7 +3,7 @@
 //! ## Attack surface
 //!
 //! QUIC's Initial packets carry TLS CRYPTO frames. Unlike TCP, UDP datagrams
-//! are discrete — a QUIC endpoint can send packets at any size from 1200 bytes
+//! are discrete, a QUIC endpoint can send packets at any size from 1200 bytes
 //! (RFC 9000 §8.1 minimum MTU) up to the path MTU (typically 1500 bytes for
 //! Ethernet).
 //!
@@ -23,7 +23,7 @@
 //!
 //! ## What we generate
 //!
-//! This module produces `QuicCryptoFragment` values — descriptions of how
+//! This module produces `QuicCryptoFragment` values, descriptions of how
 //! to split a TLS ClientHello (or any CRYPTO data) across multiple QUIC
 //! Initial packets. The wafrift transport layer uses these descriptors to
 //! schedule actual packet sends.
@@ -573,7 +573,7 @@ mod tests {
 
     #[test]
     fn off_by_one_boundary_zero_is_clamped_not_a_zero_size_loop() {
-        // boundary 0 ⇒ split_sizes start at max(1) — must still cover all data
+        // boundary 0 ⇒ split_sizes start at max(1), must still cover all data
         // and never emit a zero-length fragment that loops forever.
         let data = b"abcdefghij";
         let attack = MtuFragmentationAttack::off_by_one(data, 0);
@@ -601,7 +601,7 @@ mod tests {
     #[test]
     fn mtu_padded_with_mtu_smaller_than_header_does_not_truncate_data() {
         // mtu below the frame header+data size: padding is skipped (buf already
-        // exceeds mtu) but the DATA must never be lost — only padding is optional.
+        // exceeds mtu) but the DATA must never be lost (only padding is optional).
         let data = b"this payload is much larger than the tiny mtu";
         let attack = MtuFragmentationAttack::mtu_padded(data, 1, 4);
         let frame = attack.fragments[0].to_crypto_frame_bytes();
@@ -622,20 +622,20 @@ mod tests {
     // ── Property tests (proptest) ─────────────────────────────────────────
     //
     // These cover the wire-format and reassembly invariants across thousands of
-    // arbitrary inputs — the coverage unit cases can't reach. proptest is a
+    // arbitrary inputs, the coverage unit cases can't reach. proptest is a
     // workspace dev-dependency already declared by this crate.
 
     use crate::quic_cid::quic_varint_decode;
     use proptest::prelude::*;
 
     /// Parse a CRYPTO frame back to `(offset, data)` using the crate's own
-    /// varint decoder — a differential check that the encoder is faithful and
+    /// varint decoder, a differential check that the encoder is faithful and
     /// that padding never corrupts the recovered data.
     fn parse_crypto_frame(bytes: &[u8]) -> Option<(u64, Vec<u8>)> {
         if bytes.first() != Some(&0x06) {
             return None;
         }
-        // `quic_varint_decode` returns (value, bytes_consumed) — advance the
+        // `quic_varint_decode` returns (value, bytes_consumed), advance the
         // absolute cursor by the consumed count, not by the count itself.
         let (offset, off_n) = quic_varint_decode(bytes, 1)?;
         let len_pos = 1 + off_n;
@@ -685,7 +685,7 @@ mod tests {
         }
 
         /// mtu-padded: exact reassembly, and every encoded frame is exactly
-        /// max(header+data, mtu) bytes — padding fills up to mtu, never truncates.
+        /// max(header+data, mtu) bytes (padding fills up to mtu, never truncates).
         #[test]
         fn prop_mtu_padded_roundtrips_and_sizes(
             data in proptest::collection::vec(any::<u8>(), 0..512),

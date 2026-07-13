@@ -1,4 +1,4 @@
-//! `wafrift report` — generate a pentest-ready markdown writeup from
+//! `wafrift report`: generate a pentest-ready markdown writeup from
 //! the proxy gene bank.
 //!
 //! The proxy gene bank is a JSON ledger of which evasion technique
@@ -7,7 +7,7 @@
 //! is one markdown file per host (or one combined report), with every
 //! finding paired with the exact `wafrift replay` command that
 //! reproduces it. Report turns the ledger into that artefact in one
-//! shot — no manual transcription.
+//! shot (no manual transcription).
 
 use clap::Args;
 use serde::{Deserialize, Serialize};
@@ -28,7 +28,7 @@ pub(crate) struct ReportArgs {
     /// blocklisted are unioned; the first non-null `waf_name` wins.
     /// Default (no flag) `~/.wafrift/gene-bank.json`.
     ///
-    /// Also accepts `--gene-bank` as an alias — dogfood sonnet 3 (2026-05)
+    /// Also accepts `--gene-bank` as an alias, dogfood sonnet 3 (2026-05)
     /// flagged that operators reach for "gene bank" naming
     /// (`--gene-bank-dir` was tried) and got `unexpected argument` with no
     /// hint. The alias closes the muscle-memory gap.
@@ -60,7 +60,7 @@ pub(crate) struct ReportArgs {
 
     /// Suggested target URL for replay commands (e.g. `https://api.example.com/search`).
     /// If omitted, replay snippets use `https://{host}/<PATH>` where `<PATH>` is a
-    /// literal placeholder — it is printed verbatim and must be replaced by the
+    /// literal placeholder, it is printed verbatim and must be replaced by the
     /// operator with the actual endpoint path. Passing a target that literally
     /// contains `<PATH>` is allowed and will be reproduced as-is.
     #[arg(long)]
@@ -107,11 +107,11 @@ struct JsonFinding<'a> {
     /// the raw scan JSON.
     bypass_findings: &'a [BypassFinding],
     /// `wafrift replay` invocation that re-runs the finding through
-    /// the wafrift evasion engine — drives the gene bank, picks fresh
+    /// the wafrift evasion engine, drives the gene bank, picks fresh
     /// variants, surfaces a verdict.
     replay_command: String,
     /// Raw `curl -i` invocation that fires the equivalent HTTP request
-    /// shape (GET ?param=payload) directly at the target — for
+    /// shape (GET ?param=payload) directly at the target, for
     /// hand-off to a client who does not (yet) have wafrift installed.
     /// Built via [`RawRequest::to_curl`] so the shell escape matches
     /// the one used everywhere else in the CLI.
@@ -134,7 +134,7 @@ struct PersistedHostState {
     /// proved out, not the original payload it succeeded with).
     /// Populated by [`ingest_scan_json`] and rendered as a "Bypass
     /// payloads" section per host so the pentest report carries the
-    /// exact bytes that beat the WAF — not just the strategy class.
+    /// exact bytes that beat the WAF (not just the strategy class).
     /// Backwards-compat-safe: `serde(default)` means existing
     /// gene-bank JSON deserialises to an empty Vec.
     #[serde(default)]
@@ -196,7 +196,7 @@ fn merge_banks(dst: &mut PersistedGeneBank, src: PersistedGeneBank) {
         if entry.waf_name.is_none() {
             entry.waf_name = src_state.waf_name;
         }
-        // Bypass findings are uniqued on (variant, payload) — same
+        // Bypass findings are uniqued on (variant, payload), same
         // bypass surfaced by two scan runs against the same host
         // shouldn't double in the report. Order preserves dst-first
         // so the most-recently-ingested run wins display position
@@ -215,7 +215,7 @@ fn merge_banks(dst: &mut PersistedGeneBank, src: PersistedGeneBank) {
 
 /// Reduce a target URL to a bare host (the gene-bank/report key).
 fn host_from_target(target: &str) -> String {
-    // Delegate to the shared transport extractor — it handles
+    // Delegate to the shared transport extractor, it handles
     // IPv6 brackets correctly. Pre-fix the local naive
     // rsplit_once(':') split `[::1]` on the LAST `:` of the
     // address itself, yielding `[:` instead of `[::1]`. Report
@@ -237,7 +237,7 @@ fn ingest_scan_json(raw: &str, src: &str) -> Result<PersistedGeneBank, String> {
         .get("target")
         .and_then(serde_json::Value::as_str)
         .ok_or_else(|| {
-            format!("{src}: not a wafrift scan JSON (no `target` field) — did you pipe `scan --format json`?")
+            format!("{src}: not a wafrift scan JSON (no `target` field), did you pipe `scan --format json`?")
         })?;
     let host = host_from_target(target);
 
@@ -257,7 +257,7 @@ fn ingest_scan_json(raw: &str, src: &str) -> Result<PersistedGeneBank, String> {
                     }
                 }
             }
-            // Preserve the concrete bypass payload + repro_curl —
+            // Preserve the concrete bypass payload + repro_curl 
             // the previous cut threw these away and the rendered
             // report only carried the technique class, which made
             // the pentest deliverable answer "what bypassed?" with
@@ -337,7 +337,7 @@ pub(crate) fn run_report(args: ReportArgs) -> ExitCode {
     // Load when explicitly requested, or as the sole source when no
     // scan JSON was supplied (preserves the original default). When
     // scan JSON IS supplied and no bank is explicitly named, don't
-    // hard-fail on a missing default bank — the scan data stands alone.
+    // hard-fail on a missing default bank (the scan data stands alone).
     let load_proxy = !args.proxy_bank.is_empty() || !has_scan_src;
     if load_proxy {
         let paths = match resolve_paths(&args.proxy_bank) {
@@ -361,10 +361,10 @@ pub(crate) fn run_report(args: ReportArgs) -> ExitCode {
                 //   - args.proxy_bank.is_empty(): this is the DEFAULT path
                 //     (~/.wafrift/gene-bank.json), created lazily by
                 //     wafrift-proxy. On a fresh install (or a clean CI runner)
-                //     it simply does not exist yet — report then renders the
+                //     it simply does not exist yet, report then renders the
                 //     "No bypasses recorded yet" page. That empty state IS the
                 //     honest result, surfaced loudly in the report body (and as
-                //     findings:[] / total_hosts:0 in JSON) — not a silent,
+                //     findings:[] / total_hosts:0 in JSON), not a silent,
                 //     recall-losing fallback. An explicitly-named missing path
                 //     is operator error and still fails closed below.
                 if has_scan_src || args.proxy_bank.is_empty() {
@@ -569,7 +569,7 @@ fn render_markdown(
             out.push('\n');
         }
 
-        // Concrete bypass payloads — present only when the report
+        // Concrete bypass payloads, present only when the report
         // was fed scan JSON (proxy-bank-only loads carry technique
         // strings, not the original exploit bytes). The pentest-
         // report deliverable lives here: the exact payload the
@@ -654,7 +654,7 @@ fn render_markdown(
 fn host_matches(pattern: &str, host: &str) -> bool {
     // Delegates to the canonical O(|p|·|s|) iterative glob matcher in
     // wafrift-types, shared with the proxy scope filter. The old local
-    // recursive impl was O(|host|^k) — a ReDoS risk in the hot path.
+    // recursive impl was O(|host|^k) (a ReDoS risk in the hot path).
     glob_match(pattern, host)
 }
 
@@ -663,7 +663,7 @@ fn host_matches(pattern: &str, host: &str) -> bool {
 /// `target?param=urlencoded(payload)` with no body and no extra
 /// headers (the operator brings their own session via Burp / curl
 /// `-b cookie.jar`). Returns a single-line, ready-to-paste curl
-/// command — escaping handled by [`RawRequest::to_curl`], which
+/// command, escaping handled by [`RawRequest::to_curl`], which
 /// shares the canonical shell escape with [`crate::helpers::shell_single_quote`].
 ///
 /// Why a helper instead of inline format! magic: routes through the
@@ -716,7 +716,7 @@ fn resolve_paths(custom: &[PathBuf]) -> Result<Vec<PathBuf>, String> {
     // $HOME on POSIX; %USERPROFILE% on Windows (cmd / PowerShell ship
     // it; Git Bash / WSL set $HOME so this still works there too).
     // Pre-fix, bare-Windows operators saw `$HOME not set` and had to
-    // pass --proxy-bank explicitly — the hint message didn't mention
+    // pass --proxy-bank explicitly, the hint message didn't mention
     // %USERPROFILE% so they assumed wafrift was broken.
     let home_dir = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE"));
     let home = home_dir.ok_or_else(|| {
@@ -785,7 +785,7 @@ mod tests {
     // shell_escape lived here until 2026-05-20; the canonical
     // implementation is now `helpers::shell_single_quote` and the
     // round-trip-through-bash test moved with it. Single source of
-    // truth — one fix, every caller benefits.
+    // truth (one fix, every caller benefits).
 
     #[test]
     fn host_matches_glob_pattern() {
@@ -1041,7 +1041,7 @@ mod tests {
     #[test]
     fn glob_match_double_star_collapses() {
         // `**` should match anything (zero or more chars). The recurse
-        // logic handles this naturally — verify it doesn't blow up.
+        // logic handles this naturally (verify it doesn't blow up).
         assert!(glob_match("**", "any.host.here"));
         assert!(glob_match("a**b", "axxxxxxb"));
     }
@@ -1054,7 +1054,7 @@ mod tests {
 
     #[test]
     fn glob_match_no_partial_match() {
-        // The glob is anchored — no prefix/suffix match unless `*`.
+        // The glob is anchored (no prefix/suffix match unless `*`).
         assert!(!glob_match("api", "api.example.com"));
         assert!(glob_match("api*", "api.example.com"));
     }
@@ -1120,7 +1120,7 @@ mod tests {
     #[test]
     fn ingest_scan_json_treats_waf_none_as_no_waf_name() {
         // The scan JSON emits `"waf": "None"` when no WAF detected.
-        // ingest_scan_json should NOT set a waf_name in that case —
+        // ingest_scan_json should NOT set a waf_name in that case 
         // matched waf_name: None.
         let json = r#"{
             "target": "http://example.com",
@@ -1174,7 +1174,7 @@ mod tests {
 
     #[test]
     fn curl_reproducer_shell_quotes_payload_for_safety() {
-        // A payload with apostrophes must arrive escaped — single-
+        // A payload with apostrophes must arrive escaped, single-
         // quote shell escape becomes `'\''`. The outer URL is wrapped
         // in `'…'` so the inner `'` MUST be split out.
         let out = curl_reproducer("https://x.example/", "q", "a'b");
@@ -1185,14 +1185,14 @@ mod tests {
 
     #[test]
     fn curl_reproducer_handles_path_placeholder_target_via_url_encoding() {
-        // The default report target is `https://{host}/<PATH>` —
+        // The default report target is `https://{host}/<PATH>` 
         // reqwest::Url::parse accepts it by URL-encoding `<` and `>`
         // to `%3C` / `%3E`. Operator hand-edits the path before
         // running. Still produces a usable curl line.
         let out = curl_reproducer("https://api.example/<PATH>", "q", "x");
         assert!(out.starts_with("curl -i "), "got: {out}");
         assert!(out.contains("api.example"), "got: {out}");
-        // `<PATH>` is URL-encoded by reqwest — operator un-escapes
+        // `<PATH>` is URL-encoded by reqwest, operator un-escapes
         // before running.
         assert!(out.contains("%3CPATH%3E"), "got: {out}");
         assert!(out.contains("q=x"), "got: {out}");
@@ -1210,7 +1210,7 @@ mod tests {
 
     #[test]
     fn curl_reproducer_fallback_handles_truly_malformed_target() {
-        // Target with no scheme — reqwest::Url::parse rejects (it
+        // Target with no scheme, reqwest::Url::parse rejects (it
         // demands an absolute URL). Falls into the manual encoding
         // path. Confirms the function never panics on adversarial
         // operator input.
@@ -1222,13 +1222,13 @@ mod tests {
 
     #[test]
     fn curl_reproducer_fallback_url_encodes_metachars_in_payload() {
-        // Same fallback path — confirms `'` and `=` are %-encoded
+        // Same fallback path, confirms `'` and `=` are %-encoded
         // when the target is unparseable.
         let out = curl_reproducer("badtarget", "q", "a=b'");
         assert!(out.contains("q=a%3Db%27"), "got: {out}");
     }
 
-    // ── render_markdown — curl + replay blocks both present ──
+    // ── render_markdown, curl + replay blocks both present ──
 
     #[test]
     fn render_markdown_emits_both_replay_and_curl_reproducer_blocks() {
@@ -1359,7 +1359,7 @@ mod tests {
         };
         let md = render_markdown(&bank, &hosts, &args);
         // Both concrete payloads must appear in the rendered
-        // markdown — not just the technique labels.
+        // markdown (not just the technique labels).
         assert!(
             md.contains("%27%20OR%201%3D1--"),
             "first concrete payload missing from markdown:\n{md}"
@@ -1385,7 +1385,7 @@ mod tests {
     fn render_markdown_omits_payloads_section_for_proxy_bank_only_input() {
         // When only a proxy gene bank is loaded (no scan JSON), the
         // bypass_findings list is empty and the "Bypass payloads"
-        // section must not appear — preserves the historical
+        // section must not appear, preserves the historical
         // proxy-bank-only report shape exactly.
         let mut bank = PersistedGeneBank::default();
         bank.hosts.insert(
@@ -1483,7 +1483,7 @@ mod tests {
         let at_cap_path = dir.join("wafrift_test_at_cap.bin");
         let over_cap_path = dir.join("wafrift_test_over_cap.bin");
 
-        // File at exactly the cap — must succeed.
+        // File at exactly the cap (must succeed).
         {
             let mut f = std::fs::File::create(&at_cap_path).expect("create at-cap");
             f.write_all(&vec![b' '; cap]).expect("write at-cap");
@@ -1495,7 +1495,7 @@ mod tests {
             "file exactly at cap must be accepted, got: {result_at:?}"
         );
 
-        // File one byte over the cap — must be rejected (Overrun).
+        // File one byte over the cap (must be rejected (Overrun)).
         {
             let mut f = std::fs::File::create(&over_cap_path).expect("create over-cap");
             f.write_all(&vec![b' '; cap + 1]).expect("write over-cap");

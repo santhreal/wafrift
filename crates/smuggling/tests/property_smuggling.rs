@@ -21,7 +21,7 @@ fn decode_te_cl_roundtrip(raw: &[u8]) -> Result<Vec<u8>, String> {
     let reqs = parse_http_requests_no_tail(raw, BodyFraming::Rfc7230).map_err(|e| e.to_string())?;
     if reqs.len() != 1 {
         return Err(format!(
-            "Fix: te_cl wire must be exactly one request — got {} messages",
+            "Fix: te_cl wire must be exactly one request, got {} messages",
             reqs.len()
         ));
     }
@@ -52,7 +52,7 @@ proptest! {
         let max_overhead = host.len() + 128;
         prop_assert!(
             payload.raw_bytes.len() <= inner_len + max_overhead,
-            "Fix: encoded wire length grows linearly — got {} for inner len {}",
+            "Fix: encoded wire length grows linearly, got {} for inner len {}",
             payload.raw_bytes.len(),
             inner_len
         );

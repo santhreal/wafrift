@@ -6,7 +6,7 @@ use std::time::Duration;
 use wafrift_recon::active::{ActiveProbeConfig, StackTag, probe_http_headers};
 use wafrift_recon::{discover_subdomains_ct, resolve_origins};
 
-/// Hard cap on concurrent active probes — keeps the recon step from
+/// Hard cap on concurrent active probes, keeps the recon step from
 /// hammering crt.sh-discovered subdomains in parallel (anti-DoS) and
 /// keeps the local fd budget bounded on large domains with hundreds
 /// of subdomains.
@@ -33,7 +33,7 @@ pub(crate) struct ReconArgs {
     /// a dead end for the operator). Combine with `--probe` to run
     /// just the active-fingerprint half: `wafrift recon --domain
     /// example.com --subdomains api.example.com,login.example.com
-    /// --probe`. Skips DNS resolution too — the subdomains you pass
+    /// --probe`. Skips DNS resolution too, the subdomains you pass
     /// in are used verbatim for active probing.
     #[arg(long, value_delimiter = ',')]
     pub subdomains: Vec<String>,
@@ -66,14 +66,14 @@ struct ReconReport<'a> {
     origin_ips: Vec<String>,
     /// Per-subdomain active fingerprint results. Only emitted when
     /// `--probe` is set. Probes that errored (DNS failure, timeout,
-    /// TLS failure) are still listed with an `error` field — anti-rig:
+    /// TLS failure) are still listed with an `error` field, anti-rig:
     /// a silently-dropped probe must not look like a clean unfingerprinted
     /// host.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     probes: Vec<ProbeResult>,
 }
 
-/// One active-probe outcome per subdomain. JSON schema is stable —
+/// One active-probe outcome per subdomain. JSON schema is stable 
 /// either `tags` is populated and `error` is None, or vice versa.
 #[derive(Serialize)]
 struct ProbeResult {
@@ -92,7 +92,7 @@ struct ProbeResult {
 }
 
 /// LAW 2: `probes` is an additive field (skipped when empty). Schema
-/// version stays at 1 — old consumers that don't read `probes`
+/// version stays at 1, old consumers that don't read `probes`
 /// continue to parse the output unchanged.
 const RECON_SCHEMA_VERSION: u32 = 1;
 
@@ -147,7 +147,7 @@ async fn run_recon_async(args: ReconArgs) -> ExitCode {
                 println!("  - {sub}");
             }
             // §13 dogfood round-2 DEFECT 7: a SUCCESSFUL crt.sh query that
-            // returns zero subdomains is ambiguous — the domain may genuinely
+            // returns zero subdomains is ambiguous, the domain may genuinely
             // have no Certificate Transparency entries, OR crt.sh returned an
             // empty 200 under load. The bare "✓ Found 0" reads as "recon
             // complete, nothing exists", hiding the possible crt.sh flake.
@@ -156,7 +156,7 @@ async fn run_recon_async(args: ReconArgs) -> ExitCode {
             // the empty-but-OK case it can't see.)
             if subdomains.is_empty() && !manual_subdomains {
                 eprintln!(
-                    "  note: 0 subdomains from crt.sh — either {0} has no \
+                    "  note: 0 subdomains from crt.sh, either {0} has no \
                      Certificate Transparency entries, or crt.sh returned an \
                      empty result under load. To probe known hosts directly, \
                      pass --subdomains a.{0},b.{0} (optionally with --probe).",
@@ -166,7 +166,7 @@ async fn run_recon_async(args: ReconArgs) -> ExitCode {
         }
 
         // Skip DNS resolution when the operator supplied subdomains
-        // directly — they typically already know the IPs and want
+        // directly, they typically already know the IPs and want
         // straight to active probing.
         let ips = if subdomains.is_empty() || manual_subdomains {
             Vec::new()
@@ -222,7 +222,7 @@ async fn run_recon_async(args: ReconArgs) -> ExitCode {
                     println!("  - {}: ✗ {err}", p.subdomain);
                 } else if p.tags.is_empty() {
                     println!(
-                        "  - {}: status {} — no WAF/CDN/framework signature matched",
+                        "  - {}: status {}, no WAF/CDN/framework signature matched",
                         p.subdomain,
                         p.status.unwrap_or(0)
                     );
@@ -233,7 +233,7 @@ async fn run_recon_async(args: ReconArgs) -> ExitCode {
                         .map(|t| format!("{:?}:{}", t.family, t.id))
                         .collect();
                     println!(
-                        "  - {}: status {} — {}",
+                        "  - {}: status {}: {}",
                         p.subdomain,
                         p.status.unwrap_or(0),
                         tag_strs.join(", ")
@@ -266,12 +266,12 @@ async fn run_recon_async(args: ReconArgs) -> ExitCode {
 /// Probe every subdomain via HTTPS GET, classifying response headers
 /// against the embedded `HeaderRules` (WAF/CDN/framework signatures).
 ///
-/// Concurrency-bounded by `buffer_unordered(concurrency)` — at most
+/// Concurrency-bounded by `buffer_unordered(concurrency)`: at most
 /// `concurrency` probes are in flight at any moment, so a 200-subdomain
 /// CT result doesn't blow the local fd budget or hammer the targets.
 ///
 /// Probe failures are returned as `ProbeResult` entries with `error`
-/// populated — anti-rig: a silently dropped probe must not look like
+/// populated, anti-rig: a silently dropped probe must not look like
 /// a clean unfingerprinted host.
 async fn run_active_probes(
     subdomains: &[String],
@@ -360,7 +360,7 @@ mod tests {
     }
 
     /// LAW 12 boundary test: a transport-failed probe MUST include the
-    /// error string and omit status/tags — anti-rig: a silently dropped
+    /// error string and omit status/tags, anti-rig: a silently dropped
     /// probe must not look like a clean unfingerprinted host.
     #[test]
     fn probe_error_serialises_with_error_only() {
@@ -377,7 +377,7 @@ mod tests {
         assert!(!s.contains("\"tags\""));
     }
 
-    /// LAW 12 pin: the concurrency cap is a fixed safety boundary —
+    /// LAW 12 pin: the concurrency cap is a fixed safety boundary 
     /// a silent re-tune up would expose the recon step to fd-exhaustion
     /// on large CT-log discoveries. If this constant changes, the bump
     /// must be deliberate.
@@ -386,7 +386,7 @@ mod tests {
         assert_eq!(PROBE_CONCURRENCY_MAX, 32);
     }
 
-    /// LAW 2 pin: schema version stays at 1 — the `probes` field is
+    /// LAW 2 pin: schema version stays at 1, the `probes` field is
     /// additive and skipped when absent, so old consumers still parse.
     #[test]
     fn recon_schema_version_stable() {
@@ -395,7 +395,7 @@ mod tests {
 
     /// Dogfood UX-4 regression: `wafrift recon --subdomains a,b,c` must
     /// be parsable as a Vec<String>. The `--subdomains` flag is the
-    /// operator's escape hatch when crt.sh is down — if it stops
+    /// operator's escape hatch when crt.sh is down, if it stops
     /// parsing comma-lists, the whole fallback path breaks.
     #[test]
     fn subdomains_flag_parses_comma_separated() {

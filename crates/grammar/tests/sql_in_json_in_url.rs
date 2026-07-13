@@ -1,7 +1,7 @@
 //! Nested delivery: SQL inside JSON inside URL-encoded query values.
 //!
 //! Exercises [`DeliveryShape`] when the logical attack traverses multiple
-//! encoding layers — a WAF that only normalises the outer URL layer must
+//! encoding layers, a WAF that only normalises the outer URL layer must
 //! still leave the inner SQL recognizable to the oracle.
 
 use wafrift_grammar::grammar::equiv::DeliveryShape;

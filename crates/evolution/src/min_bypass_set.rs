@@ -5,7 +5,7 @@
 //! collectively covers every rule class that any payload in the input covers.
 //!
 //! This is the classic **weighted set-cover** problem (NP-hard in general).
-//! We use a **greedy approximation** with `(1-1/e)` competitive ratio — each
+//! We use a **greedy approximation** with `(1-1/e)` competitive ratio, each
 //! round picks the payload that covers the most uncovered rule classes. This
 //! produces a result ≤ `H(n)` times optimal (H = harmonic number), which is
 //! the best polynomial-time guarantee.
@@ -44,7 +44,7 @@
 //!                     rule_classes: vec!["sqli_tautology".into(), "sqli_comment".into()], score: 0.7 },
 //! ];
 //! let result = compute_min_bypass_set(&payloads);
-//! // p3 covers both sql classes; p2 covers xss — only 2 payloads needed.
+//! // p3 covers both sql classes; p2 covers xss (only 2 payloads needed).
 //! assert!(result.min_set.len() <= 3);
 //! assert!(result.min_set.len() <= payloads.len());
 //! ```
@@ -54,7 +54,7 @@ use std::collections::{HashMap, HashSet};
 
 /// A bypassing payload annotated with the set of WAF rule classes it defeats.
 ///
-/// `rule_classes` are opaque string labels — the caller assigns them however
+/// `rule_classes` are opaque string labels, the caller assigns them however
 /// makes semantic sense for the WAF under test. Typical examples:
 /// - Cloudflare rule IDs: `"100002"`, `"100013"`
 /// - CRS paranoia-level labels: `"SQLI_PL1"`, `"XSS_PL2"`
@@ -77,7 +77,7 @@ pub struct BypassPayload {
 /// Result of the minimum bypass set computation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MinBypassSetResult {
-    /// The minimal covering set — subset of input `BypassPayload`s.
+    /// The minimal covering set (subset of input `BypassPayload`s).
     pub min_set: Vec<BypassPayload>,
     /// Total number of distinct rule classes covered.
     pub classes_covered: usize,
@@ -87,7 +87,7 @@ pub struct MinBypassSetResult {
     pub compression_ratio: f64,
     /// Whether the greedy solution is likely optimal.
     /// True when `min_set.len() == 1` or `classes_covered == min_set.len()`
-    /// (each payload contributes a unique class — greedy is exact in this case).
+    /// (each payload contributes a unique class (greedy is exact in this case)).
     pub likely_optimal: bool,
 }
 
@@ -95,7 +95,7 @@ pub struct MinBypassSetResult {
 /// by the full input, using greedy set-cover with score tie-breaking.
 ///
 /// # Complexity
-/// O(|payloads|² × |classes|) worst case — acceptable for the typical scan
+/// O(|payloads|² × |classes|) worst case, acceptable for the typical scan
 /// output size (< 10,000 payloads). For larger inputs, consider the streaming
 /// variant [`compute_min_bypass_set_streaming`].
 ///
@@ -103,7 +103,7 @@ pub struct MinBypassSetResult {
 /// - The result covers every class that appears in *any* input payload.
 /// - The result is a subset of the input.
 /// - No payload in the result covers zero unique classes at the time it was
-///   selected (no dead weight — every element is load-bearing).
+///   selected (no dead weight (every element is load-bearing)).
 /// - Deterministic: same input → same output (sort-stable tie-breaking).
 #[must_use]
 pub fn compute_min_bypass_set(payloads: &[BypassPayload]) -> MinBypassSetResult {
@@ -171,9 +171,9 @@ pub fn compute_min_bypass_set(payloads: &[BypassPayload]) -> MinBypassSetResult 
             });
 
         match best {
-            None => break, // No available payloads left — shouldn't happen
+            None => break, // No available payloads left, shouldn't happen
             Some(idx) => {
-                // Check if this payload still covers anything — if not, stop.
+                // Check if this payload still covers anything (if not, stop).
                 let new_coverage: usize = payload_sets[idx].intersection(&uncovered).count();
                 if new_coverage == 0 {
                     break;
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn greedy_picks_higher_score_on_tie() {
-        // p1 and p2 both cover the same single class — higher score should win
+        // p1 and p2 both cover the same single class, higher score should win
         let payloads = vec![
             bp("p1", &["sqli"], 0.7),
             bp("p2", &["sqli"], 0.9), // higher score

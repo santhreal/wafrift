@@ -1,4 +1,4 @@
-//! Context-aware encoding tests — validates structural correctness per injection context.
+//! Context-aware encoding tests (validates structural correctness per injection context).
 
 use wafrift_encoding::Strategy;
 use wafrift_encoding::contextual::{encode_in_context, escape_for_context, validate_in_context};
@@ -284,7 +284,7 @@ fn url_query_case_alternation_no_raw_space() {
 fn url_query_url_encode_no_double_encoding() {
     let out = encode_in_context(b"a b", Strategy::UrlEncode, InjectionContext::UrlQuery).unwrap();
     // Strategy produces "a%20b", then URL query context percent-encodes the % to %25,
-    // resulting in "a%2520b" — this is expected double-encoding behavior
+    // resulting in "a%2520b", this is expected double-encoding behavior
     assert!(out.contains("%2520"));
 }
 

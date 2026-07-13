@@ -1,4 +1,4 @@
-//! Endless dogfood harness — spins up a realistic mock that
+//! Endless dogfood harness, spins up a realistic mock that
 //! simulates WAF + cache + parser quirks, then drives EVERY new
 //! subcommand (`distill`, `header-diff`, `body-diff`, `query-diff`,
 //! `cache-diff`, `attack`, `scan -r`, `scan --auto-distill`) against
@@ -9,7 +9,7 @@
 //! 3. Carry the shared-shape contract for its family (probes /
 //!    bypass_variants / divergences keys, curl reproducer per row).
 //!
-//! This is the integration-level "use the tool end-to-end" proof —
+//! This is the integration-level "use the tool end-to-end" proof 
 //! if a subcommand passes its unit tests but fails here, the wire
 //! between clap → run_* → JSON emission has a hole.
 
@@ -36,13 +36,13 @@ async fn spawn_realistic_mock() -> std::net::SocketAddr {
                 let n = sock.read(&mut buf).await.unwrap_or(0);
                 let req = String::from_utf8_lossy(&buf[..n]).to_string();
 
-                // Header-aware dispatch — X-Real-IP localhost yields
+                // Header-aware dispatch: X-Real-IP localhost yields
                 // an internal-grant body.
                 let internal_via_header = req.lines().any(|l| {
                     let lo = l.to_ascii_lowercase();
                     lo.starts_with("x-real-ip:") && lo.contains("127.0.0.1")
                 });
-                // Body / query reflection — any request containing
+                // Body / query reflection, any request containing
                 // the canonical attack token gets the leaked body.
                 let leaked = req.contains("WAFRIFT_ATTACK_TOKEN") || req.contains("PWN");
                 // "Block" simulation for scan: anything containing
@@ -57,7 +57,7 @@ async fn spawn_realistic_mock() -> std::net::SocketAddr {
                 } else if internal_via_header || leaked {
                     (
                         "200 OK",
-                        "<html>internal / leaked — long body for delta detection</html>"
+                        "<html>internal / leaked, long body for delta detection</html>"
                             .to_string(),
                     )
                 } else {
@@ -95,7 +95,7 @@ fn parse_or_explain(stdout: &str, stderr: &str, ctx: &str) -> serde_json::Value 
     })
 }
 
-/// One target — every subcommand fires against this URL.
+/// One target (every subcommand fires against this URL).
 struct Target {
     base_url: String,
 }
@@ -108,7 +108,7 @@ impl Target {
             .build()
             .unwrap();
         let addr = rt.block_on(spawn_realistic_mock());
-        // Leak the runtime — keeps the mock alive for the entire
+        // Leak the runtime, keeps the mock alive for the entire
         // test, which suits the use-once nature of dogfood.
         std::mem::forget(rt);
         Self {
@@ -130,7 +130,7 @@ fn dogfood_distill_reduces_bypass_to_minimum_form() {
         "--format",
         "json",
     ]);
-    assert_eq!(code, 0, "distill exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "distill exit 0, stderr:\n{stderr}");
     let p = parse_or_explain(&stdout, &stderr, "distill");
     let orig_len = p["original"]["length"].as_u64().unwrap_or(0);
     let min_len = p["minimal"]["length"].as_u64().unwrap_or(u64::MAX);
@@ -155,7 +155,7 @@ fn dogfood_header_diff_finds_xri_localhost_via_real_binary() {
         "--delay-ms",
         "0",
     ]);
-    assert_eq!(code, 0, "header-diff exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "header-diff exit 0, stderr:\n{stderr}");
     let p = parse_or_explain(&stdout, &stderr, "header-diff");
     let results = p["results"].as_array().expect("results array");
     assert!(!results.is_empty(), "must have results");
@@ -186,7 +186,7 @@ fn dogfood_body_diff_finds_token_leak_via_real_binary() {
         "--delay-ms",
         "0",
     ]);
-    assert_eq!(code, 0, "body-diff exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "body-diff exit 0, stderr:\n{stderr}");
     let p = parse_or_explain(&stdout, &stderr, "body-diff");
     let total_div = p["divergences"]["high"].as_u64().unwrap_or(0)
         + p["divergences"]["medium"].as_u64().unwrap_or(0);
@@ -212,7 +212,7 @@ fn dogfood_query_diff_finds_token_leak_via_real_binary() {
         "--delay-ms",
         "0",
     ]);
-    assert_eq!(code, 0, "query-diff exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "query-diff exit 0, stderr:\n{stderr}");
     let p = parse_or_explain(&stdout, &stderr, "query-diff");
     let total_div = p["divergences"]["high"].as_u64().unwrap_or(0)
         + p["divergences"]["medium"].as_u64().unwrap_or(0);
@@ -233,7 +233,7 @@ fn dogfood_cache_diff_flags_collisions_on_aggressive_cache_mock() {
         "--delay-ms",
         "0",
     ]);
-    assert_eq!(code, 0, "cache-diff exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "cache-diff exit 0, stderr:\n{stderr}");
     let p = parse_or_explain(&stdout, &stderr, "cache-diff");
     let high = p["divergences"]["high"].as_u64().unwrap_or(0);
     assert!(
@@ -264,7 +264,7 @@ fn dogfood_attack_runs_all_seven_subprobes_concurrently_via_real_binary() {
         "--probe-timeout-secs",
         "120",
     ]);
-    assert_eq!(code, 0, "attack exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "attack exit 0, stderr:\n{stderr}");
     let p = parse_or_explain(&stdout, &stderr, "attack");
     let probes = p["probes"].as_object().expect("probes object");
     // All seven sub-probe families present.
@@ -313,7 +313,7 @@ fn dogfood_scan_raw_request_with_auto_distill_via_real_binary() {
         "json",
     ]);
     let _ = std::fs::remove_file(&path);
-    assert_eq!(code, 0, "scan -r exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "scan -r exit 0, stderr:\n{stderr}");
     let p = parse_or_explain(&stdout, &stderr, "scan -r");
     assert_eq!(p["mode"], "raw-request");
     assert_eq!(p["auto_distill_enabled"], true);
@@ -354,7 +354,7 @@ fn dogfood_attack_repeats_produce_same_shape_three_runs() {
             "--probe-timeout-secs",
             "30",
         ]);
-        assert_eq!(code, 0, "attack run {i} exit 0 — stderr:\n{stderr}");
+        assert_eq!(code, 0, "attack run {i} exit 0, stderr:\n{stderr}");
         let p = parse_or_explain(&stdout, &stderr, &format!("attack-run-{i}"));
         // Stable structure: all 7 families present every time.
         let probes = p["probes"].as_object().expect("probes object");
@@ -371,7 +371,7 @@ fn dogfood_attack_repeats_produce_same_shape_three_runs() {
 
 #[test]
 fn dogfood_attack_subprobe_failures_are_isolated() {
-    // Point at unreachable target — every sub-probe's baseline
+    // Point at unreachable target, every sub-probe's baseline
     // probe should fail. Since R44-I3: when ≥4 sub-probes error at
     // the transport level the orchestrator exits 1 (not 0) so CI can
     // detect "nothing landed" rather than interpreting "0 divergences"
@@ -389,13 +389,13 @@ fn dogfood_attack_subprobe_failures_are_isolated() {
     ]);
     assert_eq!(
         code, 1,
-        "attack must exit 1 when all sub-probes fail (transport unreachable) — stderr:\n{stderr}"
+        "attack must exit 1 when all sub-probes fail (transport unreachable), stderr:\n{stderr}"
     );
     let p = parse_or_explain(&stdout, &stderr, "attack-isolated-failure");
     let probes = p["probes"].as_object().expect("probes");
     // Every family records SOME failure signal. The h2-diff sub-probe
     // uses `h2_errors` (count of per-probe transport failures) rather
-    // than a top-level `error` or `errors` field — check all three.
+    // than a top-level `error` or `errors` field (check all three).
     for (family, body) in probes {
         let has_err = body.get("error").is_some();
         let has_errors = body
@@ -424,7 +424,7 @@ fn dogfood_scan_url_query_no_waf_verdict_does_not_fabricate_distill() {
     // The realistic mock only 403s the literal `BLOCKED`; it lets real attack
     // canaries through, so it does NOT behave like a WAF. scan's surface probe
     // therefore honestly classifies it `param_live_no_waf` and the bypass
-    // verdict is `WafNotInPlay` (exit 6) — you cannot "confirm a bypass" against
+    // verdict is `WafNotInPlay` (exit 6), you cannot "confirm a bypass" against
     // a target with no detectable WAF. This test pins that honesty contract:
     // even with --auto-distill set, scan must NOT manufacture bypasses or burn
     // ddmin fires when there is nothing to bypass. (The real auto-distill /
@@ -494,7 +494,7 @@ fn dogfood_every_new_subcommand_help_is_well_formed() {
         "attack",
     ] {
         let (code, stdout, stderr) = wafrift(&[cmd, "--help"]);
-        assert_eq!(code, 0, "{cmd} --help exit 0 — stderr:\n{stderr}");
+        assert_eq!(code, 0, "{cmd} --help exit 0, stderr:\n{stderr}");
         assert!(
             stdout.contains("--format"),
             "{cmd} --help must document --format: {stdout}"

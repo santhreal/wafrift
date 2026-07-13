@@ -2,7 +2,7 @@
 //!
 //! Anti-rig is the whole point: every mined "bypass" is **replayed
 //! against the same real oracle** and must *actually* pass while
-//! *actually* being an attack — exact strings and counts, with a
+//! *actually* being an attack, exact strings and counts, with a
 //! precision twin (no mined word is the blocked form) and a true
 //! negative (a WAF that fully covers the class yields ZERO bypasses,
 //! never a fabricated one).
@@ -38,22 +38,22 @@ fn attack_grammar_kmp_equals_naive_substring_for_self_overlapping_needles() {
     // `attack_grammar` is soundness-critical: every "this word is in the
     // attack class" assertion elsewhere rests on its KMP construction.
     // Borderless needles (`ab`, `a`) leave the KMP failure function all
-    // zeros, so they cannot exercise the border arithmetic — a mutation
+    // zeros, so they cannot exercise the border arithmetic, a mutation
     // there survives. Here we use needles with NON-TRIVIAL borders and
     // assert the built SFA recognises EXACTLY "contains needle" against
     // an independent naive substring oracle, over every word up to
-    // 2·|needle|+1 — any off-by-one in the failure function or the
+    // 2·|needle|+1, any off-by-one in the failure function or the
     // transition follow diverges on a self-overlapping input.
     fn naive_contains(hay: &[u8], needle: &[u8]) -> bool {
         needle.len() <= hay.len() && hay.windows(needle.len()).any(|w| w == needle)
     }
     // Two-symbol needles ONLY (distinct ≤ {a,b} ⇒ alphabet size 3 with
     // the catch-all), each with a non-trivial KMP border so the
-    // failure-function `!=` comparison is load-bearing — `ababa` /
+    // failure-function `!=` comparison is load-bearing: `ababa` /
     // `aabab` are the canonical stressors. Enumerating every word up to
     // 2·|needle| over a 3-symbol alphabet is exhaustive enough to make
     // ANY failure-function arithmetic error change the language, while
-    // staying ≤ 3^10 words (fast — no timeouts).
+    // staying ≤ 3^10 words (fast (no timeouts)).
     for needle in [
         b"aba".as_ref(),
         b"abab",
@@ -117,7 +117,7 @@ fn mining_issues_zero_live_queries() {
     // README/lib claim: "Mine bypasses offline … no further live
     // traffic." `mine_bypasses` takes no oracle by type, but assert the
     // behavioural contract end-to-end: after learning, the live-query
-    // counter must NOT advance by a single query across mining — and
+    // counter must NOT advance by a single query across mining, and
     // the step is non-vacuous (learning really queried; a real hole was
     // really mined).
     let alpha = Alphabet::new(vec![b'a', b'b', b'A'], b'Z');
@@ -138,7 +138,7 @@ fn mining_issues_zero_live_queries() {
     assert_eq!(
         w.queries(),
         after_learn,
-        "mining issued live queries — the 'offline / no further live \
+        "mining issued live queries, the 'offline / no further live \
          traffic' claim is false"
     );
 }
@@ -164,7 +164,7 @@ fn mined_bypasses_are_real_against_the_same_oracle() {
         // (1) The SAME real WAF actually passes it (no model gap).
         assert!(
             passes(&mut oracle, b),
-            "mined bypass {b:?} does NOT actually pass the real WAF — rigged miner"
+            "mined bypass {b:?} does NOT actually pass the real WAF, rigged miner"
         );
         // (2) It is genuinely an attack (contains a needle).
         let s = String::from_utf8_lossy(b);
@@ -175,7 +175,7 @@ fn mined_bypasses_are_real_against_the_same_oracle() {
         // (3) Precision twin: it is NOT the blocked form.
         assert!(
             !s.contains("ab"),
-            "mined word {b:?} contains the blocked token — would be caught, not a bypass"
+            "mined word {b:?} contains the blocked token, would be caught, not a bypass"
         );
     }
 
@@ -190,7 +190,7 @@ fn mined_bypasses_are_real_against_the_same_oracle() {
 #[test]
 fn a_fully_covering_waf_yields_zero_bypasses() {
     // The attack class is EXACTLY what the WAF blocks (`ab`). There is
-    // no hole; the miner must return nothing — never a false positive.
+    // no hole; the miner must return nothing (never a false positive).
     let alpha = Alphabet::new(vec![b'a', b'b'], b'Z');
     let mut w = waf("ab");
     let mut eq = WMethodEq { extra_states: 3 };
@@ -210,7 +210,7 @@ fn a_fully_covering_waf_yields_zero_bypasses() {
 fn waf_diff_is_a_real_transferable_hole_map() {
     // WAF-A blocks `ab`; WAF-B blocks `Ab`. Their learned models'
     // symmetric difference must be inputs the two REAL WAFs classify
-    // differently — verified against both live oracles.
+    // differently (verified against both live oracles).
     let alpha = Alphabet::new(vec![b'a', b'b', b'A'], b'Z');
     let mut wa = waf("ab");
     let mut wb = waf("Ab");
@@ -233,7 +233,7 @@ fn waf_diff_is_a_real_transferable_hole_map() {
             "diff word {d:?} must be classified differently by the two real WAFs"
         );
     }
-    // `ab` is blocked by A, passed by B; `Ab` the reverse — both must
+    // `ab` is blocked by A, passed by B; `Ab` the reverse, both must
     // surface in a sufficiently deep diff.
     let set: std::collections::HashSet<Vec<u8>> = diff.into_iter().collect();
     assert!(set.contains(b"ab".as_slice()) || set.contains(b"Ab".as_slice()));

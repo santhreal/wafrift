@@ -1,4 +1,4 @@
-//! `wafrift ja3-diff` — per-browser-profile TLS-fingerprint differential
+//! `wafrift ja3-diff`: per-browser-profile TLS-fingerprint differential
 //! scanner. Gated behind the `tls-impersonate` cargo feature so default
 //! builds skip the BoringSSL/wreq compile cost.
 //!
@@ -21,7 +21,7 @@
 //!
 //! ## Why this is a wafrift moat
 //!
-//! Sqlmap, Nuclei, ffuf, Burp, Caido — none of them ship a TLS-
+//! Sqlmap, Nuclei, ffuf, Burp, Caido, none of them ship a TLS-
 //! fingerprint differential scanner as a first-class subcommand. Most
 //! rely on a single TLS backend (Go's crypto/tls, Java's JSSE) which
 //! is itself a fingerprint a WAF can block. wafrift's `ja3-diff`
@@ -32,11 +32,11 @@
 //! ## Limitations
 //!
 //! - StealthClient refuses bogon targets (RFC1918 / loopback /
-//!   link-local) — same SSRF gate as the proxy. Test against your
+//!   link-local), same SSRF gate as the proxy. Test against your
 //!   real public infrastructure or your authorized cloud target.
 //! - Per-probe cost is roughly N+1 TLS handshakes (no connection
 //!   reuse across profiles), so default profile set is small.
-//! - JA3 hashing itself is not computed here — `wafrift_fingerprint::
+//! - JA3 hashing itself is not computed here: `wafrift_fingerprint::
 //!   tls_fingerprint::compute_ja3_string` is the reference if the
 //!   operator wants the raw JA3 of each profile in a report.
 
@@ -55,20 +55,20 @@ use wafrift_transport::stealth::{ImpersonateProfile, StealthClient, supported_pr
 #[derive(Args, Debug)]
 pub(crate) struct Ja3DiffArgs {
     /// Target URL. Must be a non-bogon address (the stealth client
-    /// refuses 127.0.0.1, RFC1918, link-local, CGN, Teredo, IMDS —
+    /// refuses 127.0.0.1, RFC1918, link-local, CGN, Teredo, IMDS 
     /// same SSRF gate the proxy uses).
     pub url: String,
 
     /// Comma-separated list of browser profiles to probe.
     /// Default: the full supported set. Each profile is one
-    /// `--tls-impersonate <profile>` value the proxy understands —
+    /// `--tls-impersonate <profile>` value the proxy understands 
     /// when ja3-diff flags one as a bypass, you can immediately run
     /// `wafrift-proxy --tls-impersonate <best>` to route your scan
     /// through the winning fingerprint.
     #[arg(long, value_delimiter = ',')]
     pub profiles: Vec<String>,
 
-    /// Inter-probe delay (ms) — honour rate limits.
+    /// Inter-probe delay (ms) (honour rate limits).
     #[arg(long, default_value_t = 100)]
     pub delay_ms: u64,
 
@@ -77,7 +77,7 @@ pub(crate) struct Ja3DiffArgs {
     pub timeout_secs: u64,
 
     /// Maximum upstream response body size (bytes). Bodies larger
-    /// than this are truncated, not errored — truncated content is
+    /// than this are truncated, not errored, truncated content is
     /// still useful for diff classification.
     #[arg(long, default_value_t = 64 * 1024)]
     pub max_body_bytes: usize,
@@ -123,7 +123,7 @@ async fn run_async(args: Ja3DiffArgs) -> ExitCode {
     };
     if profile_names.is_empty() {
         eprintln!(
-            "{} no profiles to probe — `supported_profiles()` returned empty",
+            "{} no profiles to probe: `supported_profiles()` returned empty",
             "ja3-diff error:".red().bold()
         );
         return ExitCode::from(1);
@@ -161,7 +161,7 @@ async fn run_async(args: Ja3DiffArgs) -> ExitCode {
 
     // Classify divergence: bucket profiles by (status, body_len) and
     // tag any profile whose bucket has fewer members than the largest
-    // bucket — the largest bucket is "what most browsers see"
+    // bucket, the largest bucket is "what most browsers see"
     // (baseline), and minorities are evidence of TLS-layer gating.
     classify_severity(&mut outcomes);
 
@@ -274,7 +274,7 @@ fn classify_severity(outcomes: &mut [ProbeOutcome]) {
     // candidates for divergence.
     let baseline_key = buckets.iter().max_by_key(|(_, v)| v.len()).map(|(k, _)| *k);
     let Some((baseline_status, baseline_body_len)) = baseline_key else {
-        // No successful probes — all errored; leave severity as-is.
+        // No successful probes (all errored; leave severity as-is).
         return;
     };
     for o in outcomes.iter_mut() {
@@ -285,10 +285,10 @@ fn classify_severity(outcomes: &mut [ProbeOutcome]) {
             continue;
         }
         if status / 100 != baseline_status / 100 {
-            // 200 ↔ 4xx flip — TLS-layer gating, the headline signal.
+            // 200 ↔ 4xx flip: TLS-layer gating, the headline signal.
             o.severity = "high";
         } else {
-            // Same status class, different body — could be a JS
+            // Same status class, different body, could be a JS
             // challenge page swapped in, or just dynamic content.
             // Threshold at 20% to mirror the parser-diff family.
             //
@@ -296,7 +296,7 @@ fn classify_severity(outcomes: &mut [ProbeOutcome]) {
             // `parser_diff_common::body_delta_pct` instead of
             // re-implementing the formula. Pre-fix this site
             // used `.abs()` (unsigned), while the canonical
-            // function is signed — wrap with .abs() at the
+            // function is signed, wrap with .abs() at the
             // call site to keep the existing "fire on growth OR
             // shrinkage" behaviour, but the formula now comes
             // from one canonical home. If `respdiff` ever swaps
@@ -367,7 +367,7 @@ mod tests {
     #[test]
     fn classify_one_status_flip_is_high_others_none() {
         // Baseline cohort: 3 profiles all get HTTP 200 + 1024 bytes.
-        // The fourth gets HTTP 403 — TLS-layer gating headline.
+        // The fourth gets HTTP 403: TLS-layer gating headline.
         let mk = |name: &str, status: u16, body: usize| ProbeOutcome {
             profile: name.into(),
             status: Some(status),
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn classify_body_shift_within_status_class_is_medium() {
-        // All 200, but one profile gets a body length that's 50% smaller —
+        // All 200, but one profile gets a body length that's 50% smaller 
         // could be a JS challenge swapped in for that fingerprint.
         let mk = |name: &str, body: usize| ProbeOutcome {
             profile: name.into(),
@@ -428,7 +428,7 @@ mod tests {
             mk("chrome131", 1000),
             mk("chrome120", 1000),
             mk("firefox133", 1000),
-            mk("okhttp5", 1100), // 10% larger — under 20% threshold
+            mk("okhttp5", 1100), // 10% larger, under 20% threshold
         ];
         classify_severity(&mut outcomes);
         assert_eq!(

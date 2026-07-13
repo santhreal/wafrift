@@ -23,15 +23,15 @@
 //!   space_to_comment/long_200b      409 ns   space_to_random_blank/long_200b  489 ns
 //!
 //! Hot paths targeted:
-//!   1. `url_encode` — called on every payload in the encoding chain.
+//!   1. `url_encode`: called on every payload in the encoding chain.
 //!      `UNRESERVED.contains(&b)` is O(66) linear scan per byte.
 //!      Optimized to O(1) 256-entry lookup table.
-//!   2. `case_alternate` — `.collect::<String>()` started with cap 0, may realloc.
+//!   2. `case_alternate`: `.collect::<String>()` started with cap 0, may realloc.
 //!      After opt: `with_capacity(payload.len())` + push loop.
-//!   3. `random_case_alternate` — duplicates FNV fold over bytes then iterates chars.
+//!   3. `random_case_alternate`: duplicates FNV fold over bytes then iterates chars.
 //!      After opt: canonical `fnv1a_64()` + pre-sized output.
-//!   4. `space_to_random_blank` — same duplicate-FNV pattern as random_case.
-//!   5. `encode_layered` (3-strategy chain) — end-to-end pipeline cost (benefits from 1-4).
+//!   4. `space_to_random_blank`: same duplicate-FNV pattern as random_case.
+//!   5. `encode_layered` (3-strategy chain) (end-to-end pipeline cost (benefits from 1-4)).
 
 use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
 use wafrift_encoding::encoding::{encode_layered, strategy::Strategy};

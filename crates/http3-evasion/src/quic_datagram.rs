@@ -1,22 +1,22 @@
 //! QUIC unreliable datagram (RFC 9221) smuggling primitives.
 //!
-//! RFC 9221 — "An Unreliable Datagram Extension to QUIC" — adds two
+//! RFC 9221: "An Unreliable Datagram Extension to QUIC", adds two
 //! new QUIC frame types (0x30 = DATAGRAM-without-length, 0x31 =
 //! DATAGRAM-with-length) that carry application bytes **outside any
 //! HTTP/3 stream**. Unlike STREAM frames (which carry the HTTP/3
 //! data plane) DATAGRAMs are not associated with a request or
-//! response — they are pure transport-layer mailboxes.
+//! response (they are pure transport-layer mailboxes).
 //!
 //! That decoupling is the bypass surface. Real-world deployments
 //! that rely on DATAGRAM frames:
 //!
-//! - **WebTransport over HTTP/3** (RFC 9484) — datagrams are a
+//! - **WebTransport over HTTP/3** (RFC 9484), datagrams are a
 //!   first-class low-latency channel between client and server,
 //!   keyed to a session via `Quarter-Stream-ID`.
-//! - **CONNECT-UDP** (RFC 9298) — UDP packets tunnel through HTTP/3
+//! - **CONNECT-UDP** (RFC 9298). UDP packets tunnel through HTTP/3
 //!   as DATAGRAM frames (the in-stream capsule variant is the
 //!   fallback when the path doesn't support datagrams).
-//! - **MASQUE proxying** (CONNECT-IP, RFC 9484-bis) — IP-layer
+//! - **MASQUE proxying** (CONNECT-IP, RFC 9484-bis). IP-layer
 //!   tunneling rides on datagrams when available.
 //!
 //! WAFs that inspect HTTP/3 at the HTTP semantic layer parse STREAM
@@ -29,7 +29,7 @@
 //! ## Wire format
 //!
 //! ```text
-//! DATAGRAM frame (RFC 9221 §4) — no length, frame fills the QUIC packet:
+//! DATAGRAM frame (RFC 9221 §4), no length, frame fills the QUIC packet:
 //!   Type (i = 0x30)
 //!   Datagram Data (..)
 //!
@@ -84,7 +84,7 @@ pub const DATAGRAM_TYPE_WITH_LENGTH: u64 = 0x31;
 /// A QUIC DATAGRAM frame on the wire.
 #[derive(Debug, Clone)]
 pub struct QuicDatagramFrame {
-    /// Frame type — either [`DATAGRAM_TYPE_NO_LENGTH`] or
+    /// Frame type, either [`DATAGRAM_TYPE_NO_LENGTH`] or
     /// [`DATAGRAM_TYPE_WITH_LENGTH`].
     pub frame_type: u64,
     /// Payload bytes. Truncated to [`MAX_DATAGRAM_PAYLOAD_BYTES`] by
@@ -151,7 +151,7 @@ pub enum QuicDatagramVariant {
     /// `max_streams`). Some WAFs/origins reject; some forward.
     UnregisteredQuarterStream,
     /// Datagram payload sized exactly at the receiver's quote (1200
-    /// bytes) — a one-past-the-boundary probe that exercises any
+    /// bytes), a one-past-the-boundary probe that exercises any
     /// hardcoded "max datagram size" assumption.
     AtBoundarySize,
 }
@@ -180,7 +180,7 @@ impl QuicDatagramAttack {
         Self {
             variant: QuicDatagramVariant::StreamlessPayload,
             datagrams: vec![frame],
-            description: "DATAGRAM frame outside any HTTP/3 stream — WAF sees no HTTP semantic"
+            description: "DATAGRAM frame outside any HTTP/3 stream. WAF sees no HTTP semantic"
                 .into(),
             canary: Canary::generate(),
         }
@@ -199,7 +199,7 @@ impl QuicDatagramAttack {
             variant: QuicDatagramVariant::TypeConfusion,
             datagrams: vec![with_len, no_len],
             description:
-                "DATAGRAM type confusion — 0x31 (with length) followed by 0x30 (no length, must be last)"
+                "DATAGRAM type confusion: 0x31 (with length) followed by 0x30 (no length, must be last)"
                     .into(),
             canary: Canary::generate(),
         }
@@ -207,7 +207,7 @@ impl QuicDatagramAttack {
 
     /// WebTransport DATAGRAM with a Quarter-Stream-ID outside any
     /// open session range. `quarter_stream_id` is the WebTransport
-    /// session identifier per RFC 9484 §6.2 — typically derived
+    /// session identifier per RFC 9484 §6.2, typically derived
     /// from the WT_STREAM-opening session's stream ID divided by 4.
     /// Pick a value above the connection's max_streams to make the
     /// frame "phantom."
@@ -223,7 +223,7 @@ impl QuicDatagramAttack {
             variant: QuicDatagramVariant::UnregisteredQuarterStream,
             datagrams: vec![frame],
             description: format!(
-                "WebTransport DATAGRAM for unregistered Quarter-Stream-ID {quarter_stream_id} — phantom session"
+                "WebTransport DATAGRAM for unregistered Quarter-Stream-ID {quarter_stream_id}, phantom session"
             ),
             canary: Canary::generate(),
         }
@@ -240,7 +240,7 @@ impl QuicDatagramAttack {
             variant: QuicDatagramVariant::AtBoundarySize,
             datagrams: vec![frame],
             description: format!(
-                "DATAGRAM at boundary size ({MAX_DATAGRAM_PAYLOAD_BYTES} bytes) — hardcoded-max-size probe"
+                "DATAGRAM at boundary size ({MAX_DATAGRAM_PAYLOAD_BYTES} bytes), hardcoded-max-size probe"
             ),
             canary: Canary::generate(),
         }
@@ -437,7 +437,7 @@ mod tests {
     #[test]
     fn frame_payload_at_exact_cap_not_truncated() {
         // Boundary: payload of exactly MAX_DATAGRAM_PAYLOAD_BYTES must
-        // pass through unchanged — not off-by-one truncation.
+        // pass through unchanged (not off-by-one truncation).
         let payload = vec![b'A'; MAX_DATAGRAM_PAYLOAD_BYTES];
         let f = QuicDatagramFrame::with_length(payload);
         assert_eq!(
@@ -479,7 +479,7 @@ mod tests {
     #[test]
     fn unregistered_quarter_stream_with_zero_id() {
         // Boundary: Quarter-Stream-ID = 0 is the minimum varint value.
-        // It is the session ID that would correspond to stream 0 — which
+        // It is the session ID that would correspond to stream 0, which
         // is the QUIC control stream, not a valid WT stream. Some
         // receivers reject it; the probe surface is the divergence.
         let attack = QuicDatagramAttack::unregistered_quarter_stream(0, b"data".to_vec());
@@ -505,7 +505,7 @@ mod tests {
 
     #[test]
     fn concurrent_attack_construction_yields_unique_canaries() {
-        // §12 TESTING — concurrent: 50 threads each construct a
+        // §12 TESTING, concurrent: 50 threads each construct a
         // streamless_payload; canaries must all be distinct.
         use std::sync::{Arc, Mutex};
         use std::thread;
@@ -547,12 +547,12 @@ mod tests {
     #[test]
     fn unregistered_quarter_stream_large_id_does_not_overflow_varint() {
         // Integer robustness: a very large Quarter-Stream-ID (u64::MAX)
-        // must not overflow or panic — quic_varint handles up to 62-bit
+        // must not overflow or panic, quic_varint handles up to 62-bit
         // values in the 8-byte form. u64::MAX (63-bit set) saturates to
         // the QUIC 8-byte varint ceiling 0x3FFF_FFFF_FFFF_FFFF.
         let attack = QuicDatagramAttack::unregistered_quarter_stream(u64::MAX, b"x".to_vec());
         let frame = &attack.datagrams[0];
-        // 8-byte varint + 1 payload byte = 9 bytes total — well under cap.
+        // 8-byte varint + 1 payload byte = 9 bytes total (well under cap).
         let (decoded_id, n) = quic_varint_decode(&frame.payload, 0).expect("large qs-id varint");
         // QUIC varint ceiling: 2^62 - 1 = 4611686018427387903
         const QUIC_VARINT_MAX: u64 = 0x3FFF_FFFF_FFFF_FFFF;
@@ -566,7 +566,7 @@ mod tests {
     #[test]
     fn frame_with_length_serialized_length_matches_payload_exactly() {
         // Wire-format invariant: the Length varint in a with_length frame
-        // must equal the payload.len() exactly — any drift means the
+        // must equal the payload.len() exactly, any drift means the
         // receiver would read the wrong number of bytes.
         for size in [0, 1, 100, MAX_DATAGRAM_PAYLOAD_BYTES] {
             let payload = vec![0x42u8; size];
@@ -624,7 +624,7 @@ mod tests {
             prop_assert_eq!(&b[n1 + n2..], &f.payload[..]);
         }
 
-        /// A no-length DATAGRAM (0x30) has no length field — the payload is the
+        /// A no-length DATAGRAM (0x30) has no length field, the payload is the
         /// entire remainder of the frame, verbatim.
         #[test]
         fn prop_datagram_no_length_roundtrips(payload in proptest::collection::vec(any::<u8>(), 0..1500)) {
@@ -635,7 +635,7 @@ mod tests {
             prop_assert_eq!(&b[n1..], &f.payload[..]);
         }
 
-        /// Any payload over the cap is truncated by the constructor — never
+        /// Any payload over the cap is truncated by the constructor, never
         /// emitted oversized (a frame past the cap would be dropped on the wire).
         #[test]
         fn prop_datagram_truncates_oversized_payload(extra in 0usize..512) {

@@ -1,4 +1,4 @@
-//! `wafrift smuggle-cross-product` — emit the cartesian product of
+//! `wafrift smuggle-cross-product`: emit the cartesian product of
 //! two smuggle-probe families as composed JSON artifacts.
 //!
 //! For every probe in family X × every probe in family Y, emit one
@@ -22,7 +22,7 @@
 //! }
 //! ```
 //!
-//! The output size is `|lhs| × |rhs|` — bound it with `--cap N`
+//! The output size is `|lhs| × |rhs|`: bound it with `--cap N`
 //! (default 64) for sane scan budgets.
 
 use clap::Parser;
@@ -48,7 +48,7 @@ pub struct SmuggleCrossProductArgs {
     pub rhs: String,
 
     /// Cap on the number of composed artifacts emitted. 0 = no cap.
-    /// Default 64 — the full cross-product of two 10-probe families
+    /// Default 64, the full cross-product of two 10-probe families
     /// is 100 composed artifacts and grows quadratically.
     #[arg(long, default_value_t = wafrift_types::DEFAULT_SMUGGLE_COMPOSED_CAP)]
     pub cap: usize,
@@ -78,17 +78,17 @@ pub struct SmuggleCrossProductArgs {
     pub protected_host: String,
 
     /// Pretty-print each JSON object on multiple lines (default is
-    /// one compact JSON per line — friendly to `jq -c` and streaming
+    /// one compact JSON per line, friendly to `jq -c` and streaming
     /// consumers).
     #[arg(long)]
     pub pretty: bool,
 
     /// When set, splice `(NAME, canary)` pairs into each composed
-    /// artifact's `headers` — one per merged probe canary. Operators
+    /// artifact's `headers`: one per merged probe canary. Operators
     /// set this to e.g. `X-Wafrift-Canary` so OOB callbacks land
     /// already tagged with both component techniques' canaries
     /// (chain attribution is automatic). In `--fire-target` mode the
-    /// response headers and body are also scanned for these tokens —
+    /// response headers and body are also scanned for these tokens 
     /// a verbatim echo yields the `canary-reflected` signal and the
     /// matching tokens appear in each report's `reflected_canaries`.
     #[arg(long, default_value = "", value_name = "HEADER_NAME")]
@@ -154,7 +154,7 @@ pub fn run_smuggle_cross_product(args: SmuggleCrossProductArgs) -> ExitCode {
     let form_params = crate::helpers::parse_form_pairs(&args.form);
     // Each side regenerates from a fresh seed copy so the
     // canaries are independent across lhs/rhs. The aggregator
-    // returns boxed dyn SmuggleProbe — we can't clone trait
+    // returns boxed dyn SmuggleProbe, we can't clone trait
     // objects, so we generate twice and filter each.
     let seeds_lhs = ProbeSeeds {
         cookie_name: &args.cookie_name,
@@ -228,7 +228,7 @@ pub fn run_smuggle_cross_product(args: SmuggleCrossProductArgs) -> ExitCode {
         if args.cap > 0 && emitted >= args.cap {
             break;
         }
-        // Optionally splice canary headers — one (NAME, canary) per
+        // Optionally splice canary headers, one (NAME, canary) per
         // merged probe. Pre-pended so they sit at the top of the
         // composed header block and operators can find them by
         // searching for the chosen name.
@@ -282,7 +282,7 @@ pub fn run_smuggle_cross_product(args: SmuggleCrossProductArgs) -> ExitCode {
 /// `-H`, a `:path` pseudo-header splices into the URL path (matching
 /// the fire path), and the body (if any) rides `--data-binary` after
 /// its `Content-Type` header. Frames are not representable as curl and
-/// are omitted — composed fire artifacts carry none.
+/// are omitted (composed fire artifacts carry none).
 fn render_composed_curl(c: &wafrift_types::probe::ComposedArtifact, url: &str) -> String {
     let method = if c.body.is_some() { "POST" } else { "GET" };
     let mut headers = c.headers.clone();

@@ -1,5 +1,5 @@
 //! End-to-end CLI integration tests for the info-gain payload
-//! scheduler — covers the LAW 9 wiring triangle (`--help` surface,
+//! scheduler, covers the LAW 9 wiring triangle (`--help` surface,
 //! integration-test surface, code path reachable from the operator
 //! entry point).
 //!
@@ -19,7 +19,7 @@ fn bench_waf_help_documents_budget_flag() {
     assert_eq!(code, 0, "bench-waf --help must exit 0");
     assert!(
         stdout.contains("--budget"),
-        "bench-waf --help must document --budget — info-gain \
+        "bench-waf --help must document --budget, info-gain \
          scheduling is fictional without it: {stdout}"
     );
 }
@@ -30,7 +30,7 @@ fn bench_waf_help_documents_history_file_flag() {
     assert_eq!(code, 0);
     assert!(
         stdout.contains("--history-file"),
-        "bench-waf --help must document --history-file — scheduler \
+        "bench-waf --help must document --history-file, scheduler \
          warm-start is fictional without it: {stdout}"
     );
 }
@@ -54,7 +54,7 @@ fn bench_waf_help_documents_fair_class_flag() {
     assert_eq!(code, 0);
     assert!(
         stdout.contains("--fair-class"),
-        "bench-waf --help must document --fair-class — per-class \
+        "bench-waf --help must document --fair-class, per-class \
          fairness is fictional without it: {stdout}"
     );
 }
@@ -126,7 +126,7 @@ fn history_with_biased_posterior_demotes_to_schedule_tail() {
     // Dogfood pin: when a payload has 50 lopsided observations
     // (all-blocked or all-passed), its info_gain ~ 0.14 < cold-start
     // 1.0. Without --budget the schedule lists all cases ordered by
-    // descending info_gain — the biased payloads MUST land at the
+    // descending info_gain, the biased payloads MUST land at the
     // tail, not at the head. Catches a regression that reorders
     // ties in a way that puts certain cases ahead of cold-starts.
     let corpus = fixture_corpus("biased_demote");
@@ -190,7 +190,7 @@ fn cold_start_payload_ranks_first_when_others_have_biased_posteriors() {
         "--skip-healthcheck",
     ]);
     assert_eq!(code, 0);
-    // Find the line starting with "    1  " — the rank=1 row.
+    // Find the line starting with "    1  " (the rank=1 row).
     let rank_one_line = stdout
         .lines()
         .find(|l| l.starts_with("    1  "))
@@ -224,7 +224,7 @@ fn list_schedule_with_history_merge_reflects_merged_posteriors() {
         "--skip-healthcheck",
     ]);
     assert_eq!(code, 0);
-    // sql_1's biased posterior must show up as low info_gain — find
+    // sql_1's biased posterior must show up as low info_gain, find
     // its row and check the info_gain column. With 50 blocks +
     // 0 passes, theta ~ 0.98 → info_gain ~ 0.137 bits.
     // sql_2 and sql_3 stay cold-start (info_gain 1.0).
@@ -248,7 +248,7 @@ fn list_schedule_with_history_merge_reflects_merged_posteriors() {
 #[test]
 fn list_schedule_prints_table_with_no_http_traffic() {
     // Pin: --list-schedule with --base-url pointed at a guaranteed-
-    // closed port must NOT error — proves no HTTP traffic was
+    // closed port must NOT error, proves no HTTP traffic was
     // attempted before the early-return.
     let corpus = fixture_corpus("list_sched_text");
     let (code, stdout, stderr) = wafrift(&[

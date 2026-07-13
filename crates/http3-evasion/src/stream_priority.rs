@@ -3,7 +3,7 @@
 //! ## Background
 //!
 //! HTTP/3 stream prioritization uses the "Extensible Priorities" scheme
-//! (RFC 9218) — a `Priority` request header and `PRIORITY_UPDATE` frames
+//! (RFC 9218), a `Priority` request header and `PRIORITY_UPDATE` frames
 //! (type 0xF0700 for request streams, 0xF0701 for push streams).
 //!
 //! `PRIORITY_UPDATE` frame format:
@@ -31,7 +31,7 @@
 //!    cause the WAF's request queue to reassemble a different HTTP/3 stream
 //!    body than the server delivers
 //! 3. **Non-existent stream priority**: Send `PRIORITY_UPDATE` for stream
-//!    IDs that don't exist yet — some WAF implementations crash or reset
+//!    IDs that don't exist yet, some WAF implementations crash or reset
 //!    their priority state
 //! 4. **Unknown parameters**: Include unknown SF-Dictionary members that
 //!    a strict WAF parser rejects but a lenient server parser ignores

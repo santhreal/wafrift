@@ -1,4 +1,4 @@
-//! `compression` — request-body compression as a WAF-evasion surface.
+//! `compression`: request-body compression as a WAF-evasion surface.
 //!
 //! ## The attack
 //!
@@ -6,7 +6,7 @@
 //! NOT the decompressed payload. The reasoning is operational: a
 //! WAF that decompresses inbound bodies pays the CPU cost of
 //! decompression on every request, and many vendors choose to skip
-//! that — either entirely, or selectively per `Content-Encoding`
+//! that, either entirely, or selectively per `Content-Encoding`
 //! algorithm.
 //!
 //! That choice is the seam this module exploits:
@@ -15,12 +15,12 @@
 //!   WAFs decompress it. Useful as the baseline + as a chain
 //!   ingredient.
 //! - **`Content-Encoding: deflate`** is RFC-permitted but irregularly
-//!   supported — many WAFs that handle gzip return 400 on a
+//!   supported, many WAFs that handle gzip return 400 on a
 //!   `deflate`-coded body. The origin (nginx, IIS, Apache, Node,
 //!   PHP-FPM, anything using zlib) accepts both.
 //! - **`Content-Encoding: br`** (Brotli) is where the seam is widest.
 //!   Brotli requires a separate decompressor (not zlib). Many WAFs
-//!   ship no brotli support at all — they either return 415 (and
+//!   ship no brotli support at all, they either return 415 (and
 //!   the operator avoids `br`), or worse, they pass the request
 //!   through uninspected because their rule engine has nothing to
 //!   match against. Origins ARE brotli-capable (Chrome 49+,
@@ -32,14 +32,14 @@
 //!
 //! Encoding-chain attacks add layers (e.g. `gzip → base64 → urlenc`).
 //! The WAF, which normalises only a fixed number of decode passes
-//! (usually 1, sometimes 2), stops short of the original payload —
+//! (usually 1, sometimes 2), stops short of the original payload 
 //! while the origin's parser stack (which decodes more layers as
 //! Content-Type / Content-Encoding direct) reaches it. `chain` is
 //! the primitive for this attack.
 //!
 //! ## Pristine code
 //!
-//! - Every public function returns `Result<_, CompressionError>` —
+//! - Every public function returns `Result<_, CompressionError>` 
 //!   no `unwrap()` reachable on bad input.
 //! - The chain function caps at 16 layers so a misconfiguration
 //!   (`gzip,gzip,gzip,...`) can't run away.
@@ -66,7 +66,7 @@ pub enum CompressionError {
     Brotli(std::io::Error),
     #[error(
         "decompression bomb: output exceeded {cap_bytes}-byte cap \
-         ({observed_bytes} bytes produced) — aborted before OOM"
+         ({observed_bytes} bytes produced), aborted before OOM"
     )]
     DecompressionBomb {
         cap_bytes: usize,
@@ -74,18 +74,18 @@ pub enum CompressionError {
     },
 }
 
-/// Hard cap on `chain` layers — any longer is almost certainly a
+/// Hard cap on `chain` layers, any longer is almost certainly a
 /// misconfiguration, and the compressed-output size would balloon
 /// from header overhead per layer. 16 is generous: real attacks use
 /// 2–3 layers.
 pub const MAX_CHAIN_LAYERS: usize = 16;
 
-/// Hard cap on decoded body size — defends against decompression
+/// Hard cap on decoded body size, defends against decompression
 /// bombs. A 1 KB malicious gzip can decompress to 10+ GB if read
 /// without bounds.
 ///
 /// §7: this IS the workspace-canonical [`wafrift_types::MAX_RESPONSE_BODY_BYTES`]
-/// — the comment previously noted "matches the response-body cap elsewhere",
+///: the comment previously noted "matches the response-body cap elsewhere",
 /// but that coupling is now ENFORCED by sharing the constant rather than
 /// hoping two literals stay equal. The public name is preserved.
 pub const DECOMPRESSED_BODY_MAX_BYTES: usize = wafrift_types::MAX_RESPONSE_BODY_BYTES;
@@ -98,11 +98,11 @@ pub enum Algorithm {
     Gzip,
     /// raw deflate / RFC 1951. RFC-permitted, irregular WAF support.
     Deflate,
-    /// brotli / RFC 7932. Wide WAF gap — the main attack vector.
+    /// brotli / RFC 7932. Wide WAF gap (the main attack vector).
     Brotli,
     /// no-op pass-through. Sometimes useful as a chain anchor when
     /// the operator wants to mark "this body is encoded but the
-    /// outermost layer is identity" — RFC permits `Content-Encoding:
+    /// outermost layer is identity". RFC permits `Content-Encoding:
     /// identity`.
     Identity,
 }
@@ -136,7 +136,7 @@ impl Algorithm {
 
 /// A compressed body with its `Content-Encoding` header value. The
 /// caller writes the body bytes onto the wire verbatim and sets the
-/// header — both are required, and a mismatched pairing is a
+/// header, both are required, and a mismatched pairing is a
 /// debugging nightmare for the operator if we let it happen.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompressedBody {
@@ -154,7 +154,7 @@ pub struct CompressedBody {
 ///
 /// # Errors
 /// Returns [`CompressionError`] if the underlying encoder fails. In
-/// practice this is rare for in-memory operations — gzip/deflate/
+/// practice this is rare for in-memory operations, gzip/deflate/
 /// brotli never error on well-formed input slices.
 pub fn compress(body: &[u8], algo: Algorithm) -> Result<CompressedBody, CompressionError> {
     let bytes = compress_bytes(body, algo)?;
@@ -164,7 +164,7 @@ pub fn compress(body: &[u8], algo: Algorithm) -> Result<CompressedBody, Compress
     })
 }
 
-/// Inner helper — returns just the bytes (no header). Used by
+/// Inner helper, returns just the bytes (no header). Used by
 /// [`chain`] to layer compressions before assembling the final
 /// `Content-Encoding` string.
 fn compress_bytes(body: &[u8], algo: Algorithm) -> Result<Vec<u8>, CompressionError> {
@@ -202,7 +202,7 @@ fn compress_bytes(body: &[u8], algo: Algorithm) -> Result<Vec<u8>, CompressionEr
 /// one set of body bytes + the joint `Content-Encoding` header.
 ///
 /// The header value lists the algorithms in the order they were
-/// applied — per RFC 9110 §8.4, the LEFTMOST algorithm is the OUTERMOST
+/// applied, per RFC 9110 §8.4, the LEFTMOST algorithm is the OUTERMOST
 /// wrapper, meaning a decoder must apply them right-to-left. So
 /// `chain(body, [Gzip, Brotli])` produces a body that is
 /// `gzip(brotli(body))` with header `gzip, br`.
@@ -242,7 +242,7 @@ pub fn chain(body: &[u8], algos: &[Algorithm]) -> Result<CompressedBody, Compres
     })
 }
 
-/// Recover the original bytes from a [`CompressedBody`] — the
+/// Recover the original bytes from a [`CompressedBody`], the
 /// inverse of [`compress`] / [`chain`]. Test-only and audit
 /// helper; production attack flow only needs the compress
 /// direction.
@@ -260,7 +260,7 @@ pub fn decompress(blob: &CompressedBody) -> Result<Vec<u8>, CompressionError> {
     // more than MAX_CHAIN_LAYERS, so its documented inverse must too. A
     // crafted `gzip,gzip,…×N` header would otherwise drive an unbounded
     // decode loop (each stage is size-capped by `drain_capped`, but the
-    // LAYER COUNT was not — O(N) work amplification). Counting recognised
+    // LAYER COUNT was not: O(N) work amplification). Counting recognised
     // algos (post-`filter_map`) preserves the permissive "skip unknown
     // coding" behaviour: `snappy, gzip` is still a 1-layer decode.
     if algos.len() > MAX_CHAIN_LAYERS {
@@ -299,7 +299,7 @@ fn drain_capped<R: std::io::Read>(
 fn decompress_bytes(bytes: &[u8], algo: Algorithm) -> Result<Vec<u8>, CompressionError> {
     match algo {
         Algorithm::Identity => {
-            // No decompression — but still refuse to clone a slice
+            // No decompression, but still refuse to clone a slice
             // that already exceeds the body cap (a sign something
             // upstream missed a boundary check).
             if bytes.len() > DECOMPRESSED_BODY_MAX_BYTES {
@@ -385,7 +385,7 @@ mod tests {
 
     #[test]
     fn brotli_round_trip_preserves_payload() {
-        // Brotli is the headline attack vector — round-trip MUST be
+        // Brotli is the headline attack vector, round-trip MUST be
         // clean or every brotli-based scan ships broken payloads.
         let original = b"http://127.0.0.1:9000/admin?cmd=id";
         let compressed = compress(original, Algorithm::Brotli).expect("brotli");
@@ -415,8 +415,8 @@ mod tests {
     #[test]
     fn chain_with_two_algos_round_trips() {
         // The classic compression-confusion attack: gzip(brotli(payload)).
-        // The WAF sees gzip — decodes one layer — gets brotli bytes —
-        // doesn't recognise — passes through. Origin decodes both.
+        // The WAF sees gzip, decodes one layer, gets brotli bytes 
+        // doesn't recognise (passes through. Origin decodes both).
         let original = b"' UNION SELECT username,password FROM users --";
         let chained = chain(original, &[Algorithm::Gzip, Algorithm::Brotli]).expect("chain");
         assert_eq!(chained.content_encoding, "gzip, br");
@@ -531,7 +531,7 @@ mod tests {
     fn incompressible_body_does_not_panic_on_brotli() {
         // Random bytes don't compress well; some encoders return
         // BIGGER output than input (header overhead). Verify this
-        // edge — no panic, round-trip still clean.
+        // edge (no panic, round-trip still clean).
         let mut original = vec![0u8; 1024];
         for (i, b) in original.iter_mut().enumerate() {
             // Pseudo-random pattern with no compressibility.
@@ -564,7 +564,7 @@ mod tests {
     #[test]
     fn decompress_rejects_more_than_max_chain_layers() {
         // §3 contract-symmetry regression: `chain` refuses > MAX_CHAIN_LAYERS,
-        // so its inverse `decompress` must too — otherwise a crafted
+        // so its inverse `decompress` must too, otherwise a crafted
         // `gzip,gzip,…×N` Content-Encoding header drives an O(N) decode loop.
         // The cap is checked BEFORE any decode work, so the body can be empty.
         let header = std::iter::repeat_n("gzip", MAX_CHAIN_LAYERS + 1)
@@ -584,7 +584,7 @@ mod tests {
     fn decompress_layer_cap_counts_recognised_codings_only() {
         // The cap counts RECOGNISED algos (post-filter_map), so a header
         // padded with many unknown codings is still a shallow decode and must
-        // NOT trip the cap — preserving the permissive "skip unknown" contract.
+        // NOT trip the cap (preserving the permissive "skip unknown" contract).
         let body = b"hello world";
         let compressed = compress(body, Algorithm::Gzip).unwrap();
         // (MAX+5) unknown `snappy` tokens + one real gzip = 1 recognised layer.
@@ -669,7 +669,7 @@ mod tests {
     #[test]
     fn gzip_decompress_under_cap_succeeds() {
         // 1 MiB of zeros compresses to ~1 KiB under gzip and is well
-        // below DECOMPRESSED_BODY_MAX_BYTES (64 MiB) — must succeed.
+        // below DECOMPRESSED_BODY_MAX_BYTES (64 MiB) (must succeed).
         use std::io::Write;
         let mut enc = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
         enc.write_all(&vec![0u8; 1024 * 1024]).expect("compress");
@@ -681,7 +681,7 @@ mod tests {
     #[test]
     fn drain_capped_returns_bomb_error_on_over_cap_source() {
         // Direct exercise of the drain_capped helper with a Cursor
-        // source larger than the cap — must surface as
+        // source larger than the cap, must surface as
         // DecompressionBomb (not as a generic Gzip/Deflate/Brotli
         // wrapper). Tests we don't silently truncate.
         let oversized = std::io::Cursor::new(vec![b'A'; 4096]);
@@ -699,7 +699,7 @@ mod tests {
             buf.len() > cap,
             "Read::take(cap+1) must produce cap+1 bytes for a > cap source"
         );
-        // The error promotion is purely a buf.len() > cap check —
+        // The error promotion is purely a buf.len() > cap check 
         // already exercised in identity_decompress_rejects_oversize_input.
     }
 }

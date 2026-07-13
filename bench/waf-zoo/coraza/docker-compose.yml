@@ -1,4 +1,4 @@
-# Coraza WAF — Go reimplementation of ModSecurity.
+# Coraza WAF: Go reimplementation of ModSecurity.
 #
 # Coraza is the WAF engine used by Fastly's Next-Gen WAF (formerly Signal Sciences),
 # Traefik Enterprise, and several cloud-edge platforms. Its HTTP parsing and
@@ -7,8 +7,8 @@
 #
 # No pre-built coraza-caddy image is published on Docker Hub or ghcr.io.
 # We build from source using a multi-stage Dockerfile:
-#   Stage 1: golang:1.22 — build Caddy with the xcaddy + coraza_waf plugin
-#   Stage 2: debian:bookworm-slim — runtime with the Caddy binary + Caddyfile
+#   Stage 1: golang:1.22, build Caddy with the xcaddy + coraza_waf plugin
+#   Stage 2: debian:bookworm-slim, runtime with the Caddy binary + Caddyfile
 #
 # Pinned versions (2026-05-24):
 #   Caddy         2.8.4    https://github.com/caddyserver/caddy/releases/tag/v2.8.4

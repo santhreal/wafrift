@@ -2,7 +2,7 @@
 //!   `non_canonical_spaces` in `url_mutate.rs` passed through structural
 //!   bytes (& = % # + ? ; \\0 + control chars). After the upstream
 //!   `percent_decode_bytes` had already turned `%26c%3Devil` into the
-//!   literal bytes `&c=evil`, this re-emitted them verbatim — the
+//!   literal bytes `&c=evil`, this re-emitted them verbatim, the
 //!   server then split the value at `&` and `=` into THREE pairs
 //!   (HTTP parameter injection). The fix percent-encodes every byte
 //!   that would be parsed as URL/form structure or ASCII control.
@@ -40,7 +40,7 @@ fn assert_no_structural_byte(qs: &str, byte: char) {
     // (the value is the only param, so any `&` would be injection).
     assert!(
         !value.contains(byte),
-        "value portion of {qs:?} must not contain raw `{byte}` — would split into another pair"
+        "value portion of {qs:?} must not contain raw `{byte}`: would split into another pair"
     );
 }
 

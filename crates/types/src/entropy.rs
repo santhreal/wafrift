@@ -18,7 +18,7 @@
 /// bits. `H(p_1, …, p_n) = -Σ p_i · log2(p_i)`, with the convention
 /// `0 · log 0 = 0` (the mathematical limit).
 ///
-/// `probs` need NOT sum to 1 — the function is defensive against
+/// `probs` need NOT sum to 1, the function is defensive against
 /// caller drift. Outcomes with `p ≤ 0` or non-finite values are
 /// skipped. The maximum over a normalised distribution is `log2(n)`
 /// for the uniform.
@@ -29,7 +29,7 @@
 /// assert!((shannon(&[0.25, 0.25, 0.25, 0.25]) - 2.0).abs() < 1e-9);
 /// ```
 ///
-/// Use [`binary_shannon`] for the binary case — it is mathematically
+/// Use [`binary_shannon`] for the binary case, it is mathematically
 /// equivalent to `shannon(&[p, 1.0 - p])` but a few percent faster
 /// in the hot path (no allocation, no iterator overhead).
 #[must_use]
@@ -45,7 +45,7 @@ pub fn shannon(probs: &[f64]) -> f64 {
         // components rather than emit incoherent negative entropy.
         // Without the upper bound, p > 1.0 produces `-p · log2(p) < 0`
         // (log2 of >1 is positive), which would surface as negative
-        // bits — a NaN-in-disguise that poisons any sort key it
+        // bits, a NaN-in-disguise that poisons any sort key it
         // touches.
         if p > 0.0 && p <= 1.0 && p.is_finite() {
             h -= p * p.log2();
@@ -67,7 +67,7 @@ pub fn shannon(probs: &[f64]) -> f64 {
 /// Boundary convention: `H(0) = H(1) = 0`. The mathematical limit
 /// `lim_{p→0} p·log p = 0` justifies this; IEEE 754 would otherwise
 /// produce `0 * -inf = NaN`. Callers passing `p` outside `[0, 1]`
-/// (e.g. from a faulty estimator) also get `0.0` — a silent NaN
+/// (e.g. from a faulty estimator) also get `0.0`: a silent NaN
 /// propagating into a sort key would be far worse than a flat zero
 /// that pins the offending sample to the bottom of the schedule.
 ///
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn peaks_at_one_bit_when_p_is_half() {
         // Anti-rig: this is the load-bearing semantic for the info-gain
-        // scheduler. H(0.5) MUST equal exactly 1.0 — any future
+        // scheduler. H(0.5) MUST equal exactly 1.0, any future
         // "smoothing" or numerical-stability tweak that nudges this off
         // would silently bias the schedule. Pin it hard.
         assert_eq!(binary_shannon(0.5), 1.0);
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn nan_and_infinity_return_zero() {
         // IEEE 754 corner cases: a NaN sample would otherwise propagate
-        // into every consumer. Zero out rather than panic — this is a
+        // into every consumer. Zero out rather than panic, this is a
         // measurement primitive, not a contract-enforcement gate.
         assert_eq!(binary_shannon(f64::NAN), 0.0);
         assert_eq!(binary_shannon(f64::INFINITY), 0.0);
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn never_returns_negative_or_above_one() {
         // Anti-rig: H is non-negative and capped at 1 bit. Bound the
-        // schedule's sort key to a known interval — a stray value
+        // schedule's sort key to a known interval, a stray value
         // outside [0, 1] indicates upstream corruption.
         for step in 0..=1000 {
             let p = step as f64 / 1000.0;
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn matches_known_table_within_tolerance() {
-        // Pinned against a table computed independently — guards
+        // Pinned against a table computed independently, guards
         // against a future rewrite that drifts the floating-point
         // implementation. Tolerance is loose (1e-9) because the
         // log2 implementation is platform-stable but not bit-exact
@@ -202,7 +202,7 @@ mod tests {
 
     #[test]
     fn near_endpoints_does_not_underflow_or_explode() {
-        // Floating-point edge: p extremely close to 0 or 1 — the
+        // Floating-point edge: p extremely close to 0 or 1, the
         // formula has `p * log2(p)` where log2(p) → -inf but p → 0.
         // f64 has 53 bits of mantissa, so for p as small as 1e-300
         // the product is still finite and tiny. Pin that no platform
@@ -290,7 +290,7 @@ mod tests {
         // incoherent but bounded.
         let got = shannon(&[0.3, 0.3, 0.3]);
         assert!(got.is_finite());
-        // And bounded at zero — never negative.
+        // And bounded at zero (never negative).
         assert!(got >= 0.0);
     }
 

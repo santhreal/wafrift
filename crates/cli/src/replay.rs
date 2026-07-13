@@ -1,11 +1,11 @@
-//! `wafrift replay` — fire a saved bypass against a target to prove
+//! `wafrift replay`: fire a saved bypass against a target to prove
 //! reproducibility.
 //!
 //! A practitioner runs wafrift-proxy in front of Burp, the proxy
 //! discovers a bypass on `api.example.com`, the gene bank persists the
 //! winning technique pool keys for that host. To put the finding in a
 //! report (or a regression test), they need to reproduce it deterministi-
-//! cally with one command — not by re-pointing Burp at the target and
+//! cally with one command, not by re-pointing Burp at the target and
 //! hoping the proxy re-derives the same chain.
 //!
 //! Replay is fully self-contained: it builds an `EvasionResult` by feeding
@@ -23,7 +23,7 @@ use wafrift_strategy::HostState;
 use wafrift_strategy::strategy::evade;
 use wafrift_transport::is_waf_block;
 // §8 ARCHITECTURE: import EvasionConfig from its canonical home (wafrift_types)
-// rather than via the forwarding re-export in wafrift_strategy — one import
+// rather than via the forwarding re-export in wafrift_strategy, one import
 // path per type prevents grep from missing half the usages during refactors.
 use wafrift_types::{EvasionConfig, Method, Request};
 
@@ -39,7 +39,7 @@ pub(crate) struct ReplayArgs {
     pub param: String,
 
     /// Raw payload to mutate via the saved technique chain. The same
-    /// payload that produced the original bypass — the engine reapplies
+    /// payload that produced the original bypass, the engine reapplies
     /// the same encoding pipeline to it.
     #[arg(long)]
     pub payload: String,
@@ -129,7 +129,7 @@ pub(crate) fn run_replay(mut args: ReplayArgs) -> ExitCode {
 async fn run_replay_inner(args: ReplayArgs) -> ExitCode {
     // Resolve technique list. Order: explicit --technique > --from-host >
     // --from-waf. If the resolved list is empty we error out instead of
-    // silently sending an unmodified payload — that would be a
+    // silently sending an unmodified payload, that would be a
     // false-positive "bypass".
     let techniques = match resolve_techniques(&args) {
         Ok(t) => t,
@@ -140,7 +140,7 @@ async fn run_replay_inner(args: ReplayArgs) -> ExitCode {
     };
     if techniques.is_empty() {
         eprintln!(
-            "{} no techniques resolved — supply --technique, --from-host, or --from-waf",
+            "{} no techniques resolved, supply --technique, --from-host, or --from-waf",
             "error:".red().bold()
         );
         return ExitCode::from(1);
@@ -173,7 +173,7 @@ async fn run_replay_inner(args: ReplayArgs) -> ExitCode {
 
     // Drive the existing evasion engine in "rotation" mode by stamping
     // the saved keys onto a fresh HostState as proven winners. This is
-    // exactly how the proxy replays a discovered chain — same code
+    // exactly how the proxy replays a discovered chain, same code
     // path, no replay-specific reimplementation that could drift.
     let host_state = HostState {
         proven_winners: techniques.clone(),
@@ -233,7 +233,7 @@ async fn run_replay_inner(args: ReplayArgs) -> ExitCode {
     };
     let status = resp.status().as_u16();
     // F135: do NOT swallow ReadError::Overrun with unwrap_or_default().
-    // An Overrun means the target sent a decompression bomb — treating it
+    // An Overrun means the target sent a decompression bomb, treating it
     // as an empty body would call is_waf_block(status, &[]) and potentially
     // report a false "BYPASS" verdict while the actual body was never read.
     // Surface the overrun to the operator so they know the target misbehaved.
@@ -248,7 +248,7 @@ async fn run_replay_inner(args: ReplayArgs) -> ExitCode {
             }) => {
                 eprintln!(
                     "{} decompression-bomb defence triggered: response body exceeded \
-                 {cap_bytes}-byte cap ({observed_bytes}+ bytes) — verdict is unreliable",
+                 {cap_bytes}-byte cap ({observed_bytes}+ bytes), verdict is unreliable",
                     "warning:".yellow().bold()
                 );
                 Vec::new()
@@ -327,7 +327,7 @@ async fn run_replay_inner(args: ReplayArgs) -> ExitCode {
                 println!("{curl}");
             }
             // Also show a Python requests snippet for operators who
-            // prefer scripted replay — uses poc_emit's general-purpose
+            // prefer scripted replay, uses poc_emit's general-purpose
             // render path.
             use pocgen::PocFormat;
             if let Ok(py_poc) = crate::poc_emit::render_poc_for_bypass(
@@ -364,10 +364,10 @@ fn resolve_techniques(args: &ReplayArgs) -> Result<Vec<String>, String> {
         match load_from_proxy_bank(host, args.proxy_bank.as_ref()) {
             Ok(techs) if !techs.is_empty() => return Ok(techs),
             Ok(_) | Err(_) => {
-                // Proxy bank empty or host not present — fall through to
+                // Proxy bank empty or host not present, fall through to
                 // the per-WAF genome bank.
                 eprintln!(
-                    "[wafrift replay] host '{host}' not found in proxy gene bank — \
+                    "[wafrift replay] host '{host}' not found in proxy gene bank. \
                      falling back to per-WAF genome (use --from-waf <name> to be explicit)"
                 );
                 // Try to find any non-empty genome. We iterate all known
@@ -405,14 +405,14 @@ fn load_from_any_genome() -> Result<Vec<String>, String> {
         }
     }
     Err(
-        "no per-WAF genome has seed winners — run `wafrift scan` against a target first \
+        "no per-WAF genome has seed winners, run `wafrift scan` against a target first \
          to build the gene bank"
             .to_string(),
     )
 }
 
 // R77 pass-21 §7 DEDUP: pre-fix this struct had only `proven_winners`
-// — `blocklisted`, `waf_name`, and `schema` were silently dropped on
+//: `blocklisted`, `waf_name`, and `schema` were silently dropped on
 // load. Now routed through the canonical schema in
 // `wafrift_types::gene_bank_io` so future fields land here at
 // compile-time.
@@ -466,7 +466,7 @@ fn build_url_with_param(base: &str, param: &str, payload: &str) -> Result<String
     if !(base.starts_with("http://") || base.starts_with("https://")) {
         return Err("invalid --target URL: must start with http:// or https://".to_string());
     }
-    // Strip the fragment first — it never reaches the server, and
+    // Strip the fragment first, it never reaches the server, and
     // leaving it in path_part would let `#frag` round-trip past the
     // evasion engine.
     let (base_no_frag, _frag) = match base.find('#') {
@@ -504,7 +504,7 @@ fn build_url_with_param(base: &str, param: &str, payload: &str) -> Result<String
 }
 
 fn extract_host_from_url(s: &str) -> Option<String> {
-    // Shared canonical impl in wafrift_transport — handles IPv6
+    // Shared canonical impl in wafrift_transport, handles IPv6
     // brackets + userinfo + lowercase + port strip + scheme-optional.
     wafrift_transport::host_from_url(s)
 }
@@ -640,7 +640,7 @@ mod tests {
         //                must reference the genome path, NOT the proxy bank.
         match resolve_techniques(&args2) {
             Ok(techs) => {
-                // Genome fallback succeeded — this is correct Fix #5 behaviour.
+                // Genome fallback succeeded (this is correct Fix #5 behaviour).
                 assert!(
                     !techs.is_empty(),
                     "fallback from proxy bank to genome succeeded but returned empty vec"
@@ -683,7 +683,7 @@ mod tests {
 
     #[test]
     fn extract_host_from_url_returns_none_for_empty() {
-        // Post-D9 the underlying helper accepts any scheme (or none) —
+        // Post-D9 the underlying helper accepts any scheme (or none) 
         // the prior `ftp://x → None` assertion was over-strict
         // paranoia, since replay's callers only ever construct
         // http/https URLs from already-validated inputs upstream.
@@ -700,7 +700,7 @@ mod tests {
         // but an empty proven_winners list.  The proxy bank is present and
         // parseable but carries no techniques for this host.  Fix #5
         // requires that `resolve_techniques` does NOT return an error
-        // quoting the proxy bank — it must fall through to
+        // quoting the proxy bank, it must fall through to
         // `load_from_any_genome()`, whose error (or success) is the
         // terminal outcome.
         use std::io::Write;
@@ -760,7 +760,7 @@ mod tests {
                 // CI without a populated ~/.wafrift/genomes/).
                 // The critical invariant is that the error DOES NOT say
                 // "host 'target.example.com' not found in proxy gene bank"
-                // — that would mean Fix #5 failed to fall through.
+                //: that would mean Fix #5 failed to fall through.
                 assert!(
                     !msg.contains("target.example.com"),
                     "Fix #5 regression: error references the proxy-bank host lookup \

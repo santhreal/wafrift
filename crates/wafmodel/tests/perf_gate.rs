@@ -1,12 +1,12 @@
-//! E9 — catastrophic-regression smoke. Wall-clock micro-benchmarks in
+//! E9, catastrophic-regression smoke. Wall-clock micro-benchmarks in
 //! `cargo test` are inherently load-sensitive and flaky on a busy CI
 //! box; that is the WRONG tool for precise perf gating (criterion with
-//! a pinned statistical baseline, under `benches/`, is — E9/65-71,
+//! a pinned statistical baseline, under `benches/`, is. E9/65-71,
 //! queued). This file is only the coarse guard: small N, very generous
 //! ceilings, so it runs in well under a second normally and can ONLY
 //! fail on a true *algorithmic* blow-up (an accidental O(2ⁿ) / a
 //! quadratic clone in a hot loop), never on machine load. A flaky
-//! perf test is itself a defect — so the bounds here are deliberately
+//! perf test is itself a defect, so the bounds here are deliberately
 //! coarse, not tight.
 
 use std::time::{Duration, Instant};
@@ -30,7 +30,7 @@ fn contains(b: u8) -> Sfa {
 }
 
 /// Catastrophic ceiling: anything slower than this for the tiny N
-/// below is not load — it is an algorithmic regression.
+/// below is not load (it is an algorithmic regression).
 ///
 /// Calibrated at 120 s to accommodate:
 ///  - Windows dev-machine overhead (disk, process scheduling) which adds
@@ -39,7 +39,7 @@ fn contains(b: u8) -> Sfa {
 ///    instead of returning an empty vector instantly. The old 60 s ceiling
 ///    was calibrated against the broken (zero-result) implementation and
 ///    has been raised accordingly. An algorithmic regression (e.g. O(2ⁿ)
-///    enumeration) would still blow this ceiling — the ceiling is a
+///    enumeration) would still blow this ceiling, the ceiling is a
 ///    catastrophe guard, not a benchmark.
 const CATASTROPHE: Duration = Duration::from_secs(120);
 
@@ -55,7 +55,7 @@ fn sfa_algebra_has_not_exploded_algorithmically() {
     }
     assert!(
         t.elapsed() < CATASTROPHE,
-        "500 intersect+shortest+minimize took {:?} — algebra is \
+        "500 intersect+shortest+minimize took {:?}, algebra is \
          algorithmically regressed (not load)",
         t.elapsed()
     );
@@ -85,7 +85,7 @@ fn decompile_and_mine_have_not_exploded_algorithmically() {
     }
     assert!(
         t.elapsed() < CATASTROPHE,
-        "single decompile + 50 mine passes took {:?} — regressed",
+        "single decompile + 50 mine passes took {:?}, regressed",
         t.elapsed()
     );
 }
@@ -112,7 +112,7 @@ fn normalize_is_linear_not_quadratic() {
     }
     assert!(
         t.elapsed() < CATASTROPHE,
-        "normalize over small+8× inputs took {:?} — likely quadratic",
+        "normalize over small+8× inputs took {:?}, likely quadratic",
         t.elapsed()
     );
 }

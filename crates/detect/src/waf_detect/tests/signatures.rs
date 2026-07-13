@@ -262,7 +262,7 @@ fn detect_all_whitespace_body_no_panic() {
 
 #[test]
 fn detect_gzip_bytes_raw_no_panic() {
-    // Gzip magic bytes passed as raw body — should not panic or false-match
+    // Gzip magic bytes passed as raw body, should not panic or false-match
     let gzip_prefix = &[0x1f, 0x8b, 0x08, 0x00];
     let result = detect(200, &[], gzip_prefix);
     assert!(result.is_empty());

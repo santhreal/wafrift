@@ -52,7 +52,7 @@ source = "WAFW00F:kona + 2026-05-21 live dogfood (akamai.com 403)"
   header_name = "content-security-policy-report-only"
   header_regex = "go-mpulse\\.net"
   weight = 0.3
-# AkamaiNetStorage: Akamai's object-storage CDN — same vendor,
+# AkamaiNetStorage: Akamai's object-storage CDN, same vendor,
 # different product. microsoft.com fronts static assets on this.
 # Lower weight: NetStorage isn't strictly "Kona SiteDefender" (the
 # WAF) but it puts the operator's target on Akamai's CDN, which

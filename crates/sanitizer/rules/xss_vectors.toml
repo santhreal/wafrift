@@ -4,7 +4,7 @@
 # <script>, a tag carrying an on* handler). Mining tests every vector against the
 # extracted sanitizer model and reports those that survive executable; the
 # L*/SFA learner then adds DEDUCED variants the model's boundary reveals. Extend
-# coverage by adding vectors here (Tier-B data) — never by hardcoding in code.
+# coverage by adding vectors here (Tier-B data) (never by hardcoding in code).
 #
 # `1` is the canonical alert marker (matches the rest of wafrift's corpus).
 

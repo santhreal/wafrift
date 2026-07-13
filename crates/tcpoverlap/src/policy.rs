@@ -1,8 +1,8 @@
-//! TCP reassembly policies — how a stack resolves **overlapping** segments.
+//! TCP reassembly policies (how a stack resolves **overlapping** segments).
 //!
 //! When two TCP segments cover the same sequence range with different bytes, the
 //! receiver must pick which wins. RFC 793 left this under-specified, so stacks
-//! diverge — and *target-based reassembly* (Ptacek & Newsham 1998; Snort
+//! diverge, and *target-based reassembly* (Ptacek & Newsham 1998; Snort
 //! `stream5`) is built on exactly that divergence: if a WAF/IDS resolves overlaps
 //! one way and the origin another, the same packets become two different byte
 //! streams. The WAF inspects the benign reassembly; the origin executes the
@@ -19,17 +19,17 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ReassemblyPolicy {
-    /// **Favor old** — the first segment to cover a position wins; later
+    /// **Favor old**: the first segment to cover a position wins; later
     /// overlapping data is dropped for already-filled bytes. Classic Windows /
     /// "favor old" behaviour.
     First,
-    /// **Favor new** — a later-arriving segment overwrites earlier data on
+    /// **Favor new**: a later-arriving segment overwrites earlier data on
     /// overlap. "Favor new" behaviour.
     Last,
-    /// **BSD** — the segment with the *lower* starting sequence number wins the
+    /// **BSD**: the segment with the *lower* starting sequence number wins the
     /// overlap; on an equal left edge the existing (older) segment is kept.
     Bsd,
-    /// **Linux** — like BSD but an incoming segment whose left edge is ≤ the
+    /// **Linux**: like BSD but an incoming segment whose left edge is ≤ the
     /// existing one's wins (ties go to the *newer* segment). More "favor new" on
     /// left-aligned overlaps than BSD.
     Linux,
@@ -55,10 +55,10 @@ impl ReassemblyPolicy {
 
     /// Should an incoming byte overwrite the existing occupant of a position?
     ///
-    /// * `in_seq` / `ex_seq` — the left-edge sequence number of the incoming /
+    /// * `in_seq` / `ex_seq`: the left-edge sequence number of the incoming /
     ///   existing byte's *segment* (the standard target-based criterion).
     /// * Arrival order is implicit: bytes are processed in arrival order, so the
-    ///   incoming byte is always the newer one — `Last` therefore always
+    ///   incoming byte is always the newer one. `Last` therefore always
     ///   overwrites.
     #[must_use]
     pub fn overwrites(self, in_seq: u32, ex_seq: u32) -> bool {

@@ -29,7 +29,7 @@ async fn spawn_mock() -> std::net::SocketAddr {
                 });
                 let leaked = req.contains("WAFRIFT_ATTACK_TOKEN");
                 let body: String = if internal || leaked {
-                    "<html>internal / leaked attack — long body</html>".into()
+                    "<html>internal / leaked attack, long body</html>".into()
                 } else {
                     "<html>baseline</html>".into()
                 };
@@ -76,10 +76,10 @@ fn attack_runs_all_seven_subprobes_and_merges_into_unified_report() {
         "--probe-timeout-secs",
         "120",
     ]);
-    assert_eq!(code, 0, "attack should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "attack should exit 0, stderr:\n{stderr}");
 
     let parsed: serde_json::Value =
-        serde_json::from_str(stdout.trim()).expect("JSON parse — stdout:\n{stdout}");
+        serde_json::from_str(stdout.trim()).expect("JSON parse, stdout:\n{stdout}");
     assert_eq!(parsed["target"], format!("http://{addr}/path"));
     assert_eq!(parsed["param"], "q");
 
@@ -111,7 +111,7 @@ fn attack_runs_all_seven_subprobes_and_merges_into_unified_report() {
 #[serial_test::serial]
 #[test]
 fn attack_marks_subprobe_failures_without_taking_down_the_whole_run() {
-    // Point at unreachable target — every sub-probe should fail its
+    // Point at unreachable target, every sub-probe should fail its
     // BASELINE probe. Production contract (R44-I3): when >= 4 of the 7
     // sub-probes error out (i.e. a strict majority), attack exits 1 so
     // the unreachable host is NOT silently treated as "0 divergences".
@@ -127,11 +127,11 @@ fn attack_marks_subprobe_failures_without_taking_down_the_whole_run() {
         "--timeout-secs",
         "2",
     ]);
-    // R44-I3: exit 1 when majority of probes errored — not exit 0.
+    // R44-I3: exit 1 when majority of probes errored (not exit 0).
     // A CI consumer must see a non-zero exit when the target is unreachable.
     assert_eq!(
         code, 1,
-        "attack must exit 1 when majority of sub-probes error — stderr:\n{stderr}"
+        "attack must exit 1 when majority of sub-probes error, stderr:\n{stderr}"
     );
 
     // Even on error, the JSON structure should still be emitted (for
@@ -169,9 +169,9 @@ fn attack_marks_subprobe_failures_without_taking_down_the_whole_run() {
 
 /// Regression test for the h2-diff exit-6 false-error bug.
 ///
-/// h2-diff exits 6 when all H2 probes fail (H1-only target — see F78).
+/// h2-diff exits 6 when all H2 probes fail (H1-only target (see F78)).
 /// Pre-fix: `attack` treated exit 6 as an error and surfaced
-/// `"error": "subprobe h2-diff exited 6 — stderr: …"` in the unified
+/// `"error": "subprobe h2-diff exited 6, stderr: …"` in the unified
 /// report. After the fix, exit 6 is recognized as a valid "inconclusive
 /// but parseable" result and the h2 sub-probe object must NOT have an
 /// "error" field.
@@ -201,7 +201,7 @@ fn attack_h2_exit6_is_not_treated_as_subprobe_error() {
     ]);
     assert_eq!(
         code, 0,
-        "attack must exit 0 even when h2-diff exits 6 — stderr:\n{stderr}"
+        "attack must exit 0 even when h2-diff exits 6, stderr:\n{stderr}"
     );
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     let h2 = &parsed["probes"]["h2"];
@@ -243,14 +243,14 @@ fn attack_is_grouped_under_diff_all_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "all", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff all --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff all --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["attack", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift attack --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift attack --help` must still exit 0, stderr:\n{stderr3}"
     );
 }
 

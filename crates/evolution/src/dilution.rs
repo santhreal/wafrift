@@ -57,15 +57,15 @@ pub fn is_ensemble_waf(waf_name: &str) -> bool {
 ///
 /// # Arguments
 ///
-/// * `oracle_fitness` — The oracle-derived fitness `[0.0, 1.0]` (block-rate
+/// * `oracle_fitness`: The oracle-derived fitness `[0.0, 1.0]` (block-rate
 ///   signal, partial credit, confidence bonus).
-/// * `payload` — The raw payload string to score with the dilution planner.
-/// * `estimator` — Shared `SubScoreEstimator` with per-group coefficient
+/// * `payload`: The raw payload string to score with the dilution planner.
+/// * `estimator`: Shared `SubScoreEstimator` with per-group coefficient
 ///   estimates for the current target.
-/// * `threshold` — The WAF's block threshold (anomaly score; oracle-derived
+/// * `threshold`: The WAF's block threshold (anomaly score; oracle-derived
 ///   or [`DEFAULT_DILUTION_THRESHOLD`]).
-/// * `config` — Evasion config carrying `dilution_weight`.
-/// * `waf_name` — The detected WAF name (used for fingerprint gating).
+/// * `config`: Evasion config carrying `dilution_weight`.
+/// * `waf_name`: The detected WAF name (used for fingerprint gating).
 ///
 /// # Returns
 ///
@@ -95,7 +95,7 @@ pub fn dilution_adjusted_fitness(
 /// Mapping:
 /// - No result (benign payload, no active groups): `0.5` neutral.
 /// - Plausible bypass (predicted total < threshold): `1.0`.
-/// - Not plausible: linear interpolation — `(threshold − predicted) / threshold`
+/// - Not plausible: linear interpolation: `(threshold − predicted) / threshold`
 ///   clamped to `[0.0, 0.99]`. The `0.99` cap prevents a score exactly at
 ///   threshold from falsely claiming full credit.
 #[must_use]
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn ensemble_waf_ml_backed_not_ensemble() {
-        // ML-backed WAFs are NOT ensemble — they use a classifier, not
+        // ML-backed WAFs are NOT ensemble, they use a classifier, not
         // anomaly-score rules.
         assert!(!is_ensemble_waf("AWS Bot Control"));
         assert!(!is_ensemble_waf("Cloudflare Bot Management"));
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn dilution_score_benign_payload_neutral() {
         let score = compute_dilution_score("hello world", &estimator(), 40.0);
-        // "hello world" classifies to ProtocolViolation (single group) — dilute()
+        // "hello world" classifies to ProtocolViolation (single group), dilute()
         // returns Some (one group → one strategy).  Score depends on coefficients.
         assert!(
             (0.0..=1.0).contains(&score),
@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn dilution_weight_one_returns_pure_dilution() {
-        // With weight=1.0, the oracle score is ignored — only dilution matters.
+        // With weight=1.0, the oracle score is ignored (only dilution matters).
         let config = EvasionConfig {
             dilution_weight: 1.0,
             ..Default::default()
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn dilution_gating_no_effect_on_non_ensemble_waf() {
-        // PlainModSec without anomaly scoring is not ensemble — dilution
+        // PlainModSec without anomaly scoring is not ensemble, dilution
         // must have zero effect regardless of weight.
         let config = EvasionConfig {
             dilution_weight: 1.0,

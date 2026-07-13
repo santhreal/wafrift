@@ -2,7 +2,7 @@
 #
 # Many WAFs (Cloudflare, Akamai, Imperva/Incapsula, F5 BIG-IP ASM, AWS WAF, …)
 # serve their block / challenge interstitial with an HTTP **200** status. A
-# status-only oracle reads that as the attack PASSING — a fabricated bypass.
+# status-only oracle reads that as the attack PASSING (a fabricated bypass).
 # When a 2xx response body contains one of these high-precision phrases, the
 # live oracle classifies it as Blocked instead.
 #

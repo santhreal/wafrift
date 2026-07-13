@@ -1,4 +1,4 @@
-//! `wafrift method-diff` — HTTP method parser-disagreement scanner.
+//! `wafrift method-diff`: HTTP method parser-disagreement scanner.
 //!
 //! ## What this finds
 //!
@@ -12,7 +12,7 @@
 //! This is adjacent to but DISTINCT from `bypass-probe`'s method
 //! overrides (which focuses on `X-HTTP-Method-Override`-style
 //! header tricks): `method-diff` fires the request line with the
-//! variant method DIRECTLY. Different attack surface — WAFs that
+//! variant method DIRECTLY. Different attack surface. WAFs that
 //! correctly normalise the override header still miss raw verb
 //! variation.
 
@@ -62,7 +62,7 @@ pub(crate) struct MethodDiffArgs {
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
-    /// Quiet mode — suppress per-probe progress.
+    /// Quiet mode (suppress per-probe progress).
     #[arg(long, default_value_t = false)]
     pub quiet: bool,
 }
@@ -100,86 +100,86 @@ pub(crate) fn generate_method_variants() -> Vec<MethodProbe> {
         // ── Standard RFC 7231 verbs (other than baseline GET) ──
         MethodProbe {
             kind: "post",
-            description: "Standard POST — most WAFs handle, baseline for non-GET coverage",
+            description: "Standard POST, most WAFs handle, baseline for non-GET coverage",
             method: "POST",
         },
         MethodProbe {
             kind: "put",
-            description: "PUT — typically write-only; some WAFs only gate read methods",
+            description: "PUT, typically write-only; some WAFs only gate read methods",
             method: "PUT",
         },
         MethodProbe {
             kind: "delete",
-            description: "DELETE — same reasoning as PUT, different verb",
+            description: "DELETE, same reasoning as PUT, different verb",
             method: "DELETE",
         },
         MethodProbe {
             kind: "patch",
-            description: "PATCH (RFC 5789) — newer verb some WAF rule corpora omit",
+            description: "PATCH (RFC 5789), newer verb some WAF rule corpora omit",
             method: "PATCH",
         },
-        // ── HEAD / OPTIONS — often missed by WAF rules ──
+        // ── HEAD / OPTIONS, often missed by WAF rules ──
         MethodProbe {
             kind: "head",
-            description: "HEAD — RFC says identical to GET sans body; some WAFs only \
+            description: "HEAD: RFC says identical to GET sans body; some WAFs only \
                           inspect bodies, leaking GET-rule coverage entirely",
             method: "HEAD",
         },
         MethodProbe {
             kind: "options",
-            description: "OPTIONS — CORS preflight; some WAFs let through unconditionally",
+            description: "OPTIONS: CORS preflight; some WAFs let through unconditionally",
             method: "OPTIONS",
         },
         MethodProbe {
             kind: "trace",
-            description: "TRACE — debug verb; often disabled at origin but WAFs \
+            description: "TRACE, debug verb; often disabled at origin but WAFs \
                           may not gate it",
             method: "TRACE",
         },
         // ── WebDAV (RFC 4918 / 3253) ──
         MethodProbe {
             kind: "propfind",
-            description: "PROPFIND (WebDAV) — WAFs rarely have rules; servers with \
+            description: "PROPFIND (WebDAV). WAFs rarely have rules; servers with \
                           mod_dav enabled process it; potential file-listing leak",
             method: "PROPFIND",
         },
         MethodProbe {
             kind: "mkcol",
-            description: "MKCOL (WebDAV) — directory creation verb",
+            description: "MKCOL (WebDAV), directory creation verb",
             method: "MKCOL",
         },
         MethodProbe {
             kind: "move",
-            description: "MOVE (WebDAV) — resource rename; bypass for delete-by-rename",
+            description: "MOVE (WebDAV), resource rename; bypass for delete-by-rename",
             method: "MOVE",
         },
         MethodProbe {
             kind: "copy",
-            description: "COPY (WebDAV) — resource duplication",
+            description: "COPY (WebDAV), resource duplication",
             method: "COPY",
         },
         MethodProbe {
             kind: "lock",
-            description: "LOCK (WebDAV) — adversarial use can DoS resources",
+            description: "LOCK (WebDAV), adversarial use can DoS resources",
             method: "LOCK",
         },
         // ── Non-standard / catch-all ──
         MethodProbe {
             kind: "custom-banana",
-            description: "Custom verb `BANANA` — RFC 9110 leaves token-set open; some \
+            description: "Custom verb `BANANA`: RFC 9110 leaves token-set open; some \
                           frameworks happily route any uppercase token",
             method: "BANANA",
         },
         MethodProbe {
             kind: "lowercase-get",
-            description: "Lowercase `get` — RFC says case-sensitive; some parsers \
-                          uppercase-normalise (forgiving), some reject — divergence",
+            description: "Lowercase `get`: RFC says case-sensitive; some parsers \
+                          uppercase-normalise (forgiving), some reject, divergence",
             method: "get",
         },
         // ── PRI (HTTP/2 preface verb when seen over H1) ──
         MethodProbe {
             kind: "h2-pri-preface",
-            description: "`PRI` (HTTP/2 connection preface verb seen over H1) — \
+            description: "`PRI` (HTTP/2 connection preface verb seen over H1). \
                           some H1 parsers panic, some happily process",
             method: "PRI",
         },
@@ -352,7 +352,7 @@ fn emit_output(
         let badge = crate::parser_diff_common::severity_badge(r.severity);
         println!();
         println!(
-            "  [{badge}] {} ({}) — {}",
+            "  [{badge}] {} ({}): {}",
             r.kind.bold(),
             r.method,
             r.description
@@ -395,7 +395,7 @@ mod tests {
     fn generate_method_variants_no_probe_uses_uppercase_get_method() {
         // Uppercase GET is the baseline; no probe variant should
         // redundantly re-fire it. (Lowercase `get` IS a legitimate
-        // case-folding probe — covered separately.)
+        // case-folding probe, covered separately.)
         for p in generate_method_variants() {
             assert_ne!(
                 p.method, "GET",
@@ -483,7 +483,7 @@ mod tests {
                     // PROPFIND (mod_dav style).
                     let propfind = req.starts_with("PROPFIND ");
                     let body = if propfind {
-                        "<html>WebDAV property listing — much longer body than the baseline GET response</html>"
+                        "<html>WebDAV property listing, much longer body than the baseline GET response</html>"
                     } else {
                         "<html>ok</html>"
                     };

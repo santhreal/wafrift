@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Endless dogfood loop against safe public targets — runs every
+# Endless dogfood loop against safe public targets, runs every
 # new wafrift subcommand and grep-filters for errors / divergences.
 #
 # Public targets we trust to be both reachable AND safe to probe
 # at low rate-limits:
-#   - https://httpbin.org/ — HTTP test harness, no WAF, accepts everything
-#   - https://countries.trevorblades.com/graphql — public GraphQL playground
+#   - https://httpbin.org/: HTTP test harness, no WAF, accepts everything
+#   - https://countries.trevorblades.com/graphql, public GraphQL playground
 #
 # DO NOT change to a target you don't own. The probes ARE adversarial
 # (Origin: attacker.example, dup-Authorization, alias bombing, etc.);
@@ -30,7 +30,7 @@ run_probe() {
 while true; do
     echo "════════════════════════ $(date) ════════════════════════"
 
-    # The parser-diff family — fast, safe.
+    # The parser-diff family (fast, safe).
     run_probe attack       https://httpbin.org/get --format json --quiet --probe-timeout-secs 30
     run_probe parser-diff  https://httpbin.org/get --quiet --delay-ms "$DELAY"
     run_probe header-diff  https://httpbin.org/headers --format json --quiet --delay-ms "$DELAY" --timeout-secs 5

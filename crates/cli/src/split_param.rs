@@ -1,18 +1,18 @@
-//! HTTP Parameter Pollution (HPP) reassembly — the **parsing-layer** evasion
+//! HTTP Parameter Pollution (HPP) reassembly, the **parsing-layer** evasion
 //! axis for `exploit`.
 //!
 //! The payload-token and reflection-context axes are exhausted against a
 //! signature WAF, and so is cleartext keyword obfuscation: OWASP CRS's
 //! libinjection scores the *structure* of an injection (`";...[...](...)//`,
 //! `<svg onload=`), not just its keywords, so hiding the word `alert` is not
-//! enough — a single inert-looking but structurally-complete payload is still
+//! enough, a single inert-looking but structurally-complete payload is still
 //! blocked. The [`app_transform`](crate::transform_encode) axis answers that by
 //! hiding the whole payload inside an opaque *encoding* the app decodes.
 //!
 //! This module is the second answer, requiring **no encoding at all**: split the
 //! payload across several values of the *same* parameter (HTTP Parameter
 //! Pollution). The WAF inspects each value independently and sees only inert
-//! fragments — no fragment is a signature, none is structurally complete. An
+//! fragments, no fragment is a signature, none is structurally complete. An
 //! application that joins the duplicate values (PHP `implode($_GET['q'])`, a
 //! framework that exposes repeated params as a list, a manual concatenation)
 //! reassembles the live markup and it executes. Empirically (`reflect-origin`
@@ -102,7 +102,7 @@ pub(crate) fn fragmentations(payload: &str) -> Vec<Vec<String>> {
         }
     }
     if out.is_empty() {
-        // Degenerate (payload too short to split) — deliver as a single value.
+        // Degenerate (payload too short to split) (deliver as a single value).
         out.push(vec![payload.to_string()]);
     }
     out
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn alpha_midpoint_breaks_every_keyword() {
-        // No fragment may contain a whole dangerous identifier — that is the
+        // No fragment may contain a whole dangerous identifier, that is the
         // property that makes each fragment inert to a signature WAF.
         let frags = split_at(SVG, &alpha_midpoint_cuts(SVG));
         assert!(frags.len() > 1, "must split: {frags:?}");
@@ -203,7 +203,7 @@ mod tests {
 
     #[test]
     fn short_payload_degrades_to_single_value() {
-        // Nothing to split — must still deliver the payload, never drop it.
+        // Nothing to split (must still deliver the payload, never drop it).
         let frags = fragmentations("ab");
         assert_eq!(frags, vec![vec!["ab".to_string()]]);
     }

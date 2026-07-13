@@ -1,4 +1,4 @@
-//! Thousands-scale corpus fan-out — the anti-rig invariants must hold
+//! Thousands-scale corpus fan-out, the anti-rig invariants must hold
 //! across a large generated population of WAF configs, not just the
 //! hand-built fixtures:
 //!
@@ -39,7 +39,7 @@ fn body(b: &[u8]) -> Request {
     Request::post("https://h/p", b.to_vec()).header("Content-Type", "application/json")
 }
 
-/// Short ASCII tokens — small alphabet keeps the population huge while
+/// Short ASCII tokens, small alphabet keeps the population huge while
 /// every case stays fast and bounded.
 const TOKENS: &[&[u8]] = &[b"ab", b"<x", b"a", b"x1", b"qz", b"%3c", b"or"];
 
@@ -135,7 +135,7 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(pc()))]
 
     /// Randomized configs: the mining anti-rig invariant must hold for
-    /// every one (no learning here — pure scale of the soundness check).
+    /// every one (no learning here (pure scale of the soundness check)).
     #[test]
     fn random_configs_never_yield_a_fake_bypass(seed in any::<u64>()) {
         let (waf, needles, alpha) = waf_from(seed);
@@ -148,7 +148,7 @@ proptest! {
                 Outcome::Pass
             );
             // Whatever we would *report* as a hole must really pass and
-            // really be an attack-class member — checked unconditionally.
+            // really be an attack-class member (checked unconditionally).
             prop_assert!(grammar.accepts(&w));
             if passed {
                 // It is a genuine hole: re-classification is stable.

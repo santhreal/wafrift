@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift cluster`.
 //!
-//! All tests are purely offline — no HTTP, no mock server. The command
+//! All tests are purely offline, no HTTP, no mock server. The command
 //! reads a bench-waf JSON blob from a file / stdin and groups bypasses
 //! by rule_id × payload class × edit-distance similarity.
 //!
@@ -39,7 +39,7 @@ fn wafrift_stdin(args: &[&str], stdin_data: &str) -> (i32, String, String) {
     )
 }
 
-/// Minimal bench-waf JSON with two bypasses — one SQL, one XSS.
+/// Minimal bench-waf JSON with two bypasses (one SQL, one XSS).
 fn bench_json_with_bypasses() -> &'static str {
     r#"{
   "results": [
@@ -72,7 +72,7 @@ fn bench_json_with_bypasses() -> &'static str {
 }"#
 }
 
-/// Bench JSON with no bypasses — all variants_bypassed = 0.
+/// Bench JSON with no bypasses (all variants_bypassed = 0).
 fn bench_json_no_bypasses() -> &'static str {
     r#"{"results":[{"id":"sql_001","class":"sql","evaded":{"variants_bypassed":0,"variants_total":5,"bypass_techniques":[]}}]}"#
 }

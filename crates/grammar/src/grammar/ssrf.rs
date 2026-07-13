@@ -121,7 +121,7 @@ impl MetadataEndpoint {
 // ──────────────────────────────────────────────
 //
 // These feed the BROAD same-class fuzzer `mutate` (scan's exploration pass).
-// They are NOT the sound same-attack equivalences — those live in
+// They are NOT the sound same-attack equivalences, those live in
 // `grammar::equiv::ssrf` and carry their own oracle. Operators extend coverage
 // by dropping entries into rules/ssrf/mutate_variants.toml (Tier-B contract);
 // the embedded copy below is the fail-closed fallback so a malformed data file
@@ -336,10 +336,10 @@ pub fn mutate(payload: &str) -> Vec<String> {
     // pass cleanly while most URL parsers (Python urllib3, Java URL,
     // Go net/url, libcurl) still normalise them to a working URL:
     //
-    //   http:/X       — single slash (parsers fold to http://X)
-    //   //X           — protocol-relative (works against base://)
-    //   bare X        — no scheme (works for endpoints that prepend)
-    //   http:////X    — quad-slash (passes without normalisation)
+    //   http:/X, single slash (parsers fold to http://X)
+    //   //X, protocol-relative (works against base://)
+    //   bare X, no scheme (works for endpoints that prepend)
+    //   http:////X, quad-slash (passes without normalisation)
     //
     // Live-confirmed against wafrift-bench naxsi for IPv4-as-integer
     // and IPv4-as-octal (already in the address-encoding pass above).
@@ -356,7 +356,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
             format!("//{host_only}{path}"),        // protocol-relative
             format!("{host_only}{path}"),          // bare host
             format!("http:////{host_only}{path}"), // quad-slash
-            // numeric forms with the alt schemes — naxsi already
+            // numeric forms with the alt schemes, naxsi already
             // misses bare 2130706433 / 0x7f000001, so combine.
             format!("//2130706433{path}"), // protocol-relative + integer
             format!("//0177.0.0.1{path}"), // protocol-relative + octal
@@ -411,7 +411,7 @@ fn parser_confusion_authority(
         // Path-relative jump (frontend strips, backend honors).
         format!("{scheme}{cover}/@{target}{p}"),
         format!("{scheme}{cover}//{target}{p}"),
-        // Newline / CR injection inside authority — some parsers truncate,
+        // Newline / CR injection inside authority, some parsers truncate,
         // some pass through.
         format!("{scheme}{cover}%0d%0a@{target}{p}"),
         format!("{scheme}{cover}%00@{target}{p}"),
@@ -440,7 +440,7 @@ fn strip_scheme(s: &str) -> &str {
 pub fn detect_type(payload: &str) -> bool {
     let lower = payload.to_ascii_lowercase();
 
-    // Scheme-based detection — requires `scheme://`, which is precise
+    // Scheme-based detection, requires `scheme://`, which is precise
     // enough to use a substring match.
     if lower.contains("http://")
         || lower.contains("https://")
@@ -451,7 +451,7 @@ pub fn detect_type(payload: &str) -> bool {
     {
         return true;
     }
-    // `payload.starts_with("//")` was a real FP source — `// TODO`,
+    // `payload.starts_with("//")` was a real FP source: `// TODO`,
     // `// fix me`, doxygen comments. Require it to be followed by
     // hostname-shaped chars (alnum / dot / colon).
     if let Some(after) = payload.strip_prefix("//")
@@ -461,13 +461,13 @@ pub fn detect_type(payload: &str) -> bool {
         return true;
     }
 
-    // IPv4 loopback patterns — already shape-validated.
+    // IPv4 loopback patterns (already shape-validated).
     if looks_like_ipv4(payload) {
         return true;
     }
 
     // Whole-token loopback / metadata IPs. `127.` was the worst
-    // offender — it matched any version string or page number. Now
+    // offender, it matched any version string or page number. Now
     // require a hostname-like token boundary.
     let has_loopback_token = host_token_present(&lower, "localhost")
         || host_token_present(&lower, "127.0.0.1")
@@ -485,10 +485,10 @@ pub fn detect_type(payload: &str) -> bool {
         return true;
     }
 
-    // Internal/private IP ranges — only when the surrounding text
+    // Internal/private IP ranges, only when the surrounding text
     // looks like an IP and the substring is bounded as a host token.
     // Pre-fix `lower.contains("10.")` matched `Java 10.0`, `Section
-    // 10.5`, version strings — anything with "10." in it.
+    // 10.5`, version strings (anything with "10." in it).
     let looks_like_private_ip = looks_like_ipv4(payload)
         && (host_token_starts_with_octet(&lower, "10.")
             || host_token_starts_with_octet(&lower, "192.168.")
@@ -506,7 +506,7 @@ pub fn detect_type(payload: &str) -> bool {
 /// `localhost-builds.example`.
 ///
 /// "Host-label-separator" means: not a digit/letter and not `-`. The
-/// `.` IS allowed as a boundary because it separates DNS labels — so
+/// `.` IS allowed as a boundary because it separates DNS labels, so
 /// `metadata.google` is allowed to match inside the longer host
 /// `metadata.google.internal` (the `.` after `google` is the label
 /// boundary).
@@ -519,7 +519,7 @@ fn host_token_present(haystack: &str, needle: &str) -> bool {
     if h.len() < n.len() {
         return false;
     }
-    // A char that may NOT bound a host token: digits, letters, `-` —
+    // A char that may NOT bound a host token: digits, letters, `-` 
     // the LDH chars that live INSIDE a single DNS label. Anything
     // else (`.`, `:`, `/`, whitespace, end-of-string) marks a label
     // or token boundary.
@@ -556,7 +556,7 @@ fn host_token_starts_with_octet(haystack: &str, needle: &str) -> bool {
         if &h[i..i + n.len()] == n {
             let left_ok = i == 0 || !is_host_char(h[i - 1]);
             // Right side: needle ends in `.` so we just need a digit
-            // to follow (the next octet) — otherwise "10." inside
+            // to follow (the next octet), otherwise "10." inside
             // "Java 10. is too old" would still match.
             let right_ok = h.get(i + n.len()).is_some_and(u8::is_ascii_digit);
             if left_ok && right_ok {
@@ -726,7 +726,7 @@ mod tests {
         );
     }
 
-    /// A malformed data file must degrade to the built-in set without panic —
+    /// A malformed data file must degrade to the built-in set without panic 
     /// the exact path `variants()` takes on a TOML parse error.
     #[test]
     fn malformed_toml_falls_back_to_builtin() {
@@ -973,7 +973,7 @@ mod tests {
 
     #[test]
     fn parser_confusion_gitlab_fragment_pattern() {
-        // CVE-2018-19571 — Ruby URI sees allowed.com, Net::HTTP sees 127.0.0.1.
+        // CVE-2018-19571: Ruby URI sees allowed.com, Net::HTTP sees 127.0.0.1.
         let v = parser_confusion_authority("http://", "google.com", "127.0.0.1", "/");
         assert!(
             v.iter().any(|s| s == "http://google.com#@127.0.0.1/"),
@@ -997,7 +997,7 @@ mod tests {
 
     #[test]
     fn mutate_includes_parser_confusion_family_for_user_url() {
-        // User passes a real URL — output should include parser-confusion
+        // User passes a real URL, output should include parser-confusion
         // forms that PRESERVE the user's host as cover and rotate
         // metadata/loopback targets through the userinfo position.
         let out = mutate("https://api.example.com/v1/fetch");

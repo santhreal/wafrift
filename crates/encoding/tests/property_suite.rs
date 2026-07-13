@@ -1,6 +1,6 @@
 //! Property-based test suite for WAF-evasion primitives.
 //!
-//! Each `proptest!` macro runs 256 cases by default — so this file
+//! Each `proptest!` macro runs 256 cases by default, so this file
 //! contributes thousands of effective test executions per
 //! `cargo test` invocation. The properties enforce three invariants
 //! every WAF-evasion primitive MUST hold:
@@ -22,7 +22,7 @@ use wafrift_encoding::encoding::{
 };
 
 // ───────────────────────────────────────────────────────────────
-// invisible.rs — keyword-bypass via codepoint substitution
+// invisible.rs, keyword-bypass via codepoint substitution
 // ───────────────────────────────────────────────────────────────
 
 proptest! {
@@ -84,7 +84,7 @@ proptest! {
 }
 
 // ───────────────────────────────────────────────────────────────
-// path_norm.rs — RFC 3986 §5.2.4 differential
+// path_norm.rs: RFC 3986 §5.2.4 differential
 // ───────────────────────────────────────────────────────────────
 
 proptest! {
@@ -127,10 +127,10 @@ proptest! {
 }
 
 // ───────────────────────────────────────────────────────────────
-// request_line.rs — exotic methods / URI forms / version strings
+// request_line.rs, exotic methods / URI forms / version strings
 // ───────────────────────────────────────────────────────────────
 
-// Pure-determinism test — no strategy parameters, cannot live inside proptest!.
+// Pure-determinism test (no strategy parameters, cannot live inside proptest!).
 #[test]
 fn request_line_exotic_methods_stable() {
     let a = request_line::exotic_methods();
@@ -180,7 +180,7 @@ proptest! {
 }
 
 // ───────────────────────────────────────────────────────────────
-// race.rs — Kettle BH23 single-packet attack frame builders
+// race.rs: Kettle BH23 single-packet attack frame builders
 // ───────────────────────────────────────────────────────────────
 
 proptest! {
@@ -216,14 +216,14 @@ proptest! {
         if id == 0 {
             prop_assert!(race::h2_last_byte_sync_frames(&[id], b"X").is_none());
         } else {
-            let _ = even_step; // (parameter unused — proptest just shrinks both)
+            let _ = even_step; // (parameter unused, proptest just shrinks both)
             prop_assert!(race::h2_last_byte_sync_frames(&[id], b"X").is_none());
         }
     }
 }
 
 // ───────────────────────────────────────────────────────────────
-// method_override.rs — WAF↔framework method disagreement
+// method_override.rs: WAF↔framework method disagreement
 // ───────────────────────────────────────────────────────────────
 
 proptest! {
@@ -273,7 +273,7 @@ proptest! {
 }
 
 // ───────────────────────────────────────────────────────────────
-// cache_poison.rs — CDN/edge cache poisoning primitives
+// cache_poison.rs: CDN/edge cache poisoning primitives
 // ───────────────────────────────────────────────────────────────
 
 proptest! {
@@ -314,7 +314,7 @@ proptest! {
 }
 
 // ───────────────────────────────────────────────────────────────
-// unicode.rs — Math/script/fraktur/double-struck/letterlike alphabet
+// unicode.rs: Math/script/fraktur/double-struck/letterlike alphabet
 // encoders and JSON/SQL evasion helpers.
 //
 // Each proptest asserts two invariants:

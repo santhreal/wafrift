@@ -1,4 +1,4 @@
-//! `wafrift man` — emit the troff(1) man page for the CLI.
+//! `wafrift man`: emit the troff(1) man page for the CLI.
 //!
 //! The page is generated from the live clap command tree by
 //! `clap_mangen`, so adding a new subcommand automatically extends

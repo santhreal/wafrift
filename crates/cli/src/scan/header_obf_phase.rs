@@ -1,4 +1,4 @@
-//! Header-obfuscation phase — Step 6/7 of `wafrift scan`.
+//! Header-obfuscation phase: Step 6/7 of `wafrift scan`.
 //!
 //! Re-emit each top-confidence payload with the Content-Type /
 //! X-Forwarded-For header NAME mutated through the
@@ -10,7 +10,7 @@
 //! case-insensitively (HTTP/1.1 RFC 9110 §5.1) still see the
 //! same Content-Type and parse the body normally.
 //!
-//! Mirrors `scan::multi_vector` structurally — a separate module
+//! Mirrors `scan::multi_vector` structurally, a separate module
 //! so the dispatch + per-technique wire shape doesn't live in
 //! scan/mod.rs.
 //!
@@ -36,7 +36,7 @@ pub(crate) struct HeaderTechnique {
 }
 
 /// Catalogue. Adding a new technique = one row + one match arm in
-/// `obfuscate`. The catalogue stays narrow on purpose — every
+/// `obfuscate`. The catalogue stays narrow on purpose, every
 /// technique here corresponds to a documented WAF parser bug
 /// that's worth re-emitting against fresh targets.
 pub(crate) const TECHNIQUES: &[HeaderTechnique] = &[
@@ -69,7 +69,7 @@ pub(crate) const TECHNIQUES: &[HeaderTechnique] = &[
 const HEADER_VALUE: &str = "application/x-www-form-urlencoded";
 
 /// Apply `technique` to `target_header` and return the obfuscated
-/// header-name string the request should carry. Pure function —
+/// header-name string the request should carry. Pure function 
 /// no I/O.
 #[must_use]
 pub(crate) fn obfuscate(technique: &HeaderTechnique) -> String {
@@ -93,9 +93,9 @@ pub(crate) struct PhaseInput<'a> {
     pub http: &'a Client,
     pub target: &'a str,
     pub param: &'a str,
-    /// Already-bypassed payloads — broaden the bypass set.
+    /// Already-bypassed payloads (broaden the bypass set).
     pub top_payloads: &'a [String],
-    /// Top blocked payloads — rescue attempts.
+    /// Top blocked payloads (rescue attempts).
     pub rescue_payloads: &'a [String],
     pub oracle: &'a ResponseOracle,
     pub cancel: &'a CancellationToken,
@@ -120,7 +120,7 @@ pub(crate) struct PhaseOutcome {
 }
 
 /// Build the (param=urlencoded(payload)) URL. INTENTIONALLY a
-/// raw string-concat — NOT a delegation to
+/// raw string-concat: NOT a delegation to
 /// `super::scan_url_with_param`. The two paths produce different
 /// outputs by design:
 ///
@@ -159,7 +159,7 @@ pub(crate) async fn run_phase(input: PhaseInput<'_>) -> PhaseOutcome {
         eprintln!(
             "\n{}",
             format!(
-                "[6/7] Header obfuscation — {} payloads ({} bypass + {} rescue) × {} techniques...",
+                "[6/7] Header obfuscation: {} payloads ({} bypass + {} rescue) × {} techniques...",
                 combined.len(),
                 input.top_payloads.len(),
                 input.rescue_payloads.len(),
@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     fn obfuscate_unknown_technique_returns_canonical_header() {
-        // Defence in depth — a misspelled technique key returns
+        // Defence in depth, a misspelled technique key returns
         // the un-mutated header name instead of panicking.
         let bogus = HeaderTechnique {
             name: "not_a_real_technique",
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn techniques_all_target_either_content_type_or_x_forwarded_for() {
-        // Each technique mutates ONE specific header — the
+        // Each technique mutates ONE specific header, the
         // catalogue's invariant is that mutation targets are
         // either Content-Type (body-processor-routing) or
         // X-Forwarded-For (IP-classification). A new technique
@@ -454,7 +454,7 @@ mod tests {
     fn obfuscate_case_mixing_preserves_canonical_header_when_lowercased() {
         // case_mix may permute casing arbitrarily, but the
         // lowercased output MUST equal the canonical lowercased
-        // header name — otherwise the WAF / origin see a
+        // header name, otherwise the WAF / origin see a
         // different header than we intended.
         let t = TECHNIQUES.iter().find(|t| t.name == "case_mixing").unwrap();
         for _ in 0..10 {
@@ -467,7 +467,7 @@ mod tests {
     fn obfuscate_underscore_sub_lowercased_replaces_hyphens_with_underscores() {
         // underscore_substitute outputs `content_type` (or some
         // casing). Lowercase form MUST equal `content_type`
-        // — apps that map header names through `_` aliasing
+        //: apps that map header names through `_` aliasing
         // (PHP / nginx) will see the same effective key but
         // a strict WAF table-driven match won't.
         let t = TECHNIQUES
@@ -480,7 +480,7 @@ mod tests {
 
     #[test]
     fn obfuscate_null_byte_contains_only_one_null() {
-        // Defensive: exactly one NULL injected (per the spec —
+        // Defensive: exactly one NULL injected (per the spec 
         // multiple nulls would be a different attack class with
         // its own coverage).
         let t = TECHNIQUES.iter().find(|t| t.name == "null_byte").unwrap();
@@ -498,7 +498,7 @@ mod tests {
         let out = obfuscate(t);
         let cleaned: String = out.chars().filter(|c| *c != '\0').collect();
         // The mutator may swap a single char to null but most
-        // bytes survive — confirm enough remain that the header
+        // bytes survive, confirm enough remain that the header
         // is still identifiable.
         let lower = cleaned.to_ascii_lowercase();
         assert!(
@@ -531,7 +531,7 @@ mod tests {
     fn obfuscate_trailing_space_returns_some_string() {
         // trailing_space may produce just the canonical name with
         // a trailing space or tab. The test asserts the function
-        // returns a non-empty string — exact byte shape is the
+        // returns a non-empty string, exact byte shape is the
         // underlying library's concern.
         let t = TECHNIQUES
             .iter()
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn obfuscate_for_each_documented_technique_returns_non_empty() {
-        // Catalogue-wide invariant — no technique returns empty.
+        // Catalogue-wide invariant (no technique returns empty).
         // Anti-rig: a refactor that broke one of the underlying
         // wafrift-encoding helpers would surface as empty output
         // (silent regression on a less-tested helper).
@@ -583,7 +583,7 @@ mod tests {
                 }
                 _ => {
                     // trailing_space / line_fold may pass the name
-                    // through unchanged — they live in the VALUE.
+                    // through unchanged (they live in the VALUE).
                 }
             }
         }
@@ -592,7 +592,7 @@ mod tests {
     #[test]
     fn header_value_constant_is_a_real_mime_type() {
         // The constant the catalogue uses must be a real
-        // form-urlencoded MIME — typos would silently break
+        // form-urlencoded MIME, typos would silently break
         // every header-obfuscation probe. Lock the literal in.
         assert_eq!(HEADER_VALUE, "application/x-www-form-urlencoded");
     }
@@ -644,7 +644,7 @@ mod tests {
     #[tokio::test]
     async fn run_phase_with_only_rescue_payloads_still_runs_techniques() {
         // When top_payloads is empty but rescue_payloads has
-        // entries, the phase MUST still fire — rescue alone is a
+        // entries, the phase MUST still fire, rescue alone is a
         // valid mode (e.g. the first scan iteration where the
         // explore phase found no bypasses but blocked variants
         // are worth rescuing).
@@ -669,12 +669,12 @@ mod tests {
         .await;
         // The unreachable target produces only errors_delta, but
         // the IMPORTANT property is the function returns without
-        // panic — the rescue-only path is a valid mode.
+        // panic (the rescue-only path is a valid mode).
     }
 
     #[tokio::test]
     async fn run_phase_combines_top_and_rescue_in_one_pass() {
-        // Both pools at once — no duplication of techniques, no
+        // Both pools at once, no duplication of techniques, no
         // panic. (Errors-only path because target is unreachable.)
         use wafrift_oracle::response_oracle::ResponseOracle;
         let h = reqwest::Client::builder().build().unwrap();

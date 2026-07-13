@@ -9,7 +9,7 @@ pub type GenePairStat = ((String, String), (String, String), f64);
 /// # Performance
 ///
 /// The pre-fix code did an O(n) linear scan of `gene_stats` for EACH
-/// active gene in the chromosome — up to 8 genes × 500 entries = 4 000
+/// active gene in the chromosome, up to 8 genes × 500 entries = 4 000
 /// string comparisons per oracle verdict when the stats table was full.
 /// On a 1 000-verdict scan run that is ~4 M comparisons just for bookkeeping.
 ///
@@ -44,11 +44,11 @@ pub fn update_gene_stats(
             }
             gene_stats[idx].3 = gene_stats[idx].3.saturating_add(1);
         } else {
-            // New (name, value) pair — append and record it in the index so
+            // New (name, value) pair, append and record it in the index so
             // a later gene in this same batch (or a repeated pair) resolves
             // to it via the same O(1) path. Owned keys mean the index does
             // not borrow `gene_stats`, so this insert and the bumps above are
-            // borrow-safe — and it matches the pre-index behaviour, where a
+            // borrow-safe, and it matches the pre-index behaviour, where a
             // linear rescan would have found the just-pushed entry.
             let new_idx = gene_stats.len();
             gene_stats.push((name.clone(), value.clone(), u32::from(passed), 1));

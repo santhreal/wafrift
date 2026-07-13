@@ -17,7 +17,7 @@ include!(concat!(env!("OUT_DIR"), "/markers_data.rs"));
 ///
 /// Returns `true` when `needle` occurs in `haystack` such that every
 /// *alphanumeric* edge of `needle` aligns with a word boundary in
-/// `haystack` — i.e. an alphanumeric first/last char of the needle must not
+/// `haystack`: i.e. an alphanumeric first/last char of the needle must not
 /// be flanked by another ASCII-alphanumeric char. Punctuation/whitespace
 /// edges (and the start/end of the haystack) are always boundaries, so
 /// multi-word phrases (`"access denied"`), hyphen/underscore-delimited
@@ -65,8 +65,8 @@ pub(crate) fn contains_word_bounded(haystack: &str, needle: &str) -> bool {
 ///
 /// # Arguments
 ///
-/// * `body` — Raw response body bytes.
-/// * `is_gzipped` — Whether the body is gzip-compressed.
+/// * `body`: Raw response body bytes.
+/// * `is_gzipped`: Whether the body is gzip-compressed.
 ///
 /// # Returns
 ///
@@ -264,11 +264,11 @@ mod tests {
         );
 
         // extract_body_signals must survive gracefully (falls back to lossy
-        // UTF-8 of the raw gzip bytes — marker matching just won't find text).
+        // UTF-8 of the raw gzip bytes (marker matching just won't find text)).
         let signals = extract_body_signals(&bomb, true);
         // No panic is the invariant; signals may be empty or non-empty depending
         // on whether any marker byte-sequences happen to appear in the raw gzip
-        // envelope — we don't assert on that.
+        // envelope (we don't assert on that).
         let _ = signals;
     }
 
@@ -301,7 +301,7 @@ mod tests {
 
     #[test]
     fn block_reason_falls_back_to_custom_block_page_when_no_rule_id() {
-        // No rule_id or vendor prefix — falls back to CustomBlockPage for
+        // No rule_id or vendor prefix, falls back to CustomBlockPage for
         // the first BLOCK_MARKERS hit.
         let body = b"Access Denied";
         let reason = extract_block_reason(body, false);
@@ -452,7 +452,7 @@ mod tests {
     /// The exact historical false-positive corpus: a whole-word marker must
     /// NOT match when it appears only as a substring of a longer alphanumeric
     /// word. These are the bugs the marker tables kept reintroducing one
-    /// entry at a time — now killed generically.
+    /// entry at a time (now killed generically).
     #[test]
     fn word_bounded_rejects_substring_within_word() {
         let cases: &[(&str, &str)] = &[
@@ -480,7 +480,7 @@ mod tests {
     }
 
     /// Recall: the same markers MUST still match when they are a real whole
-    /// word — flanked by whitespace, punctuation, tags, or the string edges.
+    /// word (flanked by whitespace, punctuation, tags, or the string edges).
     #[test]
     fn word_bounded_accepts_genuine_whole_word() {
         let cases: &[(&str, &str)] = &[
@@ -586,7 +586,7 @@ mod tests {
     }
 
     proptest! {
-        /// §6 invariant — the whole point of task #11: NO alphanumeric-edged
+        /// §6 invariant, the whole point of task #11: NO alphanumeric-edged
         /// marker from ANY table may fire when embedded inside a longer
         /// alphanumeric token. Holds for every current marker AND every future
         /// one, so the substring-FP class cannot return via a table edit.
@@ -604,7 +604,7 @@ mod tests {
         }
 
         /// Dual recall invariant: every marker MUST match when it appears as a
-        /// space-delimited whole token — the matcher never loses a real hit.
+        /// space-delimited whole token (the matcher never loses a real hit).
         #[test]
         fn every_marker_matches_when_space_delimited(marker in any_marker()) {
             let body = format!("xx the {marker} here xx");

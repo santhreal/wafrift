@@ -1,5 +1,5 @@
 //! Truth tests for sanitizer extraction: each asserts the *exact* model the
-//! extractor recovers from a concrete recovered-source snippet — one named test
+//! extractor recovers from a concrete recovered-source snippet, one named test
 //! per family, per config key, per detector, with negative twins and adversarial
 //! key-quoting / whitespace. These pin behaviour the proptests only bound.
 
@@ -268,7 +268,7 @@ fn empty_source_is_an_empty_model() {
 #[test]
 fn a_recognised_model_records_an_evidence_trail() {
     let m = extract_sanitizer("DOMPurify.sanitize(x, { FORBID_TAGS: ['script'] });");
-    // Truth, not shape: a populated trail is not enough — the evidence must point
+    // Truth, not shape: a populated trail is not enough, the evidence must point
     // at the EXACT detections an auditor needs to trust the model, namely the
     // library identification AND the specific config rule that fired. (The bare
     // `!is_empty()` check this replaced would pass even on misattributed evidence.)

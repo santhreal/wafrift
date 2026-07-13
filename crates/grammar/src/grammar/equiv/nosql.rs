@@ -1,5 +1,5 @@
 //! NoSQL (MongoDB operator-injection) payload-string equivalence + the
-//! joint `(payload × delivery)` generator — the nosql arm of Phase B.
+//! joint `(payload × delivery)` generator (the nosql arm of Phase B).
 //!
 //! The sound equivalence is **operator-encoding equivalence**: the
 //! `(param, $operator, operand)` triple a Mongo query is built from is
@@ -12,7 +12,7 @@
 //!
 //! Anti-rig: the *operator* and the *operand* are preserved verbatim
 //! and re-verified ([`still_injects`]). `$ne`→`$gt`, or changing the
-//! operand, is a DIFFERENT query and is rejected — the equivalence is
+//! operand, is a DIFFERENT query and is rejected, the equivalence is
 //! purely in the transport/whitespace/JSON-escape encoding, never
 //! "any `$op` is fine".
 
@@ -37,7 +37,7 @@ const MONGO_OPS: &[&str] = &[
 ];
 
 /// Decode JSON `\uXXXX` escapes (so `$ne` → `$ne`), then strip
-/// insignificant JSON/structural whitespace and lowercase — the view
+/// insignificant JSON/structural whitespace and lowercase, the view
 /// in which all sound re-encodings of one query coincide.
 fn decode_unicode(s: &str) -> String {
     let b: Vec<char> = s.chars().collect();
@@ -61,7 +61,7 @@ fn decode_unicode(s: &str) -> String {
 /// Canonical view: every Mongo `$operator` that appears, paired with
 /// its operand value read verbatim up to the enclosing structural
 /// terminator (so `sleep(1)` ≠ `sleep(9)` survives), in first-seen
-/// order — independent of JSON vs bracket vs dotted encoding and of
+/// order, independent of JSON vs bracket vs dotted encoding and of
 /// insignificant whitespace.
 fn canon(s: &str) -> Vec<(String, String)> {
     let d = decode_unicode(s).to_ascii_lowercase();
@@ -100,7 +100,7 @@ fn canon(s: &str) -> Vec<(String, String)> {
         }
         let mut operand = String::new();
         if k < b.len() && (b[k] == '"' || b[k] == '\'') {
-            // quoted string value — content up to the matching quote
+            // quoted string value, content up to the matching quote
             let q = b[k];
             k += 1;
             while k < b.len() && b[k] != q {
@@ -125,7 +125,7 @@ fn canon(s: &str) -> Vec<(String, String)> {
                 }
             }
         } else {
-            // bare scalar — until the next structural terminator
+            // bare scalar, until the next structural terminator
             while k < b.len() && !matches!(b[k], ',' | '&' | '}' | ']' | ' ') {
                 operand.push(b[k]);
                 k += 1;
@@ -154,7 +154,7 @@ pub fn still_injects(original: &str, cand: &str) -> bool {
 // ── rewrites (parser-transparent, WAF-opaque) ──────────────────────
 
 /// JSON-escape selected characters of the operator as `\uXXXX`
-/// (RFC 8259 — semantically identical to a JSON parser).
+/// (RFC 8259 (semantically identical to a JSON parser)).
 fn rw_unicode_escape(s: &str, rng: &mut Rng) -> String {
     let mut out = String::with_capacity(s.len() * 3);
     let mut after_dollar = false;
@@ -173,7 +173,7 @@ fn rw_unicode_escape(s: &str, rng: &mut Rng) -> String {
 /// The single top-level field a one-field operator document injects
 /// into, e.g. `username` in `{"username":{"$ne":"x"}}`. Returns `None`
 /// when the payload has no field (a bare top-level operator like
-/// `{"$where":…}`) or *more than one* field — in both cases the
+/// `{"$where":…}`) or *more than one* field, in both cases the
 /// bracketed query-string form cannot faithfully carry the SAME query
 /// (a single `field[$op]=` param would mis-attribute operators to the
 /// wrong field), so the rewrite must decline rather than change the
@@ -226,7 +226,7 @@ fn single_field(s: &str) -> Option<String> {
 /// Re-encode a JSON operator body as the equivalent bracketed
 /// query-string form: `{"p":{"$ne":"x"}}` → `p[$ne]=x` (Express/`qs`
 /// parse this back to the identical document). Declines (`None`) unless
-/// the document targets exactly one field — see [`single_field`].
+/// the document targets exactly one field (see [`single_field`]).
 fn rw_to_bracket(s: &str) -> Option<String> {
     let pairs = canon(s);
     if pairs.is_empty() {
@@ -307,10 +307,10 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
                 rules.push("json_whitespace");
             }
         }
-        // `\uXXXX` escapes are JSON-string semantics — a parser only
+        // `\uXXXX` escapes are JSON-string semantics, a parser only
         // decodes them inside JSON. On a bracketed query-string key
         // (`field[$op]=`) `$` is a LITERAL byte run, a different
-        // key, a different query — so escape JSON forms only, never a
+        // key, a different query, so escape JSON forms only, never a
         // bracket form. (The field-blind oracle would wrongly accept
         // the bracket+escape mix; this gate is the real soundness line.)
         if !rules.contains(&"json_to_bracket") && rng.chance(3, 5) {
@@ -386,7 +386,7 @@ mod tests {
     fn bracket_form_is_field_correct_and_never_unicode_escaped() {
         // Soundness guard for the bracket transport. Two ways the
         // field-blind oracle could be fooled, both forbidden here:
-        //   1. a `\uXXXX` escape inside a bracket KEY — literal in a
+        //   1. a `\uXXXX` escape inside a bracket KEY, literal in a
         //      query string, so a different key / different query;
         //   2. a bracket form that injects a field OTHER than the one
         //      the operator document targeted (the old `q` fallback).

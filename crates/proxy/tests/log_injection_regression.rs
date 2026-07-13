@@ -15,7 +15,7 @@
 //!
 //! The proxy binary test below drives a CONNECT request with an injected
 //! Host header and confirms that the proxy log (captured from stderr) does
-//! NOT contain "FAKE_LOG_ENTRY" as a separate line — demonstrating the
+//! NOT contain "FAKE_LOG_ENTRY" as a separate line, demonstrating the
 //! sanitisation is applied before the log call.
 
 mod common;
@@ -48,7 +48,7 @@ async fn mitm_host_header_newline_is_stripped_from_logs() {
     // Send a CONNECT request with a Host header containing a newline injection.
     // The injected payload: `Host: evil.com\r\nFAKE_LOG_ENTRY: injected`
     // After the Host line, the CRLF + FAKE_LOG_ENTRY looks like another
-    // HTTP header — and would appear as a separate log line when logged raw.
+    // HTTP header (and would appear as a separate log line when logged raw).
     let connect_request = "CONNECT evil.com:443 HTTP/1.1\r\n\
          Host: evil.com\nFAKE_LOG_ENTRY\r\n\
          \r\n"
@@ -62,7 +62,7 @@ async fn mitm_host_header_newline_is_stripped_from_logs() {
         .await
         .expect("write CONNECT");
 
-    // Read the proxy's response (any response — we care about the log, not the HTTP reply).
+    // Read the proxy's response (any response (we care about the log, not the HTTP reply)).
     let mut buf = vec![0u8; 1024];
     let _ =
         tokio::time::timeout(std::time::Duration::from_millis(500), stream.read(&mut buf)).await;
@@ -79,7 +79,7 @@ async fn mitm_host_header_newline_is_stripped_from_logs() {
     // Post-fix: control bytes are stripped, so the FAKE_LOG_ENTRY is gone.
     assert!(
         !stderr.contains("FAKE_LOG_ENTRY"),
-        "log injection payload must not appear in proxy logs — \
+        "log injection payload must not appear in proxy logs: \
          Host header newline sanitisation regression.\n\
          stderr was:\n{stderr}"
     );
@@ -93,7 +93,7 @@ async fn mitm_host_header_crlf_injection_is_stripped_from_logs() {
         .await
         .expect("spawn proxy");
 
-    // CRLF injection — the proxy's internal Host extractor gets "evil.com\r\nCRLF_INJECTED".
+    // CRLF injection (the proxy's internal Host extractor gets "evil.com\r\nCRLF_INJECTED").
     let connect_request = "CONNECT target.example.com:443 HTTP/1.1\r\nHost: target.example.com\r\nCRLF_INJECTED\r\n\r\n";
 
     let mut stream = TcpStream::connect(format!("127.0.0.1:{proxy_port}"))

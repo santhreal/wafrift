@@ -2,7 +2,7 @@
 //!
 //! Bug pinned: the encoded-`..` traversal forms were hardcoded to
 //! `etc/passwd` and the no-traversal list was a canned sibling-file
-//! set — so `../../../../var/www/app/config/db.yml` "mutated" into a
+//! set, so `../../../../var/www/app/config/db.yml` "mutated" into a
 //! `/etc/passwd` read. The de-rigged bench would then claim "you can
 //! read db.yml" when only passwd was ever sent. Proving side: the
 //! operator's real target survives and passwd never appears for a
@@ -54,7 +54,7 @@ fn windows_specific_target_preserved() {
 
 #[test]
 fn adversarial_twin_canonical_passwd_probe_keeps_full_arsenal() {
-    // `../../../etc/passwd` IS the canonical sensitive-file probe — the
+    // `../../../etc/passwd` IS the canonical sensitive-file probe, the
     // canned sibling-file + encoded-passwd arsenal is its correct
     // product. The gate must not lobotomise it.
     let v = pt::mutate("../../../etc/passwd");

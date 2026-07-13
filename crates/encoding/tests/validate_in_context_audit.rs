@@ -3,7 +3,7 @@
 //!     `// TODO: validate ...` arms (`XmlCdata`, `XmlText`, `HtmlAttribute`,
 //!     `HtmlText`) that were no-op stubs. A direct caller of
 //!     `validate_in_context` (not via `encode_in_context`) would receive
-//!     Ok(()) for clearly-broken payloads — the function pretended to
+//!     Ok(()) for clearly-broken payloads, the function pretended to
 //!     validate but did nothing. For a public crate that ships an
 //!     `escape_for_context` + `validate_in_context` pair, that's a
 //!     credibility hole: the validator was a smoke alarm wired to

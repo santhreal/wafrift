@@ -1,4 +1,4 @@
-//! `wafrift query-diff` — WAF / origin parser-disagreement scanner
+//! `wafrift query-diff`: WAF / origin parser-disagreement scanner
 //! for URL QUERY STRINGS.
 //!
 //! ## The innovation
@@ -11,31 +11,31 @@
 //!
 //! Examples of WAF↔origin query-parse disagreements:
 //!
-//! - **HPP — HTTP Parameter Pollution.** `?q=safe&q=attack` — PHP
+//! - **HPP: HTTP Parameter Pollution.** `?q=safe&q=attack`: PHP
 //!   keeps the LAST occurrence; ASP.NET joins with comma; Java
 //!   typically picks the FIRST. WAFs that scan only the first
 //!   occurrence miss the attack value.
-//! - **Array notation.** `?q[]=safe&q[]=attack` — PHP / Express
+//! - **Array notation.** `?q[]=safe&q[]=attack`: PHP / Express
 //!   parse as `q = ["safe", "attack"]`; many WAFs see a literal
 //!   parameter name `q[]` and never match a `q` rule.
-//! - **Comma split.** `?q=a,b,c` — some parsers expose as a single
+//! - **Comma split.** `?q=a,b,c`: some parsers expose as a single
 //!   string, others split into a list. WAF rules that check the
 //!   whole string miss attack-payload values hidden inside the
 //!   comma-separated set.
-//! - **Empty-value HPP.** `?q=&q=attack` — first occurrence is
+//! - **Empty-value HPP.** `?q=&q=attack`: first occurrence is
 //!   empty; WAFs that bail on empty values never see the attack.
-//! - **Missing-value parameter.** `?q&attack=1` — depending on
+//! - **Missing-value parameter.** `?q&attack=1`: depending on
 //!   parser, `q` becomes `""`, `None`, or the next token. Some
 //!   WAFs misparse and let `attack=1` ride through.
 //! - **Percent-encoded key name.** `?%71=attack` (decoded as
-//!   `q=attack`) — WAFs that match by raw key-string never see a
+//!   `q=attack`). WAFs that match by raw key-string never see a
 //!   `q` parameter; origins that URL-decode keys before lookup do.
-//! - **Trailing percent + null in value.** `?q=safe%00.attack` —
+//! - **Trailing percent + null in value.** `?q=safe%00.attack` 
 //!   C-style truncation parsers see `safe`, Python sees `safe\0.attack`.
-//! - **Fragment leak via percent-encoded `#`.** `?q=attack%23` —
+//! - **Fragment leak via percent-encoded `#`.** `?q=attack%23` 
 //!   the literal `#` AFTER decoding can confuse parsers that
 //!   re-encode + re-split.
-//! - **Semicolon as separator.** `?a=1;b=2` — RFC 3986 reserves
+//! - **Semicolon as separator.** `?a=1;b=2`: RFC 3986 reserves
 //!   `;` in query; some parsers (notably old PHP, Tomcat
 //!   defaults) split on it.
 //!
@@ -65,7 +65,7 @@ pub(crate) struct QueryDiffArgs {
     /// query-param inspection (search, lookup, login).
     pub url: String,
 
-    /// Baseline parameter name — used both for the reference probe
+    /// Baseline parameter name, used both for the reference probe
     /// (`?<param>=safe`) and as the parameter the variants target.
     #[arg(long, default_value = "q")]
     pub param: String,
@@ -98,7 +98,7 @@ pub(crate) struct QueryDiffArgs {
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
-    /// Quiet mode — suppress per-probe progress.
+    /// Quiet mode (suppress per-probe progress).
     #[arg(long, default_value_t = false)]
     pub quiet: bool,
 }
@@ -137,16 +137,16 @@ pub(crate) struct QueryDiffResult {
 pub(crate) fn generate_query_variants(param: &str, attack_token: &str) -> Vec<QueryDisagreement> {
     let mut out = Vec::new();
 
-    // ── 1. HPP — duplicate parameter ─────────────────────────
+    // ── 1. HPP, duplicate parameter ─────────────────────────
     out.push(QueryDisagreement {
         kind: "hpp-last-wins",
-        description: "Duplicate parameter — PHP / Express take the LAST occurrence; WAFs that \
+        description: "Duplicate parameter: PHP / Express take the LAST occurrence; WAFs that \
              scan the first never see the attack value",
         query: format!("{param}=safe&{param}={attack_token}"),
     });
     out.push(QueryDisagreement {
         kind: "hpp-first-wins",
-        description: "Duplicate parameter — Java Servlet / Tomcat take the FIRST; WAFs that \
+        description: "Duplicate parameter: Java Servlet / Tomcat take the FIRST; WAFs that \
              scan the last never see the attack value",
         query: format!("{param}={attack_token}&{param}=safe"),
     });
@@ -162,7 +162,7 @@ pub(crate) fn generate_query_variants(param: &str, attack_token: &str) -> Vec<Qu
     // ── 3. Comma split ───────────────────────────────────────
     out.push(QueryDisagreement {
         kind: "comma-split",
-        description: "Comma-separated values — some parsers expose as one string, others split \
+        description: "Comma-separated values, some parsers expose as one string, others split \
              into a list; WAF substring rules miss attack hidden in a comma cell",
         query: format!("{param}=safe,{attack_token},neutral"),
     });
@@ -178,7 +178,7 @@ pub(crate) fn generate_query_variants(param: &str, attack_token: &str) -> Vec<Qu
     // ── 5. Missing value ─────────────────────────────────────
     out.push(QueryDisagreement {
         kind: "missing-value",
-        description: "Parameter without `=` — parsers disagree on whether the value is `\"\"`, \
+        description: "Parameter without `=`: parsers disagree on whether the value is `\"\"`, \
              `None`, or the next token. Bypass via parser-confusion",
         query: format!("{param}&attack={attack_token}"),
     });
@@ -199,7 +199,7 @@ pub(crate) fn generate_query_variants(param: &str, attack_token: &str) -> Vec<Qu
     };
     out.push(QueryDisagreement {
         kind: "percent-encoded-key",
-        description: "Key name is percent-encoded — origins URL-decode keys before lookup; \
+        description: "Key name is percent-encoded, origins URL-decode keys before lookup; \
              WAFs that match by raw key-string never see the canonical name",
         query: pct_key,
     });
@@ -207,17 +207,17 @@ pub(crate) fn generate_query_variants(param: &str, attack_token: &str) -> Vec<Qu
     // ── 7. NUL truncation in value ───────────────────────────
     out.push(QueryDisagreement {
         kind: "nul-truncate-value",
-        description: "Value contains NUL — C-style parsers truncate at NUL (see safe prefix); \
+        description: "Value contains NUL: C-style parsers truncate at NUL (see safe prefix); \
              Python / Java pass the full string with NUL embedded; the WAF sees the \
              attack and blocks if the rule fires, but the origin only processes \
-             whatever comes BEFORE the NUL — a divergence-of-action seam",
+             whatever comes BEFORE the NUL, a divergence-of-action seam",
         query: format!("{param}=safe%00.{attack_token}"),
     });
 
     // ── 8. Semicolon as separator ────────────────────────────
     out.push(QueryDisagreement {
         kind: "semicolon-separator",
-        description: "`?a=1;b=2` — RFC 3986 reserves `;` in query; old PHP / Tomcat defaults \
+        description: "`?a=1;b=2`: RFC 3986 reserves `;` in query; old PHP / Tomcat defaults \
              split on it. WAF rule scanning the literal `a=1;b=2` may miss `b=2`",
         query: format!("{param}=safe;attack={attack_token}"),
     });
@@ -225,7 +225,7 @@ pub(crate) fn generate_query_variants(param: &str, attack_token: &str) -> Vec<Qu
     // ── 9. Fragment-style encoded `#` ────────────────────────
     out.push(QueryDisagreement {
         kind: "encoded-hash-leak",
-        description: "Encoded `%23` (`#`) in value — origins that decode-then-re-split treat \
+        description: "Encoded `%23` (`#`) in value, origins that decode-then-re-split treat \
              it as a fragment delimiter; bypass for rules that match the literal \
              encoded form",
         query: format!("{param}={attack_token}%23frag"),
@@ -234,7 +234,7 @@ pub(crate) fn generate_query_variants(param: &str, attack_token: &str) -> Vec<Qu
     // ── 10. Trailing dot in key ──────────────────────────────
     out.push(QueryDisagreement {
         kind: "trailing-dot-key",
-        description: "`q.=attack` — some frameworks (Django) collapse trailing dots in keys; \
+        description: "`q.=attack`: some frameworks (Django) collapse trailing dots in keys; \
              WAFs scanning raw `q.` miss the `q` lookup",
         query: format!("{param}.={attack_token}"),
     });
@@ -267,7 +267,7 @@ pub(crate) async fn run_query_diff(mut args: QueryDiffArgs) -> ExitCode {
     // (target exhausted its conn pool after a heavy scan, brief
     // network blip, WAF rate-limited the very first probe) used
     // to exit 1 immediately. In real CI the next-second probe
-    // would have succeeded — pre-fix the operator saw a false
+    // would have succeeded, pre-fix the operator saw a false
     // "tool failure". Retry up to 3 times with 200/400/800 ms
     // backoff before giving up.
     let baseline_url = format!("{}?{}=safe", args.url.trim_end_matches('?'), args.param);
@@ -445,7 +445,7 @@ fn emit_output(
     for r in results.iter().filter(|r| r.severity != "none") {
         let badge = crate::parser_diff_common::severity_badge(r.severity);
         println!();
-        println!("  [{badge}] {} — {}", r.kind.bold(), r.description);
+        println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         crate::parser_diff_common::print_baseline_probe_arrow(
             r.baseline_status,
             r.baseline_body_len,
@@ -598,7 +598,7 @@ mod tests {
                     // token anywhere.
                     let leaked = req.contains("WAFRIFT_ATTACK_TOKEN");
                     let body: String = if leaked {
-                        "<html>attack token observed in query — long body</html>".into()
+                        "<html>attack token observed in query, long body</html>".into()
                     } else {
                         "<html>baseline</html>".into()
                     };

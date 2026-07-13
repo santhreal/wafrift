@@ -2,7 +2,7 @@
 # One-off: detonate candidate context-breakout payloads in real Chrome to see
 # which auto-fire (no interaction) BEFORE baking them into a build-gating
 # self-test. Each payload is wrapped exactly as the reflect-origin would for its
-# context. Not part of the shipped catalog — a design probe.
+# context. Not part of the shipped catalog (a design probe).
 set -u
 D="${WAFRIFT_DETONATE_BIN:-/tmp/wafrift-exec/detonate}"
 

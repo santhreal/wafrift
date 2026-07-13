@@ -8,7 +8,7 @@
 //!
 //! Extraction from recovered-then-de-minified JS is necessarily heuristic, so
 //! every detection records the source snippet that triggered it in
-//! [`SanitizerModel::evidence`] — the operator can audit the model, and
+//! [`SanitizerModel::evidence`], the operator can audit the model, and
 //! soundness is preserved downstream (mining only proposes survivors of the
 //! model, and execution is confirmed by scald, never fabricated).
 
@@ -112,7 +112,7 @@ impl SanitizerKind {
 pub struct SanitizerModel {
     /// Detected sanitizer family.
     pub kind: SanitizerKind,
-    /// Tag allowlist, if one was found — `Some(vec![])` means "allow nothing".
+    /// Tag allowlist, if one was found. `Some(vec![])` means "allow nothing".
     /// `None` means no allowlist (a forbid-list / strip model instead).
     pub allowed_tags: Option<Vec<String>>,
     /// Explicitly forbidden tags.
@@ -357,7 +357,7 @@ fn extract_object_keys(fragment: &str) -> Vec<String> {
     out
 }
 
-/// Extract regex sources from empty-replacement `.replace(/RE/flags, '')` calls —
+/// Extract regex sources from empty-replacement `.replace(/RE/flags, '')` calls 
 /// the signature of a hand-rolled strip sanitizer.
 fn extract_strip_patterns(source: &str) -> Vec<String> {
     let mut out = Vec::new();
@@ -425,7 +425,7 @@ fn detect_blocked_schemes(source: &str) -> Vec<String> {
         out.push("javascript".to_string());
     }
     // `data:` is only meaningful as a scheme block when paired with text/html or
-    // a scheme test, not any random `data:` mention — require an HTML data URI
+    // a scheme test, not any random `data:` mention, require an HTML data URI
     // or a scheme-anchored pattern.
     if lower.contains("data:text/html") || lower.contains("^data:") || lower.contains("/data:") {
         out.push("data".to_string());
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn non_empty_replacement_is_not_a_strip() {
-        // Replacing with a placeholder is not a strip — must not be recorded.
+        // Replacing with a placeholder is not a strip (must not be recorded).
         let src = r#"x.replace(/</g, '&lt;')"#;
         let m = extract_sanitizer(src);
         assert!(m.strip_patterns.is_empty());
@@ -574,7 +574,7 @@ mod tests {
 
     #[test]
     fn data_scheme_only_blocked_when_html_or_anchored() {
-        let plain = "const data = fetchData();"; // incidental "data" — not a block
+        let plain = "const data = fetchData();"; // incidental "data", not a block
         assert!(extract_sanitizer(plain).blocked_schemes.is_empty());
         let html = r#"if (url.startsWith('data:text/html')) reject();"#;
         assert!(

@@ -1,9 +1,9 @@
-//! wafrift-types — Core types shared by all WAF Rift crates.
+//! wafrift-types: Core types shared by all WAF Rift crates.
 //!
 //! This crate contains the foundational types that every other wafrift
 //! crate depends on: HTTP request representation, evasion technique
 //! identifiers, result types, and configuration. (Each crate carries
-//! its own domain error — a shared error was attempted and removed
+//! its own domain error, a shared error was attempted and removed
 //! 2026-05-23 because no caller wanted it.)
 
 pub mod bogon;
@@ -42,7 +42,7 @@ pub mod waf_class;
 /// Why 30s: the bench corpus includes deliberate ReDoS-style inputs
 /// that may legitimately keep a backend busy for tens of seconds, and
 /// a too-tight default turns slow-but-real bypasses into spurious
-/// "blocked" verdicts. The CLI scan path historically used 10s — that
+/// "blocked" verdicts. The CLI scan path historically used 10s, that
 /// is now considered the override knob, not the floor.
 pub const DEFAULT_REQUEST_TIMEOUT_SECS: u64 = 30;
 
@@ -50,7 +50,7 @@ pub const DEFAULT_REQUEST_TIMEOUT_SECS: u64 = 30;
 /// client. Mirrors curl's default to minimise practitioner surprise.
 pub const DEFAULT_MAX_REDIRECTS: usize = 5;
 
-/// Default egress-pool "burn threshold" — the number of challenge /
+/// Default egress-pool "burn threshold", the number of challenge /
 /// rate-limit verdicts on a single egress identity before that egress
 /// rotates into cooldown. Pre-R63 the literal `3` was open-coded at 7
 /// production sites (cli config defaults, scan/raw_runner, hunt_cmd,
@@ -62,13 +62,13 @@ pub const DEFAULT_EGRESS_CHALLENGE_THRESHOLD: u32 = 3;
 /// Default egress-pool cooldown duration in seconds after `threshold`
 /// strikes. Pre-R63 the literal `300` was hardcoded at 6 sites
 /// including `wafrift_transport::egress_pool`'s builder's `unwrap_or`
-/// fallback — meaning a CLI default and a builder default could
+/// fallback, meaning a CLI default and a builder default could
 /// silently disagree.
 pub const DEFAULT_EGRESS_COOLDOWN_SECS: u64 = 300;
 
 /// Default cap on emitted composed artifacts in
 /// `smuggle-cross-product` / `smuggle-chain`. The cartesian
-/// product grows polynomially — 64 is the empirical sweet spot
+/// product grows polynomially: 64 is the empirical sweet spot
 /// between coverage and operator-readable output volume.
 pub const DEFAULT_SMUGGLE_COMPOSED_CAP: usize = 64;
 
@@ -93,8 +93,8 @@ pub const DEFAULT_SMUGGLE_FIRE_PARALLEL: usize = 1;
 /// Workspace-canonical compiled NFA byte-size limit for `RegexBuilder::size_limit`
 /// and `RegexSetBuilder::size_limit`.
 ///
-/// A pattern like `(a?){200}` is 10 bytes — well within any reasonable length
-/// cap — but causes O(2^N) NFA expansion during `build()`. Capping the
+/// A pattern like `(a?){200}` is 10 bytes, well within any reasonable length
+/// cap, but causes O(2^N) NFA expansion during `build()`. Capping the
 /// *compiled* NFA size at 4 MiB converts that exponential-compile-time
 /// attack into a fast, controlled `Err`, regardless of pattern length.
 ///
@@ -115,10 +115,10 @@ pub const REGEX_NFA_SIZE_LIMIT: usize = 4 * 1024 * 1024; // 4 MiB
 /// Workspace-canonical ceiling on the largest HTTP response / decoded body
 /// wafrift holds in memory at once. ONE source of truth for the three sites
 /// that each previously defined their own `64 * 1024 * 1024` and were kept in
-/// sync only by a comment (§7 DEDUPLICATION — "two = a future drift bug"):
+/// sync only by a comment (§7 DEDUPLICATION: "two = a future drift bug"):
 /// - `wafrift_transport::response::MAX_RESPONSE_BODY_BYTES` (bounded read)
 /// - `wafrift_encoding::compression::DECOMPRESSED_BODY_MAX_BYTES`
-///   (decompression-bomb defence — its doc already noted "matches the
+///   (decompression-bomb defence, its doc already noted "matches the
 ///   response-body cap elsewhere")
 /// - `wafrift_cli::safe_body::HEADROOM_MAX_RESPONSE_BYTES` (absolute read
 ///   ceiling above the 8 MiB default)
@@ -145,7 +145,7 @@ pub const HOST_STATES_CAP: usize = 10_000;
 ///
 /// Used by `wafrift-strategy` (where the struct is defined) and by
 /// `wafrift-transport` (where inbound WAF profile signals are merged into
-/// the per-host state). Both must enforce the same limit — if they drift,
+/// the per-host state). Both must enforce the same limit, if they drift,
 /// transport can grow the list past the cap that strategy enforces, undoing
 /// the bound.
 pub const HOST_TECHNIQUE_HINTS_CAP: usize = 200;
@@ -167,7 +167,7 @@ pub const HOST_TECHNIQUE_HINTS_CAP: usize = 200;
 pub const BLOCK_SCAN_BODY_WINDOW: usize = 4096;
 
 // ──────────────────────────────────────────────
-//  Glob matcher — shared by proxy scope filter and CLI report filter
+//  Glob matcher, shared by proxy scope filter and CLI report filter
 // ──────────────────────────────────────────────
 
 /// Tiny ASCII glob matcher: `*` matches any byte run (including empty),
@@ -178,7 +178,7 @@ pub const BLOCK_SCAN_BODY_WINDOW: usize = 4096;
 ///
 /// O(|pattern| × |subject|) worst-case, O(|pattern| + |subject|) typical.
 /// Uses the classic two-pointer algorithm with a saved star-position and
-/// star-match backtrack index — NO recursion, NO exponential branch tree.
+/// star-match backtrack index: NO recursion, NO exponential branch tree.
 /// Safe to call on attacker-controlled `subject` values from the proxy
 /// hot path.
 ///
@@ -207,7 +207,7 @@ pub fn glob_match_bytes(p: &[u8], s: &[u8]) -> bool {
 
     while si < s.len() {
         if pi < p.len() && (p[pi] == b'?' || p[pi].eq_ignore_ascii_case(&s[si])) {
-            // `?` or matching literal — advance both pointers.
+            // `?` or matching literal (advance both pointers).
             pi += 1;
             si += 1;
         } else if pi < p.len() && p[pi] == b'*' {
@@ -217,7 +217,7 @@ pub fn glob_match_bytes(p: &[u8], s: &[u8]) -> bool {
             star_si = si;
             pi += 1;
         } else if star_pi != usize::MAX {
-            // Current character didn't match — backtrack: let the saved
+            // Current character didn't match, backtrack: let the saved
             // `*` consume one more character of the subject and retry.
             star_si += 1;
             si = star_si;
@@ -247,7 +247,7 @@ pub use entropy::{binary_shannon, shannon};
 pub use escalation::EscalationLevel;
 pub use hash::{FNV_OFFSET_64, FNV_PRIME_64, fnv1a_64, fnv1a_64_extend, fnv1a_64_step};
 // `WafRiftError` + `Result` alias removed 2026-05-23 (consolidation
-// F09/F23) — no external caller; every other crate defines its own
+// F09/F23), no external caller; every other crate defines its own
 // domain error. If a shared error is needed later, design it from
 // actual call-site needs, not from a stub.
 pub use request::{Method, Request};
@@ -340,7 +340,7 @@ mod tests {
     #[test]
     fn glob_worst_case_does_not_hang() {
         let start = std::time::Instant::now();
-        // 30 interleaved wildcards — exponential recursive impl would
+        // 30 interleaved wildcards, exponential recursive impl would
         // take O(128^30) steps; the iterative impl is O(30 × 128).
         let pattern = "*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a";
         let subject = "b".repeat(128);
@@ -349,7 +349,7 @@ mod tests {
         assert!(!result, "expected no match");
         assert!(
             elapsed.as_millis() < 100,
-            "glob_match took {elapsed:?} on adversarial input — iterative impl required"
+            "glob_match took {elapsed:?} on adversarial input, iterative impl required"
         );
     }
 

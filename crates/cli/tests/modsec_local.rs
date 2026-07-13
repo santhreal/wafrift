@@ -9,7 +9,7 @@
 use reqwest::Client;
 
 #[tokio::test]
-#[ignore = "local Docker WAF — see wafrift-bench/targets/README.md"]
+#[ignore = "local Docker WAF, see wafrift-bench/targets/README.md"]
 async fn modsec_url_reachable() {
     let base = std::env::var("WAFRIFT_BENCH_URL")
         .expect("WAFRIFT_BENCH_URL must be set when running ignored tests");

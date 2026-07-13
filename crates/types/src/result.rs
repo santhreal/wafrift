@@ -1,4 +1,4 @@
-//! Evasion result — a transformed request with metadata.
+//! Evasion result (a transformed request with metadata).
 //!
 //! Carries the mutated request, which techniques were applied, a
 //! human-readable description, and a confidence score estimating

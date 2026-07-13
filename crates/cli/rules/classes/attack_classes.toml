@@ -7,7 +7,7 @@
 # proves the holes close with zero benign false positives.
 #
 # INVARIANT (enforced fail-closed by the loader): every class must carry at
-# least one attack AND at least one token — a class whose tokens do not detect
+# least one attack AND at least one token, a class whose tokens do not detect
 # its attacks would make the harden proof vacuous, so an empty side is rejected
 # at load, never silently accepted. Extend coverage by adding a `[[class]]`
 # block here (Tier-B data), not by editing code.

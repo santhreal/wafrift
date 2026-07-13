@@ -1,5 +1,5 @@
 schema = 1
-# Path-routing parser-disagreement — frontend (CDN/WAF/proxy) and
+# Path-routing parser-disagreement, frontend (CDN/WAF/proxy) and
 # backend (origin app) canonicalise the path differently. Each case is
 # a path that reaches `/etc/passwd` (or analogue) when interpreted by
 # *one* parser in the chain, while looking like a benign `/public/...`

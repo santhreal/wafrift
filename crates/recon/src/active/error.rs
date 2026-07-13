@@ -36,7 +36,7 @@ pub enum ReconProbeError {
 
     /// Invalid TOML rules document.
     #[error(
-        "Invalid header rules TOML: {0}. Fix: validate `[[rule]]` entries — family must be waf|cdn|framework."
+        "Invalid header rules TOML: {0}. Fix: validate `[[rule]]` entries (family must be waf|cdn|framework)."
     )]
     RulesToml(String),
 }

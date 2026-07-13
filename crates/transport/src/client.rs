@@ -1,4 +1,4 @@
-//! Evasion-aware HTTP client — wraps reqwest with automatic WAF bypass.
+//! Evasion-aware HTTP client (wraps reqwest with automatic WAF bypass).
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
@@ -13,7 +13,7 @@ use crate::signal::{BlockClass, ResponseProfileDb, ResponseSignal};
 /// Maximum body size to read for WAF detection.
 ///
 /// CLAUDE.md §7 DEDUPLICATION note (R49 pass-11 I3): this is a
-/// TRANSPORT-layer cap for WAF block-page classification — distinct
+/// TRANSPORT-layer cap for WAF block-page classification, distinct
 /// from `cli::safe_body::HEADROOM_MAX_RESPONSE_BYTES` (64 MiB) which
 /// caps operator-controlled response bodies for the CLI. They differ
 /// 600x because the use cases differ:
@@ -133,7 +133,7 @@ impl EvasionClient {
             None,
         ))?
         // §15 SSRF: bogon-safe redirect policy (refuses 302 → cloud-metadata
-        // / RFC1918 / loopback, stops cross-origin auth leaks) — the core
+        // / RFC1918 / loopback, stops cross-origin auth leaks), the core
         // engine must be at least as safe as the CLI diff commands, which
         // already use this. Canonical impl in `http_builder`; shared.
         .redirect(crate::http_builder::safe_redirect_policy(
@@ -143,7 +143,7 @@ impl EvasionClient {
         #[cfg(feature = "proxy-pool")]
         if !config.proxies.is_empty() {
             // Validate every proxy URL through proxywire's canonical strict
-            // parser (rejects bad schemes, embedded paths/queries — the SSRF
+            // parser (rejects bad schemes, embedded paths/queries, the SSRF
             // guard) before any traffic is routed. We then round-robin the
             // original credential-bearing strings: proxywire's
             // `ProxyEndpoint::to_url()` intentionally drops `user:pass@`
@@ -189,10 +189,10 @@ impl EvasionClient {
     ///
     /// # SSRF / bogon filtering
     ///
-    /// Unlike [`Self::with_config`] — which installs the
+    /// Unlike [`Self::with_config`], which installs the
     /// `BogonFilteringResolver` so hostnames resolving to a bogon
     /// (loopback / RFC1918 / link-local metadata) are refused at connect
-    /// time — this constructor trusts the CALLER's `client` as-is. If
+    /// time, this constructor trusts the CALLER's `client` as-is. If
     /// untrusted hostnames may reach it, wire your own SSRF-safe DNS
     /// resolver into the client before passing it. The upfront literal-IP
     /// bogon rejection in [`Self::send`] still applies regardless, so
@@ -267,12 +267,12 @@ impl EvasionClient {
             // payload mutation, which can run for a noticeable time on
             // large request bodies). Holding `host_states` across
             // `evade` serialised EVERY host's request behind one host's
-            // mutation work — a global bottleneck under concurrent /
+            // mutation work, a global bottleneck under concurrent /
             // multi-host load. The proxy crate already learned this
             // (it snapshots state then runs `evade` in spawn_blocking
             // outside the lock); the transport client now matches.
-            // `evade` borrows only `&request`/`&state`/`&self.config` —
-            // never the locked map — so the early release is sound.
+            // `evade` borrows only `&request`/`&state`/`&self.config` 
+            // never the locked map (so the early release is sound).
             let state = {
                 let states = self.lock_states();
                 states.get(&host).cloned().unwrap_or_default()
@@ -333,7 +333,7 @@ impl EvasionClient {
                         error = %e,
                         attempt = attempt + 1,
                         max = max_attempts,
-                        "transient transport error — will retry"
+                        "transient transport error, will retry"
                     );
                     continue;
                 }
@@ -361,7 +361,7 @@ impl EvasionClient {
                         attempt = attempt + 1,
                         max = max_attempts,
                         classification = ?classification,
-                        "WAF block detected — escalating evasion"
+                        "WAF block detected, escalating evasion"
                     );
                     {
                         let mut states = self.lock_states();
@@ -387,7 +387,7 @@ impl EvasionClient {
                         classification = ?classification,
                         attempt = attempt + 1,
                         max = max_attempts,
-                        "Rate-limit or challenge detected — backing off"
+                        "Rate-limit or challenge detected, backing off"
                     );
                     {
                         let mut states = self.lock_states();
@@ -410,7 +410,7 @@ impl EvasionClient {
                     continue;
                 }
                 _ => {
-                    // Pass or last attempt — record success (if Pass) and return
+                    // Pass or last attempt, record success (if Pass) and return
                     if !classification.is_blocked() {
                         let mut states = self.lock_states();
                         let state = self.ensure_host_registered(&mut states, &host);
@@ -502,7 +502,7 @@ impl EvasionClient {
     /// Atomically clears both `host_states` and `host_fifo` under
     /// the same lock acquisition order used everywhere else in
     /// this module (states first, fifo second). Pre-fix the two
-    /// clears were separated by a guard drop — a concurrent
+    /// clears were separated by a guard drop, a concurrent
     /// `send()` between them could register a new host that
     /// survived the fifo clear, orphaning it in `host_states`
     /// where the FIFO cap could never evict it.
@@ -562,7 +562,7 @@ impl EvasionClient {
     /// materialisation: we read chunk-by-chunk via `Response::chunk()` and abort
     /// the moment the running total would exceed the cap. This prevents a
     /// hostile target from serving a ~1 KB gzip bomb that expands to GBs
-    /// (decompression-bomb / OOM attack — §15 AUDIT HUNT, R49).
+    /// (decompression-bomb / OOM attack: §15 AUDIT HUNT, R49).
     ///
     /// The `Content-Length` pre-check skips bodies the server CLAIMS are large
     /// (> 10 MB); the chunk loop caps the actual decompressed bytes for every
@@ -578,7 +578,7 @@ impl EvasionClient {
             .and_then(|v| v.to_str().ok())
             .and_then(|s| s.parse::<usize>().ok());
 
-        // Skip body check for large content (> 10MB) — likely a download, not a WAF page.
+        // Skip body check for large content (> 10MB) (likely a download, not a WAF page).
         if let Some(len) = content_length
             && len > 10_000_000
         {
@@ -588,7 +588,7 @@ impl EvasionClient {
         // §15 OOM / decompression-bomb defence: read chunk-by-chunk, aborting
         // as soon as the decompressed running total exceeds MAX_BODY_READ_SIZE.
         // The old `.bytes().await` called here materialised the ENTIRE
-        // decompressed body before slicing to MAX_BODY_READ_SIZE — a
+        // decompressed body before slicing to MAX_BODY_READ_SIZE, a
         // Content-Length-less gzip bomb bypassed the pre-check above and
         // expanded to gigabytes in memory before we could truncate.
         let mut acc: Vec<u8> = Vec::with_capacity(MAX_BODY_READ_SIZE.min(16 * 1024));
@@ -598,13 +598,13 @@ impl EvasionClient {
                 Ok(Some(chunk)) => {
                     if acc.len().saturating_add(chunk.len()) > MAX_BODY_READ_SIZE {
                         // Abort: cap exceeded. We already have `acc` bytes;
-                        // return what we have — it's sufficient for WAF
+                        // return what we have, it's sufficient for WAF
                         // block-page classification.
                         tracing::debug!(
                             cap = MAX_BODY_READ_SIZE,
                             accumulated = acc.len(),
                             chunk_len = chunk.len(),
-                            "body preview cap exceeded — truncating (decompression-bomb defence)"
+                            "body preview cap exceeded, truncating (decompression-bomb defence)"
                         );
                         let remaining = MAX_BODY_READ_SIZE - acc.len();
                         acc.extend_from_slice(&chunk[..remaining]);
@@ -890,7 +890,7 @@ mod tests {
 
     #[test]
     fn bogon_v6_6to4_embeds_private_v4() {
-        // 6to4 encodes 127.0.0.1 => 2002:7f00:1:: — MUST be rejected.
+        // 6to4 encodes 127.0.0.1 => 2002:7f00:1::: MUST be rejected.
         assert!(ip_addr_is_bogon("2002:7f00:1::".parse().unwrap()));
         assert!(ip_addr_is_bogon("2002:c0a8:101::".parse().unwrap())); // 192.168.1.1
         assert!(!ip_addr_is_bogon("2002:808:808::".parse().unwrap())); // 8.8.8.8
@@ -1078,7 +1078,7 @@ mod tests {
             fifo.push_back("b.com".to_string());
         }
         client.reset();
-        // Both must be empty — if either survives, the FIFO cap
+        // Both must be empty, if either survives, the FIFO cap
         // could leak entries indefinitely.
         assert!(client.lock_states().is_empty(), "states not cleared");
         let fifo_len = client
@@ -1103,7 +1103,7 @@ mod tests {
                 .host_fifo
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            // Reset on a background thread — must be waiting on
+            // Reset on a background thread, must be waiting on
             // `host_states` (which we don't hold), not on
             // `host_fifo` (which we do). When we drop our guard
             // it should proceed.
@@ -1124,7 +1124,7 @@ mod tests {
     /// Pin that `read_body_preview_from_response` uses chunk-by-chunk
     /// reading (`response.chunk().await`) and NOT the old unbounded
     /// `.bytes().await`. The old code called `.bytes().await` then
-    /// sliced AFTER full materialisation — a hostile server could send
+    /// sliced AFTER full materialisation, a hostile server could send
     /// a gzip bomb (no Content-Length) that expanded to GBs before the
     /// slice occurred.
     #[test]
@@ -1141,7 +1141,7 @@ mod tests {
         assert!(
             !src.contains(banned),
             "transport client.rs must not call unbounded .bytes().await \
-             in read_body_preview_from_response — decompression-bomb regression"
+             in read_body_preview_from_response, decompression-bomb regression"
         );
     }
 
@@ -1153,12 +1153,12 @@ mod tests {
         // Must cover a 200 KB Cloudflare CAPTCHA page.
         assert!(
             MAX_BODY_READ_SIZE >= 200 * 1024,
-            "MAX_BODY_READ_SIZE too small — CAPTCHA pages up to 200 KB"
+            "MAX_BODY_READ_SIZE too small. CAPTCHA pages up to 200 KB"
         );
         // Must not OOM the machine: cap at something well below free RAM.
         assert!(
             MAX_BODY_READ_SIZE <= 4 * 1024 * 1024,
-            "MAX_BODY_READ_SIZE too large — decompression-bomb cap should be <= 4 MiB"
+            "MAX_BODY_READ_SIZE too large, decompression-bomb cap should be <= 4 MiB"
         );
     }
 }

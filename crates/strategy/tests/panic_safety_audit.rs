@@ -1,6 +1,6 @@
 //! Deep robustness audit for the evasion pipeline entry points.
 //!
-//! `strategy_property.rs` already fuzzes `evade()` 10k times — but with
+//! `strategy_property.rs` already fuzzes `evade()` 10k times, but with
 //! `body in "[ -~]{0,256}"`: **printable ASCII only, body only**. That
 //! is precisely why a real panic survived it: the obs-fold header
 //! evasion did `&value[..value.len()/2]` on the *User-Agent header*,
@@ -132,7 +132,7 @@ fn regression_obsfold_multibyte_user_agent_no_panic() {
         "x😀😀😀😀😀😀😀😀😀😀😀x",
     ] {
         let req = Request::get("https://t.example/").header("User-Agent", ua.to_string());
-        // Direct call — must return, not panic.
+        // Direct call (must return, not panic).
         let _ = evade(&req, &state, &config);
     }
 }

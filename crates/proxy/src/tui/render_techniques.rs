@@ -1,4 +1,4 @@
-//! Techniques tab — per-evasion-key leaderboard with bypass rate.
+//! Techniques tab (per-evasion-key leaderboard with bypass rate).
 //!
 //! Techniques with fewer than `MIN_TRIES_FOR_RANK` samples are listed
 //! at the bottom in a separate "low-confidence" section so a single
@@ -93,7 +93,7 @@ fn draw_leaderboard(f: &mut Frame, area: Rect, state: &State) {
         let inner = block.inner(area);
         f.render_widget(block, area);
         let p = Paragraph::new(format!(
-            "(no technique has reached {MIN_TRIES_FOR_RANK} tries yet — proxy more requests)"
+            "(no technique has reached {MIN_TRIES_FOR_RANK} tries yet, proxy more requests)"
         ))
         .style(crate::tui::style::DIM);
         f.render_widget(p, inner);
@@ -147,7 +147,7 @@ fn draw_low_confidence(f: &mut Frame, area: Rect, state: &State) {
 
 fn format_last_bypass(unix_secs: u64) -> String {
     if unix_secs == 0 {
-        return "—".into();
+        return ": ".into();
     }
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -197,11 +197,11 @@ mod tests {
     #[test]
     fn leaderboard_only_includes_techniques_above_min_tries() {
         let mut s = State::new();
-        // url has 6 tries, 6 bypass — qualifies
+        // url has 6 tries, 6 bypass, qualifies
         for _ in 0..6 {
             s.record(&req("encoding:UrlEncode", true));
         }
-        // grammar has 4 tries — does NOT qualify (< MIN_TRIES_FOR_RANK)
+        // grammar has 4 tries, does NOT qualify (< MIN_TRIES_FOR_RANK)
         for _ in 0..4 {
             s.record(&req("grammar:cmd", true));
         }
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn last_bypass_format_buckets() {
-        assert_eq!(format_last_bypass(0), "—");
+        assert_eq!(format_last_bypass(0), ": ");
     }
 
     #[test]

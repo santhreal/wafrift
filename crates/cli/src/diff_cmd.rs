@@ -1,9 +1,9 @@
-//! `wafrift diff <kind>` — the unified differential-analysis surface.
+//! `wafrift diff <kind>`: the unified differential-analysis surface.
 //!
 //! WAF↔origin (and WAF↔cache, H1↔H2, browser↔browser) parser
 //! disagreements are wafrift's deepest bypass seam, and they had grown
 //! into **eleven** separate top-level commands plus the `attack`
-//! orchestrator — twelve entries crowding `wafrift --help`. This module
+//! orchestrator, twelve entries crowding `wafrift --help`. This module
 //! groups the whole family under one verb:
 //!
 //! ```text
@@ -20,7 +20,7 @@
 //!
 //! ## Backwards compatibility (CLAUDE.md LAW 2)
 //!
-//! The eleven flat `<kind>-diff` commands (and `attack`) remain callable —
+//! The eleven flat `<kind>-diff` commands (and `attack`) remain callable 
 //! they are kept as `#[command(hide = true)]` deprecated aliases in
 //! [`crate::Commands`], so every existing script / pipe / doc keeps
 //! working; the surface simply stops *advertising* the bloat. `diff` is
@@ -28,7 +28,7 @@
 
 use clap::{Args, Subcommand};
 
-/// Arguments for the `diff` parent command — a single required
+/// Arguments for the `diff` parent command, a single required
 /// subcommand selecting which differential probe to run.
 #[derive(Args, Debug)]
 pub(crate) struct DiffArgs {

@@ -1,4 +1,4 @@
-//! Rule completeness audit — CI-enforced quality gate.
+//! Rule completeness audit: CI-enforced quality gate.
 //!
 //! Ensures every WAF detection rule meets minimum coverage
 //! requirements:
@@ -10,11 +10,11 @@
 //! 2. **All WAFs** must have at least 1 signature.
 //!
 //! 3. **No WAF** should have only a `status_code` signature with no
-//!    other matchers — status codes alone are too ambiguous.
+//!    other matchers (status codes alone are too ambiguous).
 
 use wafrift_detect::waf_detect;
 
-/// Tier 1 WAFs — the major vendors that `WafRift` MUST detect
+/// Tier 1 WAFs, the major vendors that `WafRift` MUST detect
 /// with high accuracy.  Missing a Tier 1 WAF is a ship blocker.
 const TIER1_WAFS: &[&str] = &[
     "Cloudflare",
@@ -119,7 +119,7 @@ fn tier1_wafs_detect_from_realistic_headers() {
 fn minimum_rule_count() {
     let wafs = waf_detect::supported_wafs();
     // WafRift ships with 160 rules.  This test prevents accidental
-    // deletion — a regression to fewer rules must be intentional.
+    // deletion (a regression to fewer rules must be intentional).
     assert!(
         wafs.len() >= 150,
         "Expected at least 150 WAF rules, found {}. \

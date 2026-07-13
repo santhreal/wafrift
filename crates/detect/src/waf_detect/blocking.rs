@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 /// Block-page body indicators loaded from `rules/blocking/indicators.toml`.
 ///
-/// Tier-B community-extensible data — the Aho-Corasick scanner is O(n)
+/// Tier-B community-extensible data, the Aho-Corasick scanner is O(n)
 /// in body length regardless of the rule count, so contributors can
 /// keep appending to the TOML file at zero scan-time cost.
 #[derive(Deserialize)]
@@ -40,7 +40,7 @@ static BLOCK_AC: Lazy<AhoCorasick> = Lazy::new(|| {
         .expect("block indicators are valid AC patterns")
 });
 
-/// Returns `true` when an HTTP response looks like a WAF block page —
+/// Returns `true` when an HTTP response looks like a WAF block page 
 /// **broad, learning-phase** classifier.
 ///
 /// Used by the detection/learning pipeline to decide "is this response
@@ -49,7 +49,7 @@ static BLOCK_AC: Lazy<AhoCorasick> = Lazy::new(|| {
 /// might emit) and the body indicators are TOML-driven so contributors
 /// can extend them without touching code.
 ///
-/// **Do not unify** with the other two classifiers — they answer different
+/// **Do not unify** with the other two classifiers, they answer different
 /// questions with different cost asymmetries. See the doc comments on
 /// `wafrift_transport::response::is_waf_block` and
 /// `wafrift_types::calibration::analyze_calibration` (intra-crate
@@ -69,7 +69,7 @@ pub fn is_blocked_response(status: u16, body: &[u8]) -> bool {
         return true;
     }
 
-    // Scan only the first BLOCK_SCAN_BODY_WINDOW bytes — block pages are always in the head.
+    // Scan only the first BLOCK_SCAN_BODY_WINDOW bytes (block pages are always in the head).
     let window = &body[..body.len().min(wafrift_types::BLOCK_SCAN_BODY_WINDOW)];
     BLOCK_AC.is_match(window)
 }

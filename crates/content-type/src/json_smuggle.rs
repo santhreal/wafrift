@@ -1,10 +1,10 @@
-//! JSON-body parser-differential probes — exploit parsing
+//! JSON-body parser-differential probes, exploit parsing
 //! disagreements between a fronting WAF's JSON parser and the
 //! backend origin's JSON parser.
 //!
 //! WAFs typically use one JSON parser (often a strict RFC 8259
 //! parser) while application backends use a different one
-//! (lenient — supporting JSON5 features like comments and trailing
+//! (lenient, supporting JSON5 features like comments and trailing
 //! commas, or having its own opinion on duplicate-key resolution,
 //! or proxying upstream JSON without re-validating). Every probe
 //! in this module crafts a request body whose meaning differs
@@ -12,7 +12,7 @@
 //!
 //! Each probe emits a `BodyWithContentType` artifact (Content-Type
 //! `application/json` + raw body bytes). The body bytes are built
-//! by hand — `serde_json` will not emit the malformed-on-purpose
+//! by hand: `serde_json` will not emit the malformed-on-purpose
 //! shapes these probes need (duplicate keys, trailing commas, BOM
 //! prefixes, etc.), so the module owns its own JSON byte
 //! generation.
@@ -25,47 +25,47 @@ use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 /// interpretation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JsonSmuggleTechnique {
-    /// `{"k":"benign","k":"<v>"}` — RFC 8259 leaves duplicate-key
+    /// `{"k":"benign","k":"<v>"}`: RFC 8259 leaves duplicate-key
     /// behaviour implementation-defined. WAFs and backends often
     /// disagree on which value wins.
     DuplicateKeyLastWins,
-    /// `{"k\0injected":"benign","k":"<v>"}` — NUL-byte in key.
-    /// Parsers truncate at NUL or keep the full key — the WAF sees
+    /// `{"k\0injected":"benign","k":"<v>"}`: NUL-byte in key.
+    /// Parsers truncate at NUL or keep the full key, the WAF sees
     /// a different key from the backend.
     DuplicateKeyNullByteSplit,
-    /// `{"k":"<v>",}` — trailing comma. JSON5/JSONC tolerant,
+    /// `{"k":"<v>",}`: trailing comma. JSON5/JSONC tolerant,
     /// strict RFC 8259 rejects. A WAF that rejects the body
     /// outright never inspects it; the lenient backend parses
     /// normally (fail-open differential).
     TrailingComma,
-    /// `{"k":"<v>\nsmuggled"}` — literal LF (0x0A) inside the JSON
+    /// `{"k":"<v>\nsmuggled"}`: literal LF (0x0A) inside the JSON
     /// string. Strict RFC 8259 requires the LF escaped; lenient
     /// parsers accept the raw byte. Splits WAF view from backend
     /// view on the value content.
     UnescapedNewlineInString,
-    /// `{/*c*/"k"/*c*/:"<v>"/*c*/}` — block-comment tolerance.
+    /// `{/*c*/"k"/*c*/:"<v>"/*c*/}`: block-comment tolerance.
     /// JSON5/JSONC accept comments; strict RFC parsers reject.
     /// Comment-bearing payload may bypass strict WAF inspectors
     /// while parsing normally to a lenient backend.
     CommentJsonc,
-    /// `{"k":"<v>","qty":0xff}` — hex-prefixed integer literal.
+    /// `{"k":"<v>","qty":0xff}`: hex-prefixed integer literal.
     /// Non-RFC parsers accept `0x...`; strict parsers reject.
     /// Differential on numeric-value scrutiny.
     HexNumberLiteral,
-    /// `{"k":"<v>","q":NaN}` — JavaScript-style float literal.
+    /// `{"k":"<v>","q":NaN}`: JavaScript-style float literal.
     /// `serde_json` accepts with `allow_inf_nan`; strict parsers
     /// reject. WAF schema scanners fail-open; backends accept.
     NanInfinity,
-    /// `\xEF\xBB\xBF{"k":"<v>"}` — UTF-8 BOM prefix. RFC 8259
+    /// `\xEF\xBB\xBF{"k":"<v>"}`: UTF-8 BOM prefix. RFC 8259
     /// forbids BOM; some parsers strip silently, others reject.
     /// A WAF that rejects the BOM-prefixed body never inspects
     /// the JSON; the backend strips BOM and parses normally.
     BomPrefix,
-    /// `{"":"<v>","k":"benign"}` — empty-string key. Some parsers
+    /// `{"":"<v>","k":"benign"}`: empty-string key. Some parsers
     /// reject as malformed; others map to "" and the backend pulls
     /// the attacker value out of the empty slot.
     EmptyKey,
-    /// `{"data":"{\"k\":\"<v>\"}"}` — JSON-in-string nesting. The
+    /// `{"data":"{\"k\":\"<v>\"}"}`: JSON-in-string nesting. The
     /// WAF's outer-pass scanner sees a benign string value; the
     /// backend may run a second JSON parse on the `data` field
     /// (common in APIs that proxy upstream JSON) and surface the
@@ -75,7 +75,7 @@ pub enum JsonSmuggleTechnique {
 
 impl JsonSmuggleTechnique {
     /// Stable kebab-case technique name. Used in JSON output and
-    /// telemetry — operators key on this for reproducibility.
+    /// telemetry (operators key on this for reproducibility).
     #[must_use]
     pub fn technique_name(&self) -> &'static str {
         match self {
@@ -97,19 +97,19 @@ impl JsonSmuggleTechnique {
     pub fn description(&self) -> &'static str {
         match self {
             Self::DuplicateKeyLastWins => {
-                "Duplicate-key — last-wins vs first-wins resolution differential"
+                "Duplicate-key, last-wins vs first-wins resolution differential"
             }
-            Self::DuplicateKeyNullByteSplit => "NUL byte in key — parser truncation differential",
-            Self::TrailingComma => "Trailing comma — strict RFC 8259 vs JSON5 tolerance",
+            Self::DuplicateKeyNullByteSplit => "NUL byte in key, parser truncation differential",
+            Self::TrailingComma => "Trailing comma, strict RFC 8259 vs JSON5 tolerance",
             Self::UnescapedNewlineInString => {
-                "Literal LF in string value — escape-requirement differential"
+                "Literal LF in string value, escape-requirement differential"
             }
-            Self::CommentJsonc => "Block-comment tolerance — JSONC vs strict-RFC parsers",
-            Self::HexNumberLiteral => "Hex-prefixed integer literal — non-RFC numeric tolerance",
-            Self::NanInfinity => "NaN/Infinity literal — IEEE-754 vs RFC-pure",
-            Self::BomPrefix => "UTF-8 BOM prefix — strip-vs-reject differential",
-            Self::EmptyKey => "Empty-string key — accept-vs-reject differential",
-            Self::JsonInString => "JSON-in-string — second-pass parsing differential",
+            Self::CommentJsonc => "Block-comment tolerance. JSONC vs strict-RFC parsers",
+            Self::HexNumberLiteral => "Hex-prefixed integer literal, non-RFC numeric tolerance",
+            Self::NanInfinity => "NaN/Infinity literal. IEEE-754 vs RFC-pure",
+            Self::BomPrefix => "UTF-8 BOM prefix, strip-vs-reject differential",
+            Self::EmptyKey => "Empty-string key, accept-vs-reject differential",
+            Self::JsonInString => "JSON-in-string, second-pass parsing differential",
         }
     }
 }
@@ -142,7 +142,7 @@ fn focal(params: &[(String, String)]) -> (&str, &str) {
 }
 
 /// JSON-quote a string value: wrap in double quotes, backslash-
-/// escape backslashes and quotes. Intentionally minimal — other
+/// escape backslashes and quotes. Intentionally minimal, other
 /// control bytes are escaped only when the probe explicitly wants
 /// them unescaped (see `UnescapedNewlineInString`).
 fn quote_value(s: &str) -> String {
@@ -184,7 +184,7 @@ impl JsonSmuggleProbe {
                 // Escape the key and the value's OWN quotes/backslashes first
                 // (so an operator payload containing `"` / `\` can't add a
                 // SECOND, unintended malformation that confounds the probe),
-                // then inject the raw LF — the one differential under test.
+                // then inject the raw LF (the one differential under test).
                 let esc_v = v.replace('\\', "\\\\").replace('"', "\\\"");
                 format!("{{{}:\"{esc_v}\nsmuggled\"}}", quote_value(k)).into_bytes()
             }
@@ -252,7 +252,7 @@ impl SmuggleProbe for JsonSmuggleProbe {
 }
 
 /// Every JSON parser-differential probe against the given params.
-/// Returns 10 probes — one per [`JsonSmuggleTechnique`] variant.
+/// Returns 10 probes (one per [`JsonSmuggleTechnique`] variant).
 #[must_use]
 pub fn all_variants(params: &[(String, String)]) -> Vec<JsonSmuggleProbe> {
     use JsonSmuggleTechnique::*;

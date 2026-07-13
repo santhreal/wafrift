@@ -9,7 +9,7 @@
 //! - **Triggered rules:** which rule classes the *original* payload
 //!   would have lit up (from `wafrift_detect::explain::explain_block`).
 //! - **Bypassed rules:** which of those are NO LONGER triggered after
-//!   the bypass — the actual *evidence* that the technique worked.
+//!   the bypass (the actual *evidence* that the technique worked).
 //! - **Diff:** Myers-style line-of-changes between original and bypass,
 //!   so a human reviewer can see exactly what was mutated.
 //! - **Human summary:** templated narrative naming the bypassed rule
@@ -59,7 +59,7 @@ pub fn explain_bypass(
 /// Build the human-readable summary string.
 ///
 /// Three tiers, controlled by [`ExplanationMode`]:
-///   - `Minimal`: one line — `"Bypassed N rule(s) via M technique(s)."`
+///   - `Minimal`: one line: `"Bypassed N rule(s) via M technique(s)."`
 ///   - `Standard`: rule IDs + technique names + the diff direction.
 ///   - `Educational`: adds a "Why this works" paragraph per technique
 ///     and per bypassed rule, suitable for training material.
@@ -106,7 +106,7 @@ fn build_summary(
     if bypassed_ids.is_empty() {
         out.push_str(
             "After applying the technique chain, the bypass payload still triggers all \
-             of those rules — this is a SOFT bypass (the request reached upstream but \
+             of those rules, this is a SOFT bypass (the request reached upstream but \
              the WAF would have classified it identically). Investigate whether the \
              upstream backend handled the payload differently.",
         );
@@ -168,15 +168,15 @@ fn why_technique_works(tech: &Technique) -> &'static str {
         Technique::PayloadEncoding(s) if s.contains("json_unicode_alnum") => {
             "ASCII alphanumeric chars encoded as `\\uXXXX` while quotes, operators, brackets, and \
              whitespace stay bare. The keyword fingerprint (`UNION`, `SELECT`, `script`, `alert`) \
-             never appears in the wire bytes — `UNION SELECT` becomes \
+             never appears in the wire bytes. `UNION SELECT` becomes \
              `\\u0055\\u004E\\u0049\\u004F\\u004E \\u0053\\u0045\\u004C\\u0045\\u0043\\u0054`. \
              Origin JSON parsers and JS string-literal decoders re-materialize the keyword at the \
              application layer. Distinct from full `unicode_escape` (which encodes every byte and \
-             trips high-`\\u`-density heuristics) — partial encode keeps the syntactic skeleton \
+             trips high-`\\u`-density heuristics), partial encode keeps the syntactic skeleton \
              visible, so the payload still reads as data."
         }
         Technique::PayloadEncoding(s) if s.contains("math_bold") => {
-            "Letters and digits replaced with their U+1D400 (Mathematical Bold) counterparts — \
+            "Letters and digits replaced with their U+1D400 (Mathematical Bold) counterparts. \
              `SELECT` becomes `𝐒𝐄𝐋𝐄𝐂𝐓`. Both NFKC-normalise back to ASCII, so backends with \
              Unicode-normalising collations (Postgres ICU, MySQL utf8mb4_0900_ai_ci, Java/.NET/Go) \
              execute the original keyword while WAF byte-regex sees a U+1D4xx codepoint and misses."
@@ -189,7 +189,7 @@ fn why_technique_works(tech: &Technique) -> &'static str {
         }
         Technique::PayloadEncoding(s) if s.contains("sql_char_decompose") => {
             "Every `'string'` literal becomes `CHAR(N1,N2,...)` with one codepoint integer per \
-             original char. The payload contains NO single-quoted ASCII tokens at all — defeats \
+             original char. The payload contains NO single-quoted ASCII tokens at all, defeats \
              literal-substring rules AND CONCAT-shaped rules in one move. MySQL/MariaDB/MSSQL \
              native; Postgres/Oracle use the sibling `pg_chr_decompose` tamper with unary CHR()."
         }
@@ -197,15 +197,15 @@ fn why_technique_works(tech: &Technique) -> &'static str {
             "Every `'string'` literal of length ≥ 2 is split into single-character adjacent \
              literals: `'admin'` becomes `'a' 'd' 'm' 'i' 'n'`. ANSI SQL-92 §5.3 specifies that \
              adjacent character-string literals separated by whitespace concatenate at parse \
-             time — implemented in MySQL, Postgres, SQLite, Oracle, DB2. The high-fidelity \
+             time: implemented in MySQL, Postgres, SQLite, Oracle, DB2. The high-fidelity \
              literal substring (the credential, the LFI path, the schema name) no longer \
              appears contiguously, so blocklist regexes anchored on \
              `'admin'`/`'/etc/passwd'`/`'root'` miss. Zero special characters, no functions, \
-             no comments — pure SQL semantics."
+             no comments (pure SQL semantics)."
         }
         Technique::PayloadEncoding(s) if s.contains("pg_chr_decompose") => {
             "Postgres/Oracle dialect: every `'string'` literal becomes \
-             `(CHR(N)||CHR(N)||...)` — unary CHR() joined by the SQL-standard `||` pipe operator. \
+             `(CHR(N)||CHR(N)||...)`: unary CHR() joined by the SQL-standard `||` pipe operator. \
              For ASCII payloads behaves identically to MySQL CHAR() decomposition; the syntactic \
              shape is distinct enough to defeat blocklists trained on one or the other."
         }
@@ -225,7 +225,7 @@ fn why_technique_works(tech: &Technique) -> &'static str {
         }
         Technique::RequestSmuggling(_) => {
             "Conflicting `Content-Length` and `Transfer-Encoding` headers cause the WAF and \
-             upstream to disagree on where the request body ends — the WAF sees benign content; \
+             upstream to disagree on where the request body ends, the WAF sees benign content; \
              the upstream sees the payload."
         }
         Technique::H2Evasion(_) => {
@@ -247,7 +247,7 @@ fn why_technique_works(tech: &Technique) -> &'static str {
 /// Compute a textual diff between two strings as a sequence of [`DiffHunk`]s.
 ///
 /// Uses Myers' LCS algorithm at character granularity for short payloads
-/// (≤ 1024 chars) — sufficient for the sub-kilobyte payloads the engine
+/// (≤ 1024 chars), sufficient for the sub-kilobyte payloads the engine
 /// actually generates. Above that we fall back to a single Delete + Insert
 /// pair to keep `Explanation` size bounded.
 fn textual_diff(original: &str, modified: &str) -> Vec<DiffHunk> {
@@ -371,7 +371,7 @@ mod tests {
 
     #[test]
     fn explain_educational_includes_why() {
-        // Use a double-url-encoded bypass — the bypass payload's lowercased
+        // Use a double-url-encoded bypass, the bypass payload's lowercased
         // form is `%2575nion %2553elect`, which doesn't contain `union` or
         // `select`, so SQLI-001 is genuinely no-longer-attributed and the
         // educational summary gets to explain WHY DoubleUrlEncode bypassed

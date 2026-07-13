@@ -1,25 +1,25 @@
-//! Query-economical equivalence oracles — the strategies that make
+//! Query-economical equivalence oracles, the strategies that make
 //! decompiling a *live* WAF affordable.
 //!
 //! `BoundedExhaustiveEq` (in [`crate::learn`]) is exact but
 //! exponential: only viable against a free in-process oracle. Against
 //! a real WAF every membership query is an HTTP round-trip, so the
-//! equivalence query — which dominates the budget — must be smart:
+//! equivalence query, which dominates the budget, must be smart:
 //!
-//! - [`WMethodEq`] — Chow's W-method conformance testing. A *guarantee*,
+//! - [`WMethodEq`]. Chow's W-method conformance testing. A *guarantee*,
 //!   not sampling: if the true machine has at most
 //!   `hyp_states + extra_states` states, a counterexample is found iff
 //!   one exists. This is what replaces the exponential exhaustive
 //!   oracle while keeping exactness within a stated bound.
-//! - [`UcbBanditEq`] — the Phase-C bandit, repurposed. The arms are
+//! - [`UcbBanditEq`], the Phase-C bandit, repurposed. The arms are
 //!   hypothesis transitions; UCB1 spends each query where the model is
 //!   least exercised (maximum expected information per query), exactly
 //!   the "ask the most informative membership query" reframe.
-//! - [`SampledEq`] — PAC-bounded random sampling; carries an honest
+//! - [`SampledEq`]. PAC-bounded random sampling; carries an honest
 //!   [`PacBound`] (Angluin's equivalence-query simulation bound) so a
 //!   "no counterexample" answer ships with a provable error/confidence,
 //!   never a bare claim.
-//! - [`ChainedEq`] — run cheap-and-guaranteed first, then the bandit,
+//! - [`ChainedEq`], run cheap-and-guaranteed first, then the bandit,
 //!   then sampling: the practical live strategy.
 
 use crate::error::Result;
@@ -32,7 +32,7 @@ use std::collections::{HashMap, VecDeque};
 /// counterexample, the hypothesis has error ≤ `epsilon` with
 /// confidence `1 − delta`.
 ///
-/// `ε = (ln(1/δ) + (round+1)·ln 2) / samples` — the textbook bound
+/// `ε = (ln(1/δ) + (round+1)·ln 2) / samples`: the textbook bound
 /// (Angluin 1988; Kearns & Vazirani §8). Reported, never assumed.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct PacBound {
@@ -61,7 +61,7 @@ impl PacBound {
     }
 }
 
-/// Deterministic SplitMix64 — reproducible draws so a learning run is
+/// Deterministic SplitMix64, reproducible draws so a learning run is
 /// a pure function of (oracle, seed). No external RNG, no flakiness.
 #[derive(Debug, Clone)]
 struct SplitMix64(u64);
@@ -217,7 +217,7 @@ fn run_abstract_accepts(sfa: &Sfa, alpha: &Alphabet, word: &[usize]) -> bool {
 
 /// The Phase-C bandit, repurposed as the equivalence strategy: arms
 /// are hypothesis transitions `(state, symbol)`; UCB1 spends the next
-/// query where the model is least exercised — maximum expected
+/// query where the model is least exercised, maximum expected
 /// information per live request.
 #[derive(Debug, Clone)]
 pub struct UcbBanditEq {
@@ -247,7 +247,7 @@ impl UcbBanditEq {
     /// Distinct `(state, symbol)` transition arms the bandit has
     /// probed at least once. UCB1 gives an unvisited arm infinite
     /// priority, so this strictly grows until every transition is
-    /// covered — the operational meaning of "spend each query where
+    /// covered, the operational meaning of "spend each query where
     /// the model is least exercised".
     #[must_use]
     pub fn arms_explored(&self) -> usize {
@@ -287,7 +287,7 @@ impl EquivalenceOracle for UcbBanditEq {
             }
             // `best` is None iff `cover` is empty or `alpha.len() == 0`.
             // Both mean the caller supplied a degenerate hypothesis or
-            // alphabet — propagate a typed error instead of panicking.
+            // alphabet (propagate a typed error instead of panicking).
             let (s, sym) = best.ok_or(crate::error::WafModelError::EmptySearchSpace)?;
             *self.counts.entry((s, sym)).or_insert(0) += 1;
 
@@ -411,7 +411,7 @@ mod tests {
     }
 
     /// UCB bandit with budget=0 must return Ok(None) without querying
-    /// the oracle — the for loop never executes, so the `ok_or()`
+    /// the oracle, the for loop never executes, so the `ok_or()`
     /// line is never reached. Anti-rig: budget=0 is the boundary case.
     #[test]
     fn ucb_bandit_zero_budget_returns_ok_none() {
@@ -451,7 +451,7 @@ mod tests {
             counts: HashMap::new(),
             total: 0,
         };
-        // Oracle always says "false" (reject) — matches hypothesis, no counterexample.
+        // Oracle always says "false" (reject) (matches hypothesis, no counterexample).
         let result = oracle.find_counterexample(&hyp, &alpha, &mut |_| Ok(false));
         assert!(
             result.is_ok(),
@@ -461,7 +461,7 @@ mod tests {
 
     /// Regression guard: if the inner loop's `best.ok_or(EmptySearchSpace)`
     /// fires, it must return the typed `WafModelError::EmptySearchSpace`
-    /// variant — not panic and not a different error variant. We simulate
+    /// variant, not panic and not a different error variant. We simulate
     /// this by directly calling `ok_or` on None and checking the variant.
     #[test]
     fn empty_search_space_error_variant_is_correct() {

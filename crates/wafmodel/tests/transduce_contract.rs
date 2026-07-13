@@ -1,6 +1,6 @@
 //! Truth contract for the pipeline transducers, and a transducer-level
 //! demonstration that the normalization-mismatch bypass class *emerges
-//! from composition* (the foundation the P2 solver stands on) — with
+//! from composition* (the foundation the P2 solver stands on), with
 //! the inert twin staying inert (anti-rig).
 
 use wafrift_wafmodel::normalize::Transform;
@@ -56,7 +56,7 @@ fn double_decode_differs_from_single_decode() {
 
 #[test]
 fn normalization_mismatch_bypass_emerges_from_composition() {
-    // x is crafted to be inert to the WAF but live at the sink — but
+    // x is crafted to be inert to the WAF but live at the sink, but
     // we do NOT hand-code that; we *compose stage transducers* and
     // observe the mismatch fall out. This is exactly what the P2
     // solver searches for automatically.
@@ -77,7 +77,7 @@ fn normalization_mismatch_bypass_emerges_from_composition() {
         "sink must reconstruct the live attack"
     );
 
-    // Anti-rig twin: a sink that decodes only ONCE keeps it inert —
+    // Anti-rig twin: a sink that decodes only ONCE keeps it inert 
     // the bypass is a property of the *mismatch*, not the payload.
     let single_sink = Pipeline(vec![Stage::UrlDecode {
         plus_is_space: false,
@@ -181,7 +181,7 @@ mod roundtrip_props {
             // Hex decode reverses whole-value hex encode.
             prop_assert_eq!(Stage::HexDecode.apply(&hex_all(&p)), p.clone());
             // Identity is identity; every stage is total (no panic) on
-            // arbitrary bytes — exercised by construction above. The two text
+            // arbitrary bytes, exercised by construction above. The two text
             // normalizers (NFKC/best-fit) round-trip in their own engine
             // soundness proptests and the solver's all-stage anti-drift guard.
             prop_assert_eq!(Stage::Identity.apply(&p), p);

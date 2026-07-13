@@ -1,6 +1,6 @@
 # wafrift-content-type
 
-Content-Type switching for [WafRift](https://github.com/santhreal/wafrift) — exploits parser discrepancies between WAFs and origin applications by re-encoding the same logical request body across mutually-incompatible MIME formats.
+Content-Type switching for [WafRift](https://github.com/santhsecurity/wafrift), exploits parser discrepancies between WAFs and origin applications by re-encoding the same logical request body across mutually-incompatible MIME formats.
 
 The technique was popularized as **WAFFLED** (the "Web Application Firewall Forwarding/Lexing/Encoding Discrepancy" family of bypasses): a WAF that strict-parses `application/json` won't see attack tokens that live inside an `application/xml` body the upstream still happily ingests. WafRift extends the idea with a multipart-boundary fuzzer, comment-injected JSON, and unicode-escape variants.
 
@@ -24,7 +24,7 @@ Every variant is marked with the matching `Content-Type` header so callers can d
 
 ## Boundary uniqueness
 
-`unique_boundary()` is wired into every multipart variant — boundaries are RNG-generated per call so retries don't collide and a network sniffer can't cluster requests by boundary fingerprint.
+`unique_boundary()` is wired into every multipart variant, boundaries are RNG-generated per call so retries don't collide and a network sniffer can't cluster requests by boundary fingerprint.
 
 ## Use as a library
 
@@ -51,4 +51,4 @@ new shapes by recompiling.
 ## License
 
 Dual-licensed under Apache-2.0 OR MIT. See the
-[workspace root](https://github.com/santhreal/wafrift) for details.
+[workspace root](https://github.com/santhsecurity/wafrift) for details.

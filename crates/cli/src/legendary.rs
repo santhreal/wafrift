@@ -1,9 +1,9 @@
-//! `wafrift legendary` — the one-shot demo command.
+//! `wafrift legendary`: the one-shot demo command.
 //!
 //! Runs `detect` -> `fingerprint` -> `bypass-probe` against a single
 //! target, with an optional `scan` phase when `--payload` is given,
 //! and stitches the results into one polished markdown writeup. The
-//! pitch: a stakeholder asks "what does wafrift do?" — you answer with
+//! pitch: a stakeholder asks "what does wafrift do?", you answer with
 //! one command and hand them the markdown.
 //!
 //! Design notes:
@@ -14,7 +14,7 @@
 //! - Output is deterministic ordering (detect, fingerprint,
 //!   bypass-probe, scan) so two runs against the same target produce
 //!   comparable diffs.
-//! - No new evasion logic lives here — it composes the existing
+//! - No new evasion logic lives here, it composes the existing
 //!   `waf_detect`, `bypass_probe`, and `scan` paths so the demo can
 //!   never drift from real wafrift behaviour. Anything the demo
 //!   reports is something the operator could verify with the
@@ -43,7 +43,7 @@ const RENDER_CAP: usize = 25;
 
 #[derive(Args, Debug)]
 pub(crate) struct LegendaryArgs {
-    /// Target URL — the surface to probe end-to-end.
+    /// Target URL (the surface to probe end-to-end).
     pub target: String,
 
     /// Payload to mutate and fire through the scan phase. When omitted,
@@ -99,7 +99,7 @@ pub(crate) struct LegendaryArgs {
     #[arg(long, default_value_t = 30)]
     pub scan_variants: usize,
 
-    /// Inter-request delay (ms) for both bypass-probe and scan — the
+    /// Inter-request delay (ms) for both bypass-probe and scan, the
     /// shared politeness knob.
     #[arg(long, default_value_t = 25)]
     pub delay_ms: u64,
@@ -115,7 +115,7 @@ pub(crate) struct LegendaryArgs {
     pub format: String,
 }
 
-/// Aggregated per-phase results — the input to the renderer.
+/// Aggregated per-phase results (the input to the renderer).
 #[derive(Debug, Default, serde::Serialize)]
 struct LegendaryReport {
     target: String,
@@ -162,7 +162,7 @@ struct PhaseBypassProbe {
     skipped_reason: Option<String>,
     error: Option<String>,
     /// Rendered text output of the underlying `bypass-probe` command
-    /// — embedded verbatim into the markdown report so the writeup is
+    ///: embedded verbatim into the markdown report so the writeup is
     /// self-contained.
     raw_text: Option<String>,
     /// Structured findings drained from the `bypass-probe --format
@@ -180,7 +180,7 @@ struct PhaseBypassProbe {
 }
 
 /// One bypass-probe finding row. Matches the shape `bypass_probe.rs`
-/// emits per-divergence under `--format json`. Narrow on purpose —
+/// emits per-divergence under `--format json`. Narrow on purpose 
 /// the demo report keeps the executive view; full details live in
 /// the underlying JSON capture.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -211,7 +211,7 @@ struct PhaseScan {
     error: Option<String>,
     payload: Option<String>,
     param: Option<String>,
-    /// Operator-pasteable re-run command — emitted into the markdown so
+    /// Operator-pasteable re-run command, emitted into the markdown so
     /// the reader can reproduce the inline scan independently. Distinct
     /// from `bypass_variants` below, which carries the actual findings
     /// produced by the inline scan that ran during this `legendary`.
@@ -221,7 +221,7 @@ struct PhaseScan {
     /// returned partial output; the markdown renderer guards on
     /// presence before emitting the table.
     waf_name: Option<String>,
-    /// `total_variants` from the scan JSON — this is `total_fired`
+    /// `total_variants` from the scan JSON, this is `total_fired`
     /// across ALL scan phases (explore + exploit + multi-vector +
     /// header-obf + intel loop), NOT the initial variant pool size.
     /// Misleading-looking but kept to mirror the scan JSON's
@@ -229,7 +229,7 @@ struct PhaseScan {
     /// as "Total requests fired" + adds a separate "Explore pool"
     /// row populated from `explore_variants`.
     total_variants: Option<u64>,
-    /// `explore_variants` from the scan JSON — the initial variant
+    /// `explore_variants` from the scan JSON, the initial variant
     /// pool size, which `--scan-variants` / `--variants-cap` bounds.
     /// This is the number the operator EXPECTS to see when they
     /// pass `--scan-variants 5`.
@@ -257,7 +257,7 @@ struct PhaseScan {
 /// One row of the bypass-variants table embedded in the markdown
 /// report. Mirrors the shape emitted by `scan` under `--format json`
 /// (see `scan/mod.rs` ~line 1897). Kept narrow on purpose: the demo
-/// report is the operator-facing summary, not a full scan record —
+/// report is the operator-facing summary, not a full scan record 
 /// extra fields belong in the underlying scan JSON.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct BypassVariantSummary {
@@ -272,7 +272,7 @@ struct BypassVariantSummary {
     minimal_payload: Option<String>,
     /// Operator-pasteable curl reproducer emitted by scan itself.
     /// When present, the markdown renderer prefers this over a
-    /// re-synthesised one — keeps the report consistent with what
+    /// re-synthesised one, keeps the report consistent with what
     /// the scan JSON exports, and preserves repro accuracy for the
     /// raw-runner shape where the reproducer has full
     /// method/header/body context the renderer can't reconstruct.
@@ -287,7 +287,7 @@ struct BypassVariantSummary {
 /// Entry point.
 ///
 /// # Errors
-/// Returns a non-zero `ExitCode` only for terminal failures — bad CLI
+/// Returns a non-zero `ExitCode` only for terminal failures, bad CLI
 /// input or an unwritable `--output` path. Per-phase errors are
 /// surfaced in the report itself, not propagated as an exit code,
 /// because the demo's value is showing **what wafrift saw**, including
@@ -321,7 +321,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
         ..Default::default()
     };
 
-    // Phase 1: detect — baseline GET, fingerprint the WAF.
+    // Phase 1: detect (baseline GET, fingerprint the WAF).
     eprintln!("{} GET {}", "[1/4] detect:".bright_black(), args.target);
     let (status, headers, body) =
         match fetch_for_detect(&args.target, args.timeout_secs, args.insecure) {
@@ -330,11 +330,11 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
                 report.detect.error = Some(e.clone());
                 eprintln!("       {} {}", "error:".red(), e);
                 // Mark downstream phases as not-reached so the renderer
-                // surfaces explicit "Not reached — detect phase failed"
+                // surfaces explicit "Not reached, detect phase failed"
                 // notes instead of emitting bare section headers with
                 // no body. Pre-fix the markdown was a parade of empty
                 // section 2/3/4 headers that read like rendering bugs.
-                let why = "detect phase failed — phases 2–4 not reached".to_string();
+                let why = "detect phase failed, phases 2–4 not reached".to_string();
                 report.bypass_probe.skipped_reason = Some(why.clone());
                 report.scan.skipped_reason = Some(why);
                 report.elapsed_ms = start.elapsed().as_millis();
@@ -359,7 +359,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
             body.len()
         );
         // Static-signature corpus came back empty. Auto-run the
-        // differential probe — legendary is the one-shot demo
+        // differential probe, legendary is the one-shot demo
         // command, the operator expects it to do the right thing
         // without flags. The differential probe sends an attack-
         // shaped string (per Authorisation note at the bottom of
@@ -398,7 +398,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
         );
     }
 
-    // Phase 2: fingerprint — surface infra markers (CDN, server, etc.)
+    // Phase 2: fingerprint, surface infra markers (CDN, server, etc.)
     eprintln!(
         "{} reading infra markers",
         "[2/4] fingerprint:".bright_black()
@@ -437,7 +437,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
         // Capture the JSON output to a tmpfile so the legendary
         // markdown can embed structured divergences (pre-fix the
         // probe streamed text to the terminal and ONLY the re-run
-        // command landed in the markdown — section 3 was unusable
+        // command landed in the markdown, section 3 was unusable
         // as a client deliverable). Same pattern as the scan phase.
         let bp_tmp = crate::helpers::secure_tmp_path("wafrift-legendary-bp", "json");
         let bp_args = BypassProbeArgs {
@@ -457,7 +457,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
             skip_methods: false,
             body_diff_threshold_pct: 10.0,
             min_severity: "low".into(),
-            // Quiet suppresses the per-probe progress bar — we keep
+            // Quiet suppresses the per-probe progress bar, we keep
             // the summary eprintlns that surface "X/N probes diverged"
             // since those are operator-load-bearing.
             quiet: false,
@@ -593,7 +593,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
     emit(report, args).unwrap_or(ExitCode::from(1))
 }
 
-/// Arguments to `run_inline_scan` — kept narrow on purpose. Every
+/// Arguments to `run_inline_scan`: kept narrow on purpose. Every
 /// field maps 1:1 onto a `wafrift scan` CLI flag so the subprocess
 /// invocation is auditable: if the operator can't tell which scan
 /// invocation legendary fired, the report stops being reproducible.
@@ -605,7 +605,7 @@ struct InlineScanArgs<'a> {
     delay_ms: u64,
     timeout_secs: u64,
     insecure: bool,
-    /// Hard cap on the initial variant set — passed through to
+    /// Hard cap on the initial variant set, passed through to
     /// `wafrift scan --variants-cap N`. Mirrors
     /// `LegendaryArgs::scan_variants` so the operator-facing flag
     /// actually bounds the scan now (it was historically advisory).
@@ -613,7 +613,7 @@ struct InlineScanArgs<'a> {
     /// Cap on the exploit-chain phase fires. Scaled to
     /// `scan_variants` (≈4× the initial pool) so a small
     /// `--scan-variants 5` doesn't quietly fire 500 extra exploit-
-    /// chain requests via the scan default — which the dogfood pass
+    /// chain requests via the scan default, which the dogfood pass
     /// caught producing 200+ second runs against permissive targets
     /// despite the small cap.
     exploit_cap: usize,
@@ -670,7 +670,7 @@ fn run_inline_scan(a: InlineScanArgs<'_>) -> Result<serde_json::Value, String> {
     // for this phase.
     let exit_code = status.code().unwrap_or(-1);
     // 0 = bypass confirmed; 4 = WAF in play, none won; 5 = rate-limited partial;
-    // 6 = no WAF on surface; 7 = timeout partial — all still emit JSON.
+    // 6 = no WAF on surface; 7 = timeout partial (all still emit JSON).
     if !status.success() && !matches!(exit_code, 4..=7) {
         let _ = std::fs::remove_file(&tmp);
         return Err(format!(
@@ -691,7 +691,7 @@ fn run_inline_scan(a: InlineScanArgs<'_>) -> Result<serde_json::Value, String> {
 
 /// Drain a scan JSON envelope (the shape emitted by `scan/mod.rs`
 /// when `--format json` is set) into the legendary report's
-/// `PhaseScan`. Tolerant of missing fields — the operator may run
+/// `PhaseScan`. Tolerant of missing fields, the operator may run
 /// legendary against a future scan binary that adds fields, or a past
 /// one that doesn't yet emit them; either way the report renders.
 ///
@@ -748,7 +748,7 @@ fn apply_scan_json(phase: &mut PhaseScan, root: &serde_json::Value) {
 /// Drain a bypass-probe JSON envelope (the shape emitted by
 /// `bypass_probe.rs` under `--format json`) into the legendary
 /// report's `PhaseBypassProbe`. The JSON has shape
-/// `{"results": [{"target":..., "divergences":[...], ...}]}` —
+/// `{"results": [{"target":..., "divergences":[...], ...}]}` 
 /// we flatten across URL results so the renderer sees a single
 /// divergence list. Tolerant of missing fields, same as the scan
 /// drain.
@@ -813,7 +813,7 @@ fn emit(report: LegendaryReport, args: LegendaryArgs) -> Result<ExitCode, ExitCo
 /// One-paragraph executive verdict embedded near the top of the
 /// legendary markdown. Reads off the per-phase counters and renders
 /// a single skimmable sentence per axis (detection / bypass-probe /
-/// scan). Pure — no side effects, no I/O — so the renderer stays
+/// scan). Pure, no side effects, no I/O, so the renderer stays
 /// deterministic across runs and the rendering is easy to unit-test.
 fn render_verdict_paragraph(r: &LegendaryReport) -> String {
     use std::fmt::Write as _;
@@ -823,7 +823,7 @@ fn render_verdict_paragraph(r: &LegendaryReport) -> String {
     if let Some(diff) = r.detect.differential.as_ref() {
         let _ = write!(
             out,
-            "**WAF detection:** present (differential-probe verdict; vendor not pinned — _{diff}_)\n\n"
+            "**WAF detection:** present (differential-probe verdict; vendor not pinned. _{diff}_)\n\n"
         );
     } else if !r.detect.detected.is_empty() {
         let names: Vec<String> = r
@@ -865,7 +865,7 @@ fn render_verdict_paragraph(r: &LegendaryReport) -> String {
             if highs > 0 {
                 let _ = write!(
                     out,
-                    "**Auth / path / method probe:** {probes} probes fired, **{divs} divergences** ({highs} HIGH severity — see section 3)\n\n"
+                    "**Auth / path / method probe:** {probes} probes fired, **{divs} divergences** ({highs} HIGH severity, see section 3)\n\n"
                 );
             } else {
                 let _ = write!(
@@ -922,7 +922,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
         r.started_at, r.elapsed_ms
     ));
 
-    // Executive verdict — one paragraph the reader can skim in 5
+    // Executive verdict, one paragraph the reader can skim in 5
     // seconds. Surfaces the only three numbers that matter:
     //   - which WAF (if any)
     //   - how many bypass payloads found (scan phase)
@@ -937,7 +937,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
     if let Some(err) = &r.detect.error {
         out.push_str(&format!(
             "Detection phase **errored**: `{err}`. The rest of the\n\
-             report is partial — re-run after the target is reachable.\n\n"
+             report is partial, re-run after the target is reachable.\n\n"
         ));
     } else if r.detect.ran {
         out.push_str(&format!(
@@ -953,7 +953,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
             //      fired → a WAF IS present, it just strips its
             //      vendor markers. Pre-fix the report opened with
             //      "**none confidently identified**" then immediately
-            //      followed with the differential verdict — internally
+            //      followed with the differential verdict, internally
             //      contradictory ("none" vs "is intercepting"). Lead
             //      with the differential verdict when we have one;
             //      fall back to the "nothing detected" line otherwise.
@@ -961,7 +961,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
                 out.push_str(&format!(
                     "- **WAF inferred via differential probe**: {diff}\n"
                 ));
-                out.push_str("  Static-signature corpus did not match a named vendor — the WAF is intercepting attack-shaped requests via a generic block page that strips its own marker headers. Treat the verdict as 'protected'; the specific vendor is not pinned.\n\n");
+                out.push_str("  Static-signature corpus did not match a named vendor, the WAF is intercepting attack-shaped requests via a generic block page that strips its own marker headers. Treat the verdict as 'protected'; the specific vendor is not pinned.\n\n");
             } else {
                 out.push_str("- WAF: **none confidently identified** at the baseline. The target may be unprotected, behind a CDN that's not surfacing rule fires on benign GETs, or fingerprinted via response signals our 160+ rule corpus doesn't cover. The bypass-probe phase below still runs.\n\n");
             }
@@ -969,7 +969,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
             out.push_str("- WAF candidate(s):\n");
             for d in &r.detect.detected {
                 out.push_str(&format!(
-                    "  - **{}** ({}% confidence) — indicators: {}\n",
+                    "  - **{}** ({}% confidence), indicators: {}\n",
                     d.name,
                     (d.confidence * 100.0).round() as u32,
                     d.indicators.join(", ")
@@ -985,9 +985,9 @@ fn render_markdown(r: &LegendaryReport) -> String {
         // Phase never ran (typically because detect errored before
         // reaching it). Pre-fix the markdown said "No CDN / server
         // / cache markers surfaced…" which falsely implied a
-        // connection was made — confusing on a dead-target report.
+        // connection was made (confusing on a dead-target report).
         if r.detect.error.is_some() {
-            out.push_str("Not reached — detect phase failed.\n\n");
+            out.push_str("Not reached, detect phase failed.\n\n");
         } else {
             out.push_str("Not reached.\n\n");
         }
@@ -1030,14 +1030,14 @@ fn render_markdown(r: &LegendaryReport) -> String {
             out.push('\n');
         }
 
-        // Concrete divergences — same render-cap pattern as scan
+        // Concrete divergences, same render-cap pattern as scan
         // section 4. Operators raising the body-diff threshold (or
         // scanning a permissive target) can see hundreds; render
         // the strongest 25 and footer the rest.
         if r.bypass_probe.divergences.is_empty() {
             out.push_str(
                 "No probes diverged from the baseline. The target's \
-                 auth/path/method axes appear consistent — re-run with \
+                 auth/path/method axes appear consistent, re-run with \
                  `--body-diff-threshold-pct 5` for a tighter sweep, or \
                  try the scan phase below to attack the payload axis.\n\n",
             );
@@ -1059,7 +1059,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
                      command at the bottom of this section._\n\n"
                 ));
             }
-            // Group HIGH severity first, then MEDIUM, then LOW —
+            // Group HIGH severity first, then MEDIUM, then LOW 
             // pentest deliverable readers want the alarming findings
             // up top.
             let mut ranked: Vec<&DivergenceSummary> = r.bypass_probe.divergences.iter().collect();
@@ -1112,7 +1112,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
             "Mutation variants of the payload are fired at the target, classified by the multi-signal oracle (block / bypass / challenge / rate-limit), with server `Retry-After` honoured via jittered backoff.\n\n",
         );
 
-        // Headline counters — emit the table only when AT LEAST
+        // Headline counters, emit the table only when AT LEAST
         // one counter is present. A scan binary that drained empty
         // (e.g. partial-output mid-crash) shouldn't render a
         // header-only table that reads as a bug; instead, the
@@ -1136,7 +1136,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
             // `--scan-variants` (mapped to `--variants-cap`); call
             // it out FIRST so the reader sees the cap honoured. The
             // separate "Total requests fired" row below covers the
-            // (much larger) sum across all scan phases — pre-fix
+            // (much larger) sum across all scan phases, pre-fix
             // these two were collapsed into one mislabelled row
             // saying "Variants fired" but showing the post-phase
             // total, contradicting `--scan-variants N`.
@@ -1168,7 +1168,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
             out.push('\n');
         }
 
-        // Per-variant payload table — the actual deliverable. When
+        // Per-variant payload table, the actual deliverable. When
         // there are no bypasses, name that too (the absence of a
         // table would otherwise read as "scan never ran").
         if r.scan.bypass_variants.is_empty() {
@@ -1185,7 +1185,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
             // Render cap: at -scan-variants 30 the bypass set is
             // bounded to ~30, but operators raising the cap (or
             // running against a permissive target) can wind up with
-            // hundreds of "successful" bypasses — rendering all of
+            // hundreds of "successful" bypasses, rendering all of
             // them turns the report into a 10000-line wall that
             // nobody reads. Cap the rendered table at 25 and add a
             // footer pointing at the JSON output for the full list.
@@ -1286,7 +1286,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
     ));
     out.push_str("```\n\n");
     out.push_str(
-        "**Authorisation** — wafrift only runs against systems you own \
+        "**Authorisation**: wafrift only runs against systems you own \
          or have written authorisation to test. The bypass-probe and \
          scan phases above send genuinely exploitable strings; verify \
          scope before each engagement.\n",
@@ -1337,7 +1337,7 @@ fn render_text(r: &LegendaryReport) -> String {
 
 /// A bypass payload that contains literal triple-backticks would
 /// break the markdown code fence around it. The standard escape is
-/// to wrap the fence in MORE backticks than the payload contains —
+/// to wrap the fence in MORE backticks than the payload contains 
 /// computing the right delimiter is fiddly, so we take the simpler
 /// path of inserting a zero-width space into the literal sequence
 /// (the rendered text reads identically, but the fence parser no
@@ -1429,7 +1429,7 @@ mod tests {
         // BYTE cap, not a char count, so for n=3 on Greek text (2 bytes
         // per char): cap = 2 bytes → the cut lands after the first char
         // `α` (byte boundary at offset 2). The output is "α…", not "αβγ…".
-        // This is intentional and documented in probe_classify::truncate —
+        // This is intentional and documented in probe_classify::truncate 
         // the byte cap is strictly tighter and avoids multi-byte overruns.
         let s = "αβγδεζηθικλμ";
         let t = truncate(s, 3);
@@ -1457,7 +1457,7 @@ mod tests {
     fn markdown_bypass_probe_scope_cites_canonical_probe_count() {
         // §10 COHERENCE: the legendary markdown is a client deliverable.
         // Its bypass-probe scope sentence must cite the real auth-bypass
-        // corpus size (AUTH_BYPASS_PROBE_COUNT), never a stale literal —
+        // corpus size (AUTH_BYPASS_PROBE_COUNT), never a stale literal 
         // pre-fix it claimed a "136-probe" set and a "150-probe sweep"
         // long after the corpus grew to 230. This pins the 4th doc site
         // the count integrity test (auth_bypass_probe_count_documented)
@@ -1519,7 +1519,7 @@ mod tests {
     #[test]
     fn render_markdown_with_all_phases_errored_is_still_well_formed() {
         // Failure-mode soak: every phase errored. Markdown must
-        // still contain all four sections — we never want a half-
+        // still contain all four sections, we never want a half-
         // rendered report just because one phase failed.
         let mut r = LegendaryReport {
             target: "https://example.com".into(),
@@ -1578,13 +1578,13 @@ mod tests {
     #[test]
     fn render_markdown_pipe_character_in_marker_does_not_break_table() {
         // The fingerprint table uses pipe-separated columns. A header
-        // value containing `|` would break the table rendering — the
+        // value containing `|` would break the table rendering, the
         // renderer must escape pipes in marker values.
         let mut r = LegendaryReport {
             target: "https://x".into(),
             ..Default::default()
         };
-        // Mark fingerprint as ran — post-dogfood-fix the renderer
+        // Mark fingerprint as ran, post-dogfood-fix the renderer
         // guards on `ran` to avoid emitting "No CDN markers…" on a
         // dead target where the fingerprint phase never executed.
         r.fingerprint.ran = true;
@@ -1594,7 +1594,7 @@ mod tests {
         let md = render_markdown(&r);
         // Pipe characters in values must be escaped or otherwise
         // not produce additional table columns. The implementation
-        // uses `v.replace('|', "\\|")` — verify the literal
+        // uses `v.replace('|', "\\|")`: verify the literal
         // appears in the output.
         assert!(
             md.contains(r"edge\|cache\|hit"),
@@ -1735,7 +1735,7 @@ mod tests {
         // top-level "scan" key. Before this fix, `apply_scan_json`
         // read fields directly off the root and silently produced
         // an all-None PhaseScan. The unwrap matches what
-        // `report::ingest_scan_json` does — same primitive on both
+        // `report::ingest_scan_json` does, same primitive on both
         // readers means one fix point if the shape evolves.
         let layered = serde_json::json!({
             "layer_report": {
@@ -1816,7 +1816,7 @@ mod tests {
             "scan-supplied repro_curl missing or rewritten:\n{md}"
         );
         // The renderer must NOT also emit a synthesised
-        // curl -G --data-urlencode line for this variant — would be
+        // curl -G --data-urlencode line for this variant, would be
         // duplicated noise.
         let repro_section_start = md.find("**Reproduce:**").expect("repro header missing");
         let after = &md[repro_section_start..];
@@ -2137,7 +2137,7 @@ mod tests {
         assert_eq!(phase.divergences[0].family, "headers");
         assert_eq!(phase.divergences[0].severity, "HIGH");
         assert_eq!(phase.divergences[0].description, "Override URL parser");
-        // Second finding has no description — must default to empty,
+        // Second finding has no description, must default to empty,
         // not panic.
         assert_eq!(phase.divergences[1].family, "methods");
         assert_eq!(phase.divergences[1].description, "");
@@ -2156,7 +2156,7 @@ mod tests {
     #[test]
     fn apply_bypass_probe_json_tolerates_missing_results_key() {
         // A future scan binary or a corrupted file could omit the
-        // top-level "results" key. Must not panic — the renderer
+        // top-level "results" key. Must not panic, the renderer
         // already handles empty divergences gracefully.
         let json = serde_json::json!({"unrelated": "field"});
         let mut phase = PhaseBypassProbe::default();
@@ -2309,14 +2309,14 @@ mod tests {
         let md = render_markdown(&r);
         // Summary table must surface counters with the post-dogfood
         // labels (pre-fix the row was misleadingly named "Variants
-        // fired" — operator who set --scan-variants 5 saw 615 there).
+        // fired" (operator who set --scan-variants 5 saw 615 there)).
         assert!(
             md.contains("Total requests fired"),
             "missing total_requests_fired row:\n{md}"
         );
         assert!(md.contains("| 50 |"), "total_variants value missing");
         assert!(md.contains("**2**"), "bypassed bolded count missing");
-        // The variant payload must be in the rendered output —
+        // The variant payload must be in the rendered output 
         // this is the entire point of the fix.
         assert!(md.contains("Variant #5"), "variant header missing");
         assert!(md.contains("%27 OR 1=1--"), "variant payload missing");
@@ -2446,7 +2446,7 @@ mod tests {
         }];
         let md = render_markdown(&r);
         // The literal ``` from the payload must not appear in the
-        // final markdown — otherwise it closes the surrounding
+        // final markdown, otherwise it closes the surrounding
         // code fence early.
         let payload_idx = md.find("evil").expect("payload missing");
         // Look for ``` AFTER "evil" but before the next \n```\n
@@ -2456,7 +2456,7 @@ mod tests {
         let payload_section = &after[..next_fence];
         assert!(
             !payload_section.contains("```"),
-            "payload's literal ``` leaked into markdown — fence will break:\n{payload_section}"
+            "payload's literal ``` leaked into markdown, fence will break:\n{payload_section}"
         );
     }
 

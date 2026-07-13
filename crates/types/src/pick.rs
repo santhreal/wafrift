@@ -1,4 +1,4 @@
-//! Random selection from a static pool — workspace-wide primitive.
+//! Random selection from a static pool (workspace-wide primitive).
 //!
 //! Several wafrift smuggle modules carry a small pool of "neutral"
 //! values (boundary prefixes, capsule type values, control bytes,

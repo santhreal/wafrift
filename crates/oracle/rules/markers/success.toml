@@ -8,7 +8,7 @@
 # unrelated tokens. Short generic words are unsafe:
 #   - "success"      matched "successfully blocked" on WAF block pages.
 #   - "authenticated" matched "unauthenticated" (the OPPOSITE meaning).
-#   - "home"         matched "chrome" — any block page mentioning the browser.
+#   - "home"         matched "chrome" (any block page mentioning the browser).
 # Those three produced false SuccessMarker signals, which (via the response
 # oracle's status-blocked-vs-success conflict rule) misclassified clean 403/401
 # blocks as Ambiguous. Prefer multi-word, success-specific phrases that a block

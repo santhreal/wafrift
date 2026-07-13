@@ -1,7 +1,7 @@
-//! `wafrift tcp-overlap` — plan a target-based TCP sequence-overlap desync.
+//! `wafrift tcp-overlap`: plan a target-based TCP sequence-overlap desync.
 //!
 //! Emits overlapping TCP segment plans that a WAF/IDS reassembles to a **benign**
-//! byte stream while the origin behind it reassembles to the **attack** — the
+//! byte stream while the origin behind it reassembles to the **attack**: the
 //! classic Ptacek-Newsham evasion, with every plan self-verified by simulating
 //! both reassembly policies before it is printed. This command plans and prints
 //! the segments (sequence number + bytes); a raw-socket sender delivers them.
@@ -112,7 +112,7 @@ fn report_json(args: &TcpOverlapArgs, plans: &[DifferentialPlan]) -> serde_json:
 }
 
 fn print_human(args: &TcpOverlapArgs, plans: &[DifferentialPlan]) {
-    println!("wafrift tcp-overlap — target-based TCP reassembly desync");
+    println!("wafrift tcp-overlap, target-based TCP reassembly desync");
     println!("benign (WAF view) : {}", args.benign);
     println!("attack (origin)   : {}", args.attack);
     if plans.is_empty() {

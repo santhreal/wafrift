@@ -1,10 +1,10 @@
-//! `wafrift sarif` — emit SARIF 2.1.0 from a `bench-waf --output` or
+//! `wafrift sarif`: emit SARIF 2.1.0 from a `bench-waf --output` or
 //! `scan --output` JSON file.
 //!
 //! SARIF (Static Analysis Results Interchange Format) is the
 //! OASIS-standardised JSON for security-tool output. GitHub Advanced
 //! Security, Azure DevOps, and most enterprise SAST/DAST UIs accept
-//! SARIF natively — emitting it from wafrift's bypass JSON gives the
+//! SARIF natively, emitting it from wafrift's bypass JSON gives the
 //! tool a first-class lane into enterprise scanning workflows
 //! (PR-blocking checks, dashboards, alert routing) without anyone
 //! writing a wafrift-specific parser.
@@ -22,7 +22,7 @@
 //!   one SARIF result.
 //!
 //! If neither key is present, the command emits a SARIF envelope with
-//! an empty `results` array AND exits 2 (anti-rig — silent success on
+//! an empty `results` array AND exits 2 (anti-rig, silent success on
 //! schema-mismatch was the dogfood report's BUG-1+2). Use `--quiet`
 //! to suppress the stderr warning and stick with exit 0 if you
 //! deliberately want an empty SARIF (e.g., CI gate that runs even on
@@ -61,7 +61,7 @@
 //! `ruleId` is `waf-bypass-<class>` where `<class>` is the lower-cased
 //! attack class (sql, xss, cmdi, …). Adding a new class is additive;
 //! renaming any existing class would break consumers that filter on
-//! `ruleId` — DON'T do it.
+//! `ruleId`: DON'T do it.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -72,16 +72,16 @@ use serde::Serialize;
 use serde_json::Value;
 
 /// SARIF 2.1.0 schema URI (OASIS Committee Specification 02). LAW 2:
-/// pinned constant — downstream consumers may use this URI to detect
+/// pinned constant, downstream consumers may use this URI to detect
 /// the schema variant; changing it is a breaking change.
 const SARIF_SCHEMA_URI: &str =
     "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json";
 
-/// SARIF format version string. LAW 2: pinned — emitting an older or
+/// SARIF format version string. LAW 2: pinned, emitting an older or
 /// newer version silently would break consumers' validators.
 const SARIF_VERSION: &str = "2.1.0";
 
-/// Reuse the cluster_cmd 256 MiB cap — same operator-typo defence
+/// Reuse the cluster_cmd 256 MiB cap, same operator-typo defence
 /// (e.g. `--input /dev/zero`).
 const SARIF_INPUT_MAX_BYTES: usize = 256 * 1024 * 1024;
 
@@ -103,7 +103,7 @@ pub(crate) struct SarifArgs {
 
     /// Target URL associated with this run. When the input is a
     /// `scan --output` or `hunt` state it usually carries `target_url`
-    /// already, but the bench corpus does not — use this flag to
+    /// already, but the bench corpus does not, use this flag to
     /// attach the URL of the WAF you were attacking so SARIF
     /// consumers (GitHub Code Scanning, etc.) get a real location to
     /// render.
@@ -111,7 +111,7 @@ pub(crate) struct SarifArgs {
     pub target_url: Option<String>,
 
     /// Suppress stderr warnings when the input JSON has no recognised
-    /// bypass key (`results` or `bypasses`) — emits an empty SARIF
+    /// bypass key (`results` or `bypasses`), emits an empty SARIF
     /// envelope with exit 0 instead of exit 2. Use for CI gates that
     /// run even on a clean campaign.
     #[arg(long, default_value_t = false)]
@@ -134,7 +134,7 @@ struct SarifRun<'a> {
     results: Vec<SarifResult>,
     /// SARIF 2.1.0 §3.18.3: maps `result.taxa[].toolComponent.name`
     /// references onto the CWE taxonomy. Each finding's CWE-942 entry
-    /// resolves through this — enables GitHub Code Scanning to render
+    /// resolves through this, enables GitHub Code Scanning to render
     /// the CWE link in the UI.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     taxonomies: Vec<SarifTaxonomy>,
@@ -212,7 +212,7 @@ struct SarifResult {
     /// SARIF 2.1.0 §3.27.23: stable identifiers used by consumers
     /// (GitHub Code Scanning, etc.) for cross-run dedup. We populate
     /// `primaryLocationLineHash` with a hash of (class, technique,
-    /// target) — same finding emitted twice gets the same fingerprint
+    /// target), same finding emitted twice gets the same fingerprint
     /// and the consumer dedupes the alert.
     #[serde(
         rename = "partialFingerprints",
@@ -262,7 +262,7 @@ struct SarifArtifactLocation {
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
-/// Exit code 2 — input JSON had no recognised bypass key
+/// Exit code 2, input JSON had no recognised bypass key
 /// (`results` or `bypasses`). Anti-rig: zero-result SARIF with exit 0
 /// silently lies to CI pipelines that upload to GitHub Code Scanning.
 /// `--quiet` suppresses the warning and downgrades to exit 0 when the
@@ -299,7 +299,7 @@ pub(crate) fn run_sarif(args: SarifArgs) -> ExitCode {
     }
 
     let crate_version = env!("CARGO_PKG_VERSION");
-    // Rules + taxonomies emitted only when there are results to describe —
+    // Rules + taxonomies emitted only when there are results to describe 
     // an empty SARIF stays minimal so jq-pipe smoke tests stay simple.
     let (rules, taxonomies) = if results.is_empty() {
         (Vec::new(), Vec::new())
@@ -348,7 +348,7 @@ enum BypassSchema {
     BenchResults,
     /// Top-level `bypasses` array (`hunt` campaign state).
     HuntBypasses,
-    /// Neither key present — empty SARIF + exit 2.
+    /// Neither key present (empty SARIF + exit 2).
     Unrecognised,
 }
 
@@ -381,7 +381,7 @@ fn read_input(path: &std::path::Path) -> Result<String, String> {
     }
 }
 
-/// CWE-942 — "Permissive Cross-domain Policy with Untrusted Domains".
+/// CWE-942: "Permissive Cross-domain Policy with Untrusted Domains".
 /// The closest CWE for a confirmed WAF bypass; SARIF consumers (GitHub
 /// Code Scanning, etc.) use this to render the CWE link in the UI.
 const SARIF_CWE_ID: &str = "942";
@@ -398,7 +398,7 @@ fn build_cwe_taxonomy() -> SarifTaxonomy {
             name: "CWE-942",
             short_description: SarifMessage {
                 text: "Permissive Cross-domain Policy with Untrusted Domains \
-                       (used as the closest mapping for confirmed WAF bypass — \
+                       (used as the closest mapping for confirmed WAF bypass. \
                        the request reached the application despite the perimeter \
                        control)"
                     .to_string(),
@@ -408,7 +408,7 @@ fn build_cwe_taxonomy() -> SarifTaxonomy {
 }
 
 /// Collect distinct `ruleId`s from the results and emit one
-/// [`SarifReportingDescriptor`] per — SARIF 2.1.0 §3.19.23. Consumers
+/// [`SarifReportingDescriptor`] per: SARIF 2.1.0 §3.19.23. Consumers
 /// dereference `result.ruleId` into this table to render readable rule
 /// names + descriptions in their UI.
 fn build_rules_table(results: &[SarifResult]) -> Vec<SarifReportingDescriptor> {
@@ -418,7 +418,7 @@ fn build_rules_table(results: &[SarifResult]) -> Vec<SarifReportingDescriptor> {
     }
     seen.into_iter()
         .map(|rule_id| {
-            // rule_id is "waf-bypass-<class>" — extract the class for the human name.
+            // rule_id is "waf-bypass-<class>" (extract the class for the human name).
             let class = rule_id.strip_prefix("waf-bypass-").unwrap_or(rule_id);
             SarifReportingDescriptor {
                 id: rule_id.to_string(),
@@ -452,10 +452,10 @@ fn title_case(s: &str) -> String {
 
 /// Compute a stable per-finding fingerprint as a hex u64. Inputs:
 /// (rule_id, target URL, technique-or-case-id). Two runs that emit
-/// the same finding produce the same fingerprint — GitHub Code
+/// the same finding produce the same fingerprint. GitHub Code
 /// Scanning uses this to dedupe alerts across PRs.
 fn finding_fingerprint(rule_id: &str, target: &str, key: &str) -> String {
-    // Cheap stable hash — DefaultHasher is fine for non-crypto identity.
+    // Cheap stable hash: DefaultHasher is fine for non-crypto identity.
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
     let mut h = DefaultHasher::new();
@@ -485,7 +485,7 @@ fn build_sarif_results_with_schema(json: &Value, target: &str) -> (Vec<SarifResu
     }
 }
 
-/// Test-only shim that drops the schema tag — keeps the existing
+/// Test-only shim that drops the schema tag, keeps the existing
 /// `build_sarif_results` test surface stable while the production
 /// callers use the schema-aware variant.
 #[cfg(test)]
@@ -495,7 +495,7 @@ fn build_sarif_results(json: &Value, target: &str) -> Vec<SarifResult> {
 
 /// Walk the bench/scan `results` array and emit one [`SarifResult`]
 /// per case whose `evaded.variants_bypassed > 0`. Cases with zero
-/// bypasses are NOT emitted — SARIF is for actionable findings, and
+/// bypasses are NOT emitted: SARIF is for actionable findings, and
 /// "we tried but didn't bypass" belongs in the bench scoreboard, not
 /// the finding stream.
 fn build_from_bench_results(json: &Value, target: &str) -> Vec<SarifResult> {
@@ -551,7 +551,7 @@ fn build_from_bench_results(json: &Value, target: &str) -> Vec<SarifResult> {
             );
         }
         // C-14 rule-quality fields carry through to SARIF properties
-        // when present — consumers (GitHub Code Scanning, security
+        // when present, consumers (GitHub Code Scanning, security
         // dashboards) can filter / sort by these without parsing the
         // raw bench JSON.
         if let Some(cq) = result.get("case_quality").and_then(|v| v.as_str()) {
@@ -606,7 +606,7 @@ fn build_from_bench_results(json: &Value, target: &str) -> Vec<SarifResult> {
 /// Walk a `hunt --campaign-id` state file's `bypasses` array (each
 /// item a `CampaignBypass` with `class` + `technique` + `round` +
 /// `discovered_at`) and emit one SARIF result per entry. Every
-/// CampaignBypass is by construction a confirmed bypass — no zero-bypass
+/// CampaignBypass is by construction a confirmed bypass, no zero-bypass
 /// filtering needed here.
 fn build_from_hunt_bypasses(json: &Value, target: &str) -> Vec<SarifResult> {
     let Some(bypasses) = json.get("bypasses").and_then(|v| v.as_array()) else {
@@ -710,7 +710,7 @@ mod tests {
         })
     }
 
-    /// LAW 12: SARIF version + schema URI are pinned constants —
+    /// LAW 12: SARIF version + schema URI are pinned constants 
     /// silently emitting a different version would break consumer
     /// validators.
     #[test]
@@ -723,7 +723,7 @@ mod tests {
     /// Empty input → empty results array, but the SARIF envelope
     /// (version, schema, tool driver, runs) is still present.
     /// Anti-rig: a tool that has never run still produces valid
-    /// SARIF — no `Vec::is_empty() ? skip emit : emit` rig.
+    /// SARIF (no `Vec::is_empty() ? skip emit : emit` rig).
     #[test]
     fn empty_results_emits_valid_empty_sarif_envelope() {
         let j = json!({ "schema_version": 1, "results": [] });
@@ -771,7 +771,7 @@ mod tests {
         );
     }
 
-    /// Cases with `variants_bypassed == 0` MUST be dropped — these
+    /// Cases with `variants_bypassed == 0` MUST be dropped, these
     /// are negative evidence. Anti-rig: pre-existing test in the
     /// bench scoreboard counts them, but the SARIF finding stream
     /// must not.
@@ -808,7 +808,7 @@ mod tests {
     }
 
     /// Results array with missing `evaded` field (e.g. a case that
-    /// never ran) is silently skipped — same behaviour as cluster_cmd.
+    /// never ran) is silently skipped (same behaviour as cluster_cmd).
     #[test]
     fn results_without_evaded_field_are_skipped() {
         let j = json!({
@@ -887,7 +887,7 @@ mod tests {
 
     /// DOGFOOD BUG-1 regression: hunt campaign state file uses
     /// `bypasses` (not `results`). Pre-fix, this returned 0 SARIF
-    /// results and exit code 0 — silently lying to CI uploaders.
+    /// results and exit code 0 (silently lying to CI uploaders).
     /// Post-fix: each CampaignBypass becomes one SARIF result with
     /// the campaign_id + round + class + technique in properties.
     #[test]
@@ -920,7 +920,7 @@ mod tests {
         assert!(sql.message.text.contains("campaign=race-test"));
         assert!(sql.message.text.contains("round=1"));
         assert!(sql.message.text.contains("tamper/comment"));
-        // hunt has target_url at the top level — should be picked
+        // hunt has target_url at the top level, should be picked
         // up when caller didn't pass --target-url.
         assert_eq!(
             sql.locations[0].physical_location.artifact_location.uri,
@@ -953,7 +953,7 @@ mod tests {
     }
 
     /// Bench-results format still recognised after the schema-aware
-    /// rewrite — anti-regression for the original path.
+    /// rewrite (anti-regression for the original path).
     #[test]
     fn bench_results_schema_still_recognised() {
         let j = bench_with_one_bypass();
@@ -1016,7 +1016,7 @@ mod tests {
             }],
         };
         let s = serde_json::to_string(&log).unwrap();
-        // Round-trip back to Value to inspect the shape — this is
+        // Round-trip back to Value to inspect the shape, this is
         // exactly what a SARIF consumer (GitHub, etc.) would do.
         let v: Value = serde_json::from_str(&s).unwrap();
         assert_eq!(v["version"].as_str(), Some("2.1.0"));
@@ -1042,7 +1042,7 @@ mod tests {
     /// LAW 9 wiring: rules table populated with one entry per distinct
     /// ruleId in the results. SARIF consumers (GitHub Code Scanning)
     /// dereference `result.ruleId` into `tool.driver.rules[]` to render
-    /// readable rule names — a missing rule entry shows the opaque ID.
+    /// readable rule names (a missing rule entry shows the opaque ID).
     #[test]
     fn rules_table_has_one_entry_per_distinct_rule_id() {
         let j = json!({
@@ -1139,7 +1139,7 @@ mod tests {
         assert_eq!(results[0].taxa[0].tool_component.name, "CWE");
     }
 
-    /// Same applies to hunt-bypasses path — both schemas must produce
+    /// Same applies to hunt-bypasses path, both schemas must produce
     /// the enterprise fields.
     #[test]
     fn every_hunt_result_has_partial_fingerprints_and_taxa() {
@@ -1162,7 +1162,7 @@ mod tests {
     /// LAW 9 wiring: when the bench JSON carries C-14 rule-quality
     /// fields (`case_quality` + `quality_score`), they must surface
     /// in SARIF properties so consumers can filter on them. Pre-fix,
-    /// SARIF discarded these silently — operators couldn't tell
+    /// SARIF discarded these silently, operators couldn't tell
     /// "signal" cases from "trivial_pass" cases in GitHub Code
     /// Scanning.
     #[test]
@@ -1200,7 +1200,7 @@ mod tests {
     }
 
     /// LAW 2 backwards-compat: cases WITHOUT case_quality/quality_score
-    /// (older bench JSON) still produce valid SARIF — fields are
+    /// (older bench JSON) still produce valid SARIF, fields are
     /// optional, no silent panic.
     #[test]
     fn missing_case_quality_fields_are_optional() {

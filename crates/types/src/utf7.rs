@@ -1,4 +1,4 @@
-//! UTF-7 (RFC 2152) codec — a foundational, self-contained primitive.
+//! UTF-7 (RFC 2152) codec (a foundational, self-contained primitive).
 //!
 //! Lives here in `wafrift-types` (alongside [`crate::hash`]) rather than in
 //! `wafrift-encoding` so BOTH `wafrift-encoding` (as an encoding strategy)
@@ -25,7 +25,7 @@ fn char_to_utf16be(c: char) -> Vec<u8> {
     out
 }
 
-/// Modified Base64 for UTF-7 (RFC 2152) — standard alphabet without padding.
+/// Modified Base64 for UTF-7 (RFC 2152) (standard alphabet without padding).
 fn modified_base64(bytes: &[u8]) -> String {
     let mut b64 = general_purpose::STANDARD.encode(bytes);
     b64.retain(|c| c != '=');
@@ -53,7 +53,7 @@ fn is_utf7_direct(ch: char) -> bool {
 
 /// UTF-7 encoding per RFC 2152.
 ///
-/// **Context**: `iis`, `legacy-dotnet` — only safe where the target actually
+/// **Context**: `iis`, `legacy-dotnet`: only safe where the target actually
 /// decodes UTF-7.
 #[must_use]
 pub fn utf7_encode(payload: &str) -> String {
@@ -102,12 +102,12 @@ fn utf8_lead_len(first: u8) -> usize {
     }
 }
 
-/// Decode UTF-7 (RFC 2152) — the inverse of [`utf7_encode`], i.e. exactly
+/// Decode UTF-7 (RFC 2152), the inverse of [`utf7_encode`], i.e. exactly
 /// what a UTF-7-honoring backend computes. `+` opens a shift sequence of
 /// modified-Base64 carrying UTF-16BE code units, terminated by `-` (absorbed)
 /// or any non-Base64 byte (kept); `+-` is a literal `+`; every other byte
 /// passes through. Returns `None` on malformed Base64, an odd UTF-16 byte
-/// count, or unpaired surrogates — so a caller proving round-trip soundness
+/// count, or unpaired surrogates, so a caller proving round-trip soundness
 /// treats undecodable input as "not recoverable" rather than guess.
 #[must_use]
 pub fn utf7_decode(s: &str) -> Option<String> {

@@ -58,7 +58,7 @@ pub struct TrustList {
 }
 
 impl TrustList {
-    /// Empty trust list — every bundle will be rejected as untrusted.
+    /// Empty trust list (every bundle will be rejected as untrusted).
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -116,7 +116,7 @@ impl TrustList {
 
     /// Load from a file. Missing file → empty trust list (not an error).
     pub fn load(path: &Path) -> Result<Self, RegistryError> {
-        // Trust lists are small — a few keys + metadata. 1 MiB caps
+        // Trust lists are small, a few keys + metadata. 1 MiB caps
         // the OOM surface tightly while accommodating any realistic
         // operator key roster.
         const TRUST_LIST_MAX_BYTES: u64 = 1024 * 1024;
@@ -139,7 +139,7 @@ impl TrustList {
     /// The write is atomic: content is first written to a sibling
     /// temp file (`.wafrift/trusted-keys.toml.NNNN.tmp`), then
     /// renamed over the target. A process crash mid-write therefore
-    /// leaves either the old file or the new file intact — never a
+    /// leaves either the old file or the new file intact, never a
     /// half-written, unparseable TOML that would lock the operator
     /// out of the trust list until they manually recover it.
     ///
@@ -166,7 +166,7 @@ impl TrustList {
                 tracing::warn!(
                     path = %tmp_path.display(),
                     error = %e,
-                    "failed to chmod trust list temp file to 0o600 — \
+                    "failed to chmod trust list temp file to 0o600. \
                      file may be world-readable"
                 );
             }

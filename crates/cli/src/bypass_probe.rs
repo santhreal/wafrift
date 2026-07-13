@@ -1,4 +1,4 @@
-//! `wafrift bypass-probe` — differential bypass scanner for a single
+//! `wafrift bypass-probe`: differential bypass scanner for a single
 //! protected URL.
 //!
 //! Algorithm (ported from gossan's `bypass403::probe`, generalised
@@ -26,7 +26,7 @@
 //! This is the workflow that turns wafrift from "WAF evasion engine"
 //! into "Tsai-class vuln finder": you point it at `/admin` (or any
 //! resource the WAF gates) and it tells you which of the 152+ tricks
-//! actually changes the response — i.e. which routing/auth bypass is
+//! actually changes the response, i.e. which routing/auth bypass is
 //! real on this stack.
 
 use clap::Args;
@@ -85,7 +85,7 @@ pub(crate) struct BypassProbeArgs {
     /// `--format json`; an error is returned if `--format text` is
     /// active (silently ignoring the flag would be a LAW 9 wiring
     /// violation). Used by `wafrift legendary` to capture probe findings
-    /// for the markdown report — the same pattern `wafrift scan --output`
+    /// for the markdown report, the same pattern `wafrift scan --output`
     /// follows.
     #[arg(long, short)]
     pub output: Option<std::path::PathBuf>,
@@ -112,7 +112,7 @@ pub(crate) struct BypassProbeArgs {
     #[arg(long, default_value = "low", value_parser = ["low", "medium", "high"])]
     pub min_severity: String,
 
-    /// Quiet — emit only machine-parseable JSON.
+    /// Quiet (emit only machine-parseable JSON).
     #[arg(short, long)]
     pub quiet: bool,
 }
@@ -165,7 +165,7 @@ async fn run_async(args: BypassProbeArgs) -> Result<(), String> {
         );
     }
 
-    // Shared floor: timeout + insecure-toggle + (no UA override here —
+    // Shared floor: timeout + insecure-toggle + (no UA override here 
     // bypass_probe historically sends reqwest's default UA so the
     // target sees a "neutral" client identity during the probe).
     // Redirect policy stays caller-owned: we INTENTIONALLY refuse to
@@ -241,17 +241,17 @@ struct UrlReport {
     baseline_status: u16,
     baseline_body_len: usize,
     /// Probes whose response was a throttle/unavailable code (429/503/…)
-    /// — excluded from `divergences` and surfaced so the operator knows
+    ///: excluded from `divergences` and surfaced so the operator knows
     /// the run was degraded rather than "clean, nothing found".
     rate_limited_probes: u32,
     /// Total probes fired (denominator for the rate-limited ratio).
     probes_fired: usize,
-    /// True when the *baseline* itself was throttled — every delta in
+    /// True when the *baseline* itself was throttled, every delta in
     /// this report is then measured against an error page and the whole
     /// run is inconclusive.
     baseline_was_throttled: bool,
     /// Number of probe responses that carried a parseable `Retry-After`
-    /// header AND a throttle status — i.e., the target asked us to slow
+    /// header AND a throttle status, i.e., the target asked us to slow
     /// down with a precise number. Distinguishes polite WAFs (parse +
     /// obey their hint) from silent ones (fall back to our own backoff).
     retry_after_responses: u32,
@@ -259,7 +259,7 @@ struct UrlReport {
     /// in milliseconds. Capped by [`crate::retry_after::MAX_OBEYED`] so
     /// a hostile origin cannot pin us asleep for an hour. Useful when
     /// reading the report after the fact to know "the longest cooldown
-    /// the target named was N seconds — that's the floor for a future
+    /// the target named was N seconds, that's the floor for a future
     /// `--delay-ms` value if you re-scan."
     max_retry_after_obeyed_ms: u64,
     divergences: Vec<Divergence>,
@@ -270,7 +270,7 @@ struct UrlReport {
 /// file case yields one URL per non-blank, non-`#` line.
 ///
 /// When `--paths-file` is set, only the SCHEME + AUTHORITY of
-/// `args.url` is used as the base — any path component on `args.url`
+/// `args.url` is used as the base, any path component on `args.url`
 /// is stripped. Pre-fix `wafrift bypass-probe https://t/admin
 /// --paths-file paths.txt` with `paths.txt` line `/login` silently
 /// constructed `https://t/admin/login` (the operator-supplied path
@@ -281,7 +281,7 @@ fn build_url_list(args: &BypassProbeArgs) -> Result<Vec<String>, String> {
     let Some(ref pf) = args.paths_file else {
         return Ok(vec![args.url.clone()]);
     };
-    // §15 TOCTOU fix: the previous stat()+read_to_string() had a race window —
+    // §15 TOCTOU fix: the previous stat()+read_to_string() had a race window 
     // the file could be replaced with a symlink to /dev/zero or a huge file
     // between the two calls. read_bounded_text_file opens once and reads with
     // a hard byte cap in the same open fd, eliminating the TOCTOU entirely.
@@ -296,7 +296,7 @@ fn build_url_list(args: &BypassProbeArgs) -> Result<Vec<String>, String> {
                     format!("read --paths-file {pf}: {msg}")
                 }
             })?;
-    // Strip any path component on the base URL — `--paths-file`
+    // Strip any path component on the base URL: `--paths-file`
     // entries are absolute paths or `scheme://host` overrides, and
     // the only meaningful "base" is the authority.
     let parsed =
@@ -313,7 +313,7 @@ fn build_url_list(args: &BypassProbeArgs) -> Result<Vec<String>, String> {
     if !matches!(parsed.path(), "" | "/") {
         eprintln!(
             "  {} `--paths-file` is set, so the path on the base URL ({}) \
-             is ignored — using authority-only base {}.",
+             is ignored, using authority-only base {}.",
             "note:".bright_cyan().bold(),
             parsed.path(),
             authority_only
@@ -337,7 +337,7 @@ fn build_url_list(args: &BypassProbeArgs) -> Result<Vec<String>, String> {
     }
     if out.is_empty() {
         return Err(format!(
-            "{pf} contained no non-empty / non-comment lines — nothing to probe"
+            "{pf} contained no non-empty / non-comment lines, nothing to probe"
         ));
     }
     Ok(out)
@@ -355,7 +355,7 @@ async fn probe_one_url(
     let parsed_path = parse_path_from_url(url);
 
     // Baseline. Even with concurrency we always do this first
-    // sequentially — the rest of the run depends on it.
+    // sequentially (the rest of the run depends on it).
     let baseline = match client.get(url).send().await {
         Ok(r) => r,
         Err(e) => {
@@ -366,7 +366,7 @@ async fn probe_one_url(
         }
     };
     let baseline_status = baseline.status().as_u16();
-    // Bounded read — decompression-bomb defence on the baseline (F136).
+    // Bounded read (decompression-bomb defence on the baseline (F136)).
     // If the baseline body hits the cap the probe run MUST abort, not
     // silently proceed with baseline_len == 0.  A zero-byte baseline
     // causes every probe response body to appear as a 100% divergence
@@ -396,7 +396,7 @@ async fn probe_one_url(
     };
     let baseline_len = baseline_body.len();
 
-    // TRACING: baseline captured — confirms what the probe run considers
+    // TRACING: baseline captured, confirms what the probe run considers
     // "normal" so divergences make sense in context.
     debug!(
         target: "wafrift::bypass_probe",
@@ -437,7 +437,7 @@ async fn probe_one_url(
         }
     }
 
-    // TRACING: probe set built — at info level so operators see the scope
+    // TRACING: probe set built, at info level so operators see the scope
     // without needing debug verbosity.
     info!(
         target: "wafrift::bypass_probe",
@@ -479,7 +479,7 @@ async fn probe_one_url(
     // concurrent so the natural primitive is a deadline + fetch_max,
     // not a per-batch accumulator. fetch_max is the cleanest way for
     // sibling tasks to publish "everyone wait until at least T" without
-    // a mutex — and `Instant`-derived ms is monotonic, so a wall-clock
+    // a mutex, and `Instant`-derived ms is monotonic, so a wall-clock
     // skip can't accidentally rush past it.
     let start = Instant::now();
     let not_before_ms = Arc::new(AtomicU64::new(0));
@@ -488,7 +488,7 @@ async fn probe_one_url(
     let baseline_was_throttled = is_throttle_or_unavailable(baseline_status);
     if baseline_was_throttled && !args.quiet {
         eprintln!(
-            "WARNING: baseline GET {url} returned HTTP {baseline_status} (throttled/unavailable) — \
+            "WARNING: baseline GET {url} returned HTTP {baseline_status} (throttled/unavailable). \
              every divergence below is measured against an error page and the whole run is \
              inconclusive. Slow down (--delay-ms) or test off the rate limiter."
         );
@@ -506,7 +506,7 @@ async fn probe_one_url(
         let max_ra_c = max_retry_after_obeyed_ms.clone();
         // Per-task nonce for jittered cooldown sleep. The task index in
         // the work list is monotonic, deterministic within a run, and
-        // unique — exactly the contract `retry_after::jittered` wants.
+        // unique (exactly the contract `retry_after::jittered` wants).
         let nonce = u32::try_from(idx).unwrap_or(u32::MAX);
         handles.push(tokio::spawn(async move {
             let _permit = sem_c.acquire_owned().await.ok()?;
@@ -514,7 +514,7 @@ async fn probe_one_url(
                 tokio::time::sleep(Duration::from_millis(delay_ms)).await;
             }
             // Honour any cooldown a sibling task has discovered. We
-            // sleep ONCE — if the deadline moves while we are asleep
+            // sleep ONCE, if the deadline moves while we are asleep
             // (a sibling fires, hits another 429, pushes the deadline
             // further), we accept that we may fire one premature probe
             // before the system re-converges. That probe will itself
@@ -549,7 +549,7 @@ async fn probe_one_url(
     let mut divergences = Vec::new();
     for h in handles {
         if let Ok(Some(div)) = h.await {
-            // TRACING: divergence found — the load-bearing bypass signal.
+            // TRACING: divergence found (the load-bearing bypass signal).
             // Label and severity give the operator a triage hint at info level
             // without scrolling through text output. Curl command is omitted
             // from the trace (it contains the full target URL which is already
@@ -576,14 +576,14 @@ async fn probe_one_url(
             target = %url,
             rate_limited = rate_limited_probes,
             total_probes = probes_fired,
-            "probes rate-limited — run may be degraded"
+            "probes rate-limited, run may be degraded"
         );
     }
     if rate_limited_probes > 0 && !args.quiet {
         let pct = f64::from(rate_limited_probes) / probes_fired.max(1) as f64 * 100.0;
         eprintln!(
             "RATE-LIMITED: {rate_limited_probes}/{probes_fired} probes ({pct:.0}%) were \
-             rate-limited (HTTP 429/503/…) and excluded from divergences — they are the \
+             rate-limited (HTTP 429/503/…) and excluded from divergences, they are the \
              target throttling us, not access bypasses."
         );
         if retry_after_responses_n > 0 {
@@ -687,7 +687,7 @@ async fn run_probe_job(
             // shapes (leading whitespace, embedded non-ASCII, tabs) BEFORE
             // the request hits the wire. The auth_bypass probe set includes
             // RFC-illegal variants on purpose for raw-TCP / legacy-stack
-            // hunting, but via reqwest they noop silently — the operator's
+            // hunting, but via reqwest they noop silently, the operator's
             // probe count overstates reality with no signal. Pre-validate
             // and warn loudly when the client refuses a probe header so
             // the report distinguishes "fired and no divergence" from
@@ -699,7 +699,7 @@ async fn run_probe_job(
                     value = %probe.value,
                     label = probe.label,
                     "probe header is rejected by HTTP/1.1 client validation \
-                     (RFC-illegal token, embedded non-ASCII, or whitespace) — \
+                     (RFC-illegal token, embedded non-ASCII, or whitespace). \
                      reqwest will not send it. Use raw-TCP transport to probe \
                      non-compliant origins for this variant."
                 );
@@ -734,7 +734,7 @@ async fn run_probe_job(
                 body_thresh,
                 || {
                     // Pre-fix: `'{}: {}' '{url}'` raw-interpolated header,
-                    // value, and url with bare single-quote delimiters —
+                    // value, and url with bare single-quote delimiters 
                     // any `'` in the URL path or the rewrite-probe
                     // value (probe.value carries the operator's path
                     // for X-Original-URL / X-Rewrite-URL probes)
@@ -814,7 +814,7 @@ fn print_report_text(r: &UrlReport) {
         r.baseline_status,
         r.baseline_body_len,
         if r.baseline_was_throttled {
-            "  ⚠ THROTTLED — results inconclusive"
+            "  ⚠ THROTTLED, results inconclusive"
         } else {
             ""
         }
@@ -822,7 +822,7 @@ fn print_report_text(r: &UrlReport) {
     if r.rate_limited_probes > 0 {
         let pct = f64::from(r.rate_limited_probes) / r.probes_fired.max(1) as f64 * 100.0;
         println!(
-            "rate-limited: {}/{} probes ({pct:.0}%) returned 429/503/… — excluded from \
+            "rate-limited: {}/{} probes ({pct:.0}%) returned 429/503/…, excluded from \
              divergences (target throttling, not a bypass)",
             r.rate_limited_probes, r.probes_fired
         );
@@ -836,10 +836,10 @@ fn print_report_text(r: &UrlReport) {
     if r.divergences.is_empty() {
         let why = if r.baseline_was_throttled || r.rate_limited_probes * 2 >= r.probes_fired as u32
         {
-            "no divergences — but the run was dominated by rate-limiting, so this is \
+            "no divergences, but the run was dominated by rate-limiting, so this is \
              INCONCLUSIVE, not a clean bill of health. Re-run slower / off the limiter."
         } else {
-            "no divergences — every probe matched the baseline."
+            "no divergences (every probe matched the baseline)."
         };
         println!("{why}");
     } else {
@@ -898,7 +898,7 @@ fn classify(
         return None;
     }
     // bypass_probe historically reported only HIGH/MEDIUM/LOW (no
-    // EQUAL) for divergences — that's preserved here. EQUAL is
+    // EQUAL) for divergences, that's preserved here. EQUAL is
     // filtered above by the "if !status_changed && !body_changed"
     // gate; what reaches the severity_label call is always at
     // least LOW.
@@ -1024,7 +1024,7 @@ mod tests {
 
     #[test]
     fn parse_path_from_url_handles_userinfo_in_authority() {
-        // RFC 3986 §3.2.1 userinfo — `user:pass@host`. Path starts
+        // RFC 3986 §3.2.1 userinfo: `user:pass@host`. Path starts
         // AFTER the authority.
         assert_eq!(
             parse_path_from_url("http://user:pass@example.com/admin"),
@@ -1151,7 +1151,7 @@ mod tests {
     fn classify_calls_curl_closure_once_on_fire() {
         // The curl-fn is held as a closure so it only allocates
         // the (potentially long) curl command string when the
-        // divergence FIRES — a perf shape we want to preserve.
+        // divergence FIRES (a perf shape we want to preserve).
         // Verify it gets called when we expect a divergence.
         let called = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let called_c = called.clone();
@@ -1186,7 +1186,7 @@ mod tests {
     //
     // These tests stand up a minimal in-process HTTP server with
     // tokio's TcpListener (axum is not a dev-dep here and we want
-    // exact control over the response bytes — wiremock buys nothing
+    // exact control over the response bytes, wiremock buys nothing
     // we don't already get from 15 lines of raw socket code). The
     // server's per-request behaviour is driven by a shared atomic
     // counter, so a single test can name exactly which probes
@@ -1215,7 +1215,7 @@ mod tests {
                 let count_c = count.clone();
                 let respond_c = respond.clone();
                 tokio::spawn(async move {
-                    // Drain the request headers — we don't inspect them,
+                    // Drain the request headers, we don't inspect them,
                     // but reqwest will close the connection if we reply
                     // before reading at least the first line, and a
                     // single read() is enough for a header-only GET.
@@ -1248,7 +1248,7 @@ mod tests {
     }
 
     fn methods_only_args(url: String) -> BypassProbeArgs {
-        // 7 method-override probes only — keeps the test loop short
+        // 7 method-override probes only, keeps the test loop short
         // and deterministic. delay_ms=0 because the cooldown wait is
         // what we want to observe, not the user politeness spread.
         BypassProbeArgs {
@@ -1275,7 +1275,7 @@ mod tests {
         // Server: baseline 200, next 2 probes return 429 + Retry-After:1,
         // the rest return 200. After the first concurrent batch trips
         // the rate limit, every remaining probe must wait ≥ ~1 s before
-        // firing — proving the shared deadline is published and obeyed.
+        // firing (proving the shared deadline is published and obeyed).
         let addr = spawn_mock_server(|n| match n {
             0 => ok_response("baseline body 11"),
             1 | 2 => rate_limited_response(1),
@@ -1350,11 +1350,11 @@ mod tests {
         );
         assert_eq!(
             report.retry_after_responses, 0,
-            "no Retry-After header was sent — counter must stay at zero"
+            "no Retry-After header was sent, counter must stay at zero"
         );
         assert_eq!(
             report.max_retry_after_obeyed_ms, 0,
-            "no Retry-After header was sent — max must stay at zero"
+            "no Retry-After header was sent, max must stay at zero"
         );
     }
 
@@ -1392,7 +1392,7 @@ mod tests {
         // computes the deadline differently.
         assert!(
             elapsed < Duration::from_millis(800),
-            "Retry-After: 0 must not introduce a real cooldown — elapsed {elapsed:?}"
+            "Retry-After: 0 must not introduce a real cooldown, elapsed {elapsed:?}"
         );
     }
 
@@ -1413,14 +1413,14 @@ mod tests {
         .await;
         let url = format!("http://{addr}/admin");
         let mut args = methods_only_args(url.clone());
-        // Tight timeout — we never want to actually sleep ANYWHERE
+        // Tight timeout, we never want to actually sleep ANYWHERE
         // near 60s in this test. The MAX_OBEYED cap is what we're
         // gating; the deadline will be 60s in the future and the
         // remaining probes will time out on their semaphore wait,
         // which is fine. We just need the captured aggregate to
         // reflect the cap.
         args.timeout_secs = 2;
-        // 1 probe is enough — the very first 429 captures the cap.
+        // 1 probe is enough (the very first 429 captures the cap).
         args.skip_headers = true;
         args.skip_paths = true;
         // 7 methods × cooldown caps total runtime; assert via the
@@ -1431,7 +1431,7 @@ mod tests {
             .build()
             .unwrap();
         // Run with the spawned listener; the first probe sees 429+RA.
-        // We don't await the full 60s deadline — we check the reported
+        // We don't await the full 60s deadline, we check the reported
         // max_retry_after_obeyed_ms.
         let report = tokio::time::timeout(
             Duration::from_secs(3),
@@ -1455,7 +1455,7 @@ mod tests {
     #[test]
     fn classify_probe_with_zero_baseline_and_zero_probe_is_inert() {
         // Boundary: both sides empty. delta_signal must return
-        // (false, false, 0.0) — and classify returns None.
+        // (false, false, 0.0) (and classify returns None).
         let d = classify("x", "x", "x", 200, 0, 200, 0, 10.0, || "curl".to_string());
         assert!(d.is_none());
     }
@@ -1507,7 +1507,7 @@ mod tests {
         // probe_one_url must return Err rather than continuing with
         // baseline_len == 0.
         let cap = crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES;
-        // The body is cap+1 bytes — just enough to push past the limit.
+        // The body is cap+1 bytes (just enough to push past the limit).
         let addr = spawn_mock_server(move |_| big_body_response(cap + 1)).await;
         let url = format!("http://{addr}/resource");
         let args = methods_only_args(url.clone());
@@ -1532,11 +1532,11 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn baseline_exactly_at_cap_is_not_an_error() {
         // A body of exactly DEFAULT_MAX_RESPONSE_BYTES bytes must NOT
-        // trigger the overrun — only strictly-over-cap bodies abort.
+        // trigger the overrun (only strictly-over-cap bodies abort).
         let cap = crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES;
         let addr = spawn_mock_server(move |n| {
             if n == 0 {
-                big_body_response(cap) // exactly at cap — must succeed
+                big_body_response(cap) // exactly at cap, must succeed
             } else {
                 ok_response("probe body")
             }
@@ -1572,7 +1572,7 @@ mod tests {
         let delta = body_delta_pct(0, 500);
         assert!(
             (delta - 100.0).abs() < f64::EPSILON,
-            "zero baseline with 500-byte probe must be 100% — the false-positive storm"
+            "zero baseline with 500-byte probe must be 100%, the false-positive storm"
         );
         // And the classify gate would fire on this:
         let d = classify(
@@ -1614,7 +1614,7 @@ mod tests {
         use std::io::Write;
         let mut f = tempfile::NamedTempFile::new().unwrap();
         // Write exactly cap+1 byte so a future raise of MAX_PATHS_FILE_BYTES
-        // forces the operator to also lift this assertion — not silently inflate.
+        // forces the operator to also lift this assertion (not silently inflate).
         f.write_all(&vec![b'a'; 10 * 1024 * 1024 + 1]).unwrap();
         let mut args = methods_only_args("https://example.com/".into());
         args.paths_file = Some(f.path().to_str().unwrap().to_string());

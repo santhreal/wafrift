@@ -14,7 +14,7 @@ operator can:
 
 When you make a change to `worker/src/index.ts`, mirror it into
 `crates/cli/tests/cf_real_mock.rs` and run the smoke test. The
-two sides diverging is a regression — every endpoint the deployed
+two sides diverging is a regression, every endpoint the deployed
 Worker exposes MUST also exist in the mock (404 from one and 200
 from the other = drift).
 

@@ -174,7 +174,7 @@ pub async fn assert_connect_target_allowed(
 /// public socket addresses. Callers should pass these straight to
 /// `TcpStream::connect_to_addr` instead of reusing `host:port` so a
 /// DNS rebinding flip between the validation and the connect cannot
-/// land — pre-fix `tunnel(addr: String)` re-resolved DNS, opening a
+/// land, pre-fix `tunnel(addr: String)` re-resolved DNS, opening a
 /// TOCTOU window the audit caught as CRITICAL.
 pub async fn resolve_connect_target_allowed(
     addr: &str,
@@ -238,7 +238,7 @@ pub async fn resolve_connect_target_allowed(
 /// to a public IP at policy-check time can't suddenly resolve to
 /// 169.254.169.254 / 127.0.0.1 / RFC1918 at fetch time.
 ///
-/// The wrapper is permissive when `allow_private_upstream` is set —
+/// The wrapper is permissive when `allow_private_upstream` is set 
 /// caller flips that switch when targeting localhost on purpose
 /// (e.g. lab tests).
 pub struct BogonFilteringResolver {
@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn ipv4_mapped_v6_loopback_is_bogon() {
-        // ::ffff:127.0.0.1 — without the IPv4-mapped re-check, this
+        // ::ffff:127.0.0.1, without the IPv4-mapped re-check, this
         // sneaks past v.is_loopback() (which only catches ::1).
         assert!(ip_addr_is_bogon("::ffff:127.0.0.1".parse().unwrap()));
     }
@@ -350,7 +350,7 @@ mod tests {
 
     #[test]
     fn ipv4_mapped_v6_public_ok() {
-        // Sanity — mapped form of a public address must NOT be flagged.
+        // Sanity (mapped form of a public address must NOT be flagged).
         assert!(!ip_addr_is_bogon("::ffff:8.8.8.8".parse().unwrap()));
     }
 

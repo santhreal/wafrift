@@ -1,30 +1,30 @@
 //! Shared variant generator for the homoglyph/normalization-differential
 //! engines ([`super::nfkc_preimage`], [`super::bestfit`]).
 //!
-//! Both engines exploit the same WAF↔origin gap — a WAF matches literal ASCII
+//! Both engines exploit the same WAF↔origin gap, a WAF matches literal ASCII
 //! tokens, an origin transform (`f`) collapses a family of codepoints back to
-//! ASCII — and differ ONLY in (a) the inverse map `ASCII → preimage codepoints`
+//! ASCII, and differ ONLY in (a) the inverse map `ASCII → preimage codepoints`
 //! and (b) the origin transform `f` used for the soundness gate. This module
 //! owns the three substitution strategies and the `f(variant) == payload`
 //! soundness invariant so neither engine duplicates them.
 
 use std::collections::{HashMap, HashSet};
 
-/// Distinct "style passes" attempted — each picks preimages at a rotating
+/// Distinct "style passes" attempted, each picks preimages at a rotating
 /// index, yielding visually distinct, fully-substituted variants.
 const STYLE_PASSES: usize = 16;
 
-/// Hard cap on payload length processed (DoS guard — fanout is per character).
+/// Hard cap on payload length processed (DoS guard (fanout is per character)).
 const MAX_PAYLOAD_BYTES: usize = 4096;
 
 /// Generate up to `max` substitution variants of `payload` using `preimage`
 /// (`ASCII char → codepoints that the origin transform maps back to it`) and
-/// `normalize` (the origin transform — the soundness oracle). Every returned
+/// `normalize` (the origin transform, the soundness oracle). Every returned
 /// string `v` satisfies `normalize(v) == payload && v != payload`, is unique,
 /// and shares few literal bytes with the attack.
 ///
 /// Strategies: (A) full style passes, (C) minimal single-position perturbation
-/// — the stealthiest evasion, breaking a literal token with one substitution —
+///: the stealthiest evasion, breaking a literal token with one substitution 
 /// and (B) alternating fold.
 pub(crate) fn generate<F>(
     payload: &str,
@@ -52,7 +52,7 @@ where
     let mut out: Vec<String> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
 
-    // Strategy A — style passes: pick preimage index k (mod each char's count).
+    // Strategy A (style passes: pick preimage index k (mod each char's count)).
     for k in 0..STYLE_PASSES.min(max.saturating_mul(2)) {
         let s: String = chars
             .iter()
@@ -68,7 +68,7 @@ where
         }
     }
 
-    // Strategy C — minimal perturbation: fold exactly ONE position at a time.
+    // Strategy C (minimal perturbation: fold exactly ONE position at a time).
     let mut ordered: Vec<usize> = foldable.iter().copied().collect();
     ordered.sort_unstable();
     for &pos in &ordered {
@@ -94,7 +94,7 @@ where
         accept(payload, s, &normalize, &mut out, &mut seen);
     }
 
-    // Strategy B — alternating fold (defeats "too many non-ASCII" heuristics).
+    // Strategy B (alternating fold (defeats "too many non-ASCII" heuristics)).
     let alt: String = chars
         .iter()
         .enumerate()

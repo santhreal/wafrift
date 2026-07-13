@@ -10,9 +10,9 @@
 #   3. cargo test --workspace --release (background)
 #   4. cargo clippy --workspace --all-targets --release -- -D warnings (background)
 #   5. wafrift --help (must not error)
-#   6. wafrift evade --help (must not error — fails if #125 unwired)
-#   7. wafrift scan --graphql --help (must not error — fails if #126 unwired)
-#   8. wafrift audit --help (must not error — wafmodel defender path)
+#   6. wafrift evade --help (must not error: fails if #125 unwired)
+#   7. wafrift scan --graphql --help (must not error: fails if #126 unwired)
+#   8. wafrift audit --help (must not error: wafmodel defender path)
 #   9. wafrift bench-waf against testing.santh.dev with --evade (the
 #      headline number).
 #  10. Compare against the previous report in wafrift-bench/results/
@@ -40,7 +40,7 @@ BENCH_TARGET="${BENCH_TARGET:-https://testing.santh.dev}"
 VARIANTS="${VARIANTS:-10}"
 SKIP_BENCH="${SKIP_BENCH:-0}"
 
-# Soft-fail mode — don't kill the sweep if a not-yet-wired surface is
+# Soft-fail mode, don't kill the sweep if a not-yet-wired surface is
 # missing. Each subcommand probe is timeboxed so a hang doesn't ruin
 # the run.
 TIMEBOX="${TIMEBOX:-30}"
@@ -84,12 +84,12 @@ PID_TEST=$!
 ) &
 PID_CLIPPY=$!
 
-wait "$PID_BUILD"     && ok "build green"   || bad "build RED — see $RESULT_DIR/dogfood-${TIMESTAMP}-build.log"
-wait "$PID_TEST"      && ok "tests green"   || bad "tests RED — see $RESULT_DIR/dogfood-${TIMESTAMP}-test.log"
-wait "$PID_CLIPPY"    && ok "clippy green"  || bad "clippy RED — see $RESULT_DIR/dogfood-${TIMESTAMP}-clippy.log"
+wait "$PID_BUILD"     && ok "build green"   || bad "build RED, see $RESULT_DIR/dogfood-${TIMESTAMP}-build.log"
+wait "$PID_TEST"      && ok "tests green"   || bad "tests RED, see $RESULT_DIR/dogfood-${TIMESTAMP}-test.log"
+wait "$PID_CLIPPY"    && ok "clippy green"  || bad "clippy RED, see $RESULT_DIR/dogfood-${TIMESTAMP}-clippy.log"
 
 if [ ! -x "$WAFRIFT" ]; then
-    bad "wafrift binary missing — abort"
+    bad "wafrift binary missing, abort"
     exit 2
 fi
 
@@ -120,7 +120,7 @@ probe_subcommand "wafrift recon"        "recon"
 
 # --- 9. bench ----------------------------------------------------
 if [ "$SKIP_BENCH" = "1" ]; then
-    log "SKIP_BENCH=1 — bench step skipped"
+    log "SKIP_BENCH=1, bench step skipped"
     BENCH_JSON="null"
 else
     log "running bench-waf against $BENCH_TARGET (variants=$VARIANTS)..."
@@ -131,10 +131,10 @@ else
         --variants "$VARIANTS" \
         --output "$BENCH_OUT" \
         > "$RESULT_DIR/dogfood-${TIMESTAMP}-bench.log" 2>&1; then
-        ok "bench complete — see $BENCH_OUT"
+        ok "bench complete, see $BENCH_OUT"
         BENCH_JSON="$BENCH_OUT"
     else
-        bad "bench failed — see $RESULT_DIR/dogfood-${TIMESTAMP}-bench.log"
+        bad "bench failed, see $RESULT_DIR/dogfood-${TIMESTAMP}-bench.log"
         BENCH_JSON="null"
     fi
 fi

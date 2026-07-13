@@ -3,7 +3,7 @@
 //! Every assertion names exact channels and exact bytes, and every
 //! positive has a sanitized negative twin. A test here that would still
 //! pass if `canonicalize` returned `CanonView { method, segments: vec![] }`
-//! is forbidden by construction — each checks specific extracted bytes.
+//! is forbidden by construction (each checks specific extracted bytes).
 
 use wafrift_types::Request;
 use wafrift_wafmodel::{Channel, canonicalize};
@@ -47,7 +47,7 @@ fn raw_bytes_are_preserved_without_decoding() {
     assert_eq!(
         seg(&v, Channel::ArgValue),
         vec![b"%3Cscript%3Ealert(1)%3C%2Fscript%3E".to_vec()],
-        "canonicalize MUST NOT url-decode — that is a transducer concern"
+        "canonicalize MUST NOT url-decode, that is a transducer concern"
     );
     // Negative twin: the decoded form must NOT appear anywhere.
     assert!(

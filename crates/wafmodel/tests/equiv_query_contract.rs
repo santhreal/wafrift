@@ -3,7 +3,7 @@
 //! These prove the *guarantee* (W-method recovers the exact language
 //! within its state bound) and the *economy* (the bandit costs no more
 //! than random sampling) and the *honesty* (the PAC bound is a real,
-//! monotone, sub-1 number that empirically holds) — never `!is_empty()`.
+//! monotone, sub-1 number that empirically holds) (never `!is_empty()`).
 
 use wafrift_types::Request;
 use wafrift_wafmodel::canon::Channel;
@@ -82,7 +82,7 @@ fn wmethod_recovers_exact_language_far_cheaper_than_exhaustive() {
     // queries than the exponential exhaustive certificate.
     assert!(
         viaw.membership_queries * 4 < viax.membership_queries,
-        "W-method {} MQ vs exhaustive {} — expected ≥4× cheaper",
+        "W-method {} MQ vs exhaustive {}, expected ≥4× cheaper",
         viaw.membership_queries,
         viax.membership_queries
     );
@@ -90,12 +90,12 @@ fn wmethod_recovers_exact_language_far_cheaper_than_exhaustive() {
 
 #[test]
 fn ucb_chain_recovers_exact_far_cheaper_than_exhaustive() {
-    // A pure bandit/sampling EQ is provably *incomplete* — it cannot
+    // A pure bandit/sampling EQ is provably *incomplete*, it cannot
     // certify equivalence. Completeness comes from the W-method tail;
     // the bandit front-loads informative queries. Honest claims:
     //   (1) UCB→W-method recovers the EXACT language (tail guarantees),
     //   (2) it costs ≪ the exponential exhaustive certificate (the
-    //       real "decompiling a live WAF is affordable" claim — a
+    //       real "decompiling a live WAF is affordable" claim, a
     //       cross-toy MQ micro-comparison vs random is noise, not a
     //       theorem, so it is deliberately NOT asserted).
     use wafrift_wafmodel::{BoundedExhaustiveEq, ChainedEq};
@@ -130,7 +130,7 @@ fn ucb_chain_recovers_exact_far_cheaper_than_exhaustive() {
     // (2) Affordable: ≥4× cheaper than the exponential certificate.
     assert!(
         viu.membership_queries * 4 < vix.membership_queries,
-        "UCB-chain {} MQ vs exhaustive {} MQ — expected ≥4× cheaper",
+        "UCB-chain {} MQ vs exhaustive {} MQ, expected ≥4× cheaper",
         viu.membership_queries,
         vix.membership_queries
     );
@@ -141,7 +141,7 @@ fn ucb_is_information_directed_covers_every_transition_before_repeating() {
     // The literal "ask the most informative query" guarantee: UCB1
     // gives an unvisited arm infinite priority, so within
     // states×symbols probes every transition has been exercised at
-    // least once — deterministic, not statistical.
+    // least once (deterministic, not statistical).
     let alpha = Alphabet::new(vec![b'<', b's'], b'A'); // 3 symbols
     // A concrete 2-state hypothesis: accept iff seen `<` (sym 0).
     let g0 = wafrift_wafmodel::BytePred::byte(b'<');

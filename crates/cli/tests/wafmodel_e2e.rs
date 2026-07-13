@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift audit` and `wafrift harden`.
 //!
-//! Both commands are fully offline — no HTTP, no mock server.
+//! Both commands are fully offline (no HTTP, no mock server).
 //! They operate on the embedded CRS ruleset (default) and accept
 //! `--format json` for machine-parseable output.
 //!
@@ -248,7 +248,7 @@ fn harden_json_classes_have_required_fields_and_added_rules() {
             "harden must add rules for class: {class}"
         );
 
-        // Each rule must have transforms as an ARRAY (not a string —
+        // Each rule must have transforms as an ARRAY (not a string 
         // this was the pre-fix bug).
         for rule in rules {
             assert!(rule["id"].is_string(), "rule.id must be string: {rule}");

@@ -5,7 +5,7 @@ schema = 1
 # Postgres tokenizer while defeating a regex-based WAF rule.
 #
 # These are the "manual" form of what `wafrift evade --only
-# tamper/<NAME>` produces — encoded inline so the bench harness
+# tamper/<NAME>` produces, encoded inline so the bench harness
 # can fire them directly without invoking the tamper engine.
 
 # ── Zero-width Unicode injection (U+200B / U+200C / U+200D / U+FEFF) ──
@@ -161,7 +161,7 @@ description = "Mixed BEL + tab separators.  Stresses WAFs that strip tab but  no
 id = "combo_zw_in_dq_string"
 class = "sql"
 payload = "$x$' UNION​ SELECT 1,2,3 $x$"
-description = "Dollar-quote wrap + zero-width injection.  Two independent bypass  vectors stacked — WAF would have to defeat both."
+description = "Dollar-quote wrap + zero-width injection.  Two independent bypass  vectors stacked. WAF would have to defeat both."
 
 [[case]]
 id = "combo_hex_in_myver_wrap"

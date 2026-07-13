@@ -5,7 +5,7 @@
 //! retry-after on rate limits, missing cf-ray on cache hits, body
 //! truncation mid-html, multi-byte UTF-8 in attribution strings,
 //! lowercased headers from proxies, mid-stream socket disconnect.
-//! The parser must NEVER panic on any of them — corrupted input
+//! The parser must NEVER panic on any of them, corrupted input
 //! falls back to `BlockClass::Unknown` and we keep going.
 
 use wafrift_oracle::cloudflare::{BlockClass, parse_cf_block};
@@ -165,7 +165,7 @@ fn cve_id_in_body_attributes_correctly() {
 
 #[test]
 fn body_with_multibyte_utf8_in_attribution() {
-    let body = "Sorry — vous avez été bloqué. Cloudflare Ray ID: déjà-vu-SJC".as_bytes();
+    let body = "Sorry, vous avez été bloqué. Cloudflare Ray ID: déjà-vu-SJC".as_bytes();
     let _ = parse_cf_block(&[], body);
 }
 
@@ -200,7 +200,7 @@ fn body_with_thousand_open_tags_does_not_panic() {
 
 #[test]
 fn body_with_cf_error_code_1020_classifies_managed_rule() {
-    // Parser recognises the canonical CF block-page phrasings —
+    // Parser recognises the canonical CF block-page phrasings 
     // `error code: 1020`, `<!-- error code: 1020 -->`,
     // `data-translate="error_code">1020<`, `::ERRORPAGESSTATUS::1020`.
     let body = b"<html>error code: 1020 - Access denied.</html>";
@@ -278,7 +278,7 @@ fn manual_review_body_marker_does_not_panic() {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Mixed signals — multiple potential block_class hints
+// Mixed signals, multiple potential block_class hints
 // ───────────────────────────────────────────────────────────────
 
 #[test]
@@ -295,7 +295,7 @@ fn block_and_retry_after_takes_rate_limit() {
 
 #[test]
 fn cve_id_alone_produces_attribution() {
-    // CVE-2021-44228 in the body must produce SOME attribution —
+    // CVE-2021-44228 in the body must produce SOME attribution 
     // the parser surfaces either the raw CVE id or the named class
     // "log4shell" (both are valid; the raw CVE id is more specific
     // because it pins which CVE the rule fired on).
@@ -318,7 +318,7 @@ fn old_comment_beats_cve_id() {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Determinism — same input → same signal
+// Determinism, same input → same signal
 // ───────────────────────────────────────────────────────────────
 
 #[test]

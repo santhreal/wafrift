@@ -3,13 +3,13 @@
 //! Given a payload string and a detected WAF, return the list of
 //! WAF-rule classes the payload would have triggered. Used by
 //! `strategy::explain::explain_bypass` to produce audit-grade reports
-//! showing exactly *what* about a payload tripped the WAF — and what
+//! showing exactly *what* about a payload tripped the WAF, and what
 //! the bypass technique removed.
 //!
 //! # Implementation
 //!
 //! We don't have access to vendor-private rulesets (Cloudflare's,
-//! Akamai's, etc.) — those aren't published. What we DO have is
+//! Akamai's, etc.), those aren't published. What we DO have is
 //! community knowledge about the *categories* of patterns those WAFs
 //! match: SQL keywords, XSS tags, CMD separators, traversal sequences,
 //! etc. This module scans the payload against those categories and
@@ -25,7 +25,7 @@ use crate::waf_detect::DetectedWaf;
 use wafrift_types::explanation::RuleAttribution;
 
 /// Categories of payload content that real WAFs attribute to specific rules.
-/// Patterns are case-insensitive substrings — same matching shape OWASP CRS,
+/// Patterns are case-insensitive substrings, same matching shape OWASP CRS,
 /// AWS WAF managed rules, and Cloudflare managed rules use for the basic
 /// "keyword present" tier. (Vendor-internal regex tuning is not public; this
 /// is the closest correct approximation.)
@@ -192,7 +192,7 @@ pub fn explain_block(payload: &str, waf: &DetectedWaf) -> Vec<RuleAttribution> {
                     matched_pattern: (*pattern).to_string(),
                     confidence: (waf.confidence * confidence_bias).clamp(0.0, 1.0),
                 });
-                // Only one hit per category — avoid one payload generating
+                // Only one hit per category, avoid one payload generating
                 // 12 SQLI-001 attributions when it has 12 SQL keywords.
                 break;
             }
@@ -206,11 +206,11 @@ pub fn explain_block(payload: &str, waf: &DetectedWaf) -> Vec<RuleAttribution> {
 /// confidence multiplier on detected rule matches.
 ///
 /// Reference points (community-known):
-///   - Cloudflare / Imperva / Akamai: high (0.95) — production-grade WAFs
+///   - Cloudflare / Imperva / Akamai: high (0.95), production-grade WAFs
 ///     with anomaly scoring and multi-decode.
-///   - AWS WAF / `ModSecurity`: medium-high (0.85) — solid managed rules.
-///   - Sucuri / generic CDN-WAF: medium (0.70) — keyword-tier only.
-///   - Unknown / unidentified: 0.5 — substring matched something but we
+///   - AWS WAF / `ModSecurity`: medium-high (0.85) (solid managed rules).
+///   - Sucuri / generic CDN-WAF: medium (0.70) (keyword-tier only).
+///   - Unknown / unidentified: 0.5, substring matched something but we
 ///     have no signal whether the WAF in front actually inspects it.
 fn inspection_model_bias(waf_name: &str) -> f64 {
     let lower = waf_name.to_ascii_lowercase();
@@ -250,7 +250,7 @@ mod tests {
         let attrs = explain_block("' UNION SELECT password FROM users--", &cf_waf());
         assert!(attrs.iter().any(|a| a.rule_id == "SQLI-001"));
         // The exact pattern hit depends on declaration order in the
-        // RULE_CATEGORIES table — `select ` happens to come first.
+        // RULE_CATEGORIES table: `select ` happens to come first.
         // What we actually care about: SOME SQL keyword from the table fired.
         let sqli = attrs.iter().find(|a| a.rule_id == "SQLI-001").unwrap();
         assert!(

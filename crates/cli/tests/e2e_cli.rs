@@ -2,7 +2,7 @@
 //!
 //! These drive the real `wafrift` binary via `std::process::Command`, parse its
 //! stdout/stderr, and verify exit codes.  This is the product-level test layer
-//! — it catches regressions that unit tests miss (broken clap args, missing
+//!, it catches regressions that unit tests miss (broken clap args, missing
 //! subcommands, serialization issues, etc.).
 
 mod common;
@@ -34,7 +34,7 @@ fn version_exits_0() {
 fn no_args_exits_cleanly() {
     // Running without args enters interactive mode which exits 1 on non-TTY
     let (code, _stdout, _stderr) = wafrift(&[]);
-    // Interactive mode exits 0 on TTY, 1 on non-TTY — both are correct
+    // Interactive mode exits 0 on TTY, 1 on non-TTY, both are correct
     assert!(
         code == 0 || code == 1,
         "wafrift with no args should exit cleanly, got {code}"
@@ -85,7 +85,7 @@ fn bench_waf_help_documents_permission_gate() {
 
 #[test]
 fn hunt_help_documents_waf_name_routing() {
-    // §9 WIRING: `hunt --waf-name` must be surfaced — it auto-adds the
+    // §9 WIRING: `hunt --waf-name` must be surfaced, it auto-adds the
     // ml-evasion strategy for ML-backed targets, making the autonomous loop
     // paradigm-aware. The routing decision is covered by mlwaf_routing.rs.
     let (code, stdout, _) = wafrift(&["hunt", "--help"]);
@@ -168,7 +168,7 @@ fn evade_xss() {
 #[test]
 fn evade_encoding_only() {
     // Strengthened (2026-05): prior assertion was just `!stdout.is_empty()`,
-    // which trivially passes for any non-empty banner — a build_variants
+    // which trivially passes for any non-empty banner, a build_variants
     // that returned `vec![Variant { payload: "GARBAGE", … }]` would have
     // slipped past. Pin the real contract: the JSON output must
     // CONTAIN AT LEAST ONE variant whose payload is an encoded form
@@ -195,7 +195,7 @@ fn evade_encoding_only() {
         "evade --encoding-only must produce >=1 variant (got 0)"
     );
     // At least one variant should be a non-trivial encoding of the
-    // input — exact byte equality across all variants would mean
+    // input, exact byte equality across all variants would mean
     // every "encoding" was a no-op. Mutation-test the encoder: a
     // function returning the input unchanged for every strategy must
     // fail this gate.
@@ -284,7 +284,7 @@ fn evade_all_levels() {
     assert!(
         heavy > light,
         "evade --level heavy ({heavy}) must STRICTLY exceed light ({light}); \
-         counts: {variant_counts:?} — three identical pools is a regression"
+         counts: {variant_counts:?}, three identical pools is a regression"
     );
 }
 
@@ -430,11 +430,11 @@ fn evade_explain_with_encoding_only() {
 
 #[test]
 fn evade_parameter_pollution_rejected_in_header_context() {
-    // Headers don't parse `a=1&a=2` syntax — parameter pollution is N/A there.
+    // Headers don't parse `a=1&a=2` syntax (parameter pollution is N/A there).
     // (Body is intentionally allowed: form-urlencoded bodies use the same syntax.)
     //
     // Per the 2026-05 dogfood pass, "no variants generated" is a
-    // LEGITIMATE outcome — operator may have selected an inapplicable
+    // LEGITIMATE outcome, operator may have selected an inapplicable
     // technique and CI pipelines treating non-zero as error shouldn't
     // break on a no-op. So we now assert exit 0, but still require
     // the explanation surface so the operator knows WHY nothing was
@@ -462,7 +462,7 @@ fn evade_parameter_pollution_rejected_in_header_context() {
 
 #[test]
 fn evade_parameter_pollution_works_in_body_context() {
-    // Form-urlencoded bodies use `a=1&b=2` — parameter pollution applies.
+    // Form-urlencoded bodies use `a=1&b=2`: parameter pollution applies.
     let (code, stdout, stderr) = wafrift(&[
         "evade",
         "--payload",
@@ -560,7 +560,7 @@ fn evade_stdin_rejects_interactive_terminal() {
         "--stdin on a TTY-less non-pipe must error, not hang"
     );
     // In CI / our test harness stdin is closed (no TTY, no pipe), so the
-    // is_terminal check is false and the read_to_string returns empty —
+    // is_terminal check is false and the read_to_string returns empty 
     // either path must produce a clear error, not hang.
     assert!(
         stderr.contains("stdin") || stderr.contains("empty") || stderr.contains("pipe"),
@@ -593,7 +593,7 @@ fn evade_empty_variants_writes_error_to_output_file() {
     // `note` field + explain trace still has to land in --output.
     assert_eq!(
         code, 0,
-        "no-variants path must exit 0 — empty is a legitimate outcome"
+        "no-variants path must exit 0, empty is a legitimate outcome"
     );
     let body =
         fs::read_to_string(&tmp).expect("output file should be written even on empty-variants");
@@ -619,7 +619,7 @@ fn evade_target_context_skips_inapplicable_with_reason() {
     // gzip-only + header context => no variants. Exit 0 (legitimate
     // empty-variants outcome) BUT the explain trace must surface
     // the applicability reason so the operator knows WHY nothing
-    // landed — silently producing zero variants with no signal is
+    // landed, silently producing zero variants with no signal is
     // the worse UX of "is wafrift broken or did I ask for nothing?"
     assert_eq!(code, 0, "empty-variants must exit 0; stderr={stderr}");
     let combined = format!("{stdout}{stderr}");
@@ -670,7 +670,7 @@ fn detect_unknown_waf() {
     let (code, stdout, _) = wafrift(&["detect", "--status", "200", "--headers", "server: nginx"]);
     assert_eq!(code, 0);
     // Should handle gracefully even with no WAF detected
-    // Output can be "No WAF detected" or empty — just shouldn't crash
+    // Output can be "No WAF detected" or empty, just shouldn't crash
     let _ = stdout;
 }
 
@@ -818,7 +818,7 @@ fn replay_help_lists_source_flags() {
 
 #[test]
 fn replay_without_techniques_errors_actionable() {
-    // No --technique, --from-host, or --from-waf — must fail with a
+    // No --technique, --from-host, or --from-waf, must fail with a
     // message that names the missing flags, not a generic "no input".
     let (code, _stdout, stderr) = wafrift(&[
         "replay",
@@ -878,7 +878,7 @@ fn report_json_emits_valid_json_with_schema_version() {
     let parsed: serde_json::Value =
         serde_json::from_str(stdout.trim()).expect("report --format json must emit valid JSON");
     // schema_version 2 added the `curl_command` field per finding
-    // (additive — gated by version bump so downstream tooling can
+    // (additive, gated by version bump so downstream tooling can
     // opt in cleanly).
     assert_eq!(parsed["schema_version"], 2, "schema_version field missing");
     assert_eq!(parsed["hosts_with_bypasses"], 1);

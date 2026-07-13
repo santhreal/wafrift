@@ -1,4 +1,4 @@
-//! Async DNS probe — CNAME chain → PTR → BGP origin ASN.
+//! Async DNS probe: CNAME chain → PTR → BGP origin ASN.
 //!
 //! Three layers in one pass; each is best-effort so a failure on
 //! one layer never blocks the others.  The whole probe is
@@ -32,7 +32,7 @@ pub async fn probe_cname_chain(host: &str) -> Result<DnsProbe, DnsProbeError> {
     //    silently times out.
     //
     // If a future deployment needs split-horizon DNS to see
-    // internal hostnames, that's a separate code path — for the
+    // internal hostnames, that's a separate code path, for the
     // dogfood / pen-test use case 1.1.1.1 is the right default.
     let mut opts = ResolverOpts::default();
     opts.timeout = RESOLVER_TIMEOUT;
@@ -50,7 +50,7 @@ pub async fn probe_cname_chain(host: &str) -> Result<DnsProbe, DnsProbeError> {
 
     for _ in 0..MAX_CNAME_CHAIN_DEPTH {
         if !seen.insert(current.to_ascii_lowercase()) {
-            // Looping — give up gracefully with what we have.
+            // Looping (give up gracefully with what we have).
             return Ok(DnsProbe {
                 chain,
                 first_a: None,
@@ -63,7 +63,7 @@ pub async fn probe_cname_chain(host: &str) -> Result<DnsProbe, DnsProbeError> {
         let result = match tokio::time::timeout(RESOLVER_TIMEOUT, lookup_fut).await {
             Ok(Ok(r)) => r,
             Ok(Err(_)) => break,
-            Err(_) => break, // Per-step timeout — partial chain is still useful.
+            Err(_) => break, // Per-step timeout (partial chain is still useful).
         };
 
         let mut next: Option<String> = None;
@@ -97,8 +97,8 @@ pub async fn probe_cname_chain(host: &str) -> Result<DnsProbe, DnsProbeError> {
     // "DNS broken."
     //
     // Prefer an IPv4 address over IPv6. `lookup_ip` returns whichever
-    // record type the resolver fields first — modern resolvers often
-    // return AAAA first — and `lookup_asn` cannot lookup ASN for
+    // record type the resolver fields first, modern resolvers often
+    // return AAAA first, and `lookup_asn` cannot lookup ASN for
     // IPv6 (cymru's v6 nibble service requires a separate code path
     // we don't model). Pre-fix every dual-stack target (Cloudflare,
     // Fastly, CloudFront, ...) silently lost its ASN signal whenever
@@ -116,7 +116,7 @@ pub async fn probe_cname_chain(host: &str) -> Result<DnsProbe, DnsProbeError> {
     };
 
     // If the chain is empty AND we got no A record, the resolver
-    // is broken — return Err so the caller doesn't silently drop
+    // is broken, return Err so the caller doesn't silently drop
     // the DNS signal.  An empty chain with a valid A record is a
     // legitimate "no CNAME indirection" answer (cloudflare.com).
     if chain.is_empty() && first_a.is_none() {
@@ -126,7 +126,7 @@ pub async fn probe_cname_chain(host: &str) -> Result<DnsProbe, DnsProbeError> {
     // Reverse-DNS (PTR) lookup of the leaf IP.  For origins that
     // strip every HTTP banner and use private CNAMEs (Stripe,
     // Dropbox) the PTR is often the only vendor anchor left.  PTR
-    // lookups frequently fail with NoRecords — that's fine, we
+    // lookups frequently fail with NoRecords, that's fine, we
     // just don't get the extra signal.
     //
     let final_ptr = if let Some(ip) = first_a {
@@ -143,7 +143,7 @@ pub async fn probe_cname_chain(host: &str) -> Result<DnsProbe, DnsProbeError> {
     };
 
     // ASN lookup via cymru.com's `origin.asn.cymru.com` TXT
-    // service.  This is the FINAL fallback — the BGP-layer owner
+    // service.  This is the FINAL fallback, the BGP-layer owner
     // of the IP is the truth even when HTTP / CNAME / PTR are all
     // stripped.  Catches origins like Stripe whose IPs are
     // self-hosted with no public identifier on any other layer.
@@ -163,7 +163,7 @@ pub async fn probe_cname_chain(host: &str) -> Result<DnsProbe, DnsProbeError> {
 
 #[cfg(not(feature = "dns-cname"))]
 pub async fn probe_cname_chain(_host: &str) -> Result<DnsProbe, DnsProbeError> {
-    // Feature disabled — treat as "no DNS support compiled in" and
+    // Feature disabled, treat as "no DNS support compiled in" and
     // let the caller fall back to header-only detection.
     Err(DnsProbeError::ResolverInitFailed)
 }

@@ -1,4 +1,4 @@
-//! Very large payload — 10 MB body must evade without OOM and complete
+//! Very large payload: 10 MB body must evade without OOM and complete
 //! within 5 seconds.
 
 use std::time::{Duration, Instant};

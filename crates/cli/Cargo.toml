@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "wafrift CLI — scan, detect, parser-diff, smuggle, model-evade, bench-waf, bypass-probe and 35+ subcommands for WAF evasion and analysis"
+description = "wafrift CLI, scan, detect, parser-diff, smuggle, model-evade, bench-waf, bypass-probe and 35+ subcommands for WAF evasion and analysis"
 readme = "README.md"
 repository.workspace = true
 keywords = ["waf", "cli", "evasion", "security", "scanner"]
@@ -53,7 +53,7 @@ pocgen = { workspace = true }
 wafrift-smuggling = { workspace = true, features = ["unsafe-probes"] }
 wafrift-content-type = { workspace = true }
 scanclient = { workspace = true }
-# Pulled in for `wafrift smuggle-emit` (probe_aggregator) — also gives
+# Pulled in for `wafrift smuggle-emit` (probe_aggregator), also gives
 # the CLI the SmuggleProbe trait surface without duplicating the
 # aggregator across crates.
 wafrift-core = { path = "../core", version = "0.3.1" }
@@ -72,7 +72,7 @@ sha2 = { workspace = true }
 # the URL-state-compression idiom (pako/lz-string) a signature WAF can't inflate.
 # Already in the workspace lock (was a dev-dep for safe_body's gzip-bomb test).
 flate2 = "1"
-# Structured tracing — RUST_LOG=wafrift=debug wires through to every
+# Structured tracing: RUST_LOG=wafrift=debug wires through to every
 # subcommand. Already in the workspace lock via transitive deps; listed
 # explicitly so `use tracing::*` compiles in crate code without
 # relying on re-export luck from an upstream dep.
@@ -84,7 +84,7 @@ webpki-roots = { workspace = true }
 
 # Santh-owned differential response analysis primitive.
 # Backs `parser_diff_common::{body_delta_pct, severity_of, status_class}`
-# via thin local wrappers — every parser-diff subcommand
+# via thin local wrappers, every parser-diff subcommand
 # (parser-/header-/body-/query-/cache-/h2-/method-/gql-/jwt-/cors-
 # /trailer-diff) ends up grading divergence through the same upstream
 # `respdiff::classify_severity`, so a fix to the classification logic
@@ -97,7 +97,7 @@ respdiff = "=0.3.0"
 
 # Santh-owned HTTP error classification + target-error modelling.
 # Used for app-error / SQL-syntax / JSON-parse / missing-property insight
-# downstream of a request — feeds the differential phase + insight loop.
+# downstream of a request (feeds the differential phase + insight loop).
 #
 # NOT a replacement for the three local WAF-block classifiers
 # (`transport::is_waf_block`, `detect::is_blocked_response`,
@@ -138,7 +138,7 @@ origin-bypass = ["wafrift-transport/origin-bypass"]
 proxy-pool = ["wafrift-transport/proxy-pool"]
 # `tls-impersonate` unlocks the `wafrift ja3-diff` subcommand (and any
 # future stealth-client CLI surface). It pulls in wreq + BoringSSL,
-# which adds ~30–60 s to first-time builds — gated explicitly so the
+# which adds ~30–60 s to first-time builds, gated explicitly so the
 # default `cargo install wafrift` stays lean. Build with
 # `cargo install wafrift --features tls-impersonate` to enable.
 tls-impersonate = ["wafrift-transport/tls-impersonate"]

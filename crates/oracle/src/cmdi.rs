@@ -1,9 +1,9 @@
 //! Command injection payload oracle.
 //!
 //! Command injection payloads require three structural elements:
-//! 1. **A separator** — `;`, `|`, `&&`, `||`, `` ` ``, `$()` that breaks out of the original command
-//! 2. **A command** — actual executable to run (`cat`, `whoami`, `id`, `curl`, etc.)
-//! 3. **Optional arguments** — file paths, URLs, flags
+//! 1. **A separator**: `;`, `|`, `&&`, `||`, `` ` ``, `$()` that breaks out of the original command
+//! 2. **A command**: actual executable to run (`cat`, `whoami`, `id`, `curl`, etc.)
+//! 3. **Optional arguments**: file paths, URLs, flags
 //!
 //! If encoding destroys any separator or the command name, the payload
 //! becomes inert text that the shell will reject or ignore.
@@ -28,7 +28,7 @@ const CMD_ORACLE_TOML: &str = include_str!("../rules/cmd/oracle.toml");
 // Previously each struct held `#[allow(dead_code)] description: String`
 // which allocated a heap String per rule on every TOML parse for data
 // that was never read. Now serde's default unknown-field behavior
-// silently skips the description bytes — zero allocations, the TOML
+// silently skips the description bytes, zero allocations, the TOML
 // docs stay intact, the dead_code lint is no longer needed.
 
 /// Command separator definition from TOML.
@@ -113,7 +113,7 @@ fn shell_tricks() -> &'static [String] {
 /// Byte-level case-insensitive: NEVER allocates a lowercase copy of
 /// the input. Pre-fix this called `text.to_ascii_lowercase()` (and
 /// `part.to_ascii_lowercase()` in the inner loop) once per shell
-/// command tested — a 10 MB payload × 40 commands triggered ~400 MB
+/// command tested, a 10 MB payload × 40 commands triggered ~400 MB
 /// of temporary heap growth on every oracle call. Now O(text.len())
 /// scan with constant extra space.
 fn contains_word(text: &str, word: &str) -> bool {
@@ -160,7 +160,7 @@ fn contains_word(text: &str, word: &str) -> bool {
         }
         let part = &bytes[part_start..i];
         if part.len() >= word_bytes.len() {
-            // Case-insensitive prefix match — byte-level, no alloc.
+            // Case-insensitive prefix match (byte-level, no alloc).
             let prefix_match = part[..word_bytes.len()]
                 .iter()
                 .zip(word_bytes.iter())
@@ -182,7 +182,7 @@ fn contains_word(text: &str, word: &str) -> bool {
 fn has_cmdi_structure(payload: &str) -> bool {
     let payload = payload.trim_end_matches(['\0', '\u{FFFD}']);
 
-    // Must have at least one separator (`.contains` is memchr-backed — faster than a naive byte loop).
+    // Must have at least one separator (`.contains` is memchr-backed (faster than a naive byte loop)).
     let has_separator = cmd_separators()
         .iter()
         .any(|sep| payload.contains(sep.as_str()));

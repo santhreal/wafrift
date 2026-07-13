@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift techniques`.
 //!
-//! All tests are purely offline — no HTTP, no mock server.
+//! All tests are purely offline (no HTTP, no mock server).
 //! `techniques list` enumerates the technique tree;
 //! `techniques explain <selector>` prints per-technique docs.
 //!

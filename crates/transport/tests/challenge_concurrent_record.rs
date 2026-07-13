@@ -1,4 +1,4 @@
-//! Integration: concurrent `ChallengeStore::record` — no lost updates across threads,
+//! Integration: concurrent `ChallengeStore::record`: no lost updates across threads,
 //! distinct hosts collapse to `len() == 2000`.
 
 use std::sync::Arc;
@@ -29,7 +29,7 @@ fn eight_threads_two_thousand_distinct_hosts_all_retained() {
     assert_eq!(
         store.len(),
         2000,
-        "Fix: 8×250 distinct hosts must yield len() == 2000 — possible lost update or hash bug"
+        "Fix: 8×250 distinct hosts must yield len() == 2000, possible lost update or hash bug"
     );
 
     for t in 0..8 {
@@ -37,7 +37,7 @@ fn eight_threads_two_thousand_distinct_hosts_all_retained() {
             let host = format!("concurrent-host-{t}-{i:03}.stress.test");
             let expected = format!("cf_clearance={t}_{i:03}");
             let got = store.get(&host).unwrap_or_else(|| {
-                panic!("Fix: missing entry for {host} — concurrent record lost an update")
+                panic!("Fix: missing entry for {host}, concurrent record lost an update")
             });
             assert_eq!(
                 got, expected,
@@ -77,7 +77,7 @@ fn concurrent_re_record_same_host_last_write_wins_without_length_inflation() {
     let final_cookie = store.get(host).expect("Fix: host must have a cookie");
     assert!(
         final_cookie.starts_with("cf_clearance=wave"),
-        "Fix: final cookie must be one of the racing writes — got {final_cookie:?}"
+        "Fix: final cookie must be one of the racing writes, got {final_cookie:?}"
     );
 }
 
@@ -106,6 +106,6 @@ fn forget_cancel_drops_entry_under_concurrent_read_pressure() {
     assert_eq!(
         store.get("cancel-target.test"),
         None,
-        "Fix: forget (cancel clearance) must drop cookie — got stale replay"
+        "Fix: forget (cancel clearance) must drop cookie, got stale replay"
     );
 }

@@ -1,4 +1,4 @@
-//! `wafrift import-curl` — take a curl invocation (e.g. from Burp's
+//! `wafrift import-curl`: take a curl invocation (e.g. from Burp's
 //! "Copy as cURL") + a payload/param, fire it through the scan engine.
 //!
 //! The practitioner workflow this closes: you have a request copied
@@ -21,7 +21,7 @@ use crate::scan::ScanArgs;
 
 #[derive(Args, Debug)]
 pub(crate) struct ImportCurlArgs {
-    /// The curl invocation itself, as one shell-quoted argument —
+    /// The curl invocation itself, as one shell-quoted argument 
     /// `wafrift import-curl 'curl -s https://t/login -H "Cookie: s=1"'`.
     /// This is the form you get from Burp / Chromium "Copy as cURL".
     /// Mutually exclusive with `--curl-file` / `--from-stdin`.
@@ -80,7 +80,7 @@ pub(crate) struct ParsedCurl {
     /// when a body is present).
     pub method: Option<String>,
     /// The bare URL argument. If multiple appear (curl supports it),
-    /// only the first is taken — practitioner intent is one request.
+    /// only the first is taken (practitioner intent is one request).
     pub url: Option<String>,
     /// All `-H / --header` values, preserved in order.
     pub headers: Vec<(String, String)>,
@@ -208,7 +208,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
                 }
                 body.push_str(v);
             }
-            // F125: `--data-urlencode` differs from `--data` — curl
+            // F125: `--data-urlencode` differs from `--data`: curl
             // URL-encodes the value (or the value half of `key=value`)
             // before sending. Folding it into the raw `-d` arm
             // produced bodies that diverged from what curl would
@@ -222,7 +222,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
                 // curl's `@file` forms require disk access on the
                 // operator's box; we don't model that. The two real
                 // file forms are bare `@file` and `name=@file`. A
-                // legitimate value like `email=foo@bar.com` is fine —
+                // legitimate value like `email=foo@bar.com` is fine 
                 // the `@` is in the middle, not at the start of the
                 // bare value or the post-`=` value.
                 let is_file_form = match v.split_once('=') {
@@ -248,7 +248,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
                 }
                 body.push_str(&encoded);
             }
-            // Common no-op flags from Burp's "Copy as cURL" — accept and ignore.
+            // Common no-op flags from Burp's "Copy as cURL" (accept and ignore).
             "-i" | "--include" | "-k" | "--insecure" | "--compressed" | "-s" | "--silent"
             | "-v" | "--verbose" | "-L" | "--location" | "-o" | "--output" | "-O"
             | "--remote-name" => {
@@ -261,7 +261,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
             // its argument. Without this whitelist, an invocation like
             // `curl --url https://target` would route into the long-
             // option heuristic below, which would correctly skip
-            // `https://target` as the flag value — and the URL would
+            // `https://target` as the flag value, and the URL would
             // never be recorded. Listed explicitly so the right
             // behaviour stays right when the heuristic changes.
             "--url" | "--max-time" | "--connect-timeout" | "--cacert" | "--cert" | "--key"
@@ -272,7 +272,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
                     .ok_or_else(|| format!("{tok} needs a value"))?
                     .clone();
                 // `--url <URL>` is the only one where we capture
-                // the value — every other flag's value is operator-
+                // the value, every other flag's value is operator-
                 // facing config we don't model.
                 if tok == "--url" && p.url.is_none() {
                     p.url = Some(v);
@@ -283,7 +283,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
                 // Long option: skip the option AND its argument if it
                 // looks like one (heuristic: next token doesn't start
                 // with -). Keeps unknown options from misparsing.
-                // This is the LAST resort — extend the explicit
+                // This is the LAST resort, extend the explicit
                 // whitelist above whenever an operator hits a flag
                 // that breaks here so the misparse can't recur.
                 if i + 1 < tokens.len() && !tokens[i + 1].starts_with('-') {
@@ -291,7 +291,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
                 }
             }
             other if other.starts_with('-') && other.len() > 1 => {
-                // Short option we don't know — best-effort skip.
+                // Short option we don't know (best-effort skip).
             }
             url => {
                 if p.url.is_none() {
@@ -303,7 +303,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
     }
     if p.url.is_none() {
         return Err(
-            "no URL found in curl invocation — possibly an unrecognised \
+            "no URL found in curl invocation, possibly an unrecognised \
              curl flag consumed the URL token. If a `--longflag value` \
              pattern is being mistaken for a flag-then-URL pair, add \
              the flag to the explicit whitelist in parse_curl."
@@ -340,7 +340,7 @@ pub(crate) fn run_import_curl(args: ImportCurlArgs) -> ExitCode {
         },
         (None, None, false) => {
             eprintln!(
-                "error: supply the curl command — as a positional arg \
+                "error: supply the curl command, as a positional arg \
                  (`wafrift import-curl 'curl https://t/...'`), `--curl-file <path>`, \
                  or piped with `--from-stdin`"
             );
@@ -380,7 +380,7 @@ pub(crate) fn run_import_curl(args: ImportCurlArgs) -> ExitCode {
 
     // Bridge into the scan path. Practitioner intent is "use this
     // request's context (auth/cookies/headers) and probe the named
-    // param with the supplied payload" — scan handles the evasion +
+    // param with the supplied payload", scan handles the evasion +
     // verdict layers, we just hand it the parsed inputs.
     //
     // NOTE: scan currently doesn't accept arbitrary header sets via
@@ -428,14 +428,14 @@ pub(crate) fn run_import_curl(args: ImportCurlArgs) -> ExitCode {
         corpus: None,
         payload,
         // Without an explicit --param the canonical default is `q`,
-        // matching `wafrift scan`'s own default — consistency, not a
+        // matching `wafrift scan`'s own default, consistency, not a
         // hard error the user has to guess their way past.
         param: args.param.unwrap_or_else(|| "q".to_string()),
         // `import-curl` doesn't expose a per-class flag today; future
         // work could parse the body or look up a CURL → class mapping,
         // but for now the global gene-bank warm-start applies.
         payload_class: None,
-        // No OOB callback for an imported-curl one-shot — operator
+        // No OOB callback for an imported-curl one-shot, operator
         // can re-run via `wafrift scan --callback-url ...` if they
         // need a blind-vuln verification path.
         callback_url: None,
@@ -462,7 +462,7 @@ pub(crate) fn run_import_curl(args: ImportCurlArgs) -> ExitCode {
         proxy: None,
         header: Vec::new(),
         // import-curl synthesises a target/param/payload triplet
-        // from the curl line — no raw-request template path.
+        // from the curl line (no raw-request template path).
         raw_request: None,
         raw_request_scheme: "http".to_string(),
         // Auto-distill defaults off; operators opt in explicitly
@@ -492,7 +492,7 @@ pub(crate) fn run_import_curl(args: ImportCurlArgs) -> ExitCode {
         // external target via import-curl should use `wafrift scan
         // --i-have-permission "..." ` directly.
         i_have_permission: None,
-        // GraphQL probing is off by default for import-curl — operators
+        // GraphQL probing is off by default for import-curl, operators
         // who want the GraphQL battery use `wafrift scan --graphql` directly.
         graphql: false,
         // Egress rotation not used for import-curl; operators who need egress
@@ -524,7 +524,7 @@ pub(crate) fn run_import_curl(args: ImportCurlArgs) -> ExitCode {
 /// step when you paste a Burp request and just want to know what's in
 /// front of the endpoint before crafting payloads. When the static
 /// 165-rule corpus comes back empty, automatically falls back to a
-/// differential probe (benign vs attack-shaped GET) — same auto-
+/// differential probe (benign vs attack-shaped GET), same auto-
 /// promotion behaviour as `wafrift detect`, so the no-payload import-
 /// curl flow doesn't silently miss WAFs that strip vendor markers.
 async fn detect_parsed_target(target: &str, parsed: &ParsedCurl, insecure: bool) -> ExitCode {
@@ -542,7 +542,7 @@ async fn detect_parsed_target(target: &str, parsed: &ParsedCurl, insecure: bool)
         .as_deref()
         .unwrap_or(if parsed.body.is_some() { "POST" } else { "GET" });
 
-    // Benign probe — fires the parsed request verbatim.
+    // Benign probe (fires the parsed request verbatim).
     let (status, headers, body) = match send_parsed(&client, method, target, parsed).await {
         Ok(v) => v,
         Err(e) => {
@@ -604,14 +604,14 @@ async fn detect_parsed_target(target: &str, parsed: &ParsedCurl, insecure: bool)
             } else {
                 println!(
                     "No WAF confidently detected on the parsed request (HTTP {status}); \
-                     differential probe also clean — origin is likely direct."
+                     differential probe also clean (origin is likely direct)."
                 );
             }
         }
         Err(e) => {
             // Don't fail the whole detect just because the second
             // probe couldn't fire; surface the static result alone.
-            eprintln!("warn: differential probe failed: {e} — falling back to static-only verdict");
+            eprintln!("warn: differential probe failed: {e}, falling back to static-only verdict");
             println!("No WAF confidently detected on the parsed request (HTTP {status}).");
         }
     }
@@ -622,7 +622,7 @@ async fn detect_parsed_target(target: &str, parsed: &ParsedCurl, insecure: bool)
 /// (method / headers / cookie / UA / body). Returns
 /// (status, headers, body-bounded-to-64KiB) on success. Pulled out
 /// of `detect_parsed_target` so the benign + attack probes share one
-/// implementation — keeps the differential comparison apples-to-apples.
+/// implementation (keeps the differential comparison apples-to-apples).
 async fn send_parsed(
     client: &reqwest::Client,
     method: &str,
@@ -835,7 +835,7 @@ mod tests {
 
     #[test]
     fn parse_url_flag_captures_url() {
-        // `curl --url https://target` — the URL is the value of
+        // `curl --url https://target`: the URL is the value of
         // --url, not a positional token. Pre-fix, the long-option
         // heuristic skipped `https://target` and we returned
         // "no URL found".
@@ -877,7 +877,7 @@ mod tests {
         let toks = shell_tokenize("curl -H 'A: 1'").unwrap();
         let err = parse_curl(&toks).unwrap_err();
         // The hint should mention the flag-consumption scenario so
-        // the operator knows where to look — pre-fix the bare
+        // the operator knows where to look, pre-fix the bare
         // "no URL found" gave no diagnostic at all.
         assert!(
             err.to_lowercase().contains("flag"),
@@ -901,7 +901,7 @@ mod tests {
     // tested via `dogfood_fixes_e2e.rs` after the fixed binary
     // builds (the python mock returns identical responses on both
     // probes, so it asserts the "differential probe also clean" copy
-    // appears — that's the only invariant we can reliably exercise
+    // appears, that's the only invariant we can reliably exercise
     // without a real WAF).
 
     #[test]
@@ -932,7 +932,7 @@ mod tests {
     async fn send_parsed_applies_headers_cookie_and_user_agent() {
         // Stands up a one-shot localhost server that echoes back the
         // headers it received. Verifies send_parsed pushes
-        // headers/cookie/UA onto the request before firing — the
+        // headers/cookie/UA onto the request before firing, the
         // entire reason the differential probe carries the parsed
         // context (the parsed-Burp-request workflow).
         use std::io::{Read, Write};

@@ -180,7 +180,7 @@ mod tests {
         assert!(String::from_utf8_lossy(&p.raw_bytes).contains("1;ext=foo"));
     }
 
-    // R69 pass-21 — CVE-2025-55315 chunk-extension lone-LF tests.
+    // R69 pass-21: CVE-2025-55315 chunk-extension lone-LF tests.
 
     #[test]
     fn chunk_extension_lone_lf_payload_contains_lone_lf_after_extension() {
@@ -195,7 +195,7 @@ mod tests {
         )
         .unwrap();
         // Find `evilext=` then assert the next byte is exactly 0x0A
-        // (bare LF) — not 0x0D 0x0A (CRLF).
+        // (bare LF) (not 0x0D 0x0A (CRLF)).
         let pos = p
             .raw_bytes
             .windows(b"evilext=".len())
@@ -206,12 +206,12 @@ mod tests {
             next, b'\n',
             "byte after `evilext=` MUST be lone LF (0x0A); CRLF would defeat the desync"
         );
-        // And the byte before MUST NOT be CR — a `\r\n` would mean we
+        // And the byte before MUST NOT be CR, a `\r\n` would mean we
         // accidentally emitted a regular CRLF.
         assert_ne!(
             p.raw_bytes[pos + b"evilext=".len() - 1],
             b'\r',
-            "no CR before the lone-LF — must be a bare LF, not CRLF"
+            "no CR before the lone-LF, must be a bare LF, not CRLF"
         );
     }
 
@@ -229,7 +229,7 @@ mod tests {
         let wire = String::from_utf8_lossy(&p.raw_bytes);
         assert!(
             wire.contains("/admin"),
-            "smuggled prefix must reach the wire — pre-fix a re-encoding pass dropped it"
+            "smuggled prefix must reach the wire, pre-fix a re-encoding pass dropped it"
         );
     }
 
@@ -247,7 +247,7 @@ mod tests {
     #[test]
     fn chunk_extension_lone_lf_terminates_chunked_body_cleanly() {
         // Anti-rig: the outer chunked encoding MUST end with `0\r\n\r\n`
-        // — the standard zero-length terminator. Without it, the back-end
+        //: the standard zero-length terminator. Without it, the back-end
         // hangs waiting for more chunks and the smuggling test times out
         // rather than completing the desync.
         let p =
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn raw_bytes_end_with_double_crlf() {
-        // Note: detect_cl_te is intentionally excluded — its
+        // Note: detect_cl_te is intentionally excluded, its
         // canonical Portswigger shape ends with the smuggled `X`
         // byte (the prefix the TE-following backend treats as the
         // start of the next request), NOT `\r\n\r\n`. The
@@ -394,7 +394,7 @@ mod tests {
                 .any(|w| w == b"Content-Length: 6\r\n"),
             "CL must be 6"
         );
-        // The body is the last 6 bytes of the message — split on
+        // The body is the last 6 bytes of the message, split on
         // the FIRST \r\n\r\n (headers/body terminator) by finding
         // its position, then everything after is the 6-byte body.
         let header_end = raw
@@ -588,7 +588,7 @@ mod tests {
 
     #[test]
     fn sanitize_blocks_null_byte() {
-        // NULL byte should be rejected by sanitize_input — it causes many
+        // NULL byte should be rejected by sanitize_input, it causes many
         // HTTP/1 stacks to truncate header values, enabling header injection.
         assert!(sanitize_input("host\x00injected.com").is_err());
         assert!(sanitize_input("safe-host.com").is_ok());
@@ -706,7 +706,7 @@ mod tests {
 
     // ── Wire-format tests for functions lacking paired CVE-shape checks ────
 
-    /// CVE-2024-1019 (ModSec URI pre-decode split) — exact wire format.
+    /// CVE-2024-1019 (ModSec URI pre-decode split) (exact wire format).
     ///
     /// The produced path must have the exact structure:
     ///   `<base>%3F<injection>?<benign>`
@@ -763,7 +763,7 @@ mod tests {
         );
     }
 
-    /// `header_overflow_smuggle` — wire format: N padding headers + payload.
+    /// `header_overflow_smuggle`: wire format: N padding headers + payload.
     ///
     /// OpenResty / CF FL silently drops headers past the WAF parsing limit
     /// (≈94 headers). Padding must use the `X-Pad-{i}` name pattern;
@@ -831,7 +831,7 @@ mod tests {
         assert_eq!(headers[94].1, "Bearer smuggled");
     }
 
-    /// `websocket_smuggle_custom` with custom key and protocol — wire format.
+    /// `websocket_smuggle_custom` with custom key and protocol (wire format).
     ///
     /// The produced payload must include the exact custom key in
     /// `Sec-WebSocket-Key:` and the protocol in `Sec-WebSocket-Protocol:`.
@@ -870,7 +870,7 @@ mod tests {
         assert!(s.contains("GET /chat HTTP/1.1\r\n"));
     }
 
-    /// `cl_te_precedence_test` — wire format matches RFC-legal CL+TE body.
+    /// `cl_te_precedence_test`: wire format matches RFC-legal CL+TE body.
     ///
     /// This probe sends both CL and TE. The body `5\r\nhello\r\n0\r\n\r\n`
     /// is valid chunked encoding (5-byte chunk "hello", then terminator).
@@ -913,7 +913,7 @@ mod tests {
         );
     }
 
-    /// `malformed_http2_settings` — all three variants present, each has
+    /// `malformed_http2_settings`: all three variants present, each has
     /// `HTTP2-Settings:` header with the malformed value.
     ///
     /// The three settings are `"!!!"`, `""`, and `"AA"`. Each must produce
@@ -946,18 +946,18 @@ mod tests {
         }
     }
 
-    /// `malformed_http2_settings` — host validation is applied.
+    /// `malformed_http2_settings`: host validation is applied.
     #[test]
     fn malformed_http2_settings_rejects_crlf_host() {
         assert!(malformed_http2_settings("host\r\nevil").is_err());
         assert!(malformed_http2_settings("host\nevil").is_err());
     }
 
-    /// `detect_te_cl` — exact wire body shape.
+    /// `detect_te_cl`: exact wire body shape.
     ///
     /// Body must be: `5\r\n\r\n0\r\n\r\n`
     /// - `5\r\n` = chunk-size line (3 bytes; CL covers ONLY these 3)
-    /// - `\r\n`  = chunk-data (the 5-byte chunk uses \r\n as content — note:
+    /// - `\r\n`  = chunk-data (the 5-byte chunk uses \r\n as content, note:
     ///   actual chunk would be 5 bytes but this probe is timing-based)
     /// - `0\r\n\r\n` = terminating chunk
     ///
@@ -987,7 +987,7 @@ mod tests {
         );
     }
 
-    /// `h2c_smuggle` with a custom settings string — wire format.
+    /// `h2c_smuggle` with a custom settings string (wire format).
     ///
     /// The custom settings string must appear verbatim in `HTTP2-Settings:`.
     #[test]
@@ -1015,7 +1015,7 @@ mod tests {
         );
     }
 
-    /// `h2c_post_smuggle` — Content-Length matches body length exactly.
+    /// `h2c_post_smuggle`: Content-Length matches body length exactly.
     #[test]
     fn h2c_post_smuggle_content_length_matches_body() {
         let body = b"field=value&other=data";
@@ -1036,7 +1036,7 @@ mod tests {
         assert!(s.starts_with("POST / HTTP/1.1\r\n"));
     }
 
-    /// `h2c_post_smuggle` with empty body — Content-Length must be 0.
+    /// `h2c_post_smuggle` with empty body. Content-Length must be 0.
     #[test]
     fn h2c_post_smuggle_empty_body() {
         let p = h2c_post_smuggle("example.com", b"", None).unwrap();
@@ -1048,7 +1048,7 @@ mod tests {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Kettle BH USA 2025 — "HTTP/1.1 Must Die: The Desync Endgame" tests
+    // Kettle BH USA 2025: "HTTP/1.1 Must Die: The Desync Endgame" tests
     // ═══════════════════════════════════════════════════════════════════════
 
     /// `KETTLE_DESYNC_PRIMITIVES` registry must contain all 10 names.
@@ -1128,7 +1128,7 @@ mod tests {
         assert!(zero_cl_desync("/nul\nevil", "payload", 10).is_err());
     }
 
-    /// `zero_cl_desync` with oversized CL — not an error (CL is caller-supplied).
+    /// `zero_cl_desync` with oversized CL (not an error (CL is caller-supplied)).
     #[test]
     fn zero_cl_desync_large_attack_cl() {
         let p = zero_cl_desync("/aux", "SMUGGLED", usize::MAX).unwrap();
@@ -1173,7 +1173,7 @@ mod tests {
         );
     }
 
-    /// `vh_masked_header` with empty header name — must not panic.
+    /// `vh_masked_header` with empty header name (must not panic).
     #[test]
     fn vh_masked_header_empty_name_no_panic() {
         let variants = vh_masked_header("", "value").unwrap();
@@ -1196,7 +1196,7 @@ mod tests {
         );
     }
 
-    /// CRLF injection in masked_name is rejected — anti-rig for the
+    /// CRLF injection in masked_name is rejected, anti-rig for the
     /// `.ok()` silent-drop bug (§15 AUDIT HUNTS: CRLF injection).
     #[test]
     fn vh_masked_header_rejects_crlf_in_name() {
@@ -1456,14 +1456,14 @@ mod tests {
     /// to panic.  E.g. the Japanese character '日' is 3 bytes; slicing a 2-char
     /// host `"日本"` at byte 3 hits the boundary of the second char OK, but a
     /// 1-char host `"日"` is exactly 3 bytes and slicing at 3 means "end", which
-    /// is fine — but a 2-byte char preceded by 1 ASCII byte (like `"x£"`) would
+    /// is fine, but a 2-byte char preceded by 1 ASCII byte (like `"x£"`) would
     /// have the `£` span bytes 1-2, and slicing at byte 3 (mid-char) panics.
     ///
     /// Fixed: use `char_indices().nth(3)` to find the first safe char boundary
     /// that is ≥ 3 code-points in.
     #[test]
     fn malformed_host_split_multibyte_utf8_no_panic() {
-        // "x£" — 'x' is 1 byte, '£' is 2 bytes (U+00A3). Total = 3 bytes.
+        // "x£": 'x' is 1 byte, '£' is 2 bytes (U+00A3). Total = 3 bytes.
         // Pre-fix slicing at byte-index 3 hit the end (OK), but "日本a" would hit
         // mid-char. Use a representative mix.
         let cases = &[
@@ -1738,7 +1738,7 @@ mod tests {
 
     /// `h2c_post_smuggle` with a CRLF-embedded `http2_settings` must return Err.
     ///
-    /// Same vulnerability as `h2c_smuggle` — the `http2_settings` parameter
+    /// Same vulnerability as `h2c_smuggle`: the `http2_settings` parameter
     /// was not guarded before interpolation into `HTTP2-Settings: {settings}\r\n`.
     #[test]
     fn h2c_post_smuggle_rejects_crlf_in_settings() {
@@ -1781,7 +1781,7 @@ mod tests {
 
     // ── CVE / real-world adversarial payloads ───────────────────────────────
 
-    /// **CVE-class: IIS 0.CL desync** — reproduces the attack surface described
+    /// **CVE-class: IIS 0.CL desync**: reproduces the attack surface described
     /// in Kettle's "$200k in 2 weeks" talk.  An ALB/CloudFront front-end ignores
     /// Content-Length on IIS device paths; IIS back-end honors CL and reads the
     /// smuggled request.  The smuggled `GET /admin` is the canonical HackerOne
@@ -1802,7 +1802,7 @@ mod tests {
         assert_eq!(body, smuggled, "body must be exactly the smuggled request");
     }
 
-    /// **CVE-class: Expect 100-continue front-end bypass** — reproduces the
+    /// **CVE-class: Expect 100-continue front-end bypass**: reproduces the
     /// class of H1 desync where a load balancer responds to Expect immediately
     /// and the back-end reads the body as the next request.  Canonical payload
     /// from Kettle's PortSwigger blog series.
@@ -1817,14 +1817,14 @@ mod tests {
         assert!(s.contains("amount=999"));
     }
 
-    /// **CVE-class: H2.CL downgrade** — reproduces the browser-powered H2
+    /// **CVE-class: H2.CL downgrade**: reproduces the browser-powered H2
     /// desync where the proxy inherits a conflicting Content-Length.  This is
     /// the mechanism behind several $30k–$80k HackerOne bounties from 2024–2025.
     #[test]
     fn adversarial_h2_cl_downgrade_cve_class() {
         use crate::h2_evasion::H2TargetFlaw;
         let body = b"GET /admin HTTP/1.1\r\nHost: internal\r\n\r\n";
-        // Declared CL intentionally less than body — triggers H2.CL desync.
+        // Declared CL intentionally less than body (triggers H2.CL desync).
         let declared_cl = 5;
         let evasion = browser_powered_h2_downgrade("POST", "/api/data", body, declared_cl).unwrap();
         assert_eq!(evasion.target_flaw, H2TargetFlaw::ProtocolDowngrade);
@@ -1833,7 +1833,7 @@ mod tests {
             .iter()
             .find(|(k, _)| k == "content-length")
             .expect("content-length header must be present");
-        // The declared CL is 5 — intentionally shorter than the real body.
+        // The declared CL is 5 (intentionally shorter than the real body).
         assert_eq!(
             cl_header.1, "5",
             "declared CL must be 5 (mismatched desync)"

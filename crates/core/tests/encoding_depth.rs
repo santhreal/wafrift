@@ -922,7 +922,7 @@ fn all_strategies_all_payloads_consistency() {
             strategy,
             Strategy::RandomCase | Strategy::SpaceToRandomBlank | Strategy::ParameterPollution
         ) {
-            // Stochastic — not deterministic across invocations.
+            // Stochastic (not deterministic across invocations).
             continue;
         }
         // Each strategy should produce consistent output for same input

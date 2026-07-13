@@ -7,7 +7,7 @@
 //! - [`SigningKey`] / [`SignedBundle`]  ed25519 sign + verify
 //! - [`TrustList`]                  publisher allowlist (per-host TOML)
 //!
-//! No HTTP / network I/O — pull/submit live in `wafrift-cli`.
+//! No HTTP / network I/O (pull/submit live in `wafrift-cli`).
 //! This crate is the trust + serialisation core.
 //!
 //! # Examples

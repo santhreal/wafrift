@@ -1,11 +1,11 @@
 //! SSRF payload-string equivalence + the joint `(payload × delivery)`
-//! generator — the SSRF arm of Phase B.
+//! generator (the SSRF arm of Phase B).
 //!
 //! The sound equivalence is **address-literal equivalence**: the host a
 //! URL parser hands to `connect()` is computed by `inet_aton`-style
 //! parsing (glibc/libc/Python `socket`/many HTTP clients), under which
 //! `127.0.0.1` ≡ `0x7f000001` ≡ `2130706433` ≡ `0177.0.0.1` ≡ `127.1`
-//! ≡ `[::ffff:127.0.0.1]` — every form resolves to the SAME 32-bit
+//! ≡ `[::ffff:127.0.0.1]`: every form resolves to the SAME 32-bit
 //! address the server actually connects to, while a WAF blocklist
 //! keyed on the dotted-quad / `localhost` / `169.254.169.254` literal
 //! matches none of them. Userinfo (`http://trusted@169.254.169.254/`)
@@ -14,10 +14,10 @@
 //! Anti-rig: the operator's *target* (the canonical connect IP + the
 //! path/marker) is preserved verbatim and re-verified
 //! ([`still_targets`]). A rewrite that changed `169.254.169.254` to
-//! `8.8.8.8`, or dropped the metadata path, is rejected — the
+//! `8.8.8.8`, or dropped the metadata path, is rejected, the
 //! equivalence holds only for address forms that provably canonicalise
 //! to the original, never "any host looks fine". Enclosed-alphanumeric
-//! / fullwidth host glyphs are NOT emitted (no resolver decodes them —
+//! / fullwidth host glyphs are NOT emitted (no resolver decodes them 
 //! that would be an unsound non-attack).
 
 use super::{DeliveryShape, Dialect, EquivConfig, EquivPayload, Rng};
@@ -236,7 +236,7 @@ fn rw_ip_form(v: u32, rng: &mut Rng) -> String {
     }
 }
 
-/// RFC 3986 userinfo: `scheme://<decoy>@<host><rest>` — the parser
+/// RFC 3986 userinfo: `scheme://<decoy>@<host><rest>`: the parser
 /// connects to `<host>`; a WAF that allowlists `<decoy>` is fooled.
 fn rw_userinfo(u: &Url, host: &str, rng: &mut Rng) -> String {
     let decoy = *rng.pick(&[
@@ -288,7 +288,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
     }
     // Invariant: still_targets(payload, payload) returned true, which
     // internally calls split_url + inet_aton on the same payload and
-    // returns false when either is None — so both succeed here.
+    // returns false when either is None (so both succeed here).
     let base = split_url(payload).expect("invariant: still_targets() confirmed split_url succeeds");
     let v = inet_aton(&base.host).expect("invariant: still_targets() confirmed inet_aton succeeds");
 
@@ -427,7 +427,7 @@ mod tests {
 
     #[test]
     fn wrong_host_substitution_is_rejected() {
-        // 8.8.8.8 is public — a rewrite to it is NOT equivalent.
+        // 8.8.8.8 is public (a rewrite to it is NOT equivalent).
         assert!(!still_targets("http://127.0.0.1/x", "http://8.8.8.8/x"));
         // different internal host is still a different target.
         assert!(!still_targets(

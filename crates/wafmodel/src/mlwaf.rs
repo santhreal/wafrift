@@ -1,7 +1,7 @@
 //! Constrained black-box evasion of **ML-WAFs**.
 //!
 //! Regex-WAFs are decompiled (P1) and solved (P2). The next-generation
-//! threat is a learned classifier — Cloudflare/AWS/Fastly ML-WAFs —
+//! threat is a learned classifier. Cloudflare/AWS/Fastly ML-WAFs 
 //! where there is no rule to learn and no normalization to mismatch.
 //! The paradigm-correct tool there is a *decision-based boundary
 //! attack* (HopSkipJump-family): perturb a blocked attack toward the
@@ -11,7 +11,7 @@
 //! input a **working attack**. That is a hard manifold constraint, and
 //! the projection-onto-feasible operator *is wafrift's soundness
 //! oracle*. Every candidate is projected back onto the executable-
-//! attack manifold (rejected if it stops being an attack) — so a
+//! attack manifold (rejected if it stops being an attack), so a
 //! "bypass" can never be won by mutating the payload into something
 //! inert. Anti-rig is structural: leaving the manifold is not a
 //! success, it is a discarded sample.
@@ -51,7 +51,7 @@ impl Rng {
 /// classifier (`evolution::PayloadClass::from_payload` / the per-class
 /// oracles): wafmodel sits below those layers, and this is a tiny local
 /// operator-selection heuristic, never a label that is persisted or reported.
-/// The manifold ([`is_attack_payload`]) remains the hard correctness gate — a
+/// The manifold ([`is_attack_payload`]) remains the hard correctness gate, a
 /// wrong hint only costs a discarded proposal, never a false bypass.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum MutClass {
@@ -101,7 +101,7 @@ fn mut_class(input: &[u8]) -> MutClass {
 }
 
 /// Flip the case of one ASCII letter in `v` (semantics-preserving for SQL
-/// keywords, HTML tag/attribute names, and Windows paths — NOT for Linux
+/// keywords, HTML tag/attribute names, and Windows paths. NOT for Linux
 /// commands, which `propose` excludes from this operator).
 fn flip_one_ascii_letter(v: &mut [u8], rng: &mut Rng) {
     if v.is_empty() {
@@ -125,7 +125,7 @@ fn insert_fragment(v: &mut Vec<u8>, rng: &mut Rng, frag: &[u8]) {
 }
 
 /// Replace one existing ASCII space in `v` with `frag`. No-op (leaves `v`
-/// unchanged) when there is no space — the caller's loop simply re-proposes.
+/// unchanged) when there is no space (the caller's loop simply re-proposes).
 fn replace_one_space(v: &mut Vec<u8>, rng: &mut Rng, frag: &[u8]) {
     let spaces: Vec<usize> = v
         .iter()
@@ -140,7 +140,7 @@ fn replace_one_space(v: &mut Vec<u8>, rng: &mut Rng, frag: &[u8]) {
     v.splice(pick..=pick, frag.iter().copied());
 }
 
-/// Semantics-preserving *proposals* (liberal — validity is enforced by the
+/// Semantics-preserving *proposals* (liberal, validity is enforced by the
 /// manifold projection, not by the mutator). The operator set is now
 /// CLASS-AWARE: the original implementation only emitted XSS-appropriate
 /// edits (case-flip, intra-tag whitespace, HTML comment), so for a SQL / path
@@ -152,7 +152,7 @@ fn replace_one_space(v: &mut Vec<u8>, rng: &mut Rng, frag: &[u8]) {
 ///   + keyword case-flip.
 /// - XSS: case-flip + benign intra-tag whitespace + HTML comment (as before).
 /// - Path: `/`→`%2f`, `.`→`%2e` percent-encoding + case-flip (Windows paths).
-/// - Cmd: space→`${IFS}` + empty-quote insertion — NO case-flip (Linux
+/// - Cmd: space→`${IFS}` + empty-quote insertion. NO case-flip (Linux
 ///   commands are case-sensitive; flipping would break them).
 /// - Template/Generic: case-flip + whitespace.
 fn propose(input: &[u8], rng: &mut Rng) -> Vec<u8> {
@@ -204,7 +204,7 @@ fn propose(input: &[u8], rng: &mut Rng) -> Vec<u8> {
 }
 
 /// Apply one semantics-preserving structural mutation to `input` under
-/// `seed` and return the candidate. Liberal — the caller must enforce the
+/// `seed` and return the candidate. Liberal, the caller must enforce the
 /// manifold via [`is_attack_payload`] (a mutation that destroys the attack
 /// is the caller's to reject). Exposed so the async I/O layer (bench / scan,
 /// which own the *live* WAF oracle) can drive a live decision-based boundary
@@ -218,7 +218,7 @@ pub fn propose_mutation(input: &[u8], seed: u64) -> Vec<u8> {
 
 /// The canonical executable-attack manifold check: does `bytes` still carry
 /// at least one live attack signal (SQLi / XSS / path / RCE)? This is the
-/// projection-onto-feasible operator — a candidate that fails it is inert
+/// projection-onto-feasible operator, a candidate that fails it is inert
 /// (not a bypass, a discarded sample). Single source of truth shared by the
 /// strategy router and the bench/scan live boundary attack (§7 DEDUP), so the
 /// manifold definition can never drift between the mutation and verification
@@ -261,12 +261,12 @@ pub fn is_attack_payload(bytes: &[u8]) -> bool {
 /// Outcome of an ML-WAF evasion search.
 #[derive(Debug, Clone)]
 pub struct MlEvasion {
-    /// The evading input — bypasses the ML-WAF *and* is still an attack.
+    /// The evading input (bypasses the ML-WAF *and* is still an attack).
     pub input: Vec<u8>,
     /// ML-WAF queries spent.
     pub queries: u64,
     /// Candidates rejected by the manifold projection (never counted
-    /// as progress — the anti-rig ledger).
+    /// as progress (the anti-rig ledger)).
     pub off_manifold_rejected: u64,
 }
 
@@ -280,7 +280,7 @@ pub struct MlEvasion {
 /// manifold-constrained randomized boundary walk with restarts.
 ///
 /// Returns `None` iff no on-manifold input within `budget` queries
-/// bypasses the WAF — e.g. an ML-WAF that blocks the *entire* attack
+/// bypasses the WAF, e.g. an ML-WAF that blocks the *entire* attack
 /// manifold (correctly reported, never fabricated).
 pub fn evade_ml<W, F, B>(
     start: &[u8],
@@ -307,7 +307,7 @@ where
     let start_req = build(start);
     if !waf.blocks(&start_req)? {
         queries += 1;
-        // Already passes and is an attack — trivially evading.
+        // Already passes and is an attack (trivially evading).
         return Ok(Some(MlEvasion {
             input: start.to_vec(),
             queries,
@@ -328,7 +328,7 @@ where
         // point found so far) with a fresh perturbation.
         let cand = propose(&best, &mut rng);
         // Manifold projection: reject anything that is not a working
-        // attack. This is the hard constraint — and the anti-rig.
+        // attack. This is the hard constraint (and the anti-rig).
         if !is_attack(&cand) {
             off += 1;
             continue;
@@ -408,7 +408,7 @@ mod attack_manifold_tests {
         // Class-aware proposer regression: each attack class must keep a strong
         // MAJORITY of proposals ON the executable-attack manifold. Pre-fix the
         // operators were XSS-only, so SQL/cmd/path payloads had most proposals
-        // turned inert (HTML-comment / mid-token space) and discarded — gutting
+        // turned inert (HTML-comment / mid-token space) and discarded, gutting
         // the boundary search off-XSS. A regression to XSS-only operators tanks
         // the non-XSS counts and trips this.
         let cases: &[&[u8]] = &[
@@ -423,7 +423,7 @@ mod attack_manifold_tests {
                 .count();
             assert!(
                 on >= 100,
-                "only {on}/200 proposals stayed on-manifold for {:?} — operators not class-appropriate",
+                "only {on}/200 proposals stayed on-manifold for {:?}, operators not class-appropriate",
                 String::from_utf8_lossy(payload)
             );
         }
@@ -443,7 +443,7 @@ mod attack_manifold_tests {
     #[test]
     fn cmd_proposals_never_uppercase_a_command() {
         // Linux commands are case-sensitive (`CAT` != `cat`), so the Cmd
-        // operator set must NOT include case-flip — and unlike SQL/XSS/path,
+        // operator set must NOT include case-flip, and unlike SQL/XSS/path,
         // the case-insensitive manifold would NOT catch a flipped-and-broken
         // command (it would pass the manifold yet be inert on a real target).
         // Strip the `${IFS}` operator's literal (its only uppercase) and assert

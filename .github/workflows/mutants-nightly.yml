@@ -1,15 +1,15 @@
-# E5 item 37 — the THOROUGH mutation regression gate, run NIGHTLY.
+# E5 item 37 (the THOROUGH mutation regression gate, run NIGHTLY).
 #
 # Hard-won lesson (the F5 saga + two runner OOMs): a SINGLE
 # GitHub-hosted runner cannot run the comprehensive learn.rs-inclusive
-# mutation suite to completion — memory accumulates across ~256 mutants
+# mutation suite to completion, memory accumulates across ~256 mutants
 # × learn.rs's heavy suite (random_learner_differential's oracle
 # fan-out + learn_exact's BoundedExhaustiveEq) and the runner is
 # resource-killed mid-run (exit 143) at BOTH --jobs 3 and --jobs 2.
 # A gate that cannot complete is decoration. The robust fix is the
 # "small isolated runs" pattern: a MATRIX with one fresh runner PER
 # FILE, so no runner ever accumulates another file's memory. learn.rs
-# gets `--jobs 1` (serial — minimal, predictable memory, no concurrent
+# gets `--jobs 1` (serial, minimal, predictable memory, no concurrent
 # rustc) on its own runner; the light files keep the proven
 # `--jobs 3 --timeout 30`. Each leg is independently bounded and a
 # failure localises to one file.
@@ -68,7 +68,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-mutants
-      - name: "cargo-mutants — ${{ matrix.id }}"
+      - name: "cargo-mutants: ${{ matrix.id }}"
         env:
           WAFMODEL_PROPTEST_CASES: "12"
           WAFMODEL_SCALE_CONFIGS: "5"
@@ -89,7 +89,7 @@ jobs:
           fi
           summary="$(grep -E '[0-9]+ mutants tested' mutants_run.log | tail -1)"
           if [ -z "$summary" ]; then
-            echo "::error::no cargo-mutants summary — ${{ matrix.id }} run did not complete"
+            echo "::error::no cargo-mutants summary: ${{ matrix.id }} run did not complete"
             exit 1
           fi
           echo "summary: $summary"
@@ -99,4 +99,4 @@ jobs:
             echo "::error::${{ matrix.id }} reports ${missed} missed mutant(s)"
             exit 1
           fi
-          echo "0 missed — every non-equivalent mutant in ${{ matrix.id }} is detected"
+          echo "0 missed, every non-equivalent mutant in ${{ matrix.id }} is detected"

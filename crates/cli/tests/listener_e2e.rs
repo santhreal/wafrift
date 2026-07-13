@@ -3,7 +3,7 @@
 //! The listener is a long-running server.  Tests that need it to be
 //! running start it as a child process, read its startup output (tokens
 //! are printed immediately before the accept loop), then kill the child.
-//! This avoids a fixed port conflict — every test binds to a different
+//! This avoids a fixed port conflict, every test binds to a different
 //! ephemeral port (`127.0.0.1:0` is not directly supported by the CLI
 //! so we pick unused high ports via `find_free_port`).
 //!
@@ -91,7 +91,7 @@ fn listener_json_format_emits_listener_started_object() {
     let stdout = child.stdout.take().expect("piped stdout");
     let reader = BufReader::new(stdout);
 
-    // Read the first line — it must be the JSON startup object.
+    // Read the first line (it must be the JSON startup object).
     let first_line = reader
         .lines()
         .next()
@@ -173,7 +173,7 @@ fn listener_json_tokens_are_non_empty_and_unique() {
         assert!(!t.is_empty(), "every token must be non-empty: {v}");
     }
 
-    // All tokens must be unique — a duplicate token would be a silent
+    // All tokens must be unique, a duplicate token would be a silent
     // collision bug (two embeds, one callback, wrong vuln is credited).
     let mut seen = std::collections::HashSet::new();
     for t in &tokens {
@@ -247,7 +247,7 @@ fn listener_logs_callback_when_matching_token_is_sent() {
         let _ = stream.write_all(req.as_bytes());
     }
 
-    // Read the next NDJSON line — it should be the callback log.
+    // Read the next NDJSON line (it should be the callback log).
     let deadline = Instant::now() + Duration::from_secs(5);
     let mut callback_line = String::new();
     loop {
@@ -287,7 +287,7 @@ fn listener_logs_callback_when_matching_token_is_sent() {
         "callback must include method field: {cb}"
     );
     // matched_token must be the pre-minted token (or null if path didn't
-    // carry it — but our request path IS /{token}, so it should match).
+    // carry it (but our request path IS /{token}, so it should match)).
     let matched = cb["matched_token"].as_str().unwrap_or("");
     assert_eq!(
         matched, token,
@@ -300,7 +300,7 @@ fn listener_logs_callback_when_matching_token_is_sent() {
 #[test]
 fn listener_invalid_bind_address_exits_nonzero() {
     // An address that cannot be bound exits immediately with non-zero.
-    // Port 1 requires root — will fail fast on all test platforms.
+    // Port 1 requires root (will fail fast on all test platforms).
     let (code, _stdout, stderr) = wafrift(&["listener", "--bind", "127.0.0.1:1", "--tokens", "1"]);
     assert_ne!(
         code, 0,

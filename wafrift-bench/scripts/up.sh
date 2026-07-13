@@ -37,7 +37,7 @@ for stack in "${STACKS[@]}"; do
     sleep 1
   done
   if [ "$ready" != "true" ]; then
-    echo "  [$stack] TIMEOUT on :$port — see 'docker logs wafrift-${stack}' for details" >&2
+    echo "  [$stack] TIMEOUT on :$port, see 'docker logs wafrift-${stack}' for details" >&2
     TIMEOUTS+=("$stack")
   fi
 done

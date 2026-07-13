@@ -1,4 +1,4 @@
-# waf-zoo — Additional WAF bench targets
+# waf-zoo: Additional WAF bench targets
 
 A collection of Docker-compose stacks for benching wafrift against WAF engines
 beyond the OWASP CRS modsec-pl* stacks in `wafrift-bench/targets/`.
@@ -110,7 +110,7 @@ so they are easy to separate in CI.
 | modsec-aws | Apache 2.0 (owasp/modsecurity-crs) | Yes |
 | modsec-azure | Apache 2.0 (owasp/modsecurity-crs) | Yes |
 | coraza | Apache 2.0 (corazawaf/coraza-caddy) | Yes |
-| naxsi | GPLv3 (wargio/naxsi); nginx BSD-2 | Local research only — see naxsi/README.md |
-| shadowdaemon | GPLv2 (zecure/shadowd); LGPL connector | Local research only — see shadowdaemon/README.md |
+| naxsi | GPLv3 (wargio/naxsi); nginx BSD-2 | Local research only, see naxsi/README.md |
+| shadowdaemon | GPLv2 (zecure/shadowd); LGPL connector | Local research only, see shadowdaemon/README.md |
 
 No API keys, cloud credentials, or trial licences are required for any stack.

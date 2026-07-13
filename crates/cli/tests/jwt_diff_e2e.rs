@@ -46,7 +46,7 @@ async fn spawn_jwt_mock() -> std::net::SocketAddr {
     addr
 }
 
-// HS256 baseline JWT (header.payload.fakesig) — well-formed enough
+// HS256 baseline JWT (header.payload.fakesig), well-formed enough
 // for the runner to accept and mutate.
 const BASELINE_JWT: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImV4cCI6MTkwMDAwMDAwMH0.fake-signature";
 
@@ -70,7 +70,7 @@ fn jwt_diff_against_permissive_mock_succeeds_and_emits_results() {
         "--delay-ms",
         "0",
     ]);
-    assert_eq!(code, 0, "jwt-diff exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "jwt-diff exit 0, stderr:\n{stderr}");
     let p: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     let results = p["results"].as_array().expect("results array");
     assert!(!results.is_empty(), "must have probe results");
@@ -91,7 +91,7 @@ fn jwt_diff_rejects_non_jwt_token_with_exit_2() {
         "--format",
         "json",
     ]);
-    assert_eq!(code, 2, "non-jwt token must exit 2 — stderr:\n{stderr}");
+    assert_eq!(code, 2, "non-jwt token must exit 2, stderr:\n{stderr}");
 }
 
 #[test]
@@ -133,13 +133,13 @@ fn jwt_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "jwt", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff jwt --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff jwt --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["jwt-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift jwt-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift jwt-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }

@@ -2,18 +2,18 @@
 //!
 //! Three faithful realisations:
 //!
-//! - [`SimRegexWaf`] — a CRS-anomaly-scoring WAF whose ruleset we
+//! - [`SimRegexWaf`], a CRS-anomaly-scoring WAF whose ruleset we
 //!   control. It is the **ground truth** the learner is proven against
 //!   (we know its exact language because we wrote the rules) and it is
 //!   *faithful*, not a toy: it applies real ModSecurity transforms, so
 //!   it exhibits the real normalization-mismatch behaviour P2 must
 //!   rediscover. Load real CRS rules into it ([`SimRegexWaf::from_toml`])
-//!   and it *is* a pure-Rust CRS evaluator — no external Coraza, no
+//!   and it *is* a pure-Rust CRS evaluator, no external Coraza, no
 //!   network, zero-config.
-//! - [`FnOracle`] — wraps any `FnMut(&Request) -> Result<Outcome>`.
+//! - [`FnOracle`] (wraps any `FnMut(&Request) -> Result<Outcome>`).
 //!   This is how a live HTTP WAF plugs in (scald / the wafrift CLI
-//!   already own a client) without dragging an HTTP stack — or a
-//!   tokio runtime — into this crate.
+//!   already own a client) without dragging an HTTP stack, or a
+//!   tokio runtime (into this crate).
 //!
 //! Every oracle counts its membership queries; that count is the only
 //! real cost of decompilation and the thing the query strategy (P1
@@ -148,7 +148,7 @@ impl SimRegexWaf {
     }
 
     /// Classify *without* counting (used internally by offline mining
-    /// against the modelled WAF — those are not live queries).
+    /// against the modelled WAF (those are not live queries)).
     #[must_use]
     pub fn classify_uncounted(&self, req: &Request) -> Outcome {
         let view = canonicalize(req);
@@ -178,7 +178,7 @@ impl SimRegexWaf {
         &self.rules
     }
 
-    /// A copy of this WAF with extra rules appended (same threshold) —
+    /// A copy of this WAF with extra rules appended (same threshold) 
     /// the hardened configuration a defender would deploy.
     #[must_use]
     pub fn with_rules_added(&self, extra: Vec<Rule>) -> SimRegexWaf {

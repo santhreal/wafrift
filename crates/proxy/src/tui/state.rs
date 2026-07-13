@@ -1,7 +1,7 @@
 //! Mutable state for the TUI: counters, request ring, filter mode,
 //! latency samples, per-technique stats, toast queue.
 //!
-//! Pure state + mutation logic — no rendering, no I/O. Render layers
+//! Pure state + mutation logic, no rendering, no I/O. Render layers
 //! read from `&State`; the event loop drives [`State::record`].
 
 use std::collections::{HashMap, VecDeque};
@@ -55,7 +55,7 @@ pub enum Event {
         body_padded: bool,
         upstream_latency_ms: u64,
         waf_name: Option<String>,
-        /// Outgoing request headers (post-evade — what hit the wire).
+        /// Outgoing request headers (post-evade (what hit the wire)).
         req_headers: Vec<(String, String)>,
         /// Outgoing request body excerpt (post-evade).
         req_body_excerpt: Vec<u8>,
@@ -75,7 +75,7 @@ pub enum Event {
     ResetCounters,
 }
 
-/// Single inspectable record — one proxied request + its response.
+/// Single inspectable record (one proxied request + its response).
 #[derive(Debug, Clone)]
 pub struct RequestRecord {
     pub timestamp: String,
@@ -244,7 +244,7 @@ impl OutcomeFilter {
     }
 }
 
-/// Input mode — drives whether keystrokes are commands or filter text.
+/// Input mode (drives whether keystrokes are commands or filter text).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum InputMode {
     #[default]
@@ -301,7 +301,7 @@ pub struct State {
     pub tls: TlsStats,
     pub recent: VecDeque<RequestRecord>,
     /// Index INTO `recent` for the Flow tab. `None` means "no
-    /// explicit selection — auto-follow newest at the bottom".
+    /// explicit selection (auto-follow newest at the bottom").
     pub selected: Option<usize>,
     /// Whether the inspect/detail pane is open in Flow tab.
     pub inspect: bool,
@@ -328,7 +328,7 @@ pub struct State {
     /// Monotonic counter for `/tmp/wafrift-yank-N.curl` filenames.
     pub yank_seq: u64,
     /// Index INTO the latest `intercept::global_store().snapshot()`
-    /// for the Intercept tab. Recomputed each render — selection
+    /// for the Intercept tab. Recomputed each render, selection
     /// survives across snapshots when possible.
     pub intercept_selected: Option<u64>,
 }
@@ -528,7 +528,7 @@ impl State {
     }
 
     /// Compute a percentile (e.g. `0.95`) from the latency-sample ring.
-    /// Returns 0 when the ring is empty. Sorts a copy on every call —
+    /// Returns 0 when the ring is empty. Sorts a copy on every call 
     /// fine at dashboard refresh rate (≤7 Hz) for a 1024-entry ring.
     pub fn latency_percentile(&self, p: f64) -> u64 {
         if self.latency_samples.is_empty() {
@@ -537,7 +537,7 @@ impl State {
         let mut v: Vec<u64> = self.latency_samples.iter().copied().collect();
         v.sort_unstable();
         let p = p.clamp(0.0, 1.0);
-        // "Nearest rank" with floor — matches NIST C=1 convention for
+        // "Nearest rank" with floor, matches NIST C=1 convention for
         // common percentiles: p50 of [10..100 by 10] = 50, not 60.
         #[allow(
             clippy::cast_possible_truncation,
@@ -623,7 +623,7 @@ impl State {
         let new_visible =
             (cur_visible as i64 + delta).clamp(0, (visible.len() - 1) as i64) as usize;
         self.selected = Some(visible[new_visible]);
-        // any explicit navigation drops auto-follow — operator wants to
+        // any explicit navigation drops auto-follow, operator wants to
         // pin a row.
         if delta != 0 {
             self.follow = false;

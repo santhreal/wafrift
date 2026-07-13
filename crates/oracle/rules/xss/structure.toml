@@ -5,7 +5,7 @@
 # execution sink after a transformation. If any of those three families
 # disappears, the encoding broke the exploit.
 #
-# Community contributions welcome — append a new `[[tag]]`,
+# Community contributions welcome, append a new `[[tag]]`,
 # `[[event]]`, `[[exec_sink]]`, `[[js_uri_scheme]]`, or
 # `[[dangerous_sink]]` stanza. Lookups are O(n) substring scans on a
 # lowercased payload, but n stays small even with hundreds of entries.

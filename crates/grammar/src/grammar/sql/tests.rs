@@ -312,7 +312,7 @@ fn replace_logical_operator_and_basic() {
 #[test]
 fn replace_logical_operator_skips_inside_single_quotes() {
     let alts = vec!["||".to_string()];
-    // The OR is inside single quotes — must NOT be replaced.
+    // The OR is inside single quotes (must NOT be replaced).
     let result = replace_logical_operator("'hello or world' OR 1=1", &alts, "or");
     assert!(result.is_some());
     let result = result.unwrap();

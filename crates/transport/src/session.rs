@@ -6,7 +6,7 @@ use wafrift_types::session::CsrfInjectionLocation;
 
 /// Cookie jars are a few KB in practice (a few dozen cookies + CSRF
 /// tokens). 16 MiB catches `--session-jar /dev/zero`, hostile
-/// symlinks pointed at log files, or accidental aliasing — without
+/// symlinks pointed at log files, or accidental aliasing, without
 /// rejecting any legitimate jar we've seen in the wild.
 const SESSION_JAR_MAX_BYTES: u64 = 16 * 1024 * 1024;
 
@@ -125,7 +125,7 @@ pub fn load_jar(path: &Path) -> Result<SessionStore, SessionError> {
 /// Save a cookie jar to disk.
 ///
 /// Persist the [`SessionStore`] as JSON (authjar's native format).
-/// This finally gives wafrift bi-directional cookie persistence — the
+/// This finally gives wafrift bi-directional cookie persistence, the
 /// old `reqwest::cookie::Jar` implementation could not enumerate its
 /// cookies, so `save_jar` was a stub that only wrote a header.
 pub fn save_jar(store: &SessionStore, path: &Path) -> Result<(), SessionError> {
@@ -202,7 +202,7 @@ pub fn inject_csrf(
                 // application/x-www-form-urlencoded. For any other content
                 // type (multipart, JSON, binary) we refuse rather than
                 // silently corrupt. The previous `from_utf8_lossy` path
-                // wrote mojibake into the body — invisible in happy-path
+                // wrote mojibake into the body, invisible in happy-path
                 // tests, catastrophic for non-Latin payloads.
                 let ct = request
                     .headers
@@ -462,7 +462,7 @@ mod tests {
     fn session_jar_cap_is_sane() {
         assert!(
             super::SESSION_JAR_MAX_BYTES >= 1024 * 1024,
-            "SESSION_JAR_MAX_BYTES below 1 MiB — could reject legitimate jars"
+            "SESSION_JAR_MAX_BYTES below 1 MiB, could reject legitimate jars"
         );
     }
 }

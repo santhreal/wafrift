@@ -8,13 +8,13 @@
 //!
 //! Module surface:
 //!
-//! - [`encode_cbor_string_map`] — RFC 8949 CBOR `{key: value}`
+//! - [`encode_cbor_string_map`]. RFC 8949 CBOR `{key: value}`
 //!   map for the `POST-cbor` vector.
-//! - [`splice_payload_into_path`] — splice a percent-encoded
+//! - [`splice_payload_into_path`], splice a percent-encoded
 //!   payload into a URL path for the `path-segment` vector.
-//! - [`quoted_printable_encode`] — RFC 2045 §6.7 quoted-printable
+//! - [`quoted_printable_encode`]. RFC 2045 §6.7 quoted-printable
 //!   for the `POST-multipart-qp` vector.
-//! - [`xml_text_escape`] — XML 1.0 §2.4 entity escaping for the
+//! - [`xml_text_escape`]. XML 1.0 §2.4 entity escaping for the
 //!   `POST-xml` / `POST-text-xml` vectors.
 
 /// Hand-rolled CBOR (RFC 8949) text-string encoder. Appends the
@@ -22,11 +22,11 @@
 ///
 /// Output format per the spec:
 ///
-/// - `0x60 | n` — text-string with inline length n (n ≤ 23)
-/// - `0x78 LL` — text-string with 1-byte length (n ≤ 0xFF)
-/// - `0x79 LL LL` — text-string with 2-byte big-endian length
+/// - `0x60 | n`: text-string with inline length n (n ≤ 23)
+/// - `0x78 LL`: text-string with 1-byte length (n ≤ 0xFF)
+/// - `0x79 LL LL`: text-string with 2-byte big-endian length
 ///
-/// We stop at 16-bit length — WAF-evasion payloads never exceed
+/// We stop at 16-bit length. WAF-evasion payloads never exceed
 /// 64 KiB. Anything bigger falls back to the 16-bit length
 /// encoding with the high bytes set to the actual length (still
 /// RFC 8949-legal up to the u16 ceiling). Strings longer than
@@ -69,7 +69,7 @@ pub(super) fn encode_cbor_string_map(key: &str, value: &str) -> Vec<u8> {
 /// - `http://x.com/api/users?id=1` + `p`  → `http://x.com/p/api/users?id=1`
 /// - `http://x.com`              + `p`  → `http://x.com/p`
 ///
-/// The original target's path is RETAINED — many backends route on
+/// The original target's path is RETAINED, many backends route on
 /// catch-all `/api/*` patterns and we want the extra segment to
 /// extend, not replace. Backends that ONLY match the exact original
 /// path will 404; that's an honest "vector did not land" signal,
@@ -108,7 +108,7 @@ pub(super) fn splice_payload_into_path(target: &str, encoded_payload: &str) -> S
 /// the printable-ASCII safe set (33..=126 minus `=`) becomes
 /// `=HH`; lines stay short enough that we don't bother with the
 /// 76-char soft-wrap (payloads are short, and `=` followed by
-/// `<CRLF>` is the only wrap marker in the spec — leaving it off
+/// `<CRLF>` is the only wrap marker in the spec, leaving it off
 /// is interoperable with every QP decoder).
 pub(super) fn quoted_printable_encode(bytes: &[u8]) -> String {
     let mut out = String::with_capacity(bytes.len());
@@ -130,7 +130,7 @@ pub(super) fn quoted_printable_encode(bytes: &[u8]) -> String {
 }
 
 /// XML-entity-escape the bytes that go into an XML text node.
-/// Only the five XML-significant chars need handling — every
+/// Only the five XML-significant chars need handling, every
 /// other byte is fine in a text node per W3C XML 1.0 §2.4. The
 /// backend's XML parser un-escapes them, so the payload arrives
 /// byte-identical to what we'd have sent as a plain string in any
@@ -185,12 +185,12 @@ mod tests {
     #[test]
     fn cbor_encoder_short_strings_use_single_byte_header() {
         // For text strings of length ≤ 23, the major-type-3 header
-        // is `0x60 | n` — a single byte, no length prefix.
+        // is `0x60 | n`: a single byte, no length prefix.
         let bytes = encode_cbor_string_map("q", "abc");
-        // After 0xA1, expect 0x61 (text "q" — length 1) then 'q'
+        // After 0xA1, expect 0x61 (text "q", length 1) then 'q'
         assert_eq!(bytes[1], 0x61);
         assert_eq!(bytes[2], b'q');
-        // Then 0x63 (text "abc" — length 3) then 'a','b','c'
+        // Then 0x63 (text "abc", length 3) then 'a','b','c'
         assert_eq!(bytes[3], 0x63);
         assert_eq!(&bytes[4..7], b"abc");
     }
@@ -344,13 +344,13 @@ mod tests {
 
     #[test]
     fn qp_roundtrip_via_decode_recovers_payload() {
-        // We don't ship a QP decoder — assert the encoded form
+        // We don't ship a QP decoder, assert the encoded form
         // matches the documented spec character-by-character for
         // a representative payload, which any conforming decoder
         // (mail clients, Python `quopri`, JavaMail) reverses.
         let encoded = quoted_printable_encode(b"<script>alert(1)</script>");
         // Every byte is printable-ASCII safe so verbatim except
-        // none — every byte here is in the safe range; equals
+        // none, every byte here is in the safe range; equals
         // sign is absent. Verify no `=` appears in output.
         assert!(!encoded.contains('='), "no escapes expected: {encoded}");
         assert_eq!(encoded, "<script>alert(1)</script>");

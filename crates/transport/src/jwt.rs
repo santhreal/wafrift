@@ -11,11 +11,11 @@ use wafrift_types::session::JwtManipulation;
 /// padding.
 ///
 /// §7 DEDUP: the ONE implementation of the base64url alphabet is the audited
-/// `base64` crate's `URL_SAFE_NO_PAD` engine — that is the true single source,
+/// `base64` crate's `URL_SAFE_NO_PAD` engine, that is the true single source,
 /// and these functions are just transport's thin (zero-logic) wrappers over
 /// it. Callers WITHIN the transport dependency layer should use these wrappers
 /// for ergonomics; lower crates that can't depend on transport (e.g.
-/// `wafrift-encoding`) correctly call `URL_SAFE_NO_PAD` directly — same single
+/// `wafrift-encoding`) correctly call `URL_SAFE_NO_PAD` directly, same single
 /// source, so there is genuinely no alphabet-loop fork to drift. (Never
 /// hand-roll a base64url alphabet table; use the crate engine.)
 #[must_use]
@@ -27,7 +27,7 @@ pub fn b64url_encode(bytes: &[u8]) -> String {
 ///
 /// Returns `None` on any alphabet or padding error so callers can propagate
 /// `JwtError::InvalidToken` instead of panicking. Backed by the audited
-/// `base64` crate — no hand-rolled lookup tables.
+/// `base64` crate (no hand-rolled lookup tables).
 #[must_use]
 pub fn b64url_decode(s: &str) -> Option<Vec<u8>> {
     // Accept both padded and unpadded inputs; the `base64` crate handles
@@ -93,7 +93,7 @@ pub fn manipulate(
     // serde_json's `IndexMut<&str>` PANICS ("cannot access key … in JSON
     // {array,string,number,bool}") when the value is not an object (it only
     // promotes `null`). A malicious/fuzzed token whose header decodes to a
-    // non-object — e.g. `WzEsMiwzXQ` → `[1,2,3]`, or a bare string/number —
+    // non-object, e.g. `WzEsMiwzXQ` → `[1,2,3]`, or a bare string/number 
     // would otherwise crash the process (§15 panic-in-production). Reject
     // loudly instead. `null` is also rejected: it is not a valid JOSE header.
     if !header.is_object() {
@@ -123,7 +123,7 @@ pub fn manipulate(
             let new_header_b64 = b64url_encode(&header_bytes);
             // Real HMAC-SHA256 over `header.payload` per RFC 7515 §3.1.
             // Pre-fix this returned the literal string "fakesignature"
-            // (LAW 1 stub) — the resulting token had a valid alg
+            // (LAW 1 stub), the resulting token had a valid alg
             // header but a signature no server would accept. The
             // jwt-diff probe couldn't exercise the "server accepts
             // HS256 with a guessed key" attack class.
@@ -142,7 +142,7 @@ pub fn manipulate(
         }
         JwtManipulation::JwkEmbed { jwk } => {
             // F129: pre-fix swallowed JWK parse errors via
-            // `unwrap_or(Value::Null)` — operator passes a malformed
+            // `unwrap_or(Value::Null)`: operator passes a malformed
             // JWK string, gets back a token with `"jwk": null` and an
             // Ok result. The "test if server validates jwk claim
             // correctly" probe was rendered meaningless because the
@@ -191,7 +191,7 @@ mod tests {
         // IndexMut PANICS when the header is a non-object JSON value (it only
         // promotes `null` and inserts into objects). A token whose header
         // decodes to an array/string/number/bool/null must be rejected with
-        // InvalidToken across EVERY manipulation arm — never crash the process.
+        // InvalidToken across EVERY manipulation arm (never crash the process).
         let payload = b64url_encode(br#"{"sub":"1"}"#);
         let non_object_headers: &[&[u8]] = &[b"[1,2,3]", b"\"hello\"", b"42", b"true", b"null"];
         for raw in non_object_headers {
@@ -330,7 +330,7 @@ mod tests {
     // F129 regression: malformed JWK input MUST surface as Err, not
     // silently substitute `null`. Pre-fix the helper used
     // `unwrap_or(Value::Null)` and the resulting token had `"jwk":
-    // null` in its header — operator probing whether the server
+    // null` in its header, operator probing whether the server
     // validates the `jwk` claim got a meaningless probe because the
     // claim was missing the actual key material.
     #[test]
@@ -362,7 +362,7 @@ mod tests {
 
     #[test]
     fn jwk_embed_partial_json_returns_err() {
-        // Half-quoted, missing closing brace — common operator typo.
+        // Half-quoted, missing closing brace (common operator typo).
         let err = manipulate(
             &valid_token(),
             &JwtManipulation::JwkEmbed {

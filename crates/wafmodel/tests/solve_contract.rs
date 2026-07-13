@@ -1,7 +1,7 @@
 //! Truth contract for the composition/preimage solver.
 //!
-//! The headline claim: the double-URL-encode bypass — and the JSON
-//! bypass — are **discovered, not hard-coded**. The same `solve_bypass`
+//! The headline claim: the double-URL-encode bypass, and the JSON
+//! bypass, are **discovered, not hard-coded**. The same `solve_bypass`
 //! call, given different sink pipelines, emits different structurally-
 //! derived encodings; and when the sink cannot reconstruct an evaded
 //! payload it returns `None` (never a fabricated bypass).
@@ -15,7 +15,7 @@ use wafrift_wafmodel::{
 };
 
 /// WAF blocks `<script` after a SINGLE urlDecodeUni + lowercase
-/// (faithful CRS) on the body — exactly the real normalization the
+/// (faithful CRS) on the body, exactly the real normalization the
 /// double-decode mismatch exploits.
 fn crs_waf() -> SimRegexWaf {
     SimRegexWaf::new(
@@ -81,7 +81,7 @@ fn same_solver_emits_a_json_escape_bypass_for_a_json_sink() {
 fn identity_sink_has_no_bypass_solver_does_not_fabricate_one() {
     // If the origin does NOT decode, any payload that evades the WAF
     // arrives at the sink still-evaded (not the attack), and the raw
-    // attack is blocked. There is no solution — and the solver must
+    // attack is blocked. There is no solution, and the solver must
     // say so rather than invent one.
     let attack = b"<script>";
     let sink = Pipeline(vec![Stage::Identity]);
@@ -89,14 +89,14 @@ fn identity_sink_has_no_bypass_solver_does_not_fabricate_one() {
     let sol = solve_bypass(attack, &sink, &mut waf, &body).unwrap();
     assert!(
         sol.is_none(),
-        "identity sink is unbypassable for this WAF — must return None, got {sol:?}"
+        "identity sink is unbypassable for this WAF, must return None, got {sol:?}"
     );
 }
 
 #[test]
 fn never_policed_attack_yields_no_bypass_even_when_the_sink_reconstructs() {
     // The #7 false-positive trap: a WAF that blocks NOTHING (empty ruleset).
-    // The raw attack already passes, so there is nothing to bypass — yet the
+    // The raw attack already passes, so there is nothing to bypass, yet the
     // sink (DoubleUrlDecode) *can* reconstruct the attack from a double-encoded
     // preimage, and that preimage trivially "passes" the do-nothing WAF. A
     // naive solver returns that as a "bypass"; the sound solver must see the
@@ -117,7 +117,7 @@ fn never_policed_attack_yields_no_bypass_even_when_the_sink_reconstructs() {
     let sol = solve_bypass(attack, &sink, &mut open_waf, &body).unwrap();
     assert!(
         sol.is_none(),
-        "a never-policed attack has no bypass — returning a Solution here is the \
+        "a never-policed attack has no bypass, returning a Solution here is the \
          vacuous false-positive class #7 forbids; got {sol:?}"
     );
 }
@@ -125,7 +125,7 @@ fn never_policed_attack_yields_no_bypass_even_when_the_sink_reconstructs() {
 #[test]
 fn solver_reports_none_when_waf_blocks_even_the_encoded_form() {
     // A WAF that ALSO double-decodes (sees the same as the origin)
-    // cannot be beaten by the double-encode preimage — the candidate
+    // cannot be beaten by the double-encode preimage, the candidate
     // decodes to `<script>` in the WAF's view too. Honest None.
     let attack = b"<script>";
     let sink = Pipeline(vec![Stage::DoubleUrlDecode]);
@@ -152,7 +152,7 @@ fn solver_reports_none_when_waf_blocks_even_the_encoded_form() {
 }
 
 /// A WAF that blocks a literal byte-string after the given transforms but does
-/// NOT Unicode-normalize — the exact blind spot the homoglyph stages exploit.
+/// NOT Unicode-normalize (the exact blind spot the homoglyph stages exploit).
 fn lit_waf(pattern: &str, transforms: Vec<Transform>) -> SimRegexWaf {
     SimRegexWaf::new(
         vec![Rule {
@@ -169,7 +169,7 @@ fn lit_waf(pattern: &str, transforms: Vec<Transform>) -> SimRegexWaf {
 #[test]
 fn nfkc_homoglyph_bypass_is_deduced_for_an_nfkc_normalizing_origin() {
     // The SAME solver, given an NFKC-normalizing sink, derives a homoglyph
-    // preimage — no homoglyph rule is hard-coded here. The WAF blocks the
+    // preimage, no homoglyph rule is hard-coded here. The WAF blocks the
     // literal `<script` and does not NFKC-normalize; the origin does.
     let attack = b"<script>";
     let sink = Pipeline(vec![Stage::NfkcNormalize]);
@@ -179,7 +179,7 @@ fn nfkc_homoglyph_bypass_is_deduced_for_an_nfkc_normalizing_origin() {
         .unwrap()
         .expect("an NFKC-normalizing origin is bypassable by a homoglyph preimage");
 
-    // Derived, not raw — and carries NONE of the literal ASCII angle brackets
+    // Derived, not raw, and carries NONE of the literal ASCII angle brackets
     // the WAF rule keys on.
     assert_ne!(sol.input, attack.to_vec());
     assert!(
@@ -236,7 +236,7 @@ fn bestfit_curly_quote_sqli_bypass_is_deduced_for_a_bestfit_origin() {
 #[test]
 fn solver_composes_url_decode_and_nfkc_for_a_two_stage_origin() {
     // A sink that url-decodes THEN NFKC-normalizes (a fullwidth-aware framework
-    // behind a decoding proxy). The solver inverts BOTH stages in reverse — no
+    // behind a decoding proxy). The solver inverts BOTH stages in reverse, no
     // single rule covers this composite; it falls out of the pipeline-as-data.
     let attack = b"<script>";
     let sink = Pipeline(vec![
@@ -268,7 +268,7 @@ fn every_invertible_stage_inverse_actually_round_trips_anti_drift() {
     // Anti-drift coherence guard. The COMPILE-TIME half is structural:
     // `Stage::apply` and the solver's `stage_inverse` are both exhaustive
     // matches, so no Stage variant can exist without BOTH a forward and an
-    // inverse arm. This test adds the RUNTIME half — the inverse must genuinely
+    // inverse arm. This test adds the RUNTIME half, the inverse must genuinely
     // round-trip, never a silent identity stub. A rich attack (every delimiter
     // class) exercises each stage's fold; the preimage must differ from the
     // attack AND reconstruct it under `apply`. A new invertible stage added
@@ -336,7 +336,7 @@ fn null_strip_bypass_is_deduced_for_a_nul_stripping_origin() {
 fn overlong_utf8_bypass_is_deduced_for_a_lenient_decoding_origin() {
     // A WAF blocks the literal `<script`; a lenient origin that accepts the
     // overlong 2-byte encoding of `<` folds `0xC0 0xBC` back to `<`. The solver
-    // derives the overlong preimage — no literal `<` byte survives on the wire.
+    // derives the overlong preimage (no literal `<` byte survives on the wire).
     let attack = b"<script>";
     let sink = Pipeline(vec![Stage::OverlongUtf8Decode]);
     let mut waf = crs_waf();
@@ -422,7 +422,7 @@ fn hex_bypass_is_deduced_for_a_hex_decoding_origin() {
 fn nfkc_preimage_under_an_identity_sink_is_honest_none() {
     // Anti-fabrication: the homoglyph trick only works when the ORIGIN folds.
     // With an Identity sink (origin does not normalize), the WAF sees the same
-    // bytes the sink delivers, so a blocked attack stays blocked — the solver
+    // bytes the sink delivers, so a blocked attack stays blocked, the solver
     // must return None rather than emit a homoglyph form the origin would never
     // collapse. (The positive NFKC case above is what makes this a real twin.)
     let attack = b"<script>";
@@ -431,19 +431,19 @@ fn nfkc_preimage_under_an_identity_sink_is_honest_none() {
     let sol = solve_bypass(attack, &sink, &mut waf, &body).unwrap();
     assert!(
         sol.is_none(),
-        "identity origin cannot fold a homoglyph — must be None"
+        "identity origin cannot fold a homoglyph, must be None"
     );
 }
 
 /// Anti-rig (E5): the `OverlongUtf8Decode` sink's preimage is the canonical
 /// non-shortest 2-byte UTF-8 form of each in-scope ASCII byte, and non-ASCII
 /// bytes (which have no 2-byte overlong form) pass through untouched. This is a
-/// pure structural inverse, so the exact bytes are the contract — asserting the
+/// pure structural inverse, so the exact bytes are the contract, asserting the
 /// length alone would be decoration.
 ///
 /// This drives `overlong_encode` through the PUBLIC `preimage_for` API (a
 /// single-stage pipeline applies it exactly once), so the curated mutation gate
-/// — which runs the contract tests, NOT lib unit tests — executes it and kills
+///: which runs the contract tests, NOT lib unit tests, executes it and kills
 /// two surviving `overlong_encode` mutants: the `b >> 6 -> b << 6` lead-byte
 /// corruption and the `&& -> ||` scope guard. (`encode_all = true` puts every
 /// byte in scope, exercising the ASCII-vs-non-ASCII branch directly.)
@@ -465,7 +465,7 @@ fn overlong_utf8_sink_preimage_is_canonical_two_byte_form() {
     }
 
     // Non-ASCII bytes (> 0x7F) MUST pass through unchanged even under
-    // encode-everything scope — the `&&` guard protects this; `||` would
+    // encode-everything scope, the `&&` guard protects this; `||` would
     // wrongly emit a 2-byte form for them.
     for b in 0x80u8..=0xFF {
         assert_eq!(

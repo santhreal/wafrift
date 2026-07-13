@@ -1,4 +1,4 @@
-# Frontier WAF Bypass Research — 2025/2026
+# Frontier WAF Bypass Research: 2025/2026
 
 Techniques researched from academic papers, CVE advisories, HackerOne reports,
 and wafrift session analysis. Rated by implementation priority (P1=highest).
@@ -7,7 +7,7 @@ and wafrift session analysis. Rated by implementation priority (P1=highest).
 
 ## Implemented This Session
 
-### T-01: HTTP/3 QPACK Dynamic Table Desync [P1 — IMPLEMENTED]
+### T-01: HTTP/3 QPACK Dynamic Table Desync [P1. IMPLEMENTED]
 **Crate**: `wafrift-http3-evasion::qpack`
 
 QPACK (RFC 9204) encoder stream instructions can be forged or replayed to
@@ -16,16 +16,16 @@ table entry decodes as the attack header at the WAF (which has the phantom
 entry) but blocks or decodes differently at the server.
 
 Variants implemented:
-- `PhantomInsert` — insert N entries, reference them in HEADERS
-- `CapacityFlush` — flush table to 0 after inserting; buggy WAFs retain entries
-- `DuplicateDrift` — Duplicate instructions in different order cause table divergence
+- `PhantomInsert`: insert N entries, reference them in HEADERS
+- `CapacityFlush`: flush table to 0 after inserting; buggy WAFs retain entries
+- `DuplicateDrift`: Duplicate instructions in different order cause table divergence
 
 References: RFC 9204 §3.2, CVE-2023-44487 (HTTP/2 Rapid Reset), Black Hat 2024
 "HTTP/3 WAF Evasion via QPACK Manipulation" (Zhang et al.)
 
 ---
 
-### T-02: QUIC 0-RTT Early Data Replay [P1 — IMPLEMENTED]
+### T-02: QUIC 0-RTT Early Data Replay [P1. IMPLEMENTED]
 **Crate**: `wafrift-http3-evasion::zero_rtt`
 
 0-RTT data (RFC 9001 §4.6) is sent before TLS handshake completion. WAFs
@@ -41,7 +41,7 @@ attacks" (2022), NDSS 2025 "TLS 1.3 0-RTT Security Analysis at Scale".
 
 ---
 
-### T-03: QUIC Connection ID Rotation [P1 — IMPLEMENTED]
+### T-03: QUIC Connection ID Rotation [P1. IMPLEMENTED]
 **Crate**: `wafrift-http3-evasion::quic_cid`
 
 WAFs key rate-limiting and bot-score state on QUIC Connection ID. By rotating
@@ -54,7 +54,7 @@ against Cloud WAFs" (Durumeric et al.)
 
 ---
 
-### T-04: HTTP/3 PRIORITY_UPDATE Topology Attacks [P1 — IMPLEMENTED]
+### T-04: HTTP/3 PRIORITY_UPDATE Topology Attacks [P1. IMPLEMENTED]
 **Crate**: `wafrift-http3-evasion::stream_priority`
 
 RFC 9218 "Extensible Priorities" PRIORITY_UPDATE frames with pathological
@@ -66,7 +66,7 @@ References: RFC 9218, DEF CON 32 "HTTP/3 Multiplexer Desync" (2024).
 
 ---
 
-### T-05: QUIC MTU Fragmentation [P1 — IMPLEMENTED]
+### T-05: QUIC MTU Fragmentation [P1. IMPLEMENTED]
 **Crate**: `wafrift-http3-evasion::mtu_fragmentation`
 
 Fragmenting QUIC CRYPTO frames at sub-threshold sizes (byte-per-packet,
@@ -78,7 +78,7 @@ References: RFC 9000 §19.6, QUIC fragmentation analysis (USENIX NSDI 2024).
 
 ---
 
-### T-06: DNS-over-HTTPS OOB Exfil [P1 — IMPLEMENTED]
+### T-06: DNS-over-HTTPS OOB Exfil [P1. IMPLEMENTED]
 **Crate**: `wafrift-oracle::oob::doh_provider`
 
 DoH (RFC 8484) encodes DNS queries as HTTPS POSTs, bypassing UDP/53 network
@@ -91,11 +91,11 @@ References: RFC 8484, HackerOne report #1234567 "SSRF via DoH bypass" (2024).
 
 ---
 
-### T-07: WebRTC STUN Binding-Request OOB [P1 — IMPLEMENTED]
+### T-07: WebRTC STUN Binding-Request OOB [P1. IMPLEMENTED]
 **Crate**: `wafrift-oracle::oob::stun_provider`
 
 STUN Binding Requests (RFC 5389) carry canary tokens in the USERNAME
-attribute over UDP/3478 — a port WAFs rarely monitor. WebRTC RTCPeerConnection
+attribute over UDP/3478, a port WAFs rarely monitor. WebRTC RTCPeerConnection
 ICE probes trigger STUN exchanges from browser-side XSS payloads. The TURN
 variant reaches behind strict NAT via TCP relay.
 
@@ -103,7 +103,7 @@ References: RFC 5389, RFC 8445 (ICE), DEF CON 33 "WebRTC as an OOB Channel".
 
 ---
 
-### T-08: QPACK Variable-Length Integer Overflow [P2 — RESEARCH ONLY]
+### T-08: QPACK Variable-Length Integer Overflow [P2. RESEARCH ONLY]
 **Status**: Research; implementation complexity requires full QPACK decoder.
 
 QPACK integers (RFC 9204 §1.3) use a variable-length encoding with N prefix
@@ -116,44 +116,44 @@ Related: CVE-2023-44487 variants, nghttp3 integer handling patches 2024.
 
 ---
 
-### T-09: HTTP/2 Rapid Reset Family [P1 — IMPLEMENTED IN `wafrift-smuggling::rapid_reset`]
+### T-09: HTTP/2 Rapid Reset Family [P1. IMPLEMENTED IN `wafrift-smuggling::rapid_reset`]
 **Status**: Implemented at the wire-byte layer. CLI wiring into `wafrift smuggle`
-is the outstanding gap — generators are reachable from library callers and
+is the outstanding gap, generators are reachable from library callers and
 tests but not yet from the `--variant` table.
 
 Five primitives are materialised as raw HTTP/2 wire bytes (see
 `crates/smuggling/src/rapid_reset.rs`):
 
-1. **Classic rapid reset (CVE-2023-44487)** — `classic_rapid_reset()`,
+1. **Classic rapid reset (CVE-2023-44487)**: `classic_rapid_reset()`,
    `classic_rapid_reset_burst()`. HEADERS + immediate RST_STREAM, repeated
    N times. Exhausts server stream-creation work without ever sending DATA.
-2. **MadeYouReset (CVE-2025-8671)** — `made_you_reset()`,
+2. **MadeYouReset (CVE-2025-8671)**: `made_you_reset()`,
    `made_you_reset_burst()`. PRIORITY frame referencing a closed/idle
    stream as the exclusive dependency, then HEADERS on that stream. Servers
    that process PRIORITY before validating stream liveness emit RST_STREAM
-   internally — the same resource exhaustion without client-side reset
+   internally: the same resource exhaustion without client-side reset
    pattern that simple rate limiters key on.
-3. **Zero-RTT rapid reset** — `zero_rtt_rapid_reset()`. TLS 1.3 early-data
+3. **Zero-RTT rapid reset**: `zero_rtt_rapid_reset()`. TLS 1.3 early-data
    carrying the rapid-reset sequence. WAFs that defer inspection until the
    handshake completes miss the entire flood.
-4. **Settings storm** — `settings_storm()`, `settings_storm_with_resets()`.
+4. **Settings storm**: `settings_storm()`, `settings_storm_with_resets()`.
    Alternating SETTINGS frames forcing the peer to re-apply settings,
    optionally interleaved with RST_STREAM for compounding state churn.
-5. **Dependency-cycle reset** — `dependency_cycle_reset()`. PRIORITY
+5. **Dependency-cycle reset**: `dependency_cycle_reset()`. PRIORITY
    frames forming a dependency loop, triggering server-side resets per
    RFC 7540 §5.3.1 ambiguity. Distinct from MadeYouReset: the cycle is
    the trigger, not a single stream reference.
 
 **Gap (Pass 20 R2)**: none of these are referenced from `smuggle_cmd.rs`'s
 `VARIANTS` table. Operators cannot reach them from `wafrift smuggle probe
---variant <K>` today — they exist as library functions and are pinned by
+--variant <K>` today, they exist as library functions and are pinned by
 unit tests, but no CLI dispatch wires their `raw_bytes` into the raw
 TcpStream send path. Wiring is a small CLI change (variant entries +
 match arm in `run_probe`), gated as `SafetyTier::Exploit` behind `--unsafe`.
 
 ---
 
-### T-10: JWT `alg:none` via HTTP/3 Forward Reference [P2 — RESEARCH ONLY]
+### T-10: JWT `alg:none` via HTTP/3 Forward Reference [P2. RESEARCH ONLY]
 **Status**: Research; requires integration with JWT crate.
 
 If a WAF validates JWT bearer tokens in HEADERS frames and uses QPACK
@@ -167,7 +167,7 @@ References: "JWT Confusion via HTTP/3 QPACK" (academic preprint 2025).
 
 ---
 
-### T-11: QUIC Handshake Token Reuse [P3 — BACKLOG]
+### T-11: QUIC Handshake Token Reuse [P3. BACKLOG]
 **Status**: Backlog.
 
 RFC 9000 §8.1.3 "Address Validation Tokens" allows servers to issue tokens
@@ -178,7 +178,7 @@ IP-scoped rate limits to be bypassed by replaying another client's token.
 
 ---
 
-### T-12: HTTP/3 Trailer Injection via QPACK Name Reference [P3 — BACKLOG]
+### T-12: HTTP/3 Trailer Injection via QPACK Name Reference [P3. BACKLOG]
 **Status**: Backlog.
 
 HTTP/3 trailers (HEADERS frame after DATA) can carry arbitrary headers.
@@ -195,7 +195,7 @@ benign (no trailer inspection).
 | Rank | Technique | Impact | Effort | Crate Target |
 |------|-----------|--------|--------|--------------|
 | 1 | T-08: QPACK int overflow | HIGH | HIGH | wafrift-http3-evasion |
-| 2 | T-09: H2 Rapid Reset CLI wiring (library DONE — see above) | MED | LOW | wafrift-cli `smuggle_cmd` |
+| 2 | T-09: H2 Rapid Reset CLI wiring (library DONE, see above) | MED | LOW | wafrift-cli `smuggle_cmd` |
 | 3 | T-10: JWT/QPACK forward ref | HIGH | MED | wafrift-transport |
 | 4 | T-11: QUIC token reuse | MED | MED | wafrift-http3-evasion |
 | 5 | T-12: HTTP/3 trailer injection | MED | LOW | wafrift-http3-evasion |
@@ -210,7 +210,7 @@ benign (no trailer inspection).
 - RFC 9000 (QUIC), RFC 9001 (QUIC-TLS), RFC 9114 (HTTP/3), RFC 9204 (QPACK),
   RFC 9218 (Extensible Priorities), RFC 8484 (DoH), RFC 5389 (STUN)
 - CVE-2023-44487 "HTTP/2 Rapid Reset" NVD advisory
-- Black Hat 2024: "HTTP/3 in the Wild" — WAF evasion techniques panel
+- Black Hat 2024: "HTTP/3 in the Wild". WAF evasion techniques panel
 - DEF CON 32/33: "WebRTC as an Exfil Channel", "HTTP/3 Multiplexer Desync"
 - Usenix Security 2025: "QUIC State Machine Attacks against Cloud WAFs"
 - NDSS 2025: "TLS 1.3 0-RTT Security Analysis at Scale"

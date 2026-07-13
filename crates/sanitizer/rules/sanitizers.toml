@@ -4,7 +4,7 @@
 # (substrings that appear in its shipped/recovered source) and names the config
 # KEYS whose array literals carry the tag allow/deny lists. The extractor reads
 # those arrays out of the recovered source to build the sanitizer's allow/deny
-# model. Extend coverage by adding entries here — never by hardcoding library
+# model. Extend coverage by adding entries here, never by hardcoding library
 # names in code.
 
 [[sanitizer]]

@@ -1,4 +1,4 @@
-//! Payload encoding strategies — transform payloads to bypass WAF keyword detection.
+//! Payload encoding strategies (transform payloads to bypass WAF keyword detection).
 //!
 //! Each strategy changes HOW the payload looks without changing WHAT it does.
 //! The server decodes the payload back to its original form, but the WAF
@@ -10,7 +10,7 @@
 //! so the WAF's keyword / regex / signature matcher misses it while the
 //! origin's normalizer / parser still recovers the original. Modules whose
 //! attack target is the origin application (template engines, deserializers,
-//! databases, etc) do NOT belong in `wafrift` — those are sibling Santh
+//! databases, etc) do NOT belong in `wafrift`: those are sibling Santh
 //! tools.
 //!
 //! # Module structure
@@ -55,7 +55,7 @@ pub mod method_override;
 /// Path-normalization differential encoders (dot-segment variants,
 /// percent-encoded slash/dot, double-encoded, Tomcat semicolon,
 /// IIS backslash, fullwidth slash, overlong UTF-8 dot). Each variant
-/// is RFC 3986 §5.2.4-equivalent to the same target — but most WAFs
+/// is RFC 3986 §5.2.4-equivalent to the same target, but most WAFs
 /// don't run that exact algorithm.
 pub mod path_norm;
 /// Single-packet race-condition primitives (Kettle BH23 "Smashing the

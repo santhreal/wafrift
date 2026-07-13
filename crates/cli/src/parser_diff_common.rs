@@ -6,9 +6,9 @@
 //! Every parser-diff subcommand classifies probe responses against
 //! a baseline using the same rules:
 //!
-//! - `body_delta_pct(baseline_len, probe_len)` — signed percentage
+//! - `body_delta_pct(baseline_len, probe_len)`: signed percentage
 //!   change in body length.
-//! - `severity_of(baseline_status, probe_status, body_delta)` —
+//! - `severity_of(baseline_status, probe_status, body_delta)` 
 //!   `"high"` when the HTTP status class flipped (200 → 403, 200 →
 //!   500, etc.), `"medium"` when the body shifted by more than 20%
 //!   with status preserved, `"none"` otherwise.
@@ -17,7 +17,7 @@
 //! Santh-owned [`respdiff`] primitives (`body_size_delta_pct`,
 //! `classify_severity`, `status_class`, `DiffPolicy`). Lifting them
 //! means a fix to the classification logic reaches every subcommand
-//! AND every other Santh scanner that consumes respdiff — the
+//! AND every other Santh scanner that consumes respdiff, the
 //! architectural commitment from `feedback_architecture_and_dedup`.
 //! The wrapper signatures are preserved verbatim so the 11
 //! `*_diff_cmd.rs` call sites compile unchanged.
@@ -27,7 +27,7 @@
 //! limited-5 redirect + the shared browser header identity + `--proxy` /
 //! `--header` plumbing via `pentest_client::apply_pentest_flags`.
 //! Pre-extract, that was 22 lines copy-pasted across nine command
-//! files — one line at a time, drifting each time someone tuned
+//! files, one line at a time, drifting each time someone tuned
 //! e.g. the redirect limit in one file but not the others.
 
 use std::process::ExitCode;
@@ -41,7 +41,7 @@ use reqwest::Client;
 ///
 /// R55 pass-17 I5b (CLAUDE.md §7 DEDUP): every `emit_output` in the
 /// parser-diff family started with the same two `iter().filter(...)
-/// .collect()` allocations. The collects were never used as Vecs —
+/// .collect()` allocations. The collects were never used as Vecs 
 /// every consumer immediately called `.len()` on them. A two-line
 /// `count_*` helper removes 14 lines of duplicated filtering across
 /// the diff family and avoids the unnecessary allocation.
@@ -61,7 +61,7 @@ pub(crate) fn count_high_medium<R>(results: &[R], severity: impl Fn(&R) -> &str)
 ///
 /// R55 pass-17 I5 (CLAUDE.md §7 DEDUP): four `emit_output` functions
 /// (`body_diff`, `query_diff`, `header_diff`, `cors_diff`) each had
-/// the SAME six-line `println!("  {} {} divergence(s) — {} high, {}
+/// the SAME six-line `println!("  {} {} divergence(s): {} high, {}
 /// medium · {} error(s)" ...)` block with only the command label
 /// differing. Three already drift slightly (cors uses `"CORS
 /// issue(s)"` vs `"divergence(s)"`, the colour of the count word
@@ -75,7 +75,7 @@ pub(crate) fn print_text_summary(
 ) {
     println!();
     println!(
-        "  {} {} {issue_phrase} — {} high, {} medium · {errors} error(s)",
+        "  {} {} {issue_phrase}: {} high, {} medium · {errors} error(s)",
         format!("[wafrift {cmd_label} summary]")
             .bright_cyan()
             .bold(),
@@ -120,7 +120,7 @@ pub(crate) fn severity_badge(severity: &str) -> ColoredString {
     }
 }
 
-/// Test-harness settle delay — the time tests sleep between
+/// Test-harness settle delay, the time tests sleep between
 /// spawning a mock TCP listener + invoking the wafrift binary so
 /// the listener is reliably accepting before the first probe.
 /// Previously 40ms; bumped to 200ms after observing Windows loopback
@@ -157,7 +157,7 @@ use crate::scan::pentest_client;
 /// operator-configured UA and profile headers flow through, and finally
 /// the pentest-plumbing of `--proxy` + `-H/--header` via
 /// [`pentest_client::apply_pentest_flags`]. Errors
-/// emit a red diagnostic on stderr and return `ExitCode::from(1)` —
+/// emit a red diagnostic on stderr and return `ExitCode::from(1)` 
 /// matching the prior copy-pasted behaviour byte-for-byte so existing
 /// CI gates keep their exit-code contract.
 pub(crate) fn build_diff_http_client(
@@ -192,8 +192,8 @@ pub(crate) fn build_diff_http_client(
 /// Read-only view of the HTTP-client knobs every parser-diff cmd
 /// already exposes on its Args struct: `--timeout-secs`,
 /// `--insecure`, `--proxy`, `-H/--header`. Lifting this lets every
-/// cmd build its client with a single call —
-/// `build_diff_http_client_for(&args)?` — instead of repeating
+/// cmd build its client with a single call 
+/// `build_diff_http_client_for(&args)?`: instead of repeating
 /// the 4-arg unpack at every site. A new diff cmd just adds a
 /// one-liner `impl_parser_diff_http_args!(NewDiffArgs);` (or
 /// hand-rolls the impl) and inherits the client wiring for free.
@@ -205,7 +205,7 @@ pub(crate) trait ParserDiffHttpArgs {
 }
 
 /// Fire a single GET, return `(status, body_len)`. The minimal
-/// shape every parser-diff cmd needs from an HTTP probe — body
+/// shape every parser-diff cmd needs from an HTTP probe, body
 /// content is irrelevant when the question is "did the WAF
 /// shape this response differently?". Lifted from identical
 /// definitions in `h2_diff_cmd` and `query_diff_cmd`. Errors
@@ -220,7 +220,7 @@ pub(crate) async fn fire_get_status_len(
     // §15 OOM / decompression-bomb: cap the body so a hostile target can't
     // serve a compressed bomb. The diff commands only need the body LENGTH
     // to detect parser differentials; 8 MiB is far more than any real response.
-    // On overrun return the cap as the observed length (still a real signal —
+    // On overrun return the cap as the observed length (still a real signal 
     // a response the bomb-cap fires on is structurally distinct from a 200-byte
     // block page).
     let body = crate::safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)
@@ -231,7 +231,7 @@ pub(crate) async fn fire_get_status_len(
 
 /// Build the canonical parser-diff client straight from any
 /// [`ParserDiffHttpArgs`] view. Equivalent to spelling out the
-/// 4 accessors at the call site — see [`build_diff_http_client`].
+/// 4 accessors at the call site (see [`build_diff_http_client`]).
 pub(crate) fn build_diff_http_client_for(
     args: &impl ParserDiffHttpArgs,
 ) -> Result<Client, ExitCode> {
@@ -245,7 +245,7 @@ pub(crate) fn build_diff_http_client_for(
 
 /// Implement [`ParserDiffHttpArgs`] for any struct whose field
 /// shape matches `pub timeout_secs: u64`, `pub insecure: bool`,
-/// `pub proxy: Option<String>`, `pub header: Vec<String>` — i.e.
+/// `pub proxy: Option<String>`, `pub header: Vec<String>`: i.e.
 /// every existing parser-diff Args struct. One macro call per
 /// struct replaces the 8-line `build_http_client` wrapper.
 #[macro_export]
@@ -304,7 +304,7 @@ pub(crate) fn body_delta_pct(baseline_len: usize, probe_len: usize) -> f64 {
 /// throttle / origin-unavailable statuses (429, 502, 503, 504, plus
 /// Cloudflare's 520–527 origin-error band) classify as `"none"`. A
 /// 200 → 429 flip is "the target is rate-limiting your variant", not
-/// a WAF bypass — pre-fix this surfaced as `"high"` and drowned real
+/// a WAF bypass, pre-fix this surfaced as `"high"` and drowned real
 /// findings under rate-limit noise. The bypass_probe family already
 /// had this gate at `probe_classify.rs:38`; lifting it here makes
 /// the rule the same for every parser-diff subcommand in one place.
@@ -346,11 +346,11 @@ pub(crate) fn severity_of(
 
 /// Cache-divergence severity (cache_diff family). Lowercase return
 /// vocabulary is part of the JSON output schema (`severity: "high"`),
-/// LAW 2 — do not rename without a deprecation cycle.
+/// LAW 2 (do not rename without a deprecation cycle).
 ///
 /// `"high"` = body hash matches baseline at the same status (strong
 /// cache hit / collision evidence); `"medium"` = cache-signal headers
-/// match (weaker — a cache layer is in front but content differs);
+/// match (weaker, a cache layer is in front but content differs);
 /// `"none"` otherwise.
 ///
 /// Lives here, not in `cache_diff_cmd.rs`, because every diff family
@@ -374,7 +374,7 @@ pub(crate) fn severity_of_cache(
 }
 
 /// Build a respdiff `ResponseDiff` carrying only the two body-size
-/// fields — enough for `body_size_delta_pct` to reconstruct the %.
+/// fields (enough for `body_size_delta_pct` to reconstruct the %).
 fn synthetic_size_diff(baseline_len: usize, current_len: usize) -> respdiff::ResponseDiff {
     respdiff::ResponseDiff {
         status_changed: false,
@@ -400,7 +400,7 @@ fn synthetic_size_diff(baseline_len: usize, current_len: usize) -> respdiff::Res
 /// Why scale 1_000_000:
 ///   delta_pct = (current - baseline) / baseline * 100
 ///   With baseline=1_000_000 and current = baseline + round(pct * 10_000),
-///   delta_pct = round(pct * 10_000) / 10_000 — precise to 0.0001%,
+///   delta_pct = round(pct * 10_000) / 10_000, precise to 0.0001%,
 ///   which beats the 0.01% precision the legacy callers depended on
 ///   (see `severity_of_at_exactly_20_pct_body_shift_is_not_medium`).
 fn size_pair_for_pct(pct: f64) -> (usize, usize) {
@@ -563,7 +563,7 @@ mod tests {
         let addr = listener.local_addr().expect("addr");
         tokio::spawn(async move {
             if let Ok((mut sock, _)) = listener.accept().await {
-                // Drain the request — minimum is one read; we
+                // Drain the request, minimum is one read; we
                 // don't care about the bytes.
                 let mut buf = [0u8; 1024];
                 let _ = sock.read(&mut buf).await;
@@ -599,7 +599,7 @@ mod tests {
     #[tokio::test]
     async fn fire_get_status_len_surfaces_non_2xx_status_as_value_not_error() {
         // Contract: HTTP-level errors (403, 500, etc.) are NOT
-        // reqwest errors — they're values the caller classifies.
+        // reqwest errors (they're values the caller classifies).
         // The fn must return Ok((status, len)) even for 5xx so
         // the parser-diff classifier sees the real status.
         let addr = spawn_oneshot_mock(500, 0).await;
@@ -712,7 +712,7 @@ mod tests {
 
     #[test]
     fn severity_of_408_is_throttle_not_bypass() {
-        // 408 Request Timeout — the origin terminated the connection
+        // 408 Request Timeout, the origin terminated the connection
         // because it timed out on us, not because we bypassed control.
         assert_eq!(severity_of(200, 408, 0.0), "none");
     }
@@ -745,7 +745,7 @@ mod tests {
 
     #[test]
     fn severity_of_at_exactly_20_pct_body_shift_is_not_medium() {
-        // The threshold is STRICTLY GREATER than 20.0 — exactly 20.0
+        // The threshold is STRICTLY GREATER than 20.0, exactly 20.0
         // stays "none". Anti-rig against off-by-one threshold drift.
         assert_eq!(severity_of(200, 200, 20.0), "none");
         assert_eq!(severity_of(200, 200, -20.0), "none");
@@ -765,7 +765,7 @@ mod tests {
     #[test]
     fn severity_of_cache_not_high_when_status_differs_even_if_body_matches() {
         // Identical bodies under different statuses is unusual but
-        // possible — treat as "medium" only if cache headers match,
+        // possible, treat as "medium" only if cache headers match,
         // else "none".
         assert_eq!(severity_of_cache(true, false, 200, 403), "none");
         assert_eq!(severity_of_cache(true, true, 200, 403), "medium");

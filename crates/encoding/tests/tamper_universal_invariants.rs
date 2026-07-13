@@ -297,7 +297,7 @@ fn every_tamper_returns_valid_utf8_for_xss() {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Second-pass cap (independent of mutator_idempotence proptest —
+// Second-pass cap (independent of mutator_idempotence proptest 
 // this is a deterministic check on a fixed set of seed payloads)
 // ────────────────────────────────────────────────────────────────
 

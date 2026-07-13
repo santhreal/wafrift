@@ -1,5 +1,5 @@
 # ModSecurity + OWASP CRS in front of a deliberately XSS-vulnerable reflective
-# origin — for EXECUTION benchmarking (does a payload that bypasses the WAF
+# origin: for EXECUTION benchmarking (does a payload that bypasses the WAF
 # actually RUN), not just bypass benchmarking.
 #
 # The rest of the zoo proxies to httpbin (JSON echo) so XSS can never execute;
@@ -17,15 +17,15 @@
 #
 # The origin reflects `q` into several execution contexts, chosen by the `ctx`
 # query parameter, so the sweep can ask whether a WAF bypass executes in the
-# context a real app exposes — not just the body+innerHTML one. The ctx grammar
+# context a real app exposes, not just the body+innerHTML one. The ctx grammar
 # is `[<transform>.]<render>`:
 #   render : body (default) | attr | attr_sq | js | js_sq | uri
-#            hpp  — app concatenates ALL repeated `q=` values (HTTP Parameter
+#            hpp: app concatenates ALL repeated `q=` values (HTTP Parameter
 #                   Pollution); deliver the payload split into inert fragments so
 #                   the WAF sees no signature. `wafrift exploit --split-param`.
-#   transform (app decodes the value first — the WAF-opaque axis):
+#   transform (app decodes the value first, the WAF-opaque axis):
 #            b64 | hex | b32 | rot13            (base-N: CRS has no transform)
-#            zb64 (base64+zlib URL-state compression — CRS can't inflate DEFLATE)
+#            zb64 (base64+zlib URL-state compression. CRS can't inflate DEFLATE)
 #            b58  (Bitcoin base58 bignum alphabet) | b64x2 (double-base64 chain)
 #            dd (double-URL) | jsesc (\uXXXX) | entity (&#60;)   NEGATIVE CONTROLS
 #   e.g. ctx=body | ctx=attr | ctx=b64 | ctx=b64.attr | ctx=hex.js | ctx=zb64.attr
@@ -70,7 +70,7 @@ services:
 
   reflect:
     # Deliberately XSS-vulnerable HTML reflector. Reachable ONLY on the internal
-    # compose network (no published port) — never expose it directly.
+    # compose network (no published port) (never expose it directly).
     image: python:3.12-slim
     container_name: wafrift-reflect-origin
     command: ["python", "/srv/reflect_server.py"]

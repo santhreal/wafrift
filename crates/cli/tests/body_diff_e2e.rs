@@ -1,6 +1,6 @@
 //! End-to-end test for `wafrift body-diff`.
 //!
-//! Spins up a mock origin that's "body-aware" — returns a longer
+//! Spins up a mock origin that's "body-aware", returns a longer
 //! response when the request body contains the literal attack token
 //! WAFRIFT_ATTACK_TOKEN (the canonical interpolation point). Drives
 //! `wafrift body-diff --format json` against the running binary;
@@ -20,7 +20,7 @@ async fn spawn_body_aware_mock() -> std::net::SocketAddr {
                 return;
             };
             tokio::spawn(async move {
-                // Read full body, not just first chunk — body-diff
+                // Read full body, not just first chunk, body-diff
                 // sends bodies up to a few hundred bytes.
                 let mut buf = vec![0u8; 64 * 1024];
                 let n = sock.read(&mut buf).await.unwrap_or(0);
@@ -28,7 +28,7 @@ async fn spawn_body_aware_mock() -> std::net::SocketAddr {
                 let leaked = req.contains("WAFRIFT_ATTACK_TOKEN")
                     || req.contains("+ADw-WAFRIFT_ATTACK_TOKEN+AD4-");
                 let body: String = if leaked {
-                    "<html>parsed attack token — origin saw it (long body)</html>".into()
+                    "<html>parsed attack token, origin saw it (long body)</html>".into()
                 } else {
                     "<html>baseline</html>".into()
                 };
@@ -70,10 +70,10 @@ fn body_diff_finds_divergences_against_body_aware_mock() {
         "--timeout-secs",
         "15",
     ]);
-    assert_eq!(code, 0, "body-diff should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "body-diff should exit 0, stderr:\n{stderr}");
 
     let parsed: serde_json::Value =
-        serde_json::from_str(stdout.trim()).expect("JSON parse — stdout:\n{stdout}");
+        serde_json::from_str(stdout.trim()).expect("JSON parse, stdout:\n{stdout}");
     assert_eq!(parsed["baseline_status"], 200);
 
     let results = parsed["results"].as_array().expect("results array");
@@ -110,7 +110,7 @@ fn body_diff_against_unreachable_target_exits_1() {
     ]);
     assert_eq!(
         code, 1,
-        "unreachable target must exit 1 — stderr:\n{stderr}"
+        "unreachable target must exit 1, stderr:\n{stderr}"
     );
 }
 
@@ -138,14 +138,14 @@ fn body_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "body", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff body --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff body --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["body-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift body-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift body-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }
 

@@ -9,7 +9,7 @@
 //! Tokens accumulate at `rps` per second, capped at `burst`. Each call
 //! to [`RateLimiter::acquire`] consumes one token, sleeping if the
 //! bucket is empty until enough tokens have refilled. A `rps == 0`
-//! limiter is treated as "no limit" — `acquire` returns immediately.
+//! limiter is treated as "no limit": `acquire` returns immediately.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -125,7 +125,7 @@ impl RateLimiter {
     }
 
     /// Number of currently tracked hosts. Exposed for tests and the
-    /// `wafrift-proxy stats` command — never higher than
+    /// `wafrift-proxy stats` command, never higher than
     /// `MAX_TRACKED_HOSTS`.
     pub async fn tracked_host_count(&self) -> usize {
         self.buckets.lock().await.len()
@@ -150,7 +150,7 @@ mod tests {
 
     #[tokio::test]
     async fn burst_lets_first_n_through_immediately() {
-        // 1 rps, burst 5 — first 5 should pass with no real wait.
+        // 1 rps, burst 5 (first 5 should pass with no real wait).
         let l = RateLimiter::new(1.0, 5.0);
         let start = TokioInstant::now();
         for _ in 0..5 {
@@ -226,7 +226,7 @@ mod tests {
     async fn infinite_rps_treated_as_unlimited() {
         // f64::INFINITY.max(0.0) returns INFINITY, which is not < EPSILON,
         // so is_unlimited() returns false and acquire would compute
-        // Duration::from_secs_f64(need / INF) = 0s — which loops forever
+        // Duration::from_secs_f64(need / INF) = 0s, which loops forever
         // without the sanitize fix.
         let l = RateLimiter::new(f64::INFINITY, 0.0);
         assert!(

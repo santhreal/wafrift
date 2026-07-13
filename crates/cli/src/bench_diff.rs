@@ -85,7 +85,7 @@ pub(crate) fn run_bench_diff(args: BenchDiffArgs) -> ExitCode {
         }
     };
 
-    // Detect files that are clearly not bench-waf outputs — warn before
+    // Detect files that are clearly not bench-waf outputs, warn before
     // comparing so the operator knows they're comparing garbage.
     // A legitimate bench-waf file always has at least one of: raw_block_rate,
     // evade_mode, or results. Two missing = almost certainly the wrong file.
@@ -97,7 +97,7 @@ pub(crate) fn run_bench_diff(args: BenchDiffArgs) -> ExitCode {
     // R45-tail fix (dogfood): if BOTH inputs lack the bench-waf
     // shape, the comparison is definitely meaningless. Exit 2
     // instead of issuing a warning and proceeding to print zeroes
-    // — a CI gate using bench-diff exit code as the regression
+    //: a CI gate using bench-diff exit code as the regression
     // signal was passing on totally bogus files.
     let cur_ok = looks_like_bench(&cur);
     let base_ok = looks_like_bench(&base);
@@ -126,13 +126,13 @@ pub(crate) fn run_bench_diff(args: BenchDiffArgs) -> ExitCode {
 
     // Catch the foot-gun where one side ran with --evade and the other
     // didn't. The bypass-rate column only exists in evade mode, and a
-    // missing field reads as 0 — silent comparison would either show a
+    // missing field reads as 0, silent comparison would either show a
     // huge drop (regression alarm) or a huge climb (false reassurance).
     let cur_evade = evade_mode(&cur);
     let base_evade = evade_mode(&base);
     if cur_evade != base_evade {
         eprintln!(
-            "WARNING: mode mismatch — baseline evade_mode={base_evade}, current evade_mode={cur_evade}. \
+            "WARNING: mode mismatch, baseline evade_mode={base_evade}, current evade_mode={cur_evade}. \
              Bypass-rate comparison is meaningless when only one side ran the evasion engine."
         );
     }
@@ -166,7 +166,7 @@ pub(crate) fn run_bench_diff(args: BenchDiffArgs) -> ExitCode {
 
     if stack_mismatch && args.format == "text" {
         eprintln!(
-            "WARNING: current raw-block-rate {:.2}% < floor {:.2}% — \
+            "WARNING: current raw-block-rate {:.2}% < floor {:.2}%. \
              the WAF stack itself may have changed (not a wafrift bug).",
             cur_raw * 100.0,
             args.raw_block_floor * 100.0
@@ -289,7 +289,7 @@ mod tests {
     fn raw_block_floor_warns_but_does_not_fail() {
         // Stack-mismatch path: bypass rate unchanged, but raw_block_rate
         // dropped below the floor. Per methodology this is a "stack
-        // changed", NOT a wafrift regression — exit must stay 0.
+        // changed", NOT a wafrift regression (exit must stay 0).
         let dir = std::env::temp_dir().join("wafrift_bench_diff_test_floor");
         let _ = std::fs::create_dir_all(&dir);
         let cur = dir.join("cur.json");
@@ -416,7 +416,7 @@ mod tests {
         // Defensive: an old-schema baseline that lacks evaded_summary
         // should not be mis-read as 0% bypass and trigger a phantom
         // regression. Currently bypass_rate() returns 0 on missing
-        // pointer — that means base_bypass=0, cur_bypass=anything
+        // pointer, that means base_bypass=0, cur_bypass=anything
         // gives drop_pp <= 0, so no regression. Pin this with a test.
         let dir = std::env::temp_dir().join("wafrift_bench_diff_test_old_schema");
         let _ = std::fs::create_dir_all(&dir);
@@ -462,7 +462,7 @@ mod tests {
         );
         assert!(
             !src.contains(banned),
-            "raw unbounded fs read of bench-diff input path reintroduced — OOM regression"
+            "raw unbounded fs read of bench-diff input path reintroduced. OOM regression"
         );
     }
 
@@ -470,7 +470,7 @@ mod tests {
     fn bench_diff_cap_is_sane() {
         assert!(
             super::BENCH_DIFF_INPUT_MAX_BYTES >= 16 * 1024 * 1024,
-            "BENCH_DIFF_INPUT_MAX_BYTES tightened below 16 MiB — could reject legitimate bench outputs"
+            "BENCH_DIFF_INPUT_MAX_BYTES tightened below 16 MiB, could reject legitimate bench outputs"
         );
     }
 }

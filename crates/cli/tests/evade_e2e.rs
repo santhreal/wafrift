@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift evade`.
 //!
-//! All tests are purely offline — no HTTP, no mock server.
+//! All tests are purely offline (no HTTP, no mock server).
 //! `evade` transforms a payload through the evasion-technique engine
 //! and emits variant payloads.
 //!
@@ -140,10 +140,10 @@ fn evade_only_selector_limits_technique_set() {
 
     // Every variant's techniques list must include the url-encode family name.
     // (The engine may use internal technique names so we check the payload
-    //  is URL-encoded form of the input — i.e. the plain "test" transformed.)
+    //  is URL-encoded form of the input, i.e. the plain "test" transformed.)
     for variant in variants {
         let payload = variant["payload"].as_str().unwrap_or("");
-        // URL-encoded "test" — characters may be encoded.
+        // URL-encoded "test" (characters may be encoded).
         // At minimum the payload must not be empty.
         assert!(
             !payload.is_empty(),

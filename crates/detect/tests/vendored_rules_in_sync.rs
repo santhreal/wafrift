@@ -51,12 +51,12 @@ fn vendored_detect_rules_match_workspace_canonical() {
     // compare. The guard only has teeth in the monorepo, which is
     // exactly where drift is introduced.
     if !workspace.is_dir() {
-        eprintln!("workspace rules/detect absent (published-crate layout) — drift guard skipped");
+        eprintln!("workspace rules/detect absent (published-crate layout), drift guard skipped");
         return;
     }
     assert!(
         in_crate.is_dir(),
-        "in-crate vendored rules/detect is missing — `cargo publish` would ship no rules"
+        "in-crate vendored rules/detect is missing: `cargo publish` would ship no rules"
     );
 
     let vendored = read_tree(in_crate);
@@ -86,7 +86,7 @@ fn vendored_detect_rules_match_workspace_canonical() {
 
     assert!(
         problems.is_empty(),
-        "vendored crates/detect/rules/detect has drifted from canonical rules/detect — \
+        "vendored crates/detect/rules/detect has drifted from canonical rules/detect. \
          build.rs may embed stale detection rules. Re-sync the trees \
          (the canonical copy is the source of truth):\n{}",
         problems.join("\n")

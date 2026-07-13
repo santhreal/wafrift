@@ -1,5 +1,5 @@
 //! Command-injection payload-string equivalence + the joint
-//! `(payload × delivery)` generator — the cmdi arm of Phase B.
+//! `(payload × delivery)` generator (the cmdi arm of Phase B).
 //!
 //! Every rewrite is shell-parser-equivalent *by construction* (bash
 //! resolves `c''at`, `c\at`, `${IFS}` to the exact same execution) and
@@ -11,7 +11,7 @@
 use super::{DeliveryShape, Dialect, EquivConfig, EquivPayload, Rng};
 use crate::grammar::cmd::is_structured_cmd;
 
-/// Bash word-separator equivalents — every one field-splits to a
+/// Bash word-separator equivalents, every one field-splits to a
 /// single argument boundary at execution.
 // Bare `$IFS` is UNSOUND: `wget$IFShttp` parses as the variable
 // `$IFShttp` (undefined → empty), losing the separator. Only the
@@ -20,7 +20,7 @@ use crate::grammar::cmd::is_structured_cmd;
 // ANSI-C-quoted whitespace `$'\x20'` / `$'\t'` is ALSO UNSOUND as a
 // separator: `$'...'` is *quoting*, so the byte it yields is NOT subject
 // to word-splitting. `cat$'\x20'etc/passwd` parses as the single command
-// word `cat etc/passwd` (one token, no such binary) — proven against
+// word `cat etc/passwd` (one token, no such binary), proven against
 // bash: `$'\x20'` field-splits to argc=1 while `${IFS}` gives argc=2.
 // Only UNQUOTED expansions (`${IFS}`, `${IFS%??}`, raw space/tab) split.
 const SEP_EQUIV: &[&str] = &[" ", "${IFS}", "\t", "${IFS%??}", "${IFS}${IFS}"];
@@ -30,7 +30,7 @@ fn sep_pick(rng: &mut Rng) -> String {
 }
 
 /// Whitespace bytes a `$'…'` block can yield. They are QUOTED, so they do
-/// NOT field-split — they glue to neighbours. Modelled as dropped (empty) so
+/// NOT field-split, they glue to neighbours. Modelled as dropped (empty) so
 /// the decoded word stays a single token (matching bash's word-splitting).
 fn is_shell_ws_byte(v: u32) -> bool {
     matches!(v, 0x20 | 0x09 | 0x0a | 0x0b | 0x0c | 0x0d)
@@ -43,7 +43,7 @@ fn is_shell_ws_byte(v: u32) -> bool {
 /// `$'…'` wrapper is removed and the decoded bytes glue to adjacent text as a
 /// single word. Whitespace bytes are dropped (quoted ⇒ non-splitting). Any
 /// unknown escape is left literal, and an unterminated `$'…'` is passed
-/// through verbatim — the oracle UNDER-approximates (fails closed → reject)
+/// through verbatim, the oracle UNDER-approximates (fails closed → reject)
 /// rather than over-claiming equivalence bash would not honour.
 fn decode_ansi_c(s: &str) -> String {
     let b: Vec<char> = s.chars().collect();
@@ -127,7 +127,7 @@ fn decode_ansi_c(s: &str) -> String {
                 i = j;
                 continue;
             }
-            // unterminated `$'…'` — leave the rest literal (fail closed)
+            // unterminated `$'…'`: leave the rest literal (fail closed)
         }
         out.push(b[i]);
         i += 1;
@@ -139,11 +139,11 @@ fn decode_ansi_c(s: &str) -> String {
 /// back to what actually executes (mirrors the WAF/shell view).
 fn normalize(s: &str) -> String {
     // Decode bash ANSI-C `$'…'` quoting to the literal bytes it executes
-    // FIRST — `$'\x63\x61\x74'` → `cat`, `c$'\x61't` → `cat`. The block is
+    // FIRST: `$'\x63\x61\x74'` → `cat`, `c$'\x61't` → `cat`. The block is
     // QUOTED, so any whitespace byte it yields does NOT field-split: it glues
     // to its neighbours as one word. This both recovers the hidden verb/target
     // (recall) and rejects the unsound quoted-whitespace "separator"
-    // (`cat$'\x20'etc/passwd` → glued `catetc/passwd`, fails verb survival —
+    // (`cat$'\x20'etc/passwd` → glued `catetc/passwd`, fails verb survival 
     // exactly bash's one-non-existent-word behaviour). See [`decode_ansi_c`].
     let mut t = decode_ansi_c(s);
     // UNQUOTED expansions field-split → one argument boundary (a space).
@@ -184,7 +184,7 @@ fn sig_tokens(norm: &str) -> Vec<String> {
 
 /// A shell-injection mechanism (separator / metachar / substitution)
 /// or a structured effect. Without one the input is just prose, not a
-/// command injection — the generator must emit nothing for it.
+/// command injection (the generator must emit nothing for it).
 fn has_shell_context(s: &str) -> bool {
     if is_structured_cmd(s) {
         return true;
@@ -202,7 +202,7 @@ pub fn still_executes_cmd(original: &str, cand: &str) -> bool {
     if cand.trim().is_empty() || !has_shell_context(original) {
         return false;
     }
-    // F109: anti-rig — if the original carried shell context (the
+    // F109: anti-rig, if the original carried shell context (the
     // metacharacter that turns it into a command-injection rather
     // than a literal arg), the candidate MUST also carry shell
     // context. A future rewrite that strips every metacharacter
@@ -220,7 +220,7 @@ pub fn still_executes_cmd(original: &str, cand: &str) -> bool {
     if is_structured_cmd(original) {
         // The operator's command verb AND its target/host/effect must
         // survive (anti-rig: never substitute a bare probe). §7 DEDUP + §14:
-        // whole-token survival via the shared boundary-aware matcher — the
+        // whole-token survival via the shared boundary-aware matcher, the
         // prior `nc.contains(t)` substring check let a verb/target survive
         // buried in a larger token (`cat` in `category`, `id` in `void`),
         // which no longer runs the original command.
@@ -231,7 +231,7 @@ pub fn still_executes_cmd(original: &str, cand: &str) -> bool {
         want.iter().all(|t| super::contains_token(&nc, t))
     } else {
         // Bare exec probe: the command VERB must survive as a whole token.
-        // Skip any leading shell separators/whitespace first — for `; cat …`
+        // Skip any leading shell separators/whitespace first, for `; cat …`
         // the verb is `cat`, not `;`. The prior `split_whitespace().next()`
         // grabbed the separator, so a probe substitution (`; cat etc/passwd`
         // → `; whoami`) rode in on the surviving `;` and was wrongly
@@ -265,7 +265,7 @@ fn rw_sep(s: &str, rng: &mut Rng) -> String {
 }
 
 /// Obfuscate the FIRST command word with a bash-transparent form
-/// (quote/backslash/`$@` insertion) — same binary resolved.
+/// (quote/backslash/`$@` insertion) (same binary resolved).
 fn rw_cmd_obf(s: &str, rng: &mut Rng) -> Option<String> {
     let trimmed_start = s.len() - s.trim_start().len();
     let rest = &s[trimmed_start..];
@@ -301,7 +301,7 @@ fn rw_cmd_obf(s: &str, rng: &mut Rng) -> Option<String> {
     // a small ASCII punctuation set), so `word` is guaranteed ASCII
     // and `split_at(cut)` is byte-safe. If a future change to the
     // char class in the loop above ever admits a multi-byte
-    // codepoint, `split_at` on a non-char-boundary would panic — make
+    // codepoint, `split_at` on a non-char-boundary would panic, make
     // the invariant explicit.
     debug_assert!(word.is_ascii(), "cmd-shell word slice must be ASCII");
     let cut = 1 + rng.below(word.len() - 1);
@@ -324,7 +324,7 @@ fn rw_cmd_obf(s: &str, rng: &mut Rng) -> Option<String> {
 /// insertions (`''`, `""`, `$@`, or `\` before the char). Every form is
 /// reversed by [`normalize`]; because the word is a pure `[A-Za-z0-9]`
 /// run, a `\` always precedes an alnum char (the only case `normalize`
-/// strips) — so every insertion is sound regardless of position.
+/// strips) (so every insertion is sound regardless of position).
 fn obf_word(word: &str, rng: &mut Rng) -> String {
     let cs: Vec<char> = word.chars().collect();
     let mut out = String::with_capacity(word.len() * 3);
@@ -344,17 +344,17 @@ fn obf_word(word: &str, rng: &mut Rng) -> String {
     out
 }
 
-/// Obfuscate the PLAIN command words — every `[A-Za-z0-9]` run at shell
-/// TOP LEVEL — with [`obf_word`]. Runs inside a `${…}` / `$(…)` are
+/// Obfuscate the PLAIN command words, every `[A-Za-z0-9]` run at shell
+/// TOP LEVEL, with [`obf_word`]. Runs inside a `${…}` / `$(…)` are
 /// skipped: bash's own parser rejects a quote/backslash inside a
 /// parameter name (`${I''FS}` is a syntax error), so `normalize` could
-/// "accept" a string bash would never run — the one way string-level
+/// "accept" a string bash would never run, the one way string-level
 /// equivalence diverges from execution. Tracking `$`-construct depth and
 /// only rewriting at depth 0 keeps every emitted form genuinely
 /// executable; `still_executes_cmd` is the final backstop.
 ///
 /// Unlike [`rw_cmd_obf`] (first word, single cut) this also hides the
-/// TARGET — `/etc/pa''ss''wd`, `\b\i\n/sh` — defeating WAF rules keyed on
+/// TARGET: `/etc/pa''ss''wd`, `\b\i\n/sh`: defeating WAF rules keyed on
 /// `/etc/passwd`, `/bin/sh`, and friends, which the first-word-only
 /// rewrite always shipped in cleartext.
 fn rw_token_obf(payload: &str, rng: &mut Rng) -> Option<String> {
@@ -406,7 +406,7 @@ fn rw_token_obf(payload: &str, rng: &mut Rng) -> Option<String> {
 /// `cat` → `$'\x63\x61\x74'`, `passwd` → `$'\x70\x61\x73\x73\x77\x64'`. Each
 /// `$'…'` block is one quoted word that bash decodes at parse time and glues
 /// to its literal neighbours (`/`, `.`, `-`), so `/etc/passwd` becomes
-/// `/$'\x65\x74\x63'/$'\x70\x61\x73\x73\x77\x64'` — the same path, with the
+/// `/$'\x65\x74\x63'/$'\x70\x61\x73\x73\x77\x64'`: the same path, with the
 /// cleartext tokens `etc`/`passwd` gone from the wire. Strictly stronger than
 /// quote-insertion (which leaves the letters visible).
 ///
@@ -461,7 +461,7 @@ fn rw_ansi_c(payload: &str, rng: &mut Rng) -> Option<String> {
 }
 
 /// `;` ↔ newline are unconditionally-equivalent statement separators
-/// (NOT `&&`/`||` — those are conditional). Swap a leading `;`.
+/// (NOT `&&`/`||`: those are conditional). Swap a leading `;`.
 fn rw_separator(s: &str, rng: &mut Rng) -> Option<String> {
     let t = s.trim_start();
     let lead = s.len() - t.len();
@@ -524,14 +524,14 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             s = n;
             rules.push("cmd_obfuscate");
         }
-        // Multi-position, all-words obfuscation — hides the target too.
+        // Multi-position, all-words obfuscation (hides the target too).
         if rng.chance(3, 5)
             && let Some(n) = rw_token_obf(&s, &mut rng)
         {
             s = n;
             rules.push("cmd_token_obfuscate");
         }
-        // ANSI-C hex-encode whole words — removes the cleartext verb/target
+        // ANSI-C hex-encode whole words, removes the cleartext verb/target
         // tokens entirely (`cat`/`passwd` → `$'\x…'`). Mutually exclusive
         // with token-obf on a given pass so the two never fight over a word.
         else if rng.chance(2, 5)
@@ -615,7 +615,7 @@ mod tests {
     #[test]
     fn target_obfuscation_normalizes_back_and_stays_equivalent() {
         // The TARGET hidden behind quote/backslash insertions still resolves
-        // to the same file — the new capability the first-word rewrite lacked.
+        // to the same file (the new capability the first-word rewrite lacked).
         for v in [
             "; cat /etc/pa''ss''wd",
             "; cat /etc/pa\\ss\\wd",
@@ -702,7 +702,7 @@ mod tests {
     #[test]
     fn ansi_c_quoted_whitespace_is_rejected_not_a_separator() {
         // SOUNDNESS (proven against bash): `$'\x20'` / `$'\t'` are *quoted*
-        // bytes — they do NOT field-split. `cat$'\x20'etc/passwd` parses as
+        // bytes, they do NOT field-split. `cat$'\x20'etc/passwd` parses as
         // the single command word `cat etc/passwd` (argc=1, no such binary),
         // whereas `${IFS}` yields argc=2. The oracle must therefore REJECT
         // the quoted-whitespace "separator" while still accepting `${IFS}`.
@@ -723,7 +723,7 @@ mod tests {
 
     #[test]
     fn generator_never_emits_quoted_whitespace_separator() {
-        // The generator must never ship `$'\x20'` / `$'\t'` — bash would not
+        // The generator must never ship `$'\x20'` / `$'\t'`: bash would not
         // field-split them, so they break the very command they claim to
         // carry. Sweep many seeds and a multi-arg attack to exercise rw_sep.
         let atk = "; cat /etc/passwd /tmp/x";
@@ -815,7 +815,7 @@ mod tests {
     fn bare_probe_substitution_is_rejected() {
         // ANTI-RIG: a non-structured injection (`; cat etc/passwd`) must not
         // certify a candidate that swaps the verb for a bare probe. The verb
-        // `cat` has to survive as a whole token — a surviving leading `;` is
+        // `cat` has to survive as a whole token, a surviving leading `;` is
         // not enough. (Regression for the verb-extraction grabbing `;`.)
         assert!(!still_executes_cmd("; cat etc/passwd", "; whoami"));
         assert!(!still_executes_cmd("; cat etc/passwd", "; id"));

@@ -10,7 +10,7 @@ fn run(payload: &str) -> String {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Boundary cases — short / empty literals
+// Boundary cases, short / empty literals
 // ────────────────────────────────────────────────────────────────
 
 #[test]
@@ -49,7 +49,7 @@ fn no_quotes_in_input_passthrough() {
 
 #[test]
 fn input_is_only_a_single_quote() {
-    // Unterminated quote — `'` alone is not a closed literal.
+    // Unterminated quote: `'` alone is not a closed literal.
     assert_eq!(run("'"), "'");
 }
 
@@ -62,7 +62,7 @@ fn input_is_two_single_quotes_no_content() {
 
 #[test]
 fn input_is_three_single_quotes_unterminated_escape() {
-    // `'''` — open literal, escape `''` (push `'` to literal), then EOF
+    // `'''`: open literal, escape `''` (push `'` to literal), then EOF
     // without closing. Behavior: unterminated branch, output `'` + literal.
     let out = run("'''");
     // The first `'` opens. Inner loop: reads `'`, peek is `'` → push to
@@ -136,7 +136,7 @@ fn three_literals_each_shatters() {
 #[test]
 fn mixed_short_and_long_literals() {
     let out = run("'x' AND 'yyyy'");
-    // 'x' is len 1 — passthrough. 'yyyy' shatters.
+    // 'x' is len 1 (passthrough. 'yyyy' shatters).
     assert!(out.contains("'x'"));
     assert!(out.contains("'y' 'y' 'y' 'y'"));
 }
@@ -152,7 +152,7 @@ fn many_literals_in_payload() {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Escaped quotes — '' inside literal must NOT trigger split
+// Escaped quotes: '' inside literal must NOT trigger split
 // ────────────────────────────────────────────────────────────────
 
 #[test]
@@ -200,7 +200,7 @@ fn dogfood_b5_its_a_test_shatters() {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Unterminated quote — graceful handling
+// Unterminated quote, graceful handling
 // ────────────────────────────────────────────────────────────────
 
 #[test]
@@ -226,7 +226,7 @@ fn unterminated_after_closed_literal() {
 
 #[test]
 fn literal_with_latin_supplement_char() {
-    // 'café' — 4 chars: c, a, f, é. All shatter into 4 single-char literals.
+    // 'café': 4 chars: c, a, f, é. All shatter into 4 single-char literals.
     let out = run("'café'");
     assert_eq!(out, "'c' 'a' 'f' 'é'");
 }
@@ -318,7 +318,7 @@ fn no_leading_or_trailing_space_around_shattered_literal() {
 #[test]
 fn shattered_output_is_sql_parser_compatible_shape() {
     // The output must look like adjacent string literals separated by
-    // single spaces — testable structurally as ('X' )+
+    // single spaces, testable structurally as ('X' )+
     let out = run("'admin'");
     // Tokens split by ' '.
     let tokens: Vec<&str> = out.split(' ').collect();
@@ -338,7 +338,7 @@ fn shattered_output_is_sql_parser_compatible_shape() {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Anti-rig — no second-pass blowup
+// Anti-rig, no second-pass blowup
 // ────────────────────────────────────────────────────────────────
 
 #[test]
@@ -346,7 +346,7 @@ fn second_pass_does_not_explode_length() {
     let p = "'aaaaaaaaaaaaaaaaaaaaaaaaaaaa'"; // 28 a's
     let once = run(p);
     let twice = run(&once);
-    // Idempotent, so equal — and length doesn't grow.
+    // Idempotent, so equal (and length doesn't grow).
     assert_eq!(once, twice);
     assert_eq!(once.len(), twice.len());
 }
@@ -555,7 +555,7 @@ fn rejoin_adjacent_literals(s: &str) -> String {
                 i += 1;
             }
             if i < chars.len() && chars[i] == '\'' {
-                // Continue accumulating — don't flush yet.
+                // Continue accumulating (don't flush yet).
                 continue;
             } else {
                 // Flush.

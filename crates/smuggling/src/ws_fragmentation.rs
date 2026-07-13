@@ -11,7 +11,7 @@
 //!
 //! # Wire format
 //!
-//! RFC 6455 §5.2 — each frame:
+//! RFC 6455 §5.2, each frame:
 //! ```text
 //!  0                   1                   2                   3
 //!  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -76,13 +76,13 @@ fn mask_payload(payload: &[u8], masking_key: [u8; 4]) -> Vec<u8> {
 /// Build a single WebSocket frame.
 ///
 /// # Parameters
-/// - `fin`: FIN bit — true if this is the last (or only) fragment.
+/// - `fin`: FIN bit (true if this is the last (or only) fragment).
 /// - `rsv`: RSV bits to set in the first byte (use `rsv::RSV1` etc.).
 /// - `opcode`: 4-bit opcode value (lower nibble).
 /// - `mask`: If `Some(key)`, MASK bit is set and payload is masked.
 /// - `payload`: Unmasked payload bytes.
 /// - `override_payload_len`: If `Some(n)`, write `n` as the payload length
-///   field instead of the actual payload length — used for bogus-length attacks.
+///   field instead of the actual payload length (used for bogus-length attacks).
 fn build_frame(
     fin: bool,
     rsv_bits: u8,
@@ -210,7 +210,7 @@ pub fn text_split_with_attack_bytes(
         frame_count += 1;
 
         if remaining.is_empty() && !is_last {
-            // Text exhausted before n frames — emit a final empty CONTINUATION.
+            // Text exhausted before n frames (emit a final empty CONTINUATION).
             let final_frame = continuation_frame(true, &[]);
             wire.extend_from_slice(&final_frame);
             frame_count += 1;
@@ -221,7 +221,7 @@ pub fn text_split_with_attack_bytes(
     FragmentedText {
         wire_bytes: wire,
         frame_count,
-        description: "Text fragmented across N frames with attack bytes in intermediate frames — \
+        description: "Text fragmented across N frames with attack bytes in intermediate frames. \
                        WAF per-frame inspection misses cross-boundary patterns",
     }
 }
@@ -294,7 +294,7 @@ pub fn ping_interleaved_fragmented_text(
     PingInterleavedText {
         wire_bytes: wire,
         frame_count,
-        description: "PING frames interleaved between text fragments — WAFs that reset \
+        description: "PING frames interleaved between text fragments. WAFs that reset \
                        reassembly state on control frames lose cross-fragment attack patterns",
     }
 }
@@ -323,7 +323,7 @@ pub struct BogusLengthFrame {
 /// Frame-format ambiguity: the RFC requires `declared_len ≥ 65536` to use
 /// the 8-byte extended length field (127 prefix), but does not specify what
 /// parsers MUST do when `actual_data.len() < declared_len`. Most terminate
-/// the connection; some stall waiting for more data — this is the DoS vector.
+/// the connection; some stall waiting for more data (this is the DoS vector).
 #[must_use]
 pub fn bogus_payload_length_frame(actual_payload: &[u8], declared_len: u64) -> BogusLengthFrame {
     let wire = build_frame(
@@ -340,7 +340,7 @@ pub fn bogus_payload_length_frame(actual_payload: &[u8], declared_len: u64) -> B
         declared_len,
         actual_len,
         description: "TEXT frame with 64-bit payload length field set to a value larger than \
-                       actual data — triggers parser drift or stall; OOM if parser pre-allocates",
+                       actual data, triggers parser drift or stall; OOM if parser pre-allocates",
     }
 }
 
@@ -365,7 +365,7 @@ pub fn undercount_payload_length_frame(
         wire_bytes: wire,
         declared_len,
         actual_len: actual_payload.len(),
-        description: "TEXT frame with declared length less than actual payload — parsers that \
+        description: "TEXT frame with declared length less than actual payload, parsers that \
                        truncate to declared_len miss tail bytes containing attack patterns",
     }
 }
@@ -414,7 +414,7 @@ pub fn rsv_bit_frames(payload: &[u8]) -> Vec<RsvBitFrame> {
 /// Build a fragmented sequence where RSV1 is set on a CONTINUATION frame.
 ///
 /// RFC 6455 §5.2 does not explicitly define RSV semantics for CONTINUATION
-/// frames — the per-message extension (e.g. permessage-deflate) applies RSV1
+/// frames, the per-message extension (e.g. permessage-deflate) applies RSV1
 /// only to the TEXT frame, not continuations. Parsers that propagate RSV1
 /// into continuation frames may decrypt/decompress prematurely, causing drift.
 #[must_use]
@@ -467,11 +467,11 @@ pub fn reserved_opcode_frames(payload: &[u8]) -> Vec<ReservedOpcodeFrame> {
                 wire_bytes: wire,
                 opcode_value: op,
                 description: match op {
-                    0x3 => "Opcode 0x3 — reserved data frame (undefined by RFC 6455)",
-                    0x4 => "Opcode 0x4 — reserved data frame (undefined by RFC 6455)",
-                    0x5 => "Opcode 0x5 — reserved data frame (undefined by RFC 6455)",
-                    0x6 => "Opcode 0x6 — reserved data frame (undefined by RFC 6455)",
-                    0x7 => "Opcode 0x7 — reserved data frame (undefined by RFC 6455)",
+                    0x3 => "Opcode 0x3, reserved data frame (undefined by RFC 6455)",
+                    0x4 => "Opcode 0x4, reserved data frame (undefined by RFC 6455)",
+                    0x5 => "Opcode 0x5, reserved data frame (undefined by RFC 6455)",
+                    0x6 => "Opcode 0x6, reserved data frame (undefined by RFC 6455)",
+                    0x7 => "Opcode 0x7, reserved data frame (undefined by RFC 6455)",
                     _ => unreachable!(),
                 },
             }
@@ -519,7 +519,7 @@ mod tests {
             let l = ((bytes[2] as u64) << 8) | bytes[3] as u64;
             (l, 4)
         } else {
-            // 127 — 8-byte extended
+            // 127: 8-byte extended
             let l = ((bytes[2] as u64) << 56)
                 | ((bytes[3] as u64) << 48)
                 | ((bytes[4] as u64) << 40)

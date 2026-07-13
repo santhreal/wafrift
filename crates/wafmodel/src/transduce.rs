@@ -17,7 +17,7 @@
 //!
 //! These reuse the CRS [`crate::normalize`] primitives for the WAF
 //! view and add the *origin/framework* decoders (single URL-decode,
-//! JSON string unescape) that the WAF does **not** apply — the gap
+//! JSON string unescape) that the WAF does **not** apply, the gap
 //! that the whole class of bypasses lives in.
 
 use crate::normalize::{Transform, apply_chain};
@@ -30,7 +30,7 @@ pub enum Stage {
     Identity,
     /// Framework URL-decode, **single pass** `%XX` (and optionally
     /// `+`→space for form bodies). Note this is *not* CRS
-    /// `urlDecodeUni`: no `%uXXXX`, and exactly one pass — the
+    /// `urlDecodeUni`: no `%uXXXX`, and exactly one pass, the
     /// asymmetry double-encoding exploits.
     UrlDecode {
         /// Treat `+` as space (form-urlencoded bodies).
@@ -41,33 +41,33 @@ pub enum Stage {
     /// HTML entity decode (framework templating / browser).
     HtmlEntityDecode,
     /// JSON string unescape (`\"`, `\\`, `\n`, `\uXXXX`, surrogate
-    /// pairs) — what a JSON body parser hands the application.
+    /// pairs) (what a JSON body parser hands the application).
     JsonUnescape,
-    /// Origin/runtime **NFKC normalization** — Node `String.prototype
+    /// Origin/runtime **NFKC normalization**: Node `String.prototype
     /// .normalize`, Python `unicodedata.normalize`, Java `Normalizer`, .NET,
     /// and many template/identifier pipelines apply it before the value
     /// reaches the sink. Its compatibility decomposition collapses the
     /// styled-letter and fullwidth homoglyph families back to ASCII
     /// (`＜script＞` → `<script>`). A WAF that does *not* NFKC-normalize sees
     /// inert homoglyph bytes; this sink reconstructs the attack. The exact
-    /// gap [`wafrift_grammar::grammar::nfkc_preimage`] inverts — making the
+    /// gap [`wafrift_grammar::grammar::nfkc_preimage`] inverts, making the
     /// solver *derive* the homoglyph bypass instead of shipping it as a rule.
     NfkcNormalize,
-    /// Origin **best-fit / charset down-conversion** — Windows
+    /// Origin **best-fit / charset down-conversion**: Windows
     /// `WideCharToMultiByte` (default, no `WC_NO_BEST_FIT_CHARS`), MySQL
     /// latin1, .NET `Encoding.GetEncoding(1252)`, iconv `//TRANSLIT`. Coerces
     /// curly quotes / dashes / slashes to their ASCII delimiters (`'` → `'`),
     /// the SQLi string-breakout gap [`wafrift_grammar::grammar::bestfit`]
     /// inverts. NFKC leaves these punctuation codepoints alone; best-fit does
-    /// not — a distinct, composable origin stage.
+    /// not (a distinct, composable origin stage).
     BestFitDownconvert,
-    /// Origin **NUL-byte stripping** — PHP/C string handling, many frameworks,
+    /// Origin **NUL-byte stripping**: PHP/C string handling, many frameworks,
     /// and some loggers drop embedded `\0` before the value reaches the sink.
     /// A WAF matching the literal `<script` misses `<scr\0ipt>`; the origin
     /// strips the NUL and reconstructs the attack. (CRS *can* `RemoveNulls`,
     /// so this stage is the gap when the WAF does not but the origin does.)
     StripNulls,
-    /// Origin **overlong UTF-8 decode** — a lenient/legacy UTF-8 decoder that
+    /// Origin **overlong UTF-8 decode**: a lenient/legacy UTF-8 decoder that
     /// accepts the non-canonical 2-byte overlong encoding of an ASCII byte
     /// (`<` as `0xC0 0xBC`) and folds it back to ASCII. Conformant decoders
     /// reject overlong forms (a security MUST), so the origin set is narrow but
@@ -75,15 +75,15 @@ pub enum Stage {
     /// invalid `0xC0`/`0xC1` lead-byte overlongs are decoded (the exact forms a
     /// faithful-but-lenient decoder accepts); all other bytes pass through.
     OverlongUtf8Decode,
-    /// Origin **Base64 decode** — JSON/API endpoints, cookies, JWT segments,
+    /// Origin **Base64 decode**: JSON/API endpoints, cookies, JWT segments,
     /// and `data:` handlers routinely base64-decode a field before it reaches
     /// the sink. A WAF matching `<script` never sees it in `PHNjcmlwdD4=`; the
     /// origin decodes and the attack lands. A whole-value transform (not
     /// per-byte): the inverse base64-encodes the entire preimage. Invalid
     /// base64 passes through unchanged (a real decoder rejects it, modelled as
-    /// identity — never fabricates a fold).
+    /// identity (never fabricates a fold)).
     Base64Decode,
-    /// Origin **hex decode** — APIs, binary-as-text fields, and some templating
+    /// Origin **hex decode**: APIs, binary-as-text fields, and some templating
     /// hex-decode a value (`3c736372697074` → `<script`). A whole-value
     /// transform like base64: the inverse hex-encodes the entire preimage.
     /// Odd-length or non-hex input passes through unchanged.
@@ -145,7 +145,7 @@ fn overlong_utf8_decode(input: &[u8]) -> Vec<u8> {
 
 /// Apply an origin text-normalizer (`&str -> String`) to raw request bytes:
 /// decode UTF-8, normalize, re-encode. Invalid UTF-8 passes through unchanged
-/// — a real text normalizer operates on decoded characters, and modelling
+///: a real text normalizer operates on decoded characters, and modelling
 /// undecodable bytes as identity is the sound conservative choice (it never
 /// fabricates a fold that the origin would not actually perform).
 fn normalize_text_stage(input: &[u8], f: impl Fn(&str) -> String) -> Vec<u8> {
@@ -189,7 +189,7 @@ fn hexv(b: u8) -> Option<u8> {
 }
 
 /// Single-pass `%XX` decode. A `%` not followed by two hex digits is
-/// emitted literally (and scanning continues at the next byte) — the
+/// emitted literally (and scanning continues at the next byte), the
 /// behaviour real servers exhibit, and the reason `%253C` survives one
 /// pass as `%3C` and only a *second* pass yields `<`.
 #[must_use]
@@ -312,7 +312,7 @@ pub fn json_unescape(input: &[u8]) -> Vec<u8> {
                         i += 12;
                     } else if (0xD800..=0xDFFF).contains(&hi) {
                         // F84: lone UTF-16 surrogate. Encoding it as UTF-8
-                        // would produce WTF-8 / CESU-8 — invalid UTF-8 that
+                        // would produce WTF-8 / CESU-8, invalid UTF-8 that
                         // downstream `from_utf8` will reject or replace
                         // differently than the framework would. Emit
                         // U+FFFD to match `String::from_utf8_lossy`, which

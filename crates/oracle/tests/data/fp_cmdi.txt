@@ -5,10 +5,10 @@ Content-Type: application/json
 {"status":"ok","session":"opaque-token-7f3a","latency_ms":42}
 <<<SAMPLE>>>
 <!DOCTYPE html>
-<html lang="en"><head><title>Acme Store — Catalog</title></head>
+<html lang="en"><head><title>Acme Store. Catalog</title></head>
 <body><main><h1>Weekly specials</h1><p>Prices exclude tax; shipping may apply.</p></main></body></html>
 <<<SAMPLE>>>
-SQLSTATE[HY000]: integrity constraint violated — duplicate key in primary index on column ref_id
+SQLSTATE[HY000]: integrity constraint violated, duplicate key in primary index on column ref_id
 <<<SAMPLE>>>
 Stack trace (sanitized):
   at com.example.service.AuthFilter.validate(AuthFilter.java:118)

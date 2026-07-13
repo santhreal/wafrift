@@ -389,7 +389,7 @@ pub fn load_checkpoint<T: for<'de> Deserialize<'de>>(
     // R55 pass-19 I5 (CLAUDE.md §15 AUDIT): `meta.len()` is `u64`.
     // The pre-fix `as usize` silently truncated on 32-bit targets so
     // a 5 GiB file with `len = 0x_0000_0001_4000_0000` came through
-    // as 0x4000_0000 (1 GiB) — under the 512 MiB cap, advisory gate
+    // as 0x4000_0000 (1 GiB), under the 512 MiB cap, advisory gate
     // skipped, defense-in-depth ride on the bounded reader. Saturate
     // to `usize::MAX` on overflow so the gate always fires.
     let len = usize::try_from(meta.len()).unwrap_or(usize::MAX);
@@ -417,7 +417,7 @@ mod tests {
     /// R55 pass-19 I7 (CLAUDE.md §12 TESTING boundary): the save +
     /// load size gate is `size > MAX_CHECKPOINT_BYTES` (strict
     /// greater-than). Pin both boundary points without allocating a
-    /// 512 MiB-equivalent fixture — the pure gate is extracted so the
+    /// 512 MiB-equivalent fixture, the pure gate is extracted so the
     /// math is testable on an `i+1` integer.
     #[test]
     fn reject_oversize_checkpoint_accepts_exact_max() {
@@ -440,7 +440,7 @@ mod tests {
     #[test]
     fn reject_oversize_checkpoint_zero_is_accepted() {
         // An empty checkpoint is malformed for load but `size = 0`
-        // alone is not an oversize signal — the parser surfaces the
+        // alone is not an oversize signal, the parser surfaces the
         // emptiness as a deser error, not this gate.
         let p = std::path::PathBuf::from("/tmp/x");
         assert!(reject_oversize_checkpoint(0, &p).is_ok());
@@ -750,7 +750,7 @@ mod tests {
         // fixup_start_time uses start_time_system.elapsed() and Instant::now().
         // It must not panic regardless of system clock skew.
         let mut stats = SearchStats::new();
-        // Set start_time_system to now — elapsed will be ~0 (healthy path).
+        // Set start_time_system to now (elapsed will be ~0 (healthy path)).
         stats.fixup_start_time();
         // Set to an ancient SystemTime that may trigger checked_sub failure.
         stats.start_time_system = std::time::SystemTime::UNIX_EPOCH;

@@ -1,4 +1,4 @@
-//! `wafrift detect` — WAF / CDN / origin-infrastructure fingerprinting.
+//! `wafrift detect`: WAF / CDN / origin-infrastructure fingerprinting.
 //!
 //! Two input modes:
 //! - `--url <URL>` fetches the target once and runs the rule corpus
@@ -17,7 +17,7 @@
 //! `fetch_for_detect`, `infra_markers`, and `DetectFetch` are
 //! intentionally `pub(crate)` so the higher-level demo command
 //! (`crate::legendary::run_legendary`) composes the same primitives
-//! that ship under `wafrift detect` — no risk of the demo drifting
+//! that ship under `wafrift detect`: no risk of the demo drifting
 //! from the real command's behaviour.
 
 use colored::Colorize;
@@ -31,7 +31,7 @@ use crate::helpers::parse_headers;
 #[derive(clap::Args, Debug)]
 pub(crate) struct DetectArgs {
     /// Target URL to detect against, as the FIRST positional argument
-    /// — matches every other wafrift subcommand
+    ///: matches every other wafrift subcommand
     /// (`wafrift scan <URL>`, `wafrift header-diff <URL>`, etc.)
     /// so operator muscle memory works across the toolkit.
     /// Equivalent to `--url <URL>`; pass either form, not both.
@@ -39,7 +39,7 @@ pub(crate) struct DetectArgs {
     pub url_positional: Option<String>,
 
     /// Fetch the target URL directly and run detection on the live
-    /// response — no manual `curl` + `--status`/`--headers` round-trip.
+    /// response (no manual `curl` + `--status`/`--headers` round-trip).
     /// `wafrift detect --url https://target.com`. Mutually exclusive
     /// with `--status`/`--headers` and the positional form above.
     /// Kept on equal footing for backwards-compatibility.
@@ -79,7 +79,7 @@ pub(crate) struct DetectArgs {
     /// strong evidence of a WAF in "block but don't fingerprint"
     /// mode (e.g. ModSec returning Apache's generic 403, or any
     /// WAF that strips its own block-page markers). Off by default
-    /// because it sends a real attack-shaped string — only enable
+    /// because it sends a real attack-shaped string, only enable
     /// against targets you own / are authorized to test.
     #[arg(long, default_value_t = false)]
     pub differential: bool,
@@ -121,7 +121,7 @@ pub(crate) fn parse_http_status(s: &str) -> Result<u16, String> {
         Ok(n)
     } else {
         Err(format!(
-            "HTTP status code {n} is out of range — valid codes are 100–599"
+            "HTTP status code {n} is out of range, valid codes are 100–599"
         ))
     }
 }
@@ -136,7 +136,7 @@ pub(crate) type DetectFetch = Result<(u16, Vec<(String, String)>, Vec<u8>), Stri
 /// (some CDNs serve a different page or skip a JS challenge when they
 /// see "rustls", a bare reqwest UA, or missing Accept-Language, which
 /// would skew detection). Returns
-/// `(status, headers, body)` with the body capped at 64 KiB — WAF/CDN
+/// `(status, headers, body)` with the body capped at 64 KiB. WAF/CDN
 /// banners and block pages are always in the head.
 pub(crate) fn fetch_for_detect(url: &str, timeout_secs: u64, insecure: bool) -> DetectFetch {
     // Shared floor via base_client_builder + caller-owned redirect
@@ -175,7 +175,7 @@ pub(crate) fn fetch_for_detect(url: &str, timeout_secs: u64, insecure: bool) -> 
                 )
             })
             .collect();
-        // Cap the body read against decompression bombs — reqwest
+        // Cap the body read against decompression bombs, reqwest
         // ships gzip/brotli features and auto-decodes Content-Encoding,
         // so a 1 KB gzip bomb expanding to 100 GB would OOM the CLI
         // before reaching .bytes().await. The bounded stream reader
@@ -198,7 +198,7 @@ pub(crate) fn fetch_for_detect(url: &str, timeout_secs: u64, insecure: bool) -> 
 /// Extract the bare host (no scheme, port, path, fragment, or query)
 /// from a URL string.  Used by `fetch_cname_chain`.
 ///
-/// Thin wrapper around [`wafrift_transport::host_from_url`] — the
+/// Thin wrapper around [`wafrift_transport::host_from_url`], the
 /// shared canonical impl (4 sites collapsed). Returns an owned String
 /// because the upstream helper lowercases the host, so a borrowed
 /// `&str` into the input would carry the wrong case for callers that
@@ -208,13 +208,13 @@ pub(crate) fn host_from_url(url: &str) -> Option<String> {
 }
 
 /// Resolve a URL's CNAME chain to a `DnsProbe`.  Synchronous wrapper
-/// around the async resolver — builds a one-shot tokio runtime so
+/// around the async resolver, builds a one-shot tokio runtime so
 /// the rest of `run_detect` can stay synchronous and easy to read.
 /// Returns `None` on any error (resolver init, timeout, NXDOMAIN);
 /// callers fall back to header-only detection.  We log the failure
 /// via `tracing::debug!` so dogfooding can pin down WHY DNS dropped
 /// out without making the CLI noisy by default. Resolves through
-/// `tracing::debug!` (under the `wafrift::detect` target) — the
+/// `tracing::debug!` (under the `wafrift::detect` target), the
 /// CLI's `tracing-subscriber` is wired with an `EnvFilter` so
 /// `RUST_LOG=wafrift=debug` surfaces the failure detail.
 pub(crate) fn fetch_cname_chain(url: &str) -> Option<DnsProbe> {
@@ -234,7 +234,7 @@ pub(crate) fn fetch_cname_chain(url: &str) -> Option<DnsProbe> {
         Ok(probe) => Some(probe),
         Err(e) => {
             // Tracing-subscriber is initialised in main() with
-            // EnvFilter — `RUST_LOG=wafrift=debug` surfaces this
+            // EnvFilter: `RUST_LOG=wafrift=debug` surfaces this
             // line, default `warn` filter hides it. Pre-fix the
             // doc comment promised `tracing::debug!` but the code
             // used a hand-rolled RUST_LOG-env check + eprintln; the
@@ -251,7 +251,7 @@ pub(crate) fn fetch_cname_chain(url: &str) -> Option<DnsProbe> {
     }
 }
 
-/// Evidence of a WAF inferred from differential probing — a benign
+/// Evidence of a WAF inferred from differential probing, a benign
 /// GET vs a SQLi-payload GET produced significantly different
 /// responses, which is strong WAF presence signal even when no rule
 /// in the 160+ corpus matched. Surfaced under "differential
@@ -264,7 +264,7 @@ pub(crate) struct DifferentialEvidence {
     pub(crate) attack_status: u16,
     /// Server header on benign (e.g. "gunicorn/19.9.0").
     pub(crate) baseline_server: String,
-    /// Server header on attack (e.g. "Apache" — different stack
+    /// Server header on attack (e.g. "Apache", different stack
     /// answering means a WAF intercepted).
     pub(crate) attack_server: String,
     /// Body length on benign.
@@ -278,7 +278,7 @@ pub(crate) struct DifferentialEvidence {
 /// Compare a benign-probe response with an attack-probe response.
 /// Returns `Some(evidence)` when the differences are strong enough
 /// to infer a WAF is intercepting, `None` otherwise. Pure function
-/// — no I/O, fully testable on synthetic inputs.
+///: no I/O, fully testable on synthetic inputs.
 #[must_use]
 pub(crate) fn classify_differential(
     baseline_status: u16,
@@ -315,7 +315,7 @@ pub(crate) fn classify_differential(
             "server header changed: '{baseline_server}' → '{attack_server}'"
         ));
     }
-    // 3. Body length swing > 50%. The threshold is generous —
+    // 3. Body length swing > 50%. The threshold is generous 
     // small differences (different timestamps, request IDs) don't
     // count; a swing from 1 KB origin response to 200-byte block
     // page does.
@@ -400,7 +400,7 @@ pub(crate) fn fetch_differential(
 }
 
 /// Infrastructure markers worth surfacing even when no WAF crosses the
-/// confidence threshold — so `detect` on an nginx/CDN-fronted host
+/// confidence threshold, so `detect` on an nginx/CDN-fronted host
 /// (e.g. meta.discourse.org) reports *what is in front of the origin*
 /// instead of a bare, useless "No WAF confidently detected."
 pub(crate) fn infra_markers(headers: &[(String, String)]) -> Vec<(String, String)> {
@@ -429,7 +429,7 @@ pub(crate) fn infra_markers(headers: &[(String, String)]) -> Vec<(String, String
     // cloudflare`) used to surface BOTH as separate rows in the
     // legendary markdown table, which read as a rendering bug.
     // Last-wins because the OUTERMOST proxy is the one the operator
-    // is interacting with — its identity is more informative for
+    // is interacting with, its identity is more informative for
     // the report than the buried backend's.
     let mut seen: std::collections::HashMap<String, (String, String)> =
         std::collections::HashMap::new();
@@ -507,7 +507,7 @@ const GENERIC_NEXT_STEP: &str = "try `wafrift legendary <url>` for a one-shot de
 #[allow(clippy::needless_pass_by_value)]
 pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
     // R44 fix (dogfood pass 4): pre-fix `--timeout-secs 0` was
-    // silently accepted. reqwest treats 0 as "no timeout" — a
+    // silently accepted. reqwest treats 0 as "no timeout", a
     // slow upstream would hang the process. Reject explicitly.
     if args.timeout_secs == 0 {
         eprintln!(
@@ -566,7 +566,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
     // with an attack-shaped payload and compare. When the static-
     // signature corpus comes back empty but the responses to a
     // benign vs attack request differ significantly, we still know
-    // a WAF is intercepting — even if its block page is generic
+    // a WAF is intercepting, even if its block page is generic
     // (Apache stock 403, etc.).
     let differential_evidence: Option<DifferentialEvidence> =
         if args.differential && resolved_url.is_some() {
@@ -594,10 +594,10 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
     // CNAME-chain detection: catches origins that strip every CDN /
     // WAF marker header but can't hide their delivery chain at the
     // DNS layer (Stripe, Dropbox, eBay-via-Akamai).  Runs only when
-    // we have a URL to resolve — manual --status/--headers mode
+    // we have a URL to resolve, manual --status/--headers mode
     // skips DNS (no host to look up).
     let cname_probe: Option<DnsProbe> = resolved_url.as_deref().and_then(fetch_cname_chain);
-    // Trigger CNAME-rule detection whenever we have ANY DNS signal —
+    // Trigger CNAME-rule detection whenever we have ANY DNS signal 
     // the chain (forward CNAME hops), a PTR record on the leaf IP,
     // or an ASN org name.  Gating only on the chain swallowed the
     // PTR axis; gating only on chain+PTR swallowed the ASN axis
@@ -606,7 +606,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
     if let Some(ref probe) = cname_probe
         && (!probe.chain.is_empty() || probe.final_ptr.is_some() || probe.asn.is_some())
     {
-        // Cache the CnameRuleEngine across detect calls — the embedded
+        // Cache the CnameRuleEngine across detect calls, the embedded
         // TOML parse + regex compile costs ~150ms on cold load. Without
         // the cache, every `wafrift detect` invocation pays that cost,
         // and `legendary` (which calls detect repeatedly) ends up
@@ -683,7 +683,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
         // (Varnish/CacheWall), absorb the child's confidence
         // into the parent and drop the child row.  Without this,
         // reddit.com / nytimes.com would surface "CacheWall" as
-        // the primary vendor — technically true (Varnish IS in
+        // the primary vendor, technically true (Varnish IS in
         // path) but the CDN-level name Fastly is what an
         // operator actually wants to see.
         let parent_names: Vec<String> = detected
@@ -726,7 +726,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
             {
                 // Absorbed confidence boosts the parent at half
                 // weight (so two independent signals add up but
-                // don't double-count) — clamped to 1.0.
+                // don't double-count) (clamped to 1.0).
                 parent_entry.confidence =
                     (parent_entry.confidence + absorbed_confidence * 0.5).min(1.0);
                 for ind in absorbed_indicators {
@@ -747,7 +747,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
     }
 
     // JSON output is selected by either `--quiet` (legacy) OR the
-    // newer `--format json` (uniform with every other subcommand —
+    // newer `--format json` (uniform with every other subcommand 
     // closes the dogfood bug where `wafrift detect --url X --format
     // json` failed with "unexpected argument").
     let emit_json = quiet || args.format == "json" || args.json;
@@ -885,7 +885,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
     } else {
         println!("{}", "No WAF confidently detected.".yellow().bold());
         // Hint operators that the static rule corpus may have missed a
-        // WAF that strips its own marker headers — try the active
+        // WAF that strips its own marker headers, try the active
         // differential probe (only fires a second request when
         // --differential is set; that's why we suggest it, not silently
         // run it). Found during pentest dogfood 2026-05: against any
@@ -895,7 +895,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
         if resolved_url.is_some() && !args.differential {
             println!(
                 "  {} pass {} to actively probe with an attack-shaped \
-                 string — catches WAFs in 'block but don't fingerprint' mode.",
+                 string: catches WAFs in 'block but don't fingerprint' mode.",
                 "hint:".bright_cyan().bold(),
                 "--differential".bright_white(),
             );
@@ -923,12 +923,12 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
             }
             println!(
                 "  {}",
-                "These are CDN/proxy/origin banners, not a WAF verdict — \
+                "These are CDN/proxy/origin banners, not a WAF verdict. \
                  a WAF may still be present in monitor-only mode."
                     .bright_black()
             );
         }
-        // CNAME chain — even when headers are clean, the DNS layer
+        // CNAME chain, even when headers are clean, the DNS layer
         // often gives away the CDN / WAF (Stripe / Dropbox / eBay
         // case study).  Surfacing the chain lets the operator see
         // exactly which delivery network is in front of the origin.
@@ -964,7 +964,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
                 );
             }
         }
-        // Differential evidence — even when the static-corpus came
+        // Differential evidence, even when the static-corpus came
         // back empty, a differing response on a benign vs attack
         // probe is strong WAF-presence signal (the typical
         // ModSec-in-front-of-gunicorn-returning-generic-Apache-403
@@ -997,7 +997,7 @@ mod tests {
 
     // F127 regression: inject_sqli_probe must place the query before
     // the fragment. Pre-fix code naively appended `?q=...` whenever the
-    // URL had no `?`, but `https://t/p#sec` has no `?` — the appended
+    // URL had no `?`, but `https://t/p#sec` has no `?`: the appended
     // text landed INSIDE the fragment and the probe never reached the
     // server. Silent false-negative for any fragmented URL.
     #[test]
@@ -1014,7 +1014,7 @@ mod tests {
 
     #[test]
     fn inject_sqli_probe_preserves_fragment_no_existing_query() {
-        // Pre-fix would produce "https://t/p#sec?q=..." — query inside
+        // Pre-fix would produce "https://t/p#sec?q=...", query inside
         // the fragment, never reaches the server.
         let out = inject_sqli_probe("https://t/p#sec");
         assert_eq!(out, "https://t/p?q=%27+OR+1%3D1--#sec");
@@ -1074,11 +1074,11 @@ mod tests {
         let m = infra_markers(&headers);
         assert!(m.iter().any(|(k, _)| k == "Server"));
         assert!(m.iter().any(|(k, _)| k == "X-Cache"));
-        // CF-Ray is in the allowlist but case-insensitively — verify
+        // CF-Ray is in the allowlist but case-insensitively, verify
         // that the extractor picks it up regardless of header case.
         assert!(m.iter().any(|(k, _)| k.eq_ignore_ascii_case("cf-ray")));
         // Content-Type is not in the infra allowlist (it's a general
-        // response header, not a fingerprint anchor) — must be dropped.
+        // response header, not a fingerprint anchor) (must be dropped).
         assert!(
             !m.iter()
                 .any(|(k, _)| k.eq_ignore_ascii_case("content-type"))
@@ -1165,7 +1165,7 @@ mod tests {
         })
     }
 
-    /// `fetch_for_detect` builds its own tokio runtime — we drive it
+    /// `fetch_for_detect` builds its own tokio runtime, we drive it
     /// from a sync `#[test]` (no `#[tokio::test]`) so the nested
     /// runtime panic doesn't trip.
     #[serial_test::serial]
@@ -1234,7 +1234,7 @@ mod tests {
             .worker_threads(1)
             .build()
             .unwrap();
-        // Mock that ships 128 KiB of body — we want to confirm the
+        // Mock that ships 128 KiB of body, we want to confirm the
         // fetch caps the read at 64 KiB.
         let big_body = Box::leak("X".repeat(128 * 1024).into_boxed_str()) as &'static str;
         let addr = rt.block_on(spawn_mock(big_body, 200));
@@ -1285,12 +1285,12 @@ mod tests {
         // (P3 from sonnet dogfood pass 4, 2026-05).  Prior to the
         // fix, the error message just said "error sending request"
         // with no DNS/TCP cause attached.  Now the source chain is
-        // walked and surfaced via " — caused by: ..." appends.
+        // walked and surfaced via " (caused by: ..." appends).
         let err = fetch_for_detect("http://127.0.0.1:1/", 2, false)
             .expect_err("connect-refused must Err");
         assert!(
             err.contains("caused by:"),
-            "error must walk the source chain — got: {err}"
+            "error must walk the source chain, got: {err}"
         );
         // The URL must still appear in the top-level message so the
         // operator can grep their command log.
@@ -1328,7 +1328,7 @@ mod tests {
 
     // ── classify_differential ────────────────────────────────────
     //
-    // Pure function — tested without I/O. Each case names the
+    // Pure function, tested without I/O. Each case names the
     // real-world WAF detection pattern it gates.
 
     fn hdr(server: &str) -> Vec<(String, String)> {
@@ -1379,7 +1379,7 @@ mod tests {
 
     #[test]
     fn differential_server_change_is_case_insensitive() {
-        // Apache vs apache should NOT count as a server change —
+        // Apache vs apache should NOT count as a server change 
         // it's the same software, just different casing on the
         // server's part.
         let ev = classify_differential(403, &hdr("Apache"), 100, 403, &hdr("apache"), 100);
@@ -1439,7 +1439,7 @@ mod tests {
         );
     }
 
-    // Fix #3 tests — SUGGESTED_NEXT_STEP table + next_step_hint.
+    // Fix #3 tests: SUGGESTED_NEXT_STEP table + next_step_hint.
 
     #[test]
     fn next_step_hint_returns_cloudflare_command_for_cloudflare() {

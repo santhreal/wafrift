@@ -4,13 +4,13 @@
 //! against real database parsers. A mutated payload is a *working
 //! attack* iff, spliced into some realistic host-query context, it
 //! parses AND it structurally changes the query's logic (injects a
-//! boolean/UNION/stacked statement/comment-truncation/subquery) — not
+//! boolean/UNION/stacked statement/comment-truncation/subquery), not
 //! merely supplies a different literal.
 //!
 //! The pre-2026-05 oracle modelled ONE context (`WHERE id = <f>`,
 //! numeric). That wrongly rejected every quote-context injection
-//! (`1' OR '1'='1`, `1' UNION SELECT …-- -`) — the dominant real-world
-//! shape — so genuine bypasses scored 0. This models the full set of
+//! (`1' OR '1'='1`, `1' UNION SELECT …-- -`), the dominant real-world
+//! shape, so genuine bypasses scored 0. This models the full set of
 //! contexts a real app exposes, while the structural-change predicate
 //! keeps non-attacks (`'+0+'`, bare literals, junk) rejected. It is a
 //! *correctness* fix, never a loosening: every MUST-REJECT in the test
@@ -42,7 +42,7 @@ fn parse_with(dialect: DatabaseDialect, q: &str) -> Result<Vec<sqlparser::ast::S
 }
 
 /// Realistic host-query contexts an injectable parameter sits in.
-/// `(prefix, suffix, benign)` — `benign` is a harmless value used to
+/// `(prefix, suffix, benign)`: `benign` is a harmless value used to
 /// build the structural baseline for that exact context.
 const CONTEXTS: &[(&str, &str, &str)] = &[
     // numeric
@@ -54,7 +54,7 @@ const CONTEXTS: &[(&str, &str, &str)] = &[
     ("SELECT * FROM t WHERE name = '", "' LIMIT 1", "x"),
     ("SELECT * FROM t WHERE name = '", "' AND active = 1", "x"),
     // paren-wrapped quoted column (common ORM / framework shape:
-    // `WHERE (name = 'INJ')`) — needed for `1') OR ('1'='1`.
+    // `WHERE (name = 'INJ')`) (needed for `1') OR ('1'='1`).
     ("SELECT * FROM t WHERE (name = '", "')", "x"),
     ("SELECT * FROM t WHERE (id = '", "')", "1"),
     // double-quoted string (MySQL ANSI off / MSSQL-ish)
@@ -63,14 +63,14 @@ const CONTEXTS: &[(&str, &str, &str)] = &[
     ("SELECT * FROM t WHERE id IN (", ")", "1"),
     ("SELECT * FROM t WHERE name LIKE '%", "%'", "x"),
     ("SELECT * FROM t ORDER BY ", "", "1"),
-    // ORDER BY <col> <DIR> — the injection follows a named column, the
+    // ORDER BY <col> <DIR>, the injection follows a named column, the
     // single most common ORDER BY shape (sort-direction params).
     ("SELECT * FROM t ORDER BY name ", "", "ASC"),
-    // LIMIT / OFFSET — numeric param positions real apps expose.
+    // LIMIT / OFFSET (numeric param positions real apps expose).
     ("SELECT * FROM t WHERE a = 1 LIMIT ", "", "1"),
     ("SELECT * FROM t WHERE a = 1 LIMIT 1 OFFSET ", "", "0"),
     // numeric value with a trailing AND clause (extremely common:
-    // `WHERE id = <INJ> AND tenant = 1`) — without this a sound
+    // `WHERE id = <INJ> AND tenant = 1`), without this a sound
     // numeric break here is misjudged "not an attack".
     ("SELECT * FROM t WHERE id = ", " AND tenant = 1", "1"),
     // INSERT … VALUES (string + numeric) and UPDATE … SET (string):
@@ -142,7 +142,7 @@ fn structural_in_context(
     }
     // Comment-truncation: the fragment commented the suffix away. Only
     // counts if there WAS a suffix to neutralise and the prefix-only
-    // form (suffix dropped) still parses — i.e. the rest of the host
+    // form (suffix dropped) still parses, i.e. the rest of the host
     // query is genuinely dead.
     if !suffix.trim().is_empty()
         && comment_truncates(fragment)
@@ -168,7 +168,7 @@ fn structural_in_context(
 /// structurally changes the query (boolean / UNION / stacked /
 /// comment-truncation / subquery). A bare literal, arithmetic on
 /// literals (`'+0+'`), or unparseable junk is rejected in EVERY
-/// context — the anti-rig guarantee, pinned by the test battery.
+/// context (the anti-rig guarantee, pinned by the test battery).
 #[must_use]
 pub fn is_valid_expression_injection(fragment: &str, dialect: DatabaseDialect) -> bool {
     let f = fragment.trim();
@@ -300,7 +300,7 @@ mod tests {
     #[test]
     fn benign_literal_in_string_context_is_not_an_injection() {
         // `'+0+'` spliced into a string ctx is arithmetic on literals,
-        // not injected logic — must stay rejected.
+        // not injected logic (must stay rejected).
         assert!(!is_valid_expression_injection(
             "'+0+'",
             DatabaseDialect::Generic
@@ -325,7 +325,7 @@ mod tests {
     #[test]
     fn write_path_and_clause_context_injections_are_accepted() {
         // Each is a genuine structural injection that only resolves in
-        // an INSERT/UPDATE/ORDER-BY-dir/LIMIT/trailing-AND host — shapes
+        // an INSERT/UPDATE/ORDER-BY-dir/LIMIT/trailing-AND host, shapes
         // a query-only context set misjudged as "not an attack".
         for atk in [
             "1) ; DROP TABLE users-- -",               // INSERT VALUES stacked

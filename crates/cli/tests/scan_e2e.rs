@@ -14,7 +14,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 mod common;
 use common::wafrift;
 
-/// Mock server: always returns 200 OK (no WAF blocking — all variants pass).
+/// Mock server: always returns 200 OK (no WAF blocking (all variants pass)).
 async fn spawn_allow_all_mock() -> std::net::SocketAddr {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -249,7 +249,7 @@ fn scan_json_output_has_required_fields_on_allow_all_target() {
 #[test]
 #[serial]
 fn scan_blocked_target_reports_zero_bypass_variants() {
-    // A mock that always returns 403 is the baseline WAF — wafrift will
+    // A mock that always returns 403 is the baseline WAF, wafrift will
     // fire evasion variants but with --level light against a deterministic
     // 403 mock, it shouldn't find any bypass. The bypass_variants array
     // should be empty (or very small), and the overall exit code should

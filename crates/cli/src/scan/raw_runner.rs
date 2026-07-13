@@ -10,11 +10,11 @@
 //! Does:
 //! - Validates the template has a `§§` marker (otherwise variants
 //!   would fire the same un-mutated request).
-//! - Honours the pentest pivot — `--proxy` routes every request
+//! - Honours the pentest pivot: `--proxy` routes every request
 //!   through Burp; `-H` adds operator headers on top of the
 //!   template's.
 //! - Generates encoding + grammar variants of `--payload` via
-//!   [`crate::helpers::build_variants`] — same primitive the
+//!   [`crate::helpers::build_variants`], same primitive the
 //!   URL-query path uses, so the variant menu is consistent.
 //! - Fires each variant by substituting `§§` in the template's
 //!   URL, header values, and body via [`RawRequest::with_payload`].
@@ -23,7 +23,7 @@
 //!   ready to paste into a terminal.
 //!
 //! Doesn't (yet, by design):
-//! - No multi-vector phase: the template IS the vector — the
+//! - No multi-vector phase: the template IS the vector, the
 //!   operator chose POST-body / header / cookie injection by where
 //!   they placed `§§`.
 //! - No equivalence-moat CEGIS: the moat assumes URL-query shape;
@@ -48,14 +48,14 @@ use crate::helpers::{build_variants, max_mutations_for_level, strategies_for_lev
 use crate::raw_request::RawRequest;
 use crate::scan::pentest_client;
 
-/// One observed bypass — the runner's row type. Carries the variant
+/// One observed bypass, the runner's row type. Carries the variant
 /// metadata AND the fully-rendered curl reproducer so the JSON
 /// output can be consumed directly (no further substitution needed
 /// on the operator's end).
 ///
 /// When `--auto-distill` is set, the runner populates
 /// [`Self::minimal_payload`] and [`Self::minimal_repro_curl`] with
-/// the ddmin-reduced form — typically MUCH shorter than the
+/// the ddmin-reduced form, typically MUCH shorter than the
 /// original, easier to drop into a pentest report.
 #[derive(Debug, Clone)]
 pub(crate) struct BypassRecord {
@@ -73,7 +73,7 @@ pub(crate) struct BypassRecord {
     pub minimal_repro_curl: Option<String>,
 }
 
-/// Outcome of firing one variant — what `is_waf_block` decided plus
+/// Outcome of firing one variant, what `is_waf_block` decided plus
 /// the raw transport result so the runner can count errors separately
 /// from blocks.
 #[derive(Debug)]
@@ -96,7 +96,7 @@ pub(crate) async fn run_scan_raw(
 
     if !template.has_injection_marker() {
         eprintln!(
-            "{} raw request template has no `§§` injection marker — \
+            "{} raw request template has no `§§` injection marker. \
              every variant would fire the same un-mutated request. \
              Add `§§` to the URL, a header value, or the body where \
              you want the payload substituted.",
@@ -193,7 +193,7 @@ pub(crate) async fn run_scan_raw(
                 });
                 if scan_text {
                     eprintln!(
-                        "  {} variant {idx}: BYPASS — {}",
+                        "  {} variant {idx}: BYPASS: {}",
                         "✓".bright_green().bold(),
                         v.payload.chars().take(80).collect::<String>().yellow()
                     );
@@ -208,7 +208,7 @@ pub(crate) async fn run_scan_raw(
             Err(e) => {
                 errors += 1;
                 if scan_text {
-                    eprintln!("  {} variant {idx}: error — {e}", "!".yellow().bold());
+                    eprintln!("  {} variant {idx}: error: {e}", "!".yellow().bold());
                 }
             }
         }
@@ -267,7 +267,7 @@ pub(crate) async fn run_scan_raw(
             let minimum = crate::distill_cmd::ddmin(&record.payload, predicate).await;
             distill_fires_total += u64::from(fires.load(std::sync::atomic::Ordering::SeqCst));
             // Only record if the distillation actually shortened
-            // anything (or kept it identical — still record the
+            // anything (or kept it identical, still record the
             // result so JSON consumers always see the field).
             let minimal_mutated = template.with_payload(&minimum);
             record.minimal_repro_curl = Some(minimal_mutated.to_curl());
@@ -313,7 +313,7 @@ pub(crate) async fn run_scan_raw(
 
 /// Build the reqwest client mirroring `scan::run_scan`'s setup
 /// (timeout, redirects, browser headers, pentest pivot flags). Session-
-/// init is intentionally skipped in `-r` mode — the operator's
+/// init is intentionally skipped in `-r` mode, the operator's
 /// captured request file ALREADY carries any cookies / auth headers
 /// they need; layering a second session would double-set them.
 fn build_http_client(args: &ScanArgs) -> Result<Client, ExitCode> {
@@ -344,7 +344,7 @@ fn build_http_client(args: &ScanArgs) -> Result<Client, ExitCode> {
 
 /// Fire a single mutated request and classify the response. Skips
 /// the `Host` and `Content-Length` headers because reqwest
-/// re-derives both — passing stale values would confuse routing.
+/// re-derives both (passing stale values would confuse routing).
 async fn fire_one(http: &Client, raw: &RawRequest) -> Result<FireOutcome, String> {
     let method = Method::from_bytes(raw.method.as_bytes())
         .map_err(|e| format!("invalid method {:?}: {e}", raw.method))?;
@@ -363,7 +363,7 @@ async fn fire_one(http: &Client, raw: &RawRequest) -> Result<FireOutcome, String
     // §15 OOM / decompression-bomb: cap the body read so a hostile WAF
     // can't serve a gzip-bomb that expands to GBs. The default 8 MiB cap
     // is more than enough for WAF block/pass pages. On overrun treat the
-    // body as empty — is_waf_block falls back to status-only heuristics.
+    // body as empty (is_waf_block falls back to status-only heuristics).
     let body = crate::safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)
         .await
         .unwrap_or_default();
@@ -426,7 +426,7 @@ fn emit_text(
                     _ => String::new(),
                 }
             );
-            // Prefer the minimal repro when auto-distill is on —
+            // Prefer the minimal repro when auto-distill is on 
             // shorter payloads are easier to share / report.
             println!(
                 "{}",
@@ -684,7 +684,7 @@ mod tests {
     }
 
     fn args_for(addr: std::net::SocketAddr, payload: &str, format: &str) -> ScanArgs {
-        // GET ?q=<payload-with-marker> against the mock — but the
+        // GET ?q=<payload-with-marker> against the mock, but the
         // runner gets a TEMPLATE, not args.target. Args fields are
         // unused here EXCEPT payload, level, encoding_only, format.
         let _ = addr;
@@ -779,7 +779,7 @@ mod tests {
 
     #[tokio::test]
     async fn runner_honors_cancel_token_before_firing_first_variant() {
-        // Cancel BEFORE the loop runs — runner should exit cleanly
+        // Cancel BEFORE the loop runs, runner should exit cleanly
         // without firing anything. Confirms the cancel path is
         // honoured (no hung scans on Ctrl-C).
         let addr = spawn_mock_waf().await;
@@ -945,7 +945,7 @@ mod tests {
 
     #[tokio::test]
     async fn runner_with_post_body_template_substitutes_payload_into_body() {
-        // POST template with §§ in the body — runner substitutes,
+        // POST template with §§ in the body, runner substitutes,
         // mock WAF sees the substituted body.
         let addr = spawn_mock_waf().await;
         let template = RawRequest {

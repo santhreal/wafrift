@@ -1,7 +1,7 @@
 //! Truth contract for the equiv bridge: solver/preimage output is the
 //! canonical `EquivPayload`, consumed by the *exact* scald loop body
 //! with zero per-member handling change, and every member is sound
-//! (its declared sink reconstructs the attack — anti-rig).
+//! (its declared sink reconstructs the attack (anti-rig)).
 
 use wafrift_grammar::grammar::equiv::xss_delivered;
 use wafrift_wafmodel::{norm_mismatch_members, sink_for_tag};
@@ -29,7 +29,7 @@ fn every_bridge_member_reconstructs_the_attack_under_its_declared_sink() {
     }
     assert!(
         !tags.contains(&"norm_mismatch_bestfit"),
-        "best-fit no-ops on a quote-free XSS attack — must be skipped, not emitted \
+        "best-fit no-ops on a quote-free XSS attack, must be skipped, not emitted \
          as the raw attack; got {tags:?}"
     );
 
@@ -94,7 +94,7 @@ fn bridge_members_are_consumed_by_the_unchanged_scald_loop() {
     let target = "https://victim.example/app";
 
     // The canonical static catalog AND the bridge members flow through
-    // ONE identical loop — proof they are the same type with the same
+    // ONE identical loop, proof they are the same type with the same
     // handling (zero downstream change).
     let combined = xss_delivered(attack, 16)
         .into_iter()
@@ -111,7 +111,7 @@ fn bridge_members_are_consumed_by_the_unchanged_scald_loop() {
             saw_norm_mismatch = true;
             // The bridge produced an ENCODED payload (the origin, not
             // wafrift, decodes it). Invariant is on the member payload
-            // itself — the delivery layer's own URL-encoding of the
+            // itself, the delivery layer's own URL-encoding of the
             // query value is orthogonal.
             assert!(
                 m.payload.contains("%25")

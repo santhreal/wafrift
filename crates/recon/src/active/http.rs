@@ -1,10 +1,10 @@
 //! HTTP GET probe: collect response headers and classify via [`super::HeaderRules`].
 //!
-//! § Safety note — body drain (§15 OOM defence):
+//! § Safety note, body drain (§15 OOM defence):
 //! After header collection the response body is drained so the underlying TCP
 //! connection can return to the pool. Pre-R49 this used `.bytes().await` with
 //! the comment "bounded by client timeout". A timeout bounds wall-clock time,
-//! NOT decompressed bytes — a gzip bomb served at 1 KB/s exhausts the full
+//! NOT decompressed bytes, a gzip bomb served at 1 KB/s exhausts the full
 //! timeout window while expanding 100× in memory. The current implementation
 //! uses a `DRAIN_CAP`-bounded `.chunk()` loop instead.
 
@@ -53,7 +53,7 @@ pub async fn probe_http_headers_with_rules(
         // `302 Location: http://169.254.169.254/` would walk this probe into
         // cloud metadata / RFC1918 (this client carries no BogonFilteringResolver,
         // unlike the EvasionClient/proxy). A header-fingerprint probe wants the
-        // target's DIRECT response anyway — the redirect response's own headers
+        // target's DIRECT response anyway, the redirect response's own headers
         // (Location, Server, …) are themselves a fingerprint signal.
         .redirect(reqwest::redirect::Policy::none())
         .default_headers(recon_http_default_headers())
@@ -89,7 +89,7 @@ pub async fn probe_http_headers_with_rules(
 
     // Drain body so the connection can be pooled.
     // §15 OOM / decompression-bomb defence: the old `.bytes().await` with
-    // the comment "bounded by client timeout" was NOT byte-bounded — a
+    // the comment "bounded by client timeout" was NOT byte-bounded, a
     // gzip bomb served at 1 KB/s exhausts the full timeout window while
     // expanding to hundreds of MiB. Read chunk-by-chunk and stop after a
     // modest cap (headers are all we need; body content is discarded).
@@ -99,7 +99,7 @@ pub async fn probe_http_headers_with_rules(
     while let Ok(Some(chunk)) = resp.chunk().await {
         drained = drained.saturating_add(chunk.len());
         if drained >= DRAIN_CAP {
-            break; // cap hit — drop the connection; classifier already has the headers
+            break; // cap hit, drop the connection; classifier already has the headers
         }
     }
 
@@ -140,7 +140,7 @@ mod tests {
         let banned = concat!("resp.", "bytes().", "await");
         assert!(
             !src.contains(banned),
-            "recon http.rs must not use unbounded .bytes().await drain — \
+            "recon http.rs must not use unbounded .bytes().await drain. \
              decompression-bomb regression"
         );
     }

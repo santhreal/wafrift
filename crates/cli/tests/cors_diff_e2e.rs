@@ -66,7 +66,7 @@ fn cors_diff_finds_high_severity_on_reflective_mock() {
         "--timeout-secs",
         "30",
     ]);
-    assert_eq!(code, 0, "cors-diff exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "cors-diff exit 0, stderr:\n{stderr}");
     let p: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     let high = p["divergences"]["high"].as_u64().unwrap_or(0);
     assert!(
@@ -98,13 +98,13 @@ fn cors_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "cors", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff cors --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff cors --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["cors-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift cors-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift cors-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }

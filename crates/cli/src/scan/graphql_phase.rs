@@ -43,7 +43,7 @@ const TYPENAME_PROBE: &str = r#"{"query":"{__typename}"}"#;
 /// Returns `true` when a response body looks like it came from a GraphQL
 /// endpoint (contains a top-level `"data"` or `"errors"` JSON key).
 fn looks_like_graphql_response(body: &str) -> bool {
-    // Fast substring match — avoids a full JSON parse on every probe.
+    // Fast substring match (avoids a full JSON parse on every probe).
     body.contains(r#""data""#) || body.contains(r#""errors""#)
 }
 
@@ -51,7 +51,7 @@ fn looks_like_graphql_response(body: &str) -> bool {
 /// first path that responds as a GraphQL endpoint, or `None`.
 ///
 /// Uses a 5-second timeout per probe (GraphQL endpoints are typically
-/// fast — if it's hanging it's not a GraphQL endpoint we can use).
+/// fast (if it's hanging it's not a GraphQL endpoint we can use)).
 pub(crate) async fn detect_graphql_endpoint(
     http: &reqwest::Client,
     base_url: &str,
@@ -84,7 +84,7 @@ pub(crate) async fn detect_graphql_endpoint(
         }
 
         // §15 OOM / decompression-bomb defence: `.text().await` is
-        // unbounded — a hostile endpoint can serve a gzip bomb that
+        // unbounded, a hostile endpoint can serve a gzip bomb that
         // expands to GBs while we're probing for GraphQL. Cap at 64 KiB
         // (more than enough for a `{__typename}` probe response; the
         // comment previously claimed "bounded to 64 KB" but the code was
@@ -121,7 +121,7 @@ pub(crate) async fn detect_graphql_endpoint(
 /// scan's candidate pool. Returns `(payloads, endpoint_url)` where
 /// `endpoint_url` is:
 /// - the auto-detected URL (when `force_graphql` is false)
-/// - the base URL itself (when `force_graphql` is true — the operator
+/// - the base URL itself (when `force_graphql` is true, the operator
 ///   asserted the endpoint is GraphQL)
 ///
 /// Returns `None` when `force_graphql` is false AND no GraphQL endpoint
@@ -136,7 +136,7 @@ pub(crate) async fn build_graphql_payloads(
         if scan_text {
             use colored::Colorize;
             println!(
-                "  {} --graphql flag set — injecting GraphQL evasion payloads without detection",
+                "  {} --graphql flag set, injecting GraphQL evasion payloads without detection",
                 "[graphql]".bold().yellow()
             );
         }
@@ -198,7 +198,7 @@ mod tests {
     fn build_graphql_payloads_forced_returns_all_classes() {
         // Validate the payload battery covers the three required classes
         // without network access (force_graphql=true, but we won't call
-        // the async fn — instead we test the underlying library directly).
+        // the async fn (instead we test the underlying library directly)).
         let payloads = wafrift_graphql::all_evasion_payloads();
         let has_alias_flood = payloads.iter().any(|p| p.contains("AliasFlood"));
         let has_introspection = payloads.iter().any(|p| p.contains("__schema"));

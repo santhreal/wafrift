@@ -3,11 +3,11 @@
 //!
 //! These commands perform HTTP/DNS/TCP in their core logic, so we only
 //! test the offline portions:
-//!   - `import-curl`   — flag parsing and mutual-exclusion validation
-//!   - `legendary`     — help and argument validation
-//!   - `origin-hints`  — help and missing-host error
+//!   - `import-curl`: flag parsing and mutual-exclusion validation
+//!   - `legendary`: help and argument validation
+//!   - `origin-hints`: help and missing-host error
 //!
-//! No mocks, no external connections — all tests exit before any I/O.
+//! No mocks, no external connections (all tests exit before any I/O).
 
 mod common;
 use common::wafrift;

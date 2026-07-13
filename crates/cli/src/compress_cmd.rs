@@ -1,4 +1,4 @@
-//! `wafrift compress` — wrap a request body in one or more
+//! `wafrift compress`: wrap a request body in one or more
 //! `Content-Encoding` layers for the compression-confusion attack.
 //!
 //! Most WAFs inspect raw request bytes, NOT the decompressed body.
@@ -6,7 +6,7 @@
 //! vendor support); origins ARE brotli-capable since Chrome 49 /
 //! Firefox 44 / nginx 1.11. Wrap a payload in `br` and the rule
 //! corpus that matches on the plain bytes never gets a chance to
-//! match — the origin decompresses and processes the malicious
+//! match, the origin decompresses and processes the malicious
 //! body fine.
 //!
 //! The CLI is intentionally a building block, not an end-to-end
@@ -16,7 +16,7 @@
 //! into their HTTP client of choice:
 //!
 //! ```sh
-//! # gzip + br chain — outermost layer first, RFC 9110 §8.4
+//! # gzip + br chain, outermost layer first, RFC 9110 §8.4
 //! wafrift compress --algo gzip --algo br < attack.json > body.bin
 //! # stderr: Content-Encoding: gzip, br
 //! curl -X POST https://target -H 'Content-Encoding: gzip, br' \
@@ -37,7 +37,7 @@ use wafrift_encoding::compression::{Algorithm, chain};
 #[derive(Args, Debug)]
 pub(crate) struct CompressArgs {
     /// Compression algorithm. May be repeated to chain layers in
-    /// RFC 9110 §8.4 order — the FIRST `--algo` is the OUTERMOST
+    /// RFC 9110 §8.4 order, the FIRST `--algo` is the OUTERMOST
     /// wrapper, the LAST is the innermost (closest to the original
     /// body). `--algo gzip --algo br` produces `gzip(brotli(body))`
     /// with `Content-Encoding: gzip, br`. Supported: `gzip`,
@@ -63,7 +63,7 @@ pub(crate) struct CompressArgs {
     /// Output format. `text` (default) emits the compressed bytes to
     /// stdout / `--output` and the `Content-Encoding` header on
     /// stderr. `json` emits a single object to stdout with the body
-    /// base64-encoded — useful for shell scripts that capture both
+    /// base64-encoded, useful for shell scripts that capture both
     /// pieces in one stream.
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
@@ -72,8 +72,8 @@ pub(crate) struct CompressArgs {
 /// Entry point.
 ///
 /// # Exit codes
-/// - `ExitCode::from(2)` — bad user input: unrecognised algorithm name.
-/// - `ExitCode::from(1)` — I/O failure (input read, output write),
+/// - `ExitCode::from(2)`: bad user input: unrecognised algorithm name.
+/// - `ExitCode::from(1)`: I/O failure (input read, output write),
 ///   compression-chain failure (e.g. chain depth above the safety cap),
 ///   or no input source supplied.
 pub(crate) fn run_compress(args: CompressArgs) -> ExitCode {
@@ -101,7 +101,7 @@ pub(crate) fn run_compress(args: CompressArgs) -> ExitCode {
     // zero attack surface. Refuse empty input.
     if body.is_empty() {
         eprintln!(
-            "{} input was empty — refusing to emit a header-only \
+            "{} input was empty, refusing to emit a header-only \
              compressed blob. Did the upstream command fail or produce \
              zero bytes?",
             "Input error:".red().bold()
@@ -133,7 +133,7 @@ fn parse_algorithms(raw: &[String]) -> Result<Vec<Algorithm>, String> {
         // CLI-layer convenience alias: `brotli` → `br`. This command's own
         // help prose ("gzip / deflate / brotli / chain", "Brotli is the
         // headline gap") names the algorithm in full, so an operator typing
-        // `--algo brotli` is following the docs — but `br` is the only valid
+        // `--algo brotli` is following the docs, but `br` is the only valid
         // HTTP Content-Encoding TOKEN, so the domain `Algorithm::from_token`
         // (which also parses real header strings in `decompress`) correctly
         // rejects `brotli`. We normalise at the CLI boundary instead of
@@ -157,7 +157,7 @@ fn parse_algorithms(raw: &[String]) -> Result<Vec<Algorithm>, String> {
 }
 
 /// Cap on the input body. A compressed-confusion attack wraps a
-/// single HTTP request body — even fat JSON payloads stay well
+/// single HTTP request body, even fat JSON payloads stay well
 /// under 1 MiB in practice. 16 MiB is a generous cap that catches
 /// both `--input /dev/zero` operator typos AND a malicious upstream
 /// pipeline trying to OOM the CLI via unbounded stdin.
@@ -170,12 +170,12 @@ fn read_input(args: &CompressArgs) -> Result<Vec<u8>, String> {
     if let Some(path) = &args.input {
         return read_bounded_file(path, MAX_COMPRESS_INPUT_BYTES);
     }
-    Err("no input source — pass `--input PATH` or `--stdin`".into())
+    Err("no input source, pass `--input PATH` or `--stdin`".into())
 }
 
 /// Read stdin in chunks, aborting at the cap. Delegates to the
-/// canonical bounded-stdin reader in `safe_body` — one OOM guard for
-/// the whole crate — mapping its `ReadError` onto the `String` error
+/// canonical bounded-stdin reader in `safe_body`: one OOM guard for
+/// the whole crate, mapping its `ReadError` onto the `String` error
 /// surface this command uses.
 fn read_bounded_stdin(max_bytes: usize) -> Result<Vec<u8>, String> {
     crate::safe_body::read_bounded_stdin_bytes(max_bytes).map_err(|e| e.to_string())
@@ -190,7 +190,7 @@ fn read_bounded_file(path: &std::path::Path, max_bytes: usize) -> Result<Vec<u8>
     let f = std::fs::File::open(path).map_err(|e| {
         // Operator footgun: many users assume `--input PAYLOAD` is
         // the payload string itself, not a file path.  When the
-        // "file" doesn't exist, point them at the correct flag —
+        // "file" doesn't exist, point them at the correct flag 
         // `--stdin` for inline strings (the only argv-NUL-safe
         // path) or `echo 'X' | wafrift compress --stdin`.
         format!(
@@ -358,7 +358,7 @@ mod tests {
     #[test]
     fn run_compress_without_input_source_returns_error_code() {
         let a = args(&["gzip"], false);
-        // No --input, no --stdin set — must reject with code 1.
+        // No --input, no --stdin set (must reject with code 1).
         let code = run_compress(a);
         let s = format!("{code:?}");
         assert!(
@@ -378,7 +378,7 @@ mod tests {
     }
 
     // The full end-to-end (stdin -> compressed body on stdout) is
-    // exercised by integration tests under tests/ — running them
+    // exercised by integration tests under tests/, running them
     // unit-side would require capturing stdin/stdout via a fixture,
     // which the binary's #[test] surface doesn't support cleanly.
 
@@ -443,7 +443,7 @@ mod tests {
 
     #[test]
     fn parse_algorithms_rejects_whitespace_only_token() {
-        // A token of just whitespace is operator typo — must
+        // A token of just whitespace is operator typo, must
         // surface an error not silently map to a default algo.
         let err = parse_algorithms(&["   ".into()]).expect_err("whitespace-only invalid");
         assert!(err.contains("supported:"));
@@ -457,7 +457,7 @@ mod tests {
 
     #[test]
     fn parse_algorithms_error_message_includes_user_input_verbatim() {
-        // Operator must see WHICH algo string was bad — the error
+        // Operator must see WHICH algo string was bad, the error
         // message must contain it.
         let err = parse_algorithms(&["snappy42".into()]).expect_err("unknown");
         assert!(err.contains("snappy42"), "must echo the bad token: {err}");
@@ -476,7 +476,7 @@ mod tests {
     fn parse_algorithms_accepts_brotli_full_name_as_cli_alias_for_br() {
         // DOGFOOD (R2): the `compress` help prose names the algorithm in
         // full ("gzip / deflate / brotli / chain", "Brotli is the headline
-        // gap"), so an operator following the docs types `--algo brotli` —
+        // gap"), so an operator following the docs types `--algo brotli` 
         // but `br` is the only valid HTTP Content-Encoding token, so the
         // wire-token parser (`Algorithm::from_token`, also used to parse real
         // header strings in `decompress`) correctly rejects `brotli`. The CLI
@@ -495,7 +495,7 @@ mod tests {
     #[test]
     fn parse_algorithms_brotli_alias_composes_in_a_chain() {
         // `--algo gzip --algo brotli` must produce the same chain as
-        // `--algo gzip --algo br` — the alias is purely an input convenience.
+        // `--algo gzip --algo br`: the alias is purely an input convenience.
         let via_alias = parse_algorithms(&["gzip".into(), "brotli".into()]).expect("alias chain");
         let via_token = parse_algorithms(&["gzip".into(), "br".into()]).expect("token chain");
         assert_eq!(via_alias, via_token);
@@ -606,7 +606,7 @@ mod tests {
 
     #[test]
     fn read_bounded_file_handles_binary_payload_byte_identical() {
-        // Compress-input MUST be binary-clean — gzip/brotli output
+        // Compress-input MUST be binary-clean, gzip/brotli output
         // has no text guarantee. The bounded reader must preserve
         // every byte including high-bit and 0xFF.
         let tmp = std::env::temp_dir().join(format!(
@@ -650,7 +650,7 @@ mod tests {
 
     #[test]
     fn chain_with_deflate_alone_produces_decodable_deflate() {
-        // Mirror the gzip test for deflate — proves the CLI's
+        // Mirror the gzip test for deflate, proves the CLI's
         // deflate path matches the encoding crate's contract end
         // to end.
         use wafrift_encoding::compression::{CompressedBody, decompress};

@@ -1,4 +1,4 @@
-//! TE.TE — duplicate `Transfer-Encoding` headers with one obfuscated line from the mutation matrix.
+//! TE.TE (duplicate `Transfer-Encoding` headers with one obfuscated line from the mutation matrix).
 
 mod common;
 

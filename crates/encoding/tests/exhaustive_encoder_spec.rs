@@ -1,7 +1,7 @@
 //! Exhaustive, truth-asserting spec for every public encoder.
 //!
 //! Every assertion names a concrete value (a decoded round-trip, an
-//! exact byte relationship, a specific entity) — never `!is_empty()`.
+//! exact byte relationship, a specific entity) (never `!is_empty()`).
 //! The matrix is `STRATEGY × INPUT`, so this one file carries a few
 //! thousand independent checks: the encoder catalogue is the moat and
 //! it is tested beyond reasonable doubt.
@@ -12,7 +12,7 @@ use base64::Engine as _;
 use common::max_encoded_output_bytes;
 use wafrift_encoding::{Strategy, encode, encoding::strategy::all_strategies};
 
-/// Input battery — degenerate, realistic-attack, unicode, structural.
+/// Input battery (degenerate, realistic-attack, unicode, structural).
 fn inputs() -> Vec<&'static str> {
     vec![
         // degenerate
@@ -69,7 +69,7 @@ fn non_deterministic(s: Strategy) -> bool {
     matches!(s, Strategy::RandomCase | Strategy::SpaceToRandomBlank)
 }
 
-/// 1. UNIVERSAL CONTRACT — every strategy, every input:
+/// 1. UNIVERSAL CONTRACT, every strategy, every input:
 ///    no error, deterministic (unless random), within the size ceiling.
 #[test]
 fn every_strategy_every_input_is_total_and_bounded() {
@@ -118,7 +118,7 @@ fn has_embedded_pct_hex(s: &str) -> bool {
 /// URL-encode are exactly N-layer reversible **only when the input does
 /// not already embed a valid `%XX`**: an embedded `%XX` is deliberately
 /// preserved (only its `%` is layered) so the server's single decode
-/// restores it — that is the path-traversal evasion primitive, pinned
+/// restores it, that is the path-traversal evasion primitive, pinned
 /// separately below and by `url::tests::double_url_encode_preserves_existing`.
 #[test]
 fn url_encoders_round_trip_exactly() {
@@ -158,7 +158,7 @@ fn url_encoders_round_trip_exactly() {
         assert_eq!(c, inp, "TripleUrlEncode not 3-layer reversible for {inp:?}");
     }
 
-    // Explicit pin of the deliberate pre-encoded-preservation contract —
+    // Explicit pin of the deliberate pre-encoded-preservation contract 
     // the path-traversal evasion this tool exists to carry: one
     // server-side decode of the double-encoded form must yield the
     // traversal, not the literal `%2f` bytes.
@@ -222,7 +222,7 @@ fn case_strategies_preserve_bytes_modulo_case() {
     }
 }
 
-/// 4. JsonEncode escapes string content only — NO surrounding quotes (F67).
+/// 4. JsonEncode escapes string content only. NO surrounding quotes (F67).
 ///    Callers inject the output directly into an existing JSON string field;
 ///    adding our own quotes would break the host document. The content is
 ///    RFC 8259-valid after wrapping in quotes, so we verify round-trip by
@@ -231,7 +231,7 @@ fn case_strategies_preserve_bytes_modulo_case() {
 fn json_encode_is_a_valid_json_string_round_trip() {
     for inp in inputs() {
         let out = encode(inp, Strategy::JsonEncode).unwrap();
-        // No surrounding quotes — content-escaping only.
+        // No surrounding quotes (content-escaping only).
         assert!(
             !out.starts_with('"') || inp.starts_with('"'),
             "JsonEncode({inp:?}) must NOT add surrounding quotes: {out:?}"
@@ -247,9 +247,9 @@ fn json_encode_is_a_valid_json_string_round_trip() {
 
 /// 5. HTML-entity encoders neutralise the dangerous characters AND a
 ///    spec-correct entity decode recovers them exactly (the encoding is
-///    lossless / faithfully reversible — proven, not assumed).
+///    lossless / faithfully reversible (proven, not assumed)).
 ///
-/// Note: `HtmlEntityEncode` is a *full hex-entity* encoder — it emits
+/// Note: `HtmlEntityEncode` is a *full hex-entity* encoder, it emits
 /// `&#xNN;` for every byte, not just `<>"'&`. So the recovery oracle
 /// must be a GENERAL HTML entity decoder (numeric hex `&#xH;`, numeric
 /// decimal `&#D;`, and the named set), not a fixed-string substitutor.
@@ -291,7 +291,7 @@ fn html_entity_encoders_neutralise_and_recover_markup() {
                     continue;
                 }
             }
-            // Not a recognised entity — copy the byte through.
+            // Not a recognised entity (copy the byte through).
             let ch_len = s[i..].chars().next().map_or(1, char::len_utf8);
             out.push_str(&s[i..i + ch_len]);
             i += ch_len;

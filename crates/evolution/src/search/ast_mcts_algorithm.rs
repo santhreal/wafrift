@@ -1,7 +1,7 @@
 //! AST-MCTS [`SearchAlgorithm`] adapter.
 //!
-//! Bridges [`crate::ast_mcts::mcts_search`] — which operates on raw SQL
-//! payload strings — into the [`SearchAlgorithm`] trait so
+//! Bridges [`crate::ast_mcts::mcts_search`], which operates on raw SQL
+//! payload strings, into the [`SearchAlgorithm`] trait so
 //! [`crate::evolution::EvolutionEngine`] can select it alongside
 //! MAP-Elites, Novelty, UCB1, etc.
 //!
@@ -69,7 +69,7 @@ impl<'a> AstMctsOracle for InlineOracle<'a> {
             // so MCTS keeps exploring (we're in ablation mode, not live-fire).
             true
         } else {
-            // With no prior signal, everything is treated as blocked — the
+            // With no prior signal, everything is treated as blocked, the
             // external oracle provides the true signal after the batch.
             true
         }
@@ -157,7 +157,7 @@ impl AstMctsAlgorithm {
     /// baseline chromosome with an empty payload so the engine can warm-start.
     fn replenish(&mut self, n: usize, rng: &mut StdRng) {
         if self.best_payload.is_empty() {
-            // No payload yet — emit baseline chromosomes drawn from gene pool.
+            // No payload yet (emit baseline chromosomes drawn from gene pool).
             for _ in 0..n {
                 self.eval_counter = self.eval_counter.saturating_add(1);
                 let mut c = random_chromosome(&self.gene_pool, rng);
@@ -514,7 +514,7 @@ mod tests {
         alg.initialize(vec![seed], &pool, &mut rng);
 
         let cloned = alg.clone_box();
-        // Mutate clone — original must not change.
+        // Mutate clone (original must not change).
         alg.bypass_found = true;
         assert!(!cloned.best().unwrap().has_gene("non_existent"));
         // Clone's bypass state tracks independently.
@@ -553,7 +553,7 @@ mod tests {
             &mut rng,
         );
         alg.eval_counter = u64::MAX;
-        // request_evaluations calls saturating_add — counter must stay at MAX.
+        // request_evaluations calls saturating_add (counter must stay at MAX).
         let _ = alg.request_evaluations(1, &mut rng);
         assert_eq!(
             alg.eval_counter,
@@ -599,7 +599,7 @@ mod tests {
         // Manually inject NaN into rule_stats (simulating a buggy oracle).
         alg.rule_stats.insert(0, (10, f64::NAN));
 
-        // Submit a valid passing verdict — the NaN total must be cleared.
+        // Submit a valid passing verdict (the NaN total must be cleared).
         let candidates = alg.request_evaluations(2, &mut rng);
         if let Some(c) = candidates.into_iter().next() {
             alg.submit_evaluations(vec![(c.id, OracleVerdict::from_bool(true))]);
@@ -645,7 +645,7 @@ mod tests {
     }
 
     /// A NaN `mean_reward` from a single oracle call must not affect a
-    /// *different* rule's stats entry — the guard is per-entry.
+    /// *different* rule's stats entry (the guard is per-entry).
     #[test]
     fn rule_stats_nan_does_not_cross_contaminate_other_rules() {
         let mut alg = AstMctsAlgorithm::new();

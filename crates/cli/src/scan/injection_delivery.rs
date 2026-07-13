@@ -1,4 +1,4 @@
-//! How payloads reach the target — GET query vs POST form body.
+//! How payloads reach the target. GET query vs POST form body.
 //!
 //! Auto-escalation often pivots to HTML form surfaces; firing variants only
 //! via `?param=` would miss the WAF on the real sink.

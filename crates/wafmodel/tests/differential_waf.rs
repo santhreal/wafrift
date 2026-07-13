@@ -1,9 +1,9 @@
-//! E1 — differential vs independently-specified WAF configs.
+//! E1 (differential vs independently-specified WAF configs).
 //!
 //! The strongest non-Coraza differential available offline: decompile
 //! two configs that differ by **exactly one known rule**, and prove
 //! the learned symmetric difference is *exactly* that rule's language
-//! — nothing more, nothing less. A learner or diff bug shows up as an
+//!, nothing more, nothing less. A learner or diff bug shows up as an
 //! over- or under-approximation of a delta we computed independently.
 
 use wafrift_types::Request;
@@ -30,12 +30,12 @@ fn rule(id: &str, pat: &str) -> Rule {
 fn waf_diff_equals_exactly_the_known_added_rule_language() {
     // Config A: blocks `<s`. Config B: blocks `<s` AND `xy` (one extra
     // rule). The decompiled symmetric difference must be *exactly*
-    // {inputs containing `xy` but not `<s`} — the independently-known
+    // {inputs containing `xy` but not `<s`}, the independently-known
     // delta of adding rule "xy".
     let alpha = Alphabet::new(vec![b'<', b's', b'x', b'y'], b'Z');
     let mut a = SimRegexWaf::new(vec![rule("base", "<s")], 5);
     let mut b = SimRegexWaf::new(vec![rule("base", "<s"), rule("extra", "xy")], 5);
-    // An "exactly the delta — nothing more, nothing less" claim needs
+    // An "exactly the delta, nothing more, nothing less" claim needs
     // *sound* learners. W-method's fault-discovery is only conditional
     // (true_states − hyp_states ≤ extra_states); a shortest
     // counterexample just past that horizon is silently missed (proven
@@ -44,7 +44,7 @@ fn waf_diff_equals_exactly_the_known_added_rule_language() {
     // the diff-enumeration depth and witnesses below.
     // max_len 6 is provably complete here: the minimal DFAs for `<s`
     // and `<s`+`xy` have all Myhill–Nerode distinguishing words of
-    // length ≤ 3, and the diff witnesses (`xy`, `<sxy`) are ≤ 4 — so 6
+    // length ≤ 3, and the diff witnesses (`xy`, `<sxy`) are ≤ 4, so 6
     // soundly certifies exactness while staying fast (5^≤6, not 5^≤10).
     let mut ea = BoundedExhaustiveEq {
         max_len: 6,
@@ -106,7 +106,7 @@ fn waf_diff_equals_exactly_the_known_added_rule_language() {
 fn dual_evaluation_of_a_richer_ruleset_is_self_consistent() {
     // Independent-path differential: the SimRegexWaf evaluator vs the
     // learned automaton must agree on EVERY input over the alphabet up
-    // to length 9 for a multi-rule config — 4^0..9 ≈ 350k checks.
+    // to length 9 for a multi-rule config: 4^0..9 ≈ 350k checks.
     let alpha = Alphabet::new(vec![b'<', b's', b'/'], b'A');
     let mut waf = SimRegexWaf::new(
         vec![rule("r1", "<s"), rule("r2", "s/"), rule("r3", "/<s")],

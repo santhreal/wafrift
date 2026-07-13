@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn replace_with_complex_tautology_inserts_correctly() {
-        // Replace with a string-form tautology — verifies the
+        // Replace with a string-form tautology, verifies the
         // replacement path handles quoted-string patterns
         // alongside numeric ones.
         let result = replace_tautology("' OR 1=1--", "'a'='a'");
@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn detects_tautology_in_mixed_case() {
-        // The detector lowercases first — UPPERCASE tautologies
+        // The detector lowercases first: UPPERCASE tautologies
         // should still register.
         assert!(contains_tautology("' OR 'A' LIKE 'A'--"));
         assert!(contains_tautology("' OR ISNULL(NULL,1)=1--"));

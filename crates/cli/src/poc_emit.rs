@@ -2,7 +2,7 @@
 //!
 //! Wafrift discovers WAF bypasses (a chain of evasion techniques
 //! that flipped a `Blocked` verdict to `Passed`). Until now those
-//! bypasses surfaced only as a row in the bench report — the
+//! bypasses surfaced only as a row in the bench report, the
 //! operator had to manually reconstruct the curl command from the
 //! request fields. This module wires every successful bypass into
 //! [`pocgen::PocGenerator::generate_with_metadata`] so the report
@@ -30,7 +30,7 @@ use wafrift_types::{EvasionResult, Request};
 fn evasion_request_to_seed(req: &Request) -> RequestSeed {
     let mut headers = BTreeMap::new();
     for (k, v) in &req.headers {
-        // Last value wins on duplicate keys — same behaviour as
+        // Last value wins on duplicate keys, same behaviour as
         // pocgen's existing seeds. wafrift's transport collapses
         // duplicate headers via `header_diff_cmd` analysis paths
         // before reaching here in practice, so this is rarely
@@ -90,7 +90,7 @@ pub(crate) fn render_curl_for_bypass(
 }
 
 /// Low-level helper for callers that have raw request components rather
-/// than a typed [`EvasionResult`] — used by the raw-request runner
+/// than a typed [`EvasionResult`], used by the raw-request runner
 /// ([`crate::scan::raw_runner`]) where technique names are `Vec<String>`.
 ///
 /// Builds the [`RequestSeed`] and [`PocMetadata`] inline, then renders
@@ -317,7 +317,7 @@ mod tests {
         );
         let poc = render_curl_for_bypass(&result, None, None).expect("render");
         // pocgen's curl renderer uses printf '%b' …\\xNN escaping
-        // for binary bodies — the `OR 1=1` substring is present in
+        // for binary bodies, the `OR 1=1` substring is present in
         // the escaped form (each char becomes \xHH).
         assert!(
             poc.contains("\\x4f\\x52") || poc.contains("OR"),
@@ -339,7 +339,7 @@ mod tests {
         // the helper. This test pins the current contract.
         let poc = render_curl_for_bypass(&result, None, None).expect("render");
         // At minimum, the confidence line should NOT appear when
-        // there are no techniques and confidence is 0 — actually
+        // there are no techniques and confidence is 0, actually
         // it DOES appear (confidence is Some(0.0)). Just assert
         // the curl command itself rendered.
         assert!(poc.contains("curl"));

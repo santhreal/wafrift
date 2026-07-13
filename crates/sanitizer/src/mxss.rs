@@ -6,13 +6,13 @@
 //! the serialized output through a different path (HTML foreign content, MathML /
 //! SVG integration points, `<noscript>` scripting-state toggles, `<template>`
 //! adoption) and script comes back to life. Confirming an mXSS bypass needs a
-//! real browser — scald — not an in-process model.
+//! real browser (scald (not an in-process model)).
 //!
 //! What this module *can* do statically is flag, from the recovered allow/deny
 //! model, every known mXSS **trigger combination** whose two tags are both
 //! reachable. That is a precise, Tier-B-driven advisory: "this config leaves the
-//! mXSS door open via `<svg><style>` — confirm in a live DOM." Proposed, never
-//! asserted executed — exactly the contract the rest of the decompiler honours.
+//! mXSS door open via `<svg><style>`: confirm in a live DOM." Proposed, never
+//! asserted executed (exactly the contract the rest of the decompiler honours).
 
 use serde::{Deserialize, Serialize};
 
@@ -191,10 +191,10 @@ mod tests {
     #[test]
     fn html_spec_integration_points_are_in_the_table() {
         // The foreign-content HTML integration points (the structural roots of the
-        // well-known DOMPurify namespace-confusion bypasses) MUST be named — the
+        // well-known DOMPurify namespace-confusion bypasses) MUST be named, the
         // miner can never surface them, so the Tier-B table is their only source.
         let combos = mxss_combinations();
-        // MathML text integration point — the Bentkowski annotation-xml element.
+        // MathML text integration point (the Bentkowski annotation-xml element).
         assert!(
             combos
                 .iter()
@@ -214,7 +214,7 @@ mod tests {
     fn a_math_allowing_config_flags_the_annotation_xml_integration_point() {
         // A config that forbids <script> but allows MathML (a real DOMPurify
         // profile for math-rendering apps) leaves the annotation-xml integration
-        // point reachable — the exact namespace-confusion door.
+        // point reachable (the exact namespace-confusion door).
         let m = model(&["script"], None);
         let cands = mxss_candidates(&m);
         let hit = cands

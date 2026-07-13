@@ -1,9 +1,9 @@
 //! Regression test: the auth-bypass probe count is documented in
-//! THREE places — README, `wafrift bypass-probe --help`, and the
+//! THREE places: README, `wafrift bypass-probe --help`, and the
 //! `bypass_probe.rs` module docstring. All three say "230 auth-bypass
 //! header probes". If a contributor adds or removes a probe and
 //! forgets to update the docs, the README + help-text claim becomes
-//! a lie. This test is the single source of truth — it asserts the
+//! a lie. This test is the single source of truth, it asserts the
 //! actual count and fails with a "you also need to update the docs"
 //! message so drift is caught at PR time.
 
@@ -26,7 +26,7 @@ fn auth_bypass_probe_count_matches_documented_value() {
 
 #[test]
 fn auth_bypass_probe_count_is_stable_across_paths() {
-    // The probe count must not depend on the path argument — every
+    // The probe count must not depend on the path argument, every
     // call returns the same fixed set, parameterised only on the
     // path being injected. A regression where path-content changed
     // the count would mean the documented number became per-call

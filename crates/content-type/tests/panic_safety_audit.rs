@@ -14,7 +14,7 @@
 //!   2. Bounded output: total serialized variant bytes stay within
 //!      `input_len * 256 + 1 MiB` (catches accidental blow-up DoS).
 //!   3. `xml_safe_name` always returns a syntactically valid XML Name
-//!      (NameStartChar + NameChar*), never empty, for ANY input — that
+//!      (NameStartChar + NameChar*), never empty, for ANY input, that
 //!      is the function's entire reason to exist.
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -71,7 +71,7 @@ fn adversarial_strings() -> Vec<String> {
         " ",
         "\u{0}",
         "\u{0}\u{1}\u{2}",
-        "1abc",         // digit start — invalid XML NameStartChar
+        "1abc",         // digit start, invalid XML NameStartChar
         "-bad",         // hyphen start
         ".bad",         // dot start
         "xml-reserved", // "xml" prefix is reserved
@@ -94,7 +94,7 @@ fn adversarial_strings() -> Vec<String> {
     v
 }
 
-/// Real serialized size of the variants — the actual bytes that would
+/// Real serialized size of the variants, the actual bytes that would
 /// go on the wire (`Content-Type` header + body), NOT `{:?}` Debug
 /// (which renders a `Vec<u8>` body as `[72, 84, ...]`, ~5× inflated and
 /// a meaningless metric for a DoS-ceiling assertion).
@@ -106,7 +106,7 @@ fn variant_bytes(v: &[wafrift_content_type::ContentTypeVariant]) -> usize {
 /// expandable input is hard-capped (`MAX_VARIANT_INPUT_BYTES`), so the
 /// output is bounded by an absolute constant *regardless of input
 /// size*. This ceiling holds for a 10-byte body and a 10 MB body alike
-/// — that is the entire point of the cap.
+///: that is the entire point of the cap.
 const ABSOLUTE_VARIANT_CEILING: usize = 8 * 1024 * 1024;
 
 #[test]
@@ -133,7 +133,7 @@ fn content_type_transforms_survive_adversarial_corpus() {
                 let got = variant_bytes(&out);
                 assert!(
                     got <= ABSOLUTE_VARIANT_CEILING,
-                    "generate_variants_from_body[{label}] expanded to {got} bytes > absolute ceiling {ABSOLUTE_VARIANT_CEILING} (input was {} bytes — output must NOT scale with input)",
+                    "generate_variants_from_body[{label}] expanded to {got} bytes > absolute ceiling {ABSOLUTE_VARIANT_CEILING} (input was {} bytes, output must NOT scale with input)",
                     b.len()
                 );
             },
@@ -200,7 +200,7 @@ fn content_type_transforms_survive_adversarial_corpus() {
     );
 }
 
-/// Minimal XML 1.0 Name validator (NameStartChar NameChar*) — enough to
+/// Minimal XML 1.0 Name validator (NameStartChar NameChar*), enough to
 /// prove `xml_safe_name`'s output can be dropped into an element/attr
 /// position without producing malformed XML.
 fn is_valid_xml_name(s: &str) -> bool {
@@ -241,7 +241,7 @@ fn is_valid_xml_name(s: &str) -> bool {
 // ───────────────────── pinned regressions (handwritten) ─────────────────────
 
 /// `xml_safe_name` used `char::is_alphanumeric()`, which accepts
-/// Unicode category `No` (e.g. `²` U+00B2) — *not* a valid XML
+/// Unicode category `No` (e.g. `²` U+00B2): *not* a valid XML
 /// `NameChar`. `xml_safe_name("0²")` returned `"_²"`, an element name
 /// that makes the generated XML evasion variant malformed and useless.
 #[test]
@@ -261,7 +261,7 @@ fn regression_xml_safe_name_rejects_non_namechar_unicode() {
 }
 
 /// `generate_variants` re-emits every param per variant. Output MUST be
-/// bounded by an absolute constant no matter how huge the input — a
+/// bounded by an absolute constant no matter how huge the input, a
 /// 4 MB body must not become ~50 MB (the proxy calls this per request).
 #[test]
 fn regression_generate_variants_output_is_input_independent() {
@@ -294,7 +294,7 @@ fn regression_generate_variants_output_is_input_independent() {
         "sanity: a 2-param body should produce less than a 64 KiB one (tiny={tiny_out}, at_cap={at_cap_out})"
     );
     // The decisive contract: growing the input 64× beyond the cap
-    // (64 KiB → 4 MiB) must NOT grow the output — both are clamped to
+    // (64 KiB → 4 MiB) must NOT grow the output, both are clamped to
     // the same `MAX_VARIANT_INPUT_BYTES` of expandable params, so the
     // outputs are within a few percent. Pre-cap this ratio was ~64×.
     let (lo, hi) = (at_cap_out.min(huge_out), at_cap_out.max(huge_out));

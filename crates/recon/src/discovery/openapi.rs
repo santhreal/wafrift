@@ -30,7 +30,7 @@ pub enum DiscoveryError {
     #[error("Wordlist empty")]
     WordlistEmpty,
     #[error(
-        "Discovery input cap exceeded ({what}: {got} > {cap}) — refusing to process hostile-looking spec/response"
+        "Discovery input cap exceeded ({what}: {got} > {cap}), refusing to process hostile-looking spec/response"
     )]
     InputCapExceeded {
         what: &'static str,
@@ -264,7 +264,7 @@ fn request_body_to_points(rb: &Value) -> Vec<InjectionPoint> {
             continue;
         };
         let Some(properties) = schema.get("properties").and_then(Value::as_object) else {
-            // Whole-body injection point — schema with no properties
+            // Whole-body injection point, schema with no properties
             // (e.g. a string body or an array body). Emit one point named
             // after the media type.
             out.push(InjectionPoint {
@@ -286,7 +286,7 @@ fn request_body_to_points(rb: &Value) -> Vec<InjectionPoint> {
             })
             .unwrap_or_default();
         // F107: silently truncate at the per-schema cap rather than
-        // erroring — request_body_to_points returns a Vec (no Result),
+        // erroring, request_body_to_points returns a Vec (no Result),
         // and a partial enumeration is still useful for discovery.
         // The cap is high enough that no realistic spec hits it.
         for (prop_name, _) in properties.iter().take(MAX_OPENAPI_PROPS_PER_SCHEMA) {

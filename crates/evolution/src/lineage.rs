@@ -21,7 +21,7 @@ pub struct MutationOp {
 /// gene tuple. Stored inside `Lineage::Crossover` / `Lineage::Mutation`
 /// instead of `Arc<Chromosome>` so the lineage tree of a long-running
 /// scan is bounded by `O(genes per chromosome)` per ancestor instead
-/// of `O(full ancestry chain)` — the earlier full-Chromosome arcs
+/// of `O(full ancestry chain)`: the earlier full-Chromosome arcs
 /// transitively dragged the parent's own `Lineage` field along, so
 /// every grandchild kept its grandparents alive forever and a long
 /// scan would OOM.
@@ -48,9 +48,9 @@ pub enum Lineage {
     },
     /// Created via crossover of two parents.
     Crossover {
-        /// Parent A snapshot — genes only, breaks ancestry chain.
+        /// Parent A snapshot (genes only, breaks ancestry chain).
         parent_a: Arc<ParentSnapshot>,
-        /// Parent B snapshot — genes only, breaks ancestry chain.
+        /// Parent B snapshot (genes only, breaks ancestry chain).
         parent_b: Arc<ParentSnapshot>,
         /// Strategy used.
         strategy: String,
@@ -59,7 +59,7 @@ pub enum Lineage {
     },
     /// Created via mutation of a single parent.
     Mutation {
-        /// Parent snapshot — genes only, breaks ancestry chain.
+        /// Parent snapshot (genes only, breaks ancestry chain).
         parent: Arc<ParentSnapshot>,
         /// Log of applied mutation operations.
         log: Vec<MutationOp>,
@@ -173,7 +173,7 @@ impl BypassEntry {
     pub fn from_chromosome(chromosome: &Chromosome, target_waf: Option<String>) -> Self {
         // SHA-256 over a deterministic gene encoding. Earlier versions
         // used the 64-bit DefaultHasher, which collides via birthday
-        // attack at roughly 2^32 chromosomes — well within reach of a
+        // attack at roughly 2^32 chromosomes, well within reach of a
         // long-running scan, causing BypassCorpus::add to silently
         // dedupe distinct bypass discoveries.
         //
@@ -214,8 +214,8 @@ pub struct BypassCorpus {
     pub schema_version: u32,
     /// O(1) dedup index over `entries[*].payload_hash`. Skipped in
     /// serialization (the `entries` Vec is the source of truth) and
-    /// lazily rebuilt after a deserialize/load — where this arrives
-    /// empty — via [`Self::ensure_index`]. Pre-fix `add` did a linear
+    /// lazily rebuilt after a deserialize/load, where this arrives
+    /// empty, via [`Self::ensure_index`]. Pre-fix `add` did a linear
     /// `entries.iter().any(...)` scan on every insert (O(n) per add →
     /// O(n²) over a campaign that accumulates k bypasses), and the
     /// engine layered a SECOND, broken scan on top (it compared a
@@ -229,7 +229,7 @@ impl BypassCorpus {
     pub const CURRENT_SCHEMA: u32 = 1;
 
     /// Maximum number of bypass entries retained in memory. Bypasses are
-    /// valuable (the whole point of a campaign), so this is generous —
+    /// valuable (the whole point of a campaign), so this is generous 
     /// but it is NOT unbounded: a hostile target that yields a fresh
     /// "bypass" per probe would otherwise grow `entries` straight toward
     /// the 256 MiB save/load cliff (`MAX_CORPUS_BYTES`), which discards
@@ -347,7 +347,7 @@ impl BypassCorpus {
                 serde_json::from_str(line).map_err(EvolutionError::DeserializationFailed)?;
             // R52 pass-14 I3 (CLAUDE.md §11 UTILIZATION): pre-fix
             // the per-entry schema_version was deserialised and
-            // immediately discarded — corpus then claimed
+            // immediately discarded, corpus then claimed
             // CURRENT_SCHEMA on itself without checking each entry.
             // Future schema changes would silently misparse old
             // entries with no error. Now we tolerate entries at
@@ -361,7 +361,7 @@ impl BypassCorpus {
                     entry_schema = entry.schema_version,
                     current_schema = BypassEntry::CURRENT_SCHEMA,
                     "BypassCorpus::load skipping entry from a different schema \
-                     version — re-run scan to rebuild at current schema"
+                     version: re-run scan to rebuild at current schema"
                 );
                 continue;
             }
@@ -395,7 +395,7 @@ mod tests {
 
     /// The O(1) dedup index must be rebuilt after a serde round-trip
     /// (it is `#[serde(skip)]`), so a duplicate added to a LOADED corpus
-    /// is still rejected — otherwise a resumed campaign would re-append
+    /// is still rejected, otherwise a resumed campaign would re-append
     /// every prior bypass on its first new find.
     #[test]
     fn dedup_survives_serde_round_trip() {

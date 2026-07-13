@@ -1,4 +1,4 @@
-//! Learning cache — persistent per-WAF, per-payload-type pipeline memory.
+//! Learning cache (persistent per-WAF, per-payload-type pipeline memory).
 //!
 //! After a successful bypass, the winning pipeline is cached to disk
 //! and re-used on subsequent scans of the same WAF + payload type.
@@ -84,7 +84,7 @@ impl LearningCache {
     /// A corrupted cache file (kill-9 mid-save, disk corruption, partial
     /// flush) is moved aside to `<path>.corrupt-<epoch>` and a fresh
     /// empty cache is returned. Crashing the whole strategy engine on
-    /// one bad JSON file would lose all subsequent learning — better to
+    /// one bad JSON file would lose all subsequent learning, better to
     /// surface the corruption via `tracing::warn` and keep going.
     ///
     /// # Errors
@@ -102,7 +102,7 @@ impl LearningCache {
             // a bounded heap and stack via that bound.
             //
             // Audit (2026-05-27): the previous fix used metadata().len()
-            // followed by read_to_string() — a TOCTOU window where a
+            // followed by read_to_string(), a TOCTOU window where a
             // symlink swap or file growth between the two calls could
             // bypass the cap. Use File::open() + take(cap+1) instead:
             // the cap is enforced DURING the read on the same open
@@ -178,7 +178,7 @@ impl LearningCache {
     ///
     /// The stored pipeline is ALWAYS overwritten with the
     /// just-succeeded pipeline. Pre-fix this used `or_insert`
-    /// which left the existing entry's pipeline untouched — if
+    /// which left the existing entry's pipeline untouched, if
     /// the first interaction for a key was a `record_failure`,
     /// the failing pipeline got stored permanently and every
     /// subsequent `record_success` (with a DIFFERENT, working
@@ -196,7 +196,7 @@ impl LearningCache {
                 attempts: 0,
                 last_success_epoch: 0,
             });
-        // Always update to the just-succeeded pipeline — even if
+        // Always update to the just-succeeded pipeline, even if
         // it's the same shape as the cached one, this is cheap.
         entry.pipeline = pipeline;
         entry.successes = entry.successes.saturating_add(1);
@@ -206,7 +206,7 @@ impl LearningCache {
 
     /// Record a failed attempt.
     ///
-    /// Failures DO NOT overwrite the stored pipeline — the cached
+    /// Failures DO NOT overwrite the stored pipeline, the cached
     /// winner is set by `record_success`. If no success has been
     /// recorded yet, the failing pipeline is what's stored, but
     /// the next success will replace it.
@@ -245,7 +245,7 @@ impl LearningCache {
         // (cross-FS rename on /tmp would silently fall back to copy).
         let tmp = path.with_extension(format!("tmp.{}.{}", std::process::id(), current_epoch()));
         // Scope the file handle so the OS releases its descriptor before
-        // we rename — Windows would otherwise refuse the rename.
+        // we rename: Windows would otherwise refuse the rename.
         {
             use std::io::Write;
             let mut f = fs::File::create(&tmp).map_err(LearningCacheError::Io)?;
@@ -382,7 +382,7 @@ mod tests {
         // Regression for F44: pre-fix record_success used
         // or_insert which left the existing entry's pipeline
         // untouched. If the first call was record_failure with a
-        // losing pipeline, the loser became permanent — the
+        // losing pipeline, the loser became permanent, the
         // planner promoted it to every future scan.
         let mut cache = LearningCache::default();
         let loser = EvasionPipeline::new("LOSER", vec![], 1);

@@ -1,7 +1,7 @@
 //! Offline bypass mining over the decompiled model.
 //!
 //! Once the WAF is an [`Sfa`] (accept ⇔ *passes*), finding a bypass is
-//! no longer a search against a live target — it is a finite-automaton
+//! no longer a search against a live target, it is a finite-automaton
 //! intersection done at memory speed with **zero further queries**:
 //!
 //! ```text
@@ -12,7 +12,7 @@
 //! bypass with respect to the learned model (length-then-lex minimum,
 //! deterministic). The symmetric difference of two learned models is
 //! the exact, transferable set of inputs one WAF blocks and the other
-//! lets through — a Cloudflare-vs-CRS diff with no live traffic.
+//! lets through (a Cloudflare-vs-CRS diff with no live traffic).
 //!
 //! Pure Rust, zero-config: this is automaton algebra, no GPU and no
 //! network. (vyre/GPU acceleration of the intersection is an additive
@@ -32,7 +32,7 @@ use crate::sfa::{BytePred, Sfa, StateId};
 /// bytes), using the catch-all representative as the probe is WRONG when
 /// the needle itself contains catch-all bytes: the representative differs
 /// from those needle bytes, so `kmp_next` never advances the match
-/// counter — the SFA accepts zero words, and zero bypasses are mined.
+/// counter (the SFA accepts zero words, and zero bypasses are mined).
 ///
 /// The fix refines the catch-all class at each KMP state by enumerating
 /// all 256 bytes and grouping them by their KMP successor state. Each
@@ -142,7 +142,7 @@ pub fn attack_grammar(_alpha: &Alphabet, needles: &[&[u8]]) -> Sfa {
 /// Mine up to `max` bypasses for `attack` against `learned`, shortest
 /// (provably minimal) first, none longer than `max_len`. Each result
 /// is a concrete byte string the *modelled* WAF passes and that is an
-/// attack — replay it against the real oracle to confirm zero
+/// attack, replay it against the real oracle to confirm zero
 /// model↔reality gap (the truth-suite does exactly that).
 #[must_use]
 pub fn mine_bypasses(learned: &Sfa, attack: &Sfa, max: usize, max_len: usize) -> Vec<Vec<u8>> {
@@ -187,12 +187,12 @@ mod tests {
     /// Needle bytes that are ALL in the catch-all class (never
     /// distinguished). The old code fed the catch-all representative to
     /// `kmp_next`, which never matched the needle bytes, so the SFA
-    /// accepted nothing — zero bypasses mined for any needle whose bytes
+    /// accepted nothing, zero bypasses mined for any needle whose bytes
     /// weren't distinguished.
     #[test]
     fn kmp_sfa_matches_needle_with_catch_all_bytes() {
         // Distinguished: only b'Z'. Catch-all representative: b'Z'.
-        // Needle: b"select" — all bytes are in the catch-all class.
+        // Needle: b"select" (all bytes are in the catch-all class).
         let alpha = Alphabet::new(vec![], b'Z');
         let g = attack_grammar(&alpha, &[b"select"]);
         let learned = pass_all(&alpha);
@@ -213,7 +213,7 @@ mod tests {
     }
 
     /// Needle with a mix: some bytes distinguished, some catch-all.
-    /// `b"'or'"` — b'\'' is distinguished; b'o', b'r' are catch-all.
+    /// `b"'or'"`: b'\'' is distinguished; b'o', b'r' are catch-all.
     #[test]
     fn kmp_sfa_matches_needle_with_mixed_distinguished_and_catch_all_bytes() {
         let alpha = Alphabet::new(vec![b'\''], b'Z');
@@ -234,7 +234,7 @@ mod tests {
     }
 
     /// A needle where the catch-all byte happens to equal the catch-all
-    /// representative — the old code worked in this edge case. Confirm
+    /// representative, the old code worked in this edge case. Confirm
     /// the fix doesn't break it.
     #[test]
     fn kmp_sfa_matches_needle_whose_bytes_happen_to_be_the_representative() {
@@ -295,7 +295,7 @@ mod tests {
     /// function path when the needle byte IS in the catch-all class.
     #[test]
     fn kmp_sfa_self_overlapping_catch_all_needle() {
-        // Needle b"aaa" — all catch-all (representative b'X').
+        // Needle b"aaa" (all catch-all (representative b'X')).
         let alpha = Alphabet::new(vec![], b'X');
         let g = attack_grammar(&alpha, &[b"aaa"]);
         let learned = pass_all(&alpha);
@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn attack_grammar_union_of_distinguished_and_catch_all_needles() {
         let alpha = Alphabet::new(vec![b'<', b'/'], b'Z');
-        // b"</" — both distinguished. b"union" — all catch-all.
+        // b"</" (both distinguished. b"union" (all catch-all)).
         let g = attack_grammar(&alpha, &[b"</", b"union"]);
         let learned = pass_all(&alpha);
 
@@ -333,7 +333,7 @@ mod tests {
             "shortest word {shortest_angle:?} does not contain b\"</\""
         );
 
-        // Test b"union" independently: all catch-all bytes — the main F-MINE-01
+        // Test b"union" independently: all catch-all bytes, the main F-MINE-01
         // regression case.
         let g_union = attack_grammar(&alpha, &[b"union"]);
         let shortest_union = learned

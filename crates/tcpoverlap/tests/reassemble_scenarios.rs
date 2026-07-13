@@ -1,5 +1,5 @@
 //! Concrete multi-segment reassembly scenarios beyond the two-segment cases the
-//! unit tests cover — triple overlaps, mid-chain overlaps, and extending
+//! unit tests cover, triple overlaps, mid-chain overlaps, and extending
 //! segments, each asserted byte-for-byte under the relevant policy.
 
 use wafrift_tcpoverlap::policy::ReassemblyPolicy::{Bsd, First, Last, Linux};

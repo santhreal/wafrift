@@ -2,7 +2,7 @@
 //!
 //! Shipped JavaScript is minified, but production builds frequently ship a
 //! companion `*.map` (referenced by a `//# sourceMappingURL=` comment). A v3
-//! source map carries — often verbatim in `sourcesContent` — the **original,
+//! source map carries, often verbatim in `sourcesContent`: the **original,
 //! unminified** module sources, plus a `mappings` string that maps every
 //! minified position back to an original `(source, line, column)`.
 //!
@@ -15,7 +15,7 @@
 //! ## Wire format (Source Map Revision 3)
 //!
 //! A JSON object: `version` (must be 3), `sources` (original file paths),
-//! optional `sourcesContent` (parallel to `sources`), `names`, and `mappings` —
+//! optional `sourcesContent` (parallel to `sources`), `names`, and `mappings` 
 //! a string of `;`-separated lines, each a `,`-separated list of **Base64-VLQ**
 //! segments. Each segment is 1, 4, or 5 signed VLQ-encoded fields, all stored as
 //! *deltas* from the previous segment:
@@ -123,7 +123,7 @@ fn decode_vlq(chars: &[char], pos: usize) -> Result<(i64, usize), SourceMapError
         let continuation = digit & VLQ_CONTINUATION != 0;
         let payload = u64::from(digit & VLQ_MASK);
         // Guard overflow of the u64 accumulator. `payload` is < 2^5, occupying
-        // bits [shift, shift+5); `shift` advances by 5, so it never equals 63 —
+        // bits [shift, shift+5); `shift` advances by 5, so it never equals 63 
         // the boundary is `shift == 60` with `payload >= 16` (which would set
         // bit 64), plus any `shift >= 64`. Written this way it cannot itself
         // shift-overflow (the `1 << (64 - shift)` term only runs for shift in
@@ -208,7 +208,7 @@ pub struct RecoveredSource {
 
 impl SourceMap {
     /// Parse a Source Map v3 from its JSON text. Fails closed on a non-3
-    /// `version` or malformed JSON — a map we cannot trust is never silently
+    /// `version` or malformed JSON, a map we cannot trust is never silently
     /// treated as empty.
     pub fn parse(json: &str) -> Result<Self, SourceMapError> {
         let raw: RawMap =
@@ -234,7 +234,7 @@ impl SourceMap {
     }
 
     /// Recover every original source: its `sourceRoot`-resolved path and the
-    /// embedded content when present. This is the decompiler's headline output —
+    /// embedded content when present. This is the decompiler's headline output 
     /// the readable module sources the minifier was supposed to obscure.
     #[must_use]
     pub fn recovered_sources(&self) -> Vec<RecoveredSource> {
@@ -258,7 +258,7 @@ impl SourceMap {
             .collect()
     }
 
-    /// Concatenate every recovered source that carried embedded content — the
+    /// Concatenate every recovered source that carried embedded content, the
     /// single haystack the sanitizer extractor scans.
     #[must_use]
     pub fn recovered_content(&self) -> String {
@@ -406,7 +406,7 @@ mod tests {
     #[test]
     fn vlq_just_under_the_overflow_boundary_still_decodes() {
         // Same 12-digit run to shift=60, but a 13th payload of 15 ('P' = idx 15)
-        // fits (bits 60..63) — it must decode, not error. Proves the guard is a
+        // fits (bits 60..63), it must decode, not error. Proves the guard is a
         // tight boundary, not an over-eager reject.
         let chars: Vec<char> = "ggggggggggggP".chars().collect();
         let (_v, consumed) = decode_vlq(&chars, 0).expect("payload 15 at shift 60 fits u64");
@@ -489,7 +489,7 @@ mod tests {
         let content = map.recovered_content();
         assert!(content.contains("AAA"));
         assert!(content.contains("CCC"));
-        // The null (missing) source contributes nothing — no empty "null" text.
+        // The null (missing) source contributes nothing (no empty "null" text).
         assert!(!content.contains("null"));
     }
 
@@ -613,7 +613,7 @@ mod tests {
             prop_assert_eq!(consumed, chars.len());
         }
 
-        /// A run of VLQ values concatenated decodes back to the same sequence —
+        /// A run of VLQ values concatenated decodes back to the same sequence 
         /// the property a real `mappings` segment relies on.
         #[test]
         fn prop_vlq_sequence_roundtrips(vals in proptest::collection::vec(-100000i64..100000, 0..8)) {
@@ -632,7 +632,7 @@ mod tests {
             prop_assert_eq!(got, vals);
         }
 
-        /// `decode_vlq` over an arbitrary Base64 run never panics — it returns a
+        /// `decode_vlq` over an arbitrary Base64 run never panics, it returns a
         /// value or a typed error (overflow / truncation / bad char). Direct fuzz
         /// of the decoder's overflow guard, including the `shift == 60` boundary
         /// and the `shift >= 64` long-run case that valid-JSON fuzzing can't reach.
@@ -642,7 +642,7 @@ mod tests {
             let _ = decode_vlq(&chars, 0);
         }
 
-        /// Any value the decoder accepts re-encodes and re-decodes to itself — the
+        /// Any value the decoder accepts re-encodes and re-decodes to itself, the
         /// codec is a faithful inverse on its entire accepted domain.
         #[test]
         fn prop_decoded_value_reencodes_stably(s in "[A-Za-z0-9+/]{1,13}") {
@@ -654,7 +654,7 @@ mod tests {
             }
         }
 
-        /// Parsing never panics on arbitrary JSON-ish input — it returns a typed
+        /// Parsing never panics on arbitrary JSON-ish input, it returns a typed
         /// error or a value, but never crashes the decompiler.
         #[test]
         fn prop_parse_never_panics(s in ".{0,200}") {

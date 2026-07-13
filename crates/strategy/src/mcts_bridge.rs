@@ -24,7 +24,7 @@ use wafrift_types::{Request, Technique};
 /// A concrete action representing a single evasion technique applied to a payload.
 ///
 /// Each variant maps to a different evasion dimension that the MCTS tree
-/// can explore. Actions are composable — applying encoding after grammar
+/// can explore. Actions are composable, applying encoding after grammar
 /// mutation is a valid 2-step path.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TechniqueAction {
@@ -167,7 +167,7 @@ impl Environment for WafRiftEnv {
         // Without deduplication `legal_actions` advertises N identical
         // `GrammarMutate("separator_swap")` entries; MCTS treats them as N
         // distinct siblings but `apply` always resolves to the *first* matching
-        // mutation — so N-1 branches are structural duplicates that waste the
+        // mutation, so N-1 branches are structural duplicates that waste the
         // search budget without ever producing a different result.
         if !self.grammar_applied {
             let mut seen_keys = std::collections::HashSet::new();
@@ -211,7 +211,7 @@ impl Environment for WafRiftEnv {
         // them.
         // F145: only expose HeaderTrick if there's actually a
         // Content-Type header to mutate. The apply() arm is
-        // implemented purely against Content-Type — if no such
+        // implemented purely against Content-Type, if no such
         // header exists (e.g. GET request, or a POST whose
         // Content-Type was already stripped by an earlier stage),
         // every trick is a silent no-op AND sets
@@ -238,7 +238,7 @@ impl Environment for WafRiftEnv {
             // serialisation, not strategy-level planning.
             //
             // Pre-fix the apply() arm ignored the trick name and ran
-            // case_mix unconditionally — every choice MCTS made was
+            // case_mix unconditionally, every choice MCTS made was
             // identical at execution and the search couldn't learn
             // ANY ordering among header tricks.
             for trick in [
@@ -266,7 +266,7 @@ impl Environment for WafRiftEnv {
                     && let Some(ref body) = self.req.body
                     && crate::strategy::is_text_payload(&self.req)
                 {
-                    // If the encoding fails (rare — typically only on the
+                    // If the encoding fails (rare, typically only on the
                     // synthetic strategies that require body shapes the
                     // current request does not have), skip silently rather
                     // than panic the whole MCTS rollout. The action gets
@@ -314,7 +314,7 @@ impl Environment for WafRiftEnv {
                 {
                     // F115: parse_form_body now returns Result; an
                     // oversized / unparseable body for the content-type
-                    // switch means "no params to switch on" — fall
+                    // switch means "no params to switch on", fall
                     // through rather than erroring the whole MCTS step.
                     let params = wafrift_content_type::parse_form_body(body).unwrap_or_default();
                     if !params.is_empty() {
@@ -338,7 +338,7 @@ impl Environment for WafRiftEnv {
             TechniqueAction::HeaderTrick(trick_name) => {
                 // Dispatch on the trick name so MCTS-chosen actions
                 // actually do what they say. Pre-fix this discarded
-                // the trick_name and ran case_mix every time — 11
+                // the trick_name and ran case_mix every time. 11
                 // of 12 advertised tricks were silent no-ops.
                 // legal_actions() above only exposes the 4 tricks
                 // that survive the structured (name, value) → reqwest
@@ -373,7 +373,7 @@ impl Environment for WafRiftEnv {
                         }
                         "DuplicateHeader" => {
                             // Push a SECOND Content-Type entry with
-                            // an alternate benign value — some
+                            // an alternate benign value, some
                             // intermediaries take the first, others
                             // the last (CL+TE-style desync at the
                             // header level).
@@ -382,7 +382,7 @@ impl Environment for WafRiftEnv {
                                 .push((name.clone(), "text/plain".to_string()));
                         }
                         _ => {
-                            // Unrecognised trick — fall back to
+                            // Unrecognised trick, fall back to
                             // case-mix rather than no-op, so a
                             // future trick added to legal_actions
                             // without an apply() arm still produces
@@ -780,7 +780,7 @@ mod tests {
     fn header_trick_legal_actions_only_lists_executable_tricks() {
         // Lock the contract: legal_actions must not advertise tricks
         // the apply() dispatcher can't actually execute (was the F42
-        // bug — 11 of 12 advertised tricks fell through to case_mix).
+        // bug: 11 of 12 advertised tricks fell through to case_mix).
         let env = WafRiftEnv::new(req_with_ct(), 4);
         let header_tricks: Vec<String> = env
             .legal_actions()
@@ -799,14 +799,14 @@ mod tests {
         ] {
             assert!(
                 header_tricks.iter().any(|t| t == must_have),
-                "missing trick {must_have} — got {header_tricks:?}"
+                "missing trick {must_have}, got {header_tricks:?}"
             );
         }
         // Wire-only tricks must NOT be advertised at this layer.
         for must_not in ["TabSeparator", "LineFolding", "WhitespacePadding"] {
             assert!(
                 !header_tricks.iter().any(|t| t == must_not),
-                "wire-only trick {must_not} should not appear — got {header_tricks:?}"
+                "wire-only trick {must_not} should not appear, got {header_tricks:?}"
             );
         }
     }
@@ -819,7 +819,7 @@ mod tests {
         // only mutates Content-Type, so for any request without
         // one (e.g. a plain GET, or a POST whose CT was stripped),
         // every HeaderTrick was a silent no-op AND sets
-        // header_applied=true, locking out future tries — burning
+        // header_applied=true, locking out future tries, burning
         // an MCTS node on an action that can't change a single byte.
         // Post-fix legal_actions checks for Content-Type's presence
         // and skips the whole branch when it's absent.
@@ -894,7 +894,7 @@ mod tests {
     }
 
     /// When grammar mutations are present, every unique rule name in
-    /// `legal_actions` must be independently resolvable in `apply` — i.e.
+    /// `legal_actions` must be independently resolvable in `apply`: i.e.
     /// applying that action must mutate the body (not be a no-op).
     #[test]
     fn each_grammar_action_produces_a_distinct_body() {
@@ -910,13 +910,13 @@ mod tests {
         for action in &grammar_actions {
             let mut env2 = WafRiftEnv::new(req.clone(), 6);
             env2.apply(action);
-            // Body must have changed — a no-op means `apply` couldn't find
+            // Body must have changed, a no-op means `apply` couldn't find
             // the mutation for this rule name (old bug: N-1 duplicates were
             // unreachable because `apply` picked the first match every time).
             assert_ne!(
                 env2.req.body.as_deref(),
                 Some(original_body.as_slice()),
-                "GrammarMutate({:?}) did not mutate the body — \
+                "GrammarMutate({:?}) did not mutate the body: \
                  apply() couldn't resolve the rule",
                 match action {
                     TechniqueAction::GrammarMutate(n) => n,

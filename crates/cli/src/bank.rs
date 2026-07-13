@@ -1,14 +1,14 @@
-//! `wafrift bank` — list / export / import gene-banks.
+//! `wafrift bank`: list / export / import gene-banks.
 //!
 //! Practitioners share gene-banks across machines and teammates today
 //! by copying JSON files by hand. This subcommand surfaces the
 //! operations as first-class verbs so the workflow becomes:
 //!
-//!   * `wafrift bank list` — show every WAF / host with proven techniques.
-//!   * `wafrift bank export --output bundle.json` — pack the proxy
+//!   * `wafrift bank list`: show every WAF / host with proven techniques.
+//!   * `wafrift bank export --output bundle.json`: pack the proxy
 //!     gene-bank + every per-WAF `GeneBank` into a single self-describing
 //!     JSON envelope (`schema_version`, source paths, contents).
-//!   * `wafrift bank import bundle.json` — restore an envelope onto
+//!   * `wafrift bank import bundle.json`: restore an envelope onto
 //!     this machine.
 
 use clap::{Args, Subcommand};
@@ -121,7 +121,7 @@ pub(crate) struct BankImportArgs {
 const ENVELOPE_SCHEMA_VERSION: u32 = 1;
 
 /// Self-describing export envelope. The `source_paths` field is purely
-/// informational — import never trusts the path data, only the
+/// informational, import never trusts the path data, only the
 /// content. `wafrift_version` lets a future tool detect drift.
 #[derive(Debug, Serialize, Deserialize)]
 struct BankEnvelope {
@@ -146,7 +146,7 @@ struct SourcePaths {
 // `wafrift_types::gene_bank_io` so a future field addition / schema
 // bump propagates to every consumer at compile-time. Pre-fix five
 // crates each carried their own struct; cli::replay's was missing
-// `schema`, `blocklisted`, and `waf_name` — silent narrowing.
+// `schema`, `blocklisted`, and `waf_name`: silent narrowing.
 use wafrift_types::gene_bank_io::{PersistedGeneBank, PersistedHostState};
 
 pub(crate) fn run_bank(args: BankArgs) -> ExitCode {
@@ -188,7 +188,7 @@ fn read_proxy_bank(path: &std::path::Path) -> Result<PersistedGeneBank, String> 
     if !path.exists() {
         return Ok(PersistedGeneBank::default());
     }
-    // §15 TOCTOU: read_bounded_text_file is one open()+read() — no symlink race.
+    // §15 TOCTOU: read_bounded_text_file is one open()+read() (no symlink race).
     let raw =
         crate::safe_body::read_bounded_text_file(path, crate::safe_body::GENE_BANK_FILE_MAX_BYTES)
             .map_err(|e| format!("read {}: {e}", path.display()))?;
@@ -211,7 +211,7 @@ fn read_genome_dir(dir: &std::path::Path) -> Result<BTreeMap<String, serde_json:
             .and_then(|s| s.to_str())
             .map_or_else(|| "unknown".into(), std::string::ToString::to_string);
         // §15 OOM / TOCTOU fix: use read_bounded_text_file instead of
-        // fs::read_to_string — a single fd open+read, no stat() race, and
+        // fs::read_to_string, a single fd open+read, no stat() race, and
         // a hard byte cap prevents a crafted genome file from OOMing the CLI.
         let raw = match crate::safe_body::read_bounded_text_file(
             &path,
@@ -268,7 +268,7 @@ fn run_list(args: BankListArgs) -> ExitCode {
         // counters; downstream automation (red-team scripts that
         // enumerate proven techniques before a scan) had nothing
         // actionable. Now emit a `hosts` array with per-host detail
-        // matching the text path. Additive — no schema bump.
+        // matching the text path. Additive (no schema bump).
         let mut hosts: Vec<(&String, &PersistedHostState)> = proxy_bank
             .hosts
             .iter()
@@ -390,7 +390,7 @@ fn run_export(args: BankExportArgs) -> ExitCode {
     }
     // Atomic write: tmp file → fsync → rename → parent fsync. Pre-fix
     // a power loss / signal mid-`fs::write` left the destination
-    // truncated and the JSON invalid — silently destroying the only
+    // truncated and the JSON invalid, silently destroying the only
     // off-host backup of the gene bank. seed.rs already uses this
     // helper for the same reason; keep behaviour consistent.
     if let Err(e) = wafrift_types::loaders::write_atomic(&args.output, json.as_bytes()) {
@@ -475,7 +475,7 @@ fn run_import(args: BankImportArgs) -> ExitCode {
                 *existing = incoming;
                 hosts_replaced += 1;
             } else {
-                // Merge — union of proven_winners + blocklisted, prefer
+                // Merge, union of proven_winners + blocklisted, prefer
                 // existing waf_name.
                 for t in incoming.proven_winners {
                     if !existing.proven_winners.contains(&t) {
@@ -526,7 +526,7 @@ fn run_import(args: BankImportArgs) -> ExitCode {
         if let Err(reason) = validate_waf_name(&waf) {
             // Pre-fix a malicious envelope with `waf` set to
             // `"../../etc/cron.d/evil"` wrote `<genome_dir>/../../etc/...`
-            // — outside `genome_dir`. The validator rejects any
+            //: outside `genome_dir`. The validator rejects any
             // traversal / non-portable-filename character before the
             // path is ever constructed.
             eprintln!("warn: skip WAF entry {waf:?}: {reason}");
@@ -878,7 +878,7 @@ mod tests {
         // any sibling-of-genome-dir file may exist.
         assert!(
             !escape_target.exists(),
-            "traversal target {} was written — validator failed",
+            "traversal target {} was written, validator failed",
             escape_target.display()
         );
         let _ = fs::remove_dir_all(&parent);

@@ -9,7 +9,7 @@
 //!
 //! The fix is single-source-of-truth: `wafrift man` is the truth,
 //! `docs/man/wafrift.1` is a snapshot. This test fails if they
-//! diverge — the suggested action is `cargo run --bin wafrift -- man
+//! diverge, the suggested action is `cargo run --bin wafrift -- man
 //! > docs/man/wafrift.1`.
 
 use std::process::Command;

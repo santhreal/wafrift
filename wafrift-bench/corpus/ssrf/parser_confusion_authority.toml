@@ -1,5 +1,5 @@
 schema = 1
-# Parser-confusion authority bypass — Orange Tsai 2017 class.
+# Parser-confusion authority bypass: Orange Tsai 2017 class.
 #
 # Each case is a URL that a typical "validator" (Python urllib, Ruby URI,
 # Java URL, Go net/url, libcurl, PHP parse_url) parses with host

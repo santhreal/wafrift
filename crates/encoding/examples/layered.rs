@@ -1,4 +1,4 @@
-//! Layered encoding example — chaining multiple encodings for hardened WAFs.
+//! Layered encoding example (chaining multiple encodings for hardened WAFs).
 
 use wafrift_encoding::{
     Strategy, aggressiveness, all_strategies, encode, encode_layered, layered_combinations,

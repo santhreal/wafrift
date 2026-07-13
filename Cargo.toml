@@ -47,7 +47,7 @@ rust-version = "1.88"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/santhsecurity/wafrift"
-description = "Programmable WAF-evasion engine — encoding × grammar mutation × HTTP smuggling × Content-Type confusion × TLS fingerprint rotation × active-learning WAF decompilation"
+description = "Programmable WAF-evasion engine, encoding × grammar mutation × HTTP smuggling × Content-Type confusion × TLS fingerprint rotation × active-learning WAF decompilation"
 keywords = ["waf", "evasion", "security", "bypass", "firewall"]
 categories = ["network-programming", "web-programming"]
 authors = ["Santh Project <security@santh.dev>"]
@@ -56,7 +56,7 @@ authors = ["Santh Project <security@santh.dev>"]
 status = "beta"
 
 # Centralised lint policy. Each crate opts in with `[lints] workspace = true`
-# in its Cargo.toml. Kept conservative on purpose — turning on `clippy::pedantic`
+# in its Cargo.toml. Kept conservative on purpose, turning on `clippy::pedantic`
 # across 16 crates buries real warnings in noise. CI already runs
 # `cargo clippy --workspace --all-features --all-targets -- -D warnings`.
 [workspace.lints.rust]
@@ -64,7 +64,7 @@ unsafe_code = "warn"
 unused_must_use = "deny"
 
 # Clippy lints the workspace explicitly opts out of. Each entry has
-# a reason — drift the policy by editing this block, not by sprinkling
+# a reason, drift the policy by editing this block, not by sprinkling
 # `#[allow]` attributes across the codebase.
 [workspace.lints.clippy]
 # Orchestrator functions (scan::run_scan + raw_runner + a few CLI
@@ -80,11 +80,11 @@ too_many_arguments = "allow"
 assertions_on_constants = "allow"
 # Doc comments use `///   - sub-bullet` (3-space indent) in several
 # places; the lint wants 2-space which conflicts with rustfmt's
-# wrap behaviour. We already enforce rustfmt — let it win.
+# wrap behaviour. We already enforce rustfmt (let it win).
 doc_lazy_continuation = "allow"
 
 [workspace.dependencies]
-# Internal crates — `version` required for crates.io (`cargo publish`)
+# Internal crates: `version` required for crates.io (`cargo publish`)
 wafrift-types = { path = "crates/types", version = "0.3.1" }
 wafrift-encoding = { path = "crates/encoding", version = "0.3.1" }
 wafrift-grammar = { path = "crates/grammar", version = "0.3.1" }
@@ -115,7 +115,7 @@ mctrust = "=0.4.0"
 pocgen = { version = "0.2.1" }
 # Canonical SSRF bogon/CIDR classifier shared with gossan + keyhog. wafrift
 # delegates `wafrift_types::ip_addr_is_bogon` to it so one fix (e.g. the NAT64
-# 64:ff9b::/96 IMDS bypass) lands for every tool — see crates/types/src/bogon.rs.
+# 64:ff9b::/96 IMDS bypass) lands for every tool (see crates/types/src/bogon.rs).
 bogon = { package = "santh-bogon", version = "0.1.0" }
 boundedio = { version = "0.1.0" }
 # Canonical crt.sh / CT-log client. wafrift-recon's bounded, timeout-guarded
@@ -134,7 +134,7 @@ anyhow = "1"
 # HTTP
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "cookies", "gzip", "brotli", "stream", "json", "http2"] }
 # Browser-impersonating HTTP client for the optional `tls-impersonate`
-# feature. Closes the JA3 / h2 SETTINGS gap vs EvilWAF — Chrome /
+# feature. Closes the JA3 / h2 SETTINGS gap vs EvilWAF. Chrome /
 # Firefox / Safari / Edge ClientHello bytes-for-bytes via BoringSSL.
 # Default builds do NOT pull this in (no boring-sys); only consumers
 # that enable `tls-impersonate` pay the dep cost.
@@ -160,7 +160,7 @@ tokio-rustls = "0.26"
 
 # DNS resolver for CNAME-chain fingerprinting (detect crate).
 # WAF/CDN providers leak their identity in DNS CNAME chains even when
-# the origin strips every HTTP header — `www.ebay.com → akamaiedge.net`
+# the origin strips every HTTP header: `www.ebay.com → akamaiedge.net`
 # is the canonical example. Resolution happens once per `wafrift detect`
 # probe, in parallel with the HTTP fetch, so the latency cost is hidden.
 hickory-resolver = { version = "0.25.2", default-features = false, features = ["tokio", "system-config"] }
@@ -182,7 +182,7 @@ ratatui = "0.30"
 crossterm = "0.28"
 # Best-effort clipboard for the proxy TUI's curl-yank action.
 # Default features off so we don't pull X11/wayland deps when the
-# binary is built on a server with no display — the yank action falls
+# binary is built on a server with no display, the yank action falls
 # back to writing /tmp/wafrift-yank-N.curl.
 arboard = { version = "3", default-features = false }
 dirs = "6"
@@ -211,7 +211,7 @@ fs4 = "1.1"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 # WASM sandbox engine for plugin-api external tampers.
 # Pinned to the 36.0.x line: it carries the RUSTSEC-2026-0088/0089 backport
-# (patched >=36.0.7) while keeping MSRV at rustc 1.86 — wasmtime >=42 requires
+# (patched >=36.0.7) while keeping MSRV at rustc 1.86, wasmtime >=42 requires
 # rustc 1.91+ and 45 requires 1.93, which would break the 1.88 MSRV gate and the
 # Docker build. Neither advisory was reachable (we build cranelift, no pooling).
 wasmtime = { version = "36.0.7", default-features = false, features = ["runtime", "cranelift"] }

@@ -44,7 +44,7 @@ fn channel_scoping_is_real_not_global() {
     );
 
     // Negative twin: identical bytes in a header (NOT in the rule's
-    // channel mask) must PASS — channel scoping is the whole reason
+    // channel mask) must PASS, channel scoping is the whole reason
     // delivery-shape evasion works and the model must honour it.
     let mut w = waf();
     let r = Request::get("https://t/p").header("X-Probe", "<script>");
@@ -175,7 +175,7 @@ fn shipped_crs_ruleset_loads_and_classifies_real_attacks() {
         );
     }
 
-    // Sanitized negative twins — benign, must pass (no FP).
+    // Sanitized negative twins (benign, must pass (no FP)).
     for ok in [
         "https://t/p?q=hello world",
         "https://t/p?name=O'Brien",

@@ -5,7 +5,7 @@
 //! shell-quoted strings in). We check three invariants under random
 //! input:
 //!
-//! 1. `shell_tokenize` never panics — even on garbage. It either
+//! 1. `shell_tokenize` never panics, even on garbage. It either
 //!    parses or returns `Err`, never aborts the process.
 //! 2. For tokens that survived parsing, the count is bounded by the
 //!    input length (no exponential blowup).
@@ -79,7 +79,7 @@ fn shell_tokenize(input: &str) -> Result<Vec<String>, String> {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(2048))]
 
-    /// Tokeniser must never panic on arbitrary byte strings — only
+    /// Tokeniser must never panic on arbitrary byte strings, only
     /// return Ok or Err. A panic here turns `wafrift import-curl
     /// --from-stdin` into a denial-of-service against itself.
     #[test]

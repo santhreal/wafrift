@@ -3,7 +3,7 @@
 //! Every public `mutate*` / `classify` / `detect_type` entry point is
 //! attacker-reachable: `wafrift scan`, `wafrift evade`, and the proxy
 //! all feed *user-supplied payloads* straight into these functions. A
-//! payload is hostile by construction — the whole point of the tool is
+//! payload is hostile by construction, the whole point of the tool is
 //! that operators paste in weird, encoded, multibyte, oversized,
 //! deeply-nested strings. If any mutator panics, slices mid-codepoint,
 //! integer-overflows an index, or blows output up super-linearly, the
@@ -19,7 +19,7 @@
 //!   2. **Cap honoured.** `mutate(_as)` with `max_mutations = N` never
 //!      returns more than `N` variants.
 //!   3. **Bounded expansion.** No single variant exceeds
-//!      `input.len() * 64 + 65_536` bytes — catches accidental
+//!      `input.len() * 64 + 65_536` bytes, catches accidental
 //!      quadratic/exponential blowup that turns a 1 KB payload into a
 //!      multi-GB allocation (a self-DoS).
 //!
@@ -132,7 +132,7 @@ fn adversarial_corpus() -> Vec<(&'static str, String)> {
         ("big_payload", "' OR 1=1 -- ".repeat(1_500)),
     ];
     // A unicode codepoint at every byte-boundary offset 1..=4 after a
-    // quote — directly targets `&p[start+1 .. start+1+k]` arithmetic.
+    // quote (directly targets `&p[start+1 .. start+1+k]` arithmetic).
     for pad in 0..6 {
         let s = format!("'{}{}'", "x".repeat(pad), "€日𝕏");
         v.push(("boundary_sweep", s));
@@ -333,7 +333,7 @@ fn detectors() -> Vec<(&'static str, fn(&str) -> bool)> {
 /// byte index `i`, panicking the instant `i` fell inside a multibyte
 /// codepoint. `String::from_utf8_lossy` of arbitrary bytes (how the CLI
 /// turns `--payload-b64`/`--stdin` into a `&str`) yields exactly such
-/// strings — here `0xFF 'J'` → `"\u{FFFD}J"`, where byte index 1 is
+/// strings, here `0xFF 'J'` → `"\u{FFFD}J"`, where byte index 1 is
 /// inside the 3-byte replacement char.
 #[test]
 fn regression_sql_split_string_concat_multibyte_no_panic() {
@@ -353,7 +353,7 @@ fn regression_sql_split_string_concat_multibyte_no_panic() {
 }
 
 /// The same function used to allocate `3 * (len - 1)` formatted strings
-/// — a 200 KB payload meant ~600 000 allocations the caller discards.
+///: a 200 KB payload meant ~600 000 allocations the caller discards.
 /// Assert the split-point fan-out is now bounded regardless of input
 /// size (a 50 KB string must still return quickly and small).
 #[test]
@@ -363,7 +363,7 @@ fn regression_sql_split_string_concat_is_bounded() {
     let out = grammar::sql::mutate(&big, 1_000);
     assert!(
         start.elapsed() < std::time::Duration::from_secs(5),
-        "sql::mutate on a 50 KB string took {:?} — split fan-out is unbounded",
+        "sql::mutate on a 50 KB string took {:?}, split fan-out is unbounded",
         start.elapsed()
     );
     assert!(
@@ -402,7 +402,7 @@ mod fuzz {
         }
 
         /// Arbitrary *bytes* (lossily decoded the way the CLI does)
-        /// must also be safe — payloads arrive from base64/stdin and
+        /// must also be safe, payloads arrive from base64/stdin and
         /// are not guaranteed clean UTF-8 upstream.
         #[test]
         fn arbitrary_bytes_lossy_is_panic_free(bytes in prop::collection::vec(any::<u8>(), 0..2048)) {

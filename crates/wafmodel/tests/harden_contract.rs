@@ -11,7 +11,7 @@ use wafrift_wafmodel::{
     Alphabet, ChannelSet, Outcome, Rule, SimRegexWaf, WafOracle, synthesize_closure,
 };
 
-/// Brittle WAF: blocks the literal token `<x` only (no decoding) — so
+/// Brittle WAF: blocks the literal token `<x` only (no decoding), so
 /// the URL-encoded form `%3cx` is a real, unclosed hole.
 fn brittle() -> SimRegexWaf {
     SimRegexWaf::new(

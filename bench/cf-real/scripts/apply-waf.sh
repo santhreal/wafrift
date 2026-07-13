@@ -2,15 +2,15 @@
 # bench/cf-real/scripts/apply-waf.sh
 #
 # Install a representative WAF ruleset on the zone that hosts the
-# wafrift-bench Worker. Idempotent — safe to re-run.
+# wafrift-bench Worker. Idempotent (safe to re-run).
 #
 # Required env vars:
-#   CF_API_TOKEN     — token with Zone:WAF:Edit + Zone:Zone:Read
-#   CF_ZONE_ID       — the zone hosting wafrift-bench.<account>.workers.dev
+#   CF_API_TOKEN: token with Zone:WAF:Edit + Zone:Zone:Read
+#   CF_ZONE_ID: the zone hosting wafrift-bench.<account>.workers.dev
 #                       OR the custom domain. For workers.dev subdomains
 #                       the zone is your account's *.workers.dev zone
 #                       (zone-level Custom Rules don't apply to free
-#                       workers.dev subdomains — you need a paid zone
+#                       workers.dev subdomains, you need a paid zone
 #                       for true WAF testing).
 #
 # Usage:
@@ -20,10 +20,10 @@
 #
 # What gets installed:
 #   1. Custom Rule: block requests with `union select` (case-insensitive)
-#      in any query string parameter. — baseline SQLi signature.
+#      in any query string parameter. (baseline SQLi signature).
 #   2. Custom Rule: block requests with `<script>` in any body field.
-#      — baseline XSS signature.
-#   3. Custom Rule: rate-limit /sql to 60 r/min per IP. — gives the
+# (baseline XSS signature).
+#   3. Custom Rule: rate-limit /sql to 60 r/min per IP., gives the
 #      operator a real rate-limit path for cooldown testing.
 #   4. Managed Ruleset toggle: enable Cloudflare's Free Managed
 #      Ruleset (free tier) in detection mode against the bench zone.
@@ -58,9 +58,9 @@ fi
 
 echo "[apply-waf] ruleset id: $ENTRY"
 
-# 2. Install rules — PUT with the full ruleset replaces atomically.
+# 2. Install rules: PUT with the full ruleset replaces atomically.
 # F85: prior expression used `any(... or ...)` which is invalid CF
-# Ruleset Language — `any()` takes an ARRAY field (e.g.
+# Ruleset Language: `any()` takes an ARRAY field (e.g.
 # `http.request.uri.args.values[*]`), not a boolean expression. The
 # old form was rejected by the API or matched nothing. Switched to
 # `lower(http.request.uri.query)` for case-folded substring matching
@@ -86,7 +86,7 @@ curl -sS -H "$AUTH" -H "$CT" -X PUT \
   }' > "$RESULT_FILE"
 
 # F86: prior `| jq '.success, (.errors // [])'` exited 0 on every
-# valid JSON — including API failures. Operator saw "[apply-waf] done."
+# valid JSON (including API failures. Operator saw "[apply-waf] done)."
 # with a broken zone config. Check `.success == true` explicitly and
 # fail loudly with the error body if not.
 if ! jq -e '.success == true' "$RESULT_FILE" > /dev/null; then

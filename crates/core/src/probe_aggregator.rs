@@ -4,7 +4,7 @@
 //! Each smuggle module in the workspace produces its own probe Vec:
 //! `cookie_smuggle::all_variants(name, value)`,
 //! `capsule::all_variants(payload)`, `multipart_smuggle::generate_smuggle_variants(params)`,
-//! etc. From an operator's perspective, **they're all probes** — the
+//! etc. From an operator's perspective, **they're all probes**: the
 //! domain differences are noise once the
 //! [`SmuggleProbe`] trait is in
 //! the picture.
@@ -80,7 +80,7 @@ impl<'a> Default for ProbeSeeds<'a> {
 /// normalization, then host-header, then multipart, then JSON, then
 /// HTTP/3 capsule, then QUIC datagram, then WebSocket compression.
 /// The relative order within each family follows that family's own
-/// `all_variants` / `generate_smuggle_variants` output —
+/// `all_variants` / `generate_smuggle_variants` output 
 /// preserve-on-shape so operators that key on technique-id get
 /// reproducible iteration.
 #[must_use]
@@ -127,7 +127,7 @@ pub fn all_probes(seeds: &ProbeSeeds) -> Vec<Box<dyn SmuggleProbe>> {
     for a in quic_datagram::all_variants(&seeds.payload) {
         out.push(Box::new(a));
     }
-    // WebSocket compression — bomb plus context-takeover sequence.
+    // WebSocket compression (bomb plus context-takeover sequence).
     out.push(Box::new(CompressionBomb::build(1000)));
     out.push(Box::new(ContextTakeoverSequence::build(&seeds.payload, 50)));
 
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn aggregator_canaries_are_unique_across_all_probes() {
-        // Every probe must carry an independent canary — uniqueness
+        // Every probe must carry an independent canary, uniqueness
         // is the whole point.
         let probes = all_probes(&ProbeSeeds::default());
         let tokens: HashSet<String> = probes.iter().map(|p| p.canary().token.clone()).collect();
@@ -216,7 +216,7 @@ mod tests {
         // the gate.
         assert!(
             probes.len() >= 78,
-            "aggregator returned only {} probes — family dropped?",
+            "aggregator returned only {} probes, family dropped?",
             probes.len()
         );
     }
@@ -295,7 +295,7 @@ mod tests {
 
     #[test]
     fn aggregator_contains_at_least_ten_path_family_probes() {
-        // Pin the path family's contribution — anti-rig against a
+        // Pin the path family's contribution, anti-rig against a
         // regression that drops the path probes from the aggregator.
         let probes = all_probes(&ProbeSeeds::default());
         let path_count = probes

@@ -1,7 +1,7 @@
 //! GraphQL WAF-evasion payloads for wafrift.
 //!
 //! WAFs decode JSON and signature-match on plaintext SQL/XSS tokens,
-//! but most have no GraphQL parser — a query like `{a1:user(id:1) a2:
+//! but most have no GraphQL parser, a query like `{a1:user(id:1) a2:
 //! user(id:2) ... a100:user(id:100){password}}` fans out to 100
 //! resolver calls per HTTP request, defeating both rate limiting (1
 //! HTTP req) and signature inspection (no single repeated dangerous
@@ -12,7 +12,7 @@
 //! # Relationship to sibling Santh tools
 //!
 //! - **gqlprobe** (`software/gqlprobe`) is Santh's full GraphQL
-//!   security scanner — 11 attack modules, async runtime, finding
+//!   security scanner: 11 attack modules, async runtime, finding
 //!   aggregation. wafrift uses gqlprobe's payload templates (vendored
 //!   here with attribution) as bench mutator inputs. We do NOT
 //!   re-implement gqlprobe's scanner; for live black-box scanning,
@@ -32,11 +32,11 @@
 //!
 //! # What wafrift adds on top of vendored templates
 //!
-//! - `op_name_mismatch_payloads()` — operation name != body op,
+//! - `op_name_mismatch_payloads()`: operation name != body op,
 //!   bypasses WAFs that route by op name
-//! - `introspection_whitespace_split_payloads()` — `__schema\n{...}`
+//! - `introspection_whitespace_split_payloads()`: `__schema\n{...}`
 //!   splits the dangerous-token boundary regex catches
-//! - `alias_flood_payloads(n)` — N-way aliased identical-resolver
+//! - `alias_flood_payloads(n)`: N-way aliased identical-resolver
 //!   batches (gqlprobe's batching tests fixed sizes; this is
 //!   parameterised so MCTS can sweep)
 
@@ -93,7 +93,7 @@ pub const TEST_DEPTHS: [usize; 6] = [5, 10, 20, 50, 100, 200];
 pub const TEST_BATCH_SIZES: [usize; 5] = [5, 10, 25, 50, 100];
 
 /// Field-name typos gqlprobe uses to elicit "did you mean X?" hints
-/// — these leak schema fragments through error messages.
+///: these leak schema fragments through error messages.
 pub const FIELD_TYPOS: &[(&str, &str)] = &[
     ("usr", "user"),
     ("passwrd", "password"),
@@ -103,7 +103,7 @@ pub const FIELD_TYPOS: &[(&str, &str)] = &[
 ];
 
 // ─────────────────────────────────────────────────────────────────────
-// Generators — direct ports of gqlprobe's private generate_* fns.
+// Generators (direct ports of gqlprobe's private generate_* fns).
 // ─────────────────────────────────────────────────────────────────────
 
 /// Generate a deeply nested GraphQL query string (gqlprobe port).
@@ -146,7 +146,7 @@ pub fn generate_fragment_query(depth: usize) -> String {
 
 /// Generate a JSON batch of N aliased queries (gqlprobe port).
 ///
-/// One HTTP request fans out to N resolver invocations — bypasses
+/// One HTTP request fans out to N resolver invocations, bypasses
 /// per-request rate limits and per-request WAF rule budgets.
 #[must_use]
 pub fn generate_batch(size: usize) -> Vec<serde_json::Value> {
@@ -156,7 +156,7 @@ pub fn generate_batch(size: usize) -> Vec<serde_json::Value> {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Wafrift-specific additions — NOT in gqlprobe today.
+// Wafrift-specific additions: NOT in gqlprobe today.
 // ─────────────────────────────────────────────────────────────────────
 
 /// `operationName` doesn't match the operation in `query`. Most WAFs
@@ -214,7 +214,7 @@ pub fn alias_flood_payload(n: usize) -> String {
 
 /// All wafrift+vendored GraphQL evasion payloads ready for bench-waf
 /// to consume as a single corpus. The strings are JSON-encoded
-/// GraphQL request bodies — POST with `Content-Type: application/json`.
+/// GraphQL request bodies: POST with `Content-Type: application/json`.
 #[must_use]
 pub fn all_evasion_payloads() -> Vec<String> {
     let mut out = Vec::new();
@@ -303,13 +303,13 @@ mod tests {
             let v: serde_json::Value = serde_json::from_str(p).unwrap();
             assert!(v.get("operationName").is_some());
             assert!(v.get("query").is_some());
-            // operationName MUST NOT appear in the query body — that's
+            // operationName MUST NOT appear in the query body, that's
             // the mismatch property under test.
             let op = v["operationName"].as_str().unwrap();
             let body = v["query"].as_str().unwrap();
             assert!(
                 !body.contains(op),
-                "op name {op} leaked into body {body} — mismatch invariant broken"
+                "op name {op} leaked into body {body}, mismatch invariant broken"
             );
         }
     }
@@ -366,7 +366,7 @@ mod tests {
         assert!(TEST_DEPTHS.contains(&5), "minimum depth probe removed");
         assert!(
             TEST_DEPTHS.contains(&200),
-            "maximum depth probe removed — DoS coverage lost"
+            "maximum depth probe removed: DoS coverage lost"
         );
         // Anti-rig: exact count. If someone adds or removes depths, this catches it.
         assert_eq!(TEST_DEPTHS.len(), 6, "TEST_DEPTHS length changed from 6");
@@ -409,7 +409,7 @@ mod tests {
     }
 
     /// Boundary: depth=200 is one of our canonical test depths.
-    /// The query must stay valid and balanced — WAFs that don't depth-
+    /// The query must stay valid and balanced. WAFs that don't depth-
     /// limit pass it; this test proves we can generate it without OOM.
     #[test]
     fn generate_deep_query_depth_200_is_valid_and_balanced() {
@@ -503,7 +503,7 @@ mod tests {
     // ── op_name_mismatch_payloads properties ───────────────────────────
 
     /// Anti-rig: every mismatch payload must NOT include the operationName
-    /// string inside the query body — that's the bypass invariant.
+    /// string inside the query body (that's the bypass invariant).
     #[test]
     fn op_name_mismatch_every_name_absent_from_query_body() {
         for (i, p) in op_name_mismatch_payloads().iter().enumerate() {
@@ -542,7 +542,7 @@ mod tests {
     fn field_typos_has_password_typo() {
         assert!(
             FIELD_TYPOS.iter().any(|(typo, _real)| *typo == "passwrd"),
-            "password typo removed — schema-leak coverage lost"
+            "password typo removed, schema-leak coverage lost"
         );
     }
 
@@ -566,7 +566,7 @@ mod tests {
             let expected_fragment = "\"friends\"{".to_string();
             // The deep query at depth d must appear somewhere in the battery.
             // We can't search for the exact string, but we know depth-d has
-            // exactly d occurrences of `friends` — check via generate_deep_query.
+            // exactly d occurrences of `friends`: check via generate_deep_query.
             let q = generate_deep_query(d);
             let as_json = serde_json::json!({ "query": q }).to_string();
             assert!(

@@ -10,7 +10,7 @@ use crate::grammar::sql::common::SqlMutation;
 /// Arithmetic tautologies that evaluate to true in SQL without using keywords.
 /// These bypass CRS PL2+ because they contain no SQL reserved words.
 pub(crate) const KEYWORDLESS_TAUTOLOGIES: &[(&str, &str)] = &[
-    // Pure arithmetic — no keywords at all
+    // Pure arithmetic, no keywords at all
     ("1-0", "arithmetic_sub"),
     ("1*1", "arithmetic_mul"),
     ("1-false", "arithmetic_false"),
@@ -95,7 +95,7 @@ pub(crate) fn keywordless_mutations(payload: &str, max_mutations: usize) -> Vec<
     // payload's exploit IS a boolean tautology (login bypass / `OR
     // 1=1`). For an error-based (`extractvalue(...)`), UNION, stacked
     // (`; DROP`), or blind/time payload, replacing it with `'+0+'`
-    // DESTROYS the attack — the variant is a different, weaker (often
+    // DESTROYS the attack, the variant is a different, weaker (often
     // useless) payload. The bench then either scored it as a fake
     // "bypass" (the rig) or the operator shipped a non-exploit.
     // Real evasion of those payloads is done by the
@@ -107,7 +107,7 @@ pub(crate) fn keywordless_mutations(payload: &str, max_mutations: usize) -> Vec<
     let allow_canned = !super::is_structured_attack(payload);
 
     // Strategy 1: replace the whole payload with a keyword-free
-    // tautology — ONLY when that is semantically equivalent.
+    // tautology: ONLY when that is semantically equivalent.
     if allow_canned {
         for (injection, rule) in KEYWORDLESS_INJECTIONS {
             if results.len() >= max_mutations {
@@ -139,7 +139,7 @@ pub(crate) fn keywordless_mutations(payload: &str, max_mutations: usize) -> Vec<
         }
     }
 
-    // Strategy 3: bare arithmetic tautology probes — again, only a
+    // Strategy 3: bare arithmetic tautology probes, again, only a
     // valid substitute when the original is NOT a structured attack.
     // (`1-0`/`0+1` in place of an `extractvalue` exfil is not the
     // same attack.)

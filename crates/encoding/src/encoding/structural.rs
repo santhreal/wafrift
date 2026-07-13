@@ -1,4 +1,4 @@
-//! Structural encoding strategies — byte-level and framing manipulations.
+//! Structural encoding strategies (byte-level and framing manipulations).
 
 use base64::{Engine as _, engine::general_purpose};
 use std::io::Write as _;
@@ -18,9 +18,9 @@ pub struct ChunkedBody {
     pub required_headers: Vec<(String, String)>,
 }
 
-/// Null byte injection — append `%00` to truncate strings in C-style parsers.
+/// Null byte injection (append `%00` to truncate strings in C-style parsers).
 ///
-/// **Context**: `php`, `cgi` — only semantically correct for backends using
+/// **Context**: `php`, `cgi`: only semantically correct for backends using
 /// C-style null-terminated string handling.
 pub fn null_byte_inject(payload: impl AsRef<[u8]>) -> Result<String, EncodeError> {
     let payload = payload.as_ref();
@@ -32,9 +32,9 @@ pub fn null_byte_inject(payload: impl AsRef<[u8]>) -> Result<String, EncodeError
     }
 }
 
-/// Overlong UTF-8 encoding (2-byte) — represent ASCII non-alphanumeric as 2-byte sequences.
+/// Overlong UTF-8 encoding (2-byte) (represent ASCII non-alphanumeric as 2-byte sequences).
 ///
-/// **Context**: `iis-6` — only works against specific legacy WAFs/frontends that
+/// **Context**: `iis-6`: only works against specific legacy WAFs/frontends that
 /// normalize overlong sequences rather than rejecting them.
 pub fn overlong_utf8(payload: impl AsRef<[u8]>) -> Result<String, EncodeError> {
     let text = std::str::from_utf8(payload.as_ref()).map_err(|_| EncodeError::InvalidUtf8)?;
@@ -53,9 +53,9 @@ pub fn overlong_utf8(payload: impl AsRef<[u8]>) -> Result<String, EncodeError> {
         .collect())
 }
 
-/// Extended overlong UTF-8 encoding (3-byte) — broader coverage with 3-byte sequences.
+/// Extended overlong UTF-8 encoding (3-byte) (broader coverage with 3-byte sequences).
 ///
-/// **Context**: `iis-6` — some WAFs reject 2-byte overlongs but accept 3-byte overlongs.
+/// **Context**: `iis-6`: some WAFs reject 2-byte overlongs but accept 3-byte overlongs.
 ///
 /// RFC 3629 3-byte form: `1110xxxx 10xxxxxx 10xxxxxx` encoding a
 /// 16-bit codepoint as `(x[0]<<12) | (x[1]<<6) | x[2]`. For an
@@ -67,7 +67,7 @@ pub fn overlong_utf8(payload: impl AsRef<[u8]>) -> Result<String, EncodeError> {
 /// silently produced INVALID continuation bytes for any input
 /// `byte >= 0x40` (since `0x80 | 0x40 = 0xC0`, above the valid
 /// continuation range 0x80–0xBF). That includes `@`, `[`, `\`,
-/// `]`, `^`, `_`, `` ` ``, `{`, `|`, `}`, `~` — all of which
+/// `]`, `^`, `_`, `` ` ``, `{`, `|`, `}`, `~`: all of which
 /// appear in real-world payloads (SQL backticks, path escapes,
 /// template-injection braces). Any conforming UTF-8 decoder
 /// rejected those sequences outright, so the encoder produced
@@ -92,9 +92,9 @@ pub fn overlong_utf8_more(payload: impl AsRef<[u8]>) -> Result<String, EncodeErr
         .collect())
 }
 
-/// Chunked transfer-encoding split — break payload across HTTP chunks.
+/// Chunked transfer-encoding split (break payload across HTTP chunks).
 ///
-/// **Context**: `http-request-body` — ONLY valid when sent with
+/// **Context**: `http-request-body`: ONLY valid when sent with
 /// `Transfer-Encoding: chunked`.
 pub fn chunked_split(
     payload: impl AsRef<[u8]>,
@@ -123,7 +123,7 @@ pub fn chunked_split(
     })
 }
 
-/// HTTP parameter pollution — duplicate parameter with a benign first value.
+/// HTTP parameter pollution (duplicate parameter with a benign first value).
 ///
 /// Depending on the server framework, the last value wins (PHP, ASP.NET)
 /// while many WAFs only inspect the first parameter occurrence.
@@ -136,7 +136,7 @@ pub fn parameter_pollute(payload: impl AsRef<[u8]>) -> Result<String, EncodeErro
     } else {
         // Deterministic decoy: a plausible 8-letter junk parameter name
         // derived from the payload via FNV-1a. Identical input ⇒
-        // identical output — a non-deterministic encoder cannot be
+        // identical output, a non-deterministic encoder cannot be
         // regression-pinned and makes a successful bypass impossible to
         // reproduce (the rest of the evasion pipeline, e.g. the equiv
         // generator, is deterministic-seeded for exactly this reason).
@@ -152,12 +152,12 @@ pub fn parameter_pollute(payload: impl AsRef<[u8]>) -> Result<String, EncodeErro
     }
 }
 
-/// Base64 encoding — standard alphabet.
+/// Base64 encoding (standard alphabet).
 pub fn base64_encode(payload: impl AsRef<[u8]>) -> String {
     general_purpose::STANDARD.encode(payload)
 }
 
-/// Base64 URL-safe encoding — `-_` alphabet, no padding.
+/// Base64 URL-safe encoding: `-_` alphabet, no padding.
 pub fn base64_url_encode(payload: impl AsRef<[u8]>) -> String {
     general_purpose::URL_SAFE_NO_PAD.encode(payload)
 }
@@ -176,7 +176,7 @@ pub use wafrift_types::utf7::{utf7_decode, utf7_encode};
 
 /// Gzip compression.
 ///
-/// **Context**: `http-request-body` — ONLY valid with `Content-Encoding: gzip`.
+/// **Context**: `http-request-body`: ONLY valid with `Content-Encoding: gzip`.
 pub fn gzip_encode(payload: impl AsRef<[u8]>) -> Result<String, EncodeError> {
     let payload = payload.as_ref();
     let mut encoder = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
@@ -191,7 +191,7 @@ pub fn gzip_encode(payload: impl AsRef<[u8]>) -> Result<String, EncodeError> {
 
 /// Deflate compression.
 ///
-/// **Context**: `http-request-body` — ONLY valid with `Content-Encoding: deflate`.
+/// **Context**: `http-request-body`: ONLY valid with `Content-Encoding: deflate`.
 pub fn deflate_encode(payload: impl AsRef<[u8]>) -> Result<String, EncodeError> {
     let payload = payload.as_ref();
     let mut encoder =
@@ -237,10 +237,10 @@ mod tests {
         // input byte >= 0x40 produced a 3rd continuation byte
         // above 0xBF (`0x80 | 0x7B` = 0xFB), so the percent-
         // decoded sequence was rejected by every lenient parser
-        // on the planet — bypass produced nothing.
+        // on the planet (bypass produced nothing).
         //
         // The output IS still overlong by RFC 3629 (`std::str::from_utf8`
-        // refuses it — that's the whole point of an overlong-encoding
+        // refuses it, that's the whole point of an overlong-encoding
         // bypass), but the continuation bytes must be in the valid
         // 0x80..=0xBF window so a lenient parser (the WAF / origin
         // we're trying to confuse) actually decodes the bytes back to
@@ -285,7 +285,7 @@ mod tests {
 
     #[test]
     fn overlong_utf8_more_preserves_alphanumerics_verbatim() {
-        // Alphanumeric chars pass through unchanged — this is the
+        // Alphanumeric chars pass through unchanged, this is the
         // existing fast-path that lets the WAF see "evil" payload
         // markers while obfuscating the punctuation surrounding them.
         assert_eq!(overlong_utf8_more("abc123").unwrap(), "abc123");

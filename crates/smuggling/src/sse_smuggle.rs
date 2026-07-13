@@ -8,14 +8,14 @@
 //!
 //! This module exploits that assumption four ways:
 //!
-//! 1. **Body-as-event** — attack payload wrapped in `data: …\n\n` format
+//! 1. **Body-as-event**: attack payload wrapped in `data: …\n\n` format
 //!    sent in the *request* body while `Accept: text/event-stream` is set.
-//! 2. **H2 multiplexed overflow** — one HTTP/2 stream's SSE data bleeds
+//! 2. **H2 multiplexed overflow**: one HTTP/2 stream's SSE data bleeds
 //!    into another stream's parse context via continuations.
-//! 3. **Chunked event boundary** — chunked transfer encoding with chunk
+//! 3. **Chunked event boundary**: chunked transfer encoding with chunk
 //!    boundaries placed at SSE event delimiters to confuse body-length
 //!    accounting.
-//! 4. **Content-Type mismatch** — `Accept: text/event-stream` with
+//! 4. **Content-Type mismatch**: `Accept: text/event-stream` with
 //!    `Content-Type: application/json` so the WAF can't agree on which
 //!    parser to apply.
 //!
@@ -210,7 +210,7 @@ pub fn h2_multiplexed_overflow(
     raw.extend_from_slice(&1u32.to_be_bytes());
     raw.push(0x00); // DATA
     raw.extend_from_slice(benign_sse.as_bytes());
-    // Stream 3 DATA (attack — interleaved between stream 1 DATA frames)
+    // Stream 3 DATA (attack, interleaved between stream 1 DATA frames)
     raw.extend_from_slice(&3u32.to_be_bytes());
     raw.push(0x00); // DATA
     raw.extend_from_slice(attack_sse.as_bytes());

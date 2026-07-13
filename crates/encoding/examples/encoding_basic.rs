@@ -1,4 +1,4 @@
-//! Simple encoding example — URL-encode a payload to bypass basic WAF filters.
+//! Simple encoding example: URL-encode a payload to bypass basic WAF filters.
 
 use wafrift_encoding::{Strategy, encode};
 

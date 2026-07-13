@@ -19,13 +19,13 @@
 //!
 //! Three components, hashed in order:
 //!
-//! 1. **rule_id** — exact match. Different CRS rule → different
+//! 1. **rule_id**: exact match. Different CRS rule → different
 //!    fingerprint, regardless of payload similarity.
-//! 2. **Encoding-chain shape** — ordered list of technique CLASSES
+//! 2. **Encoding-chain shape**: ordered list of technique CLASSES
 //!    (`url`, `unicode`, `case`, …) with random parameters
 //!    collapsed. `url(double)` and `url(triple)` share a class;
 //!    `url` and `unicode` don't.
-//! 3. **Payload structural skeleton** — the payload with operator-
+//! 3. **Payload structural skeleton**: the payload with operator-
 //!    specified bytes replaced by class placeholders:
 //!    - alphanumeric runs → `<W>`
 //!    - digit runs → `<D>`
@@ -42,14 +42,14 @@
 //!
 //! - Doesn't hit HackerOne's API. Operator preloads the archive
 //!   from public CumulusFire writeups via `H1Archive::add_report`.
-//! - Doesn't decide submission eligibility on its own — only flags
+//! - Doesn't decide submission eligibility on its own, only flags
 //!   `Duplicate` so the corpus's `super::rule_corpus::SubmissionStatus`
 //!   lifecycle can record the verdict.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-/// One bypass fingerprint — opaque structural hash plus the parts
+/// One bypass fingerprint, opaque structural hash plus the parts
 /// that produced it (kept for human-readable explain reports).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BypassFingerprint {
@@ -89,7 +89,7 @@ pub fn fingerprint(rule_id: &str, encoding_chain: &[String], payload: &str) -> B
 /// Canonicalize an encoding chain to technique CLASSES.
 ///
 /// `url(double)` and `url(triple)` collapse to `url`. Chain order
-/// is preserved (`["url","unicode"]` ≠ `["unicode","url"]` — first-
+/// is preserved (`["url","unicode"]` ≠ `["unicode","url"]`: first-
 /// applied encoder vs second-applied is a different bypass mechanism).
 fn canonicalize_chain(chain: &[String]) -> Vec<String> {
     chain
@@ -157,7 +157,7 @@ fn skeletonize(payload: &str) -> String {
 /// the skeleton; payloads sharing this keyword + same surrounding
 /// shape are the same bypass."
 ///
-/// Curated for WAF-bypass classification — NOT a comprehensive list
+/// Curated for WAF-bypass classification. NOT a comprehensive list
 /// of attack-payload tokens (that's `wafrift_grammar`'s job).
 const KNOWN_KEYWORDS: &[&str] = &[
     // SQL
@@ -247,7 +247,7 @@ fn is_known_keyword(token: &str) -> bool {
     KNOWN_KEYWORDS.contains(&token)
 }
 
-// FNV-1a 64-bit hash — delegates to `wafrift_types::hash`, the
+// FNV-1a 64-bit hash, delegates to `wafrift_types::hash`, the
 // canonical single home for this primitive. Pre-pass-21 each of three
 // crates carried byte-for-byte identical copies of these constants and
 // loop, ripe for silent drift. R57 §7 DEDUP.
@@ -342,7 +342,7 @@ mod tests {
     #[test]
     fn different_identifier_same_fingerprint() {
         // Random identifier substitution should not change the
-        // fingerprint — that's the whole point of skeletonize.
+        // fingerprint (that's the whole point of skeletonize).
         let a = fingerprint("942100", &["url".into()], "' OR x=x--");
         let b = fingerprint("942100", &["url".into()], "' OR foo=foo--");
         assert_eq!(a.hash, b.hash);
@@ -381,7 +381,7 @@ mod tests {
     #[test]
     fn chain_param_collapsed() {
         // url(double) and url(triple) share the technique class
-        // — same fingerprint.
+        //: same fingerprint.
         let a = fingerprint("942100", &["url(double)".into()], "x");
         let b = fingerprint("942100", &["url(triple)".into()], "x");
         assert_eq!(a.hash, b.hash);
@@ -392,7 +392,7 @@ mod tests {
     fn chain_param_distinct_from_classless() {
         let a = fingerprint("942100", &["url".into()], "x");
         let b = fingerprint("942100", &["url(double)".into()], "x");
-        // After canonicalization, both → ["url"] — same.
+        // After canonicalization, both → ["url"] (same).
         assert_eq!(a.hash, b.hash);
     }
 
@@ -522,7 +522,7 @@ mod tests {
         let mut a = H1Archive::new();
         // Distinct payloads with DIFFERENT skeletons → distinct
         // fingerprints. "x" and "y" both collapse to `<W>` (same
-        // skeleton, same hash) — so use payloads that produce
+        // skeleton, same hash), so use payloads that produce
         // distinct skeletons.
         a.add_report(&fingerprint("R1", &[], "' OR 1=1--"));
         a.add_report(&fingerprint("R1", &[], "; sleep 5"));
@@ -571,7 +571,7 @@ mod tests {
         let b = fingerprint("942100", &["url".into()], "' OR 5=5--");
         let c = fingerprint("942100", &["url".into()], "' OR aaa=aaa--");
         assert_eq!(a.hash, b.hash);
-        // Note: c uses <W>, a uses <D> — different skeleton, different
+        // Note: c uses <W>, a uses <D>, different skeleton, different
         // hash. This is intentional: alphanum vs numeric identifiers
         // are meaningfully different bypass shapes for some WAFs.
         assert_ne!(a.hash, c.hash);
@@ -579,7 +579,7 @@ mod tests {
 
     #[test]
     fn keyword_set_minimum_count() {
-        // Pin the keyword set — adding/removing is fine but
+        // Pin the keyword set, adding/removing is fine but
         // accidental wholesale deletion should fail this test.
         assert!(KNOWN_KEYWORDS.len() >= 30);
     }

@@ -16,7 +16,7 @@
 //!
 //! NOTE: `wafrift-cli` is a binary crate; integration tests cannot import
 //! from it.  `BenchCase` and `build_request` below mirror the canonical
-//! definitions in `crates/cli/src/bench_waf.rs` — update both together.
+//! definitions in `crates/cli/src/bench_waf.rs`: update both together.
 
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
@@ -135,11 +135,11 @@ fn load_all_cases() -> Vec<(PathBuf, BenchCase)> {
 
 #[test]
 fn all_corpus_cases_parse_without_panic() {
-    // load_all_cases() itself panics on parse failure — that's the test.
+    // load_all_cases() itself panics on parse failure (that's the test).
     let all = load_all_cases();
     assert!(
         !all.is_empty(),
-        "corpus loaded zero cases — corpus root is missing or empty"
+        "corpus loaded zero cases, corpus root is missing or empty"
     );
 }
 
@@ -150,11 +150,11 @@ fn corpus_total_case_count_at_or_above_floor() {
     // Floor: 800 cases (corpus was at 817 on 2026-05-21; floor set 2%
     // below to absorb deliberate dedup/prune PRs without false-failing,
     // while still catching bulk-deletion regressions). Raise this
-    // number as the corpus grows — lowering it requires explicit
+    // number as the corpus grows, lowering it requires explicit
     // sign-off because it weakens the guard.
     assert!(
         count >= 800,
-        "corpus case count {count} is below the floor of 800 — bulk deletion regression?"
+        "corpus case count {count} is below the floor of 800 (bulk deletion regression)?"
     );
 }
 
@@ -195,7 +195,7 @@ fn every_corpus_case_produces_nonempty_request() {
 
         if url_empty && body_empty {
             failures.push(format!(
-                "{}: case id={} mode={} — both url and body are effectively empty",
+                "{}: case id={} mode={}, both url and body are effectively empty",
                 path.display(),
                 case.id,
                 case.mode
@@ -205,7 +205,7 @@ fn every_corpus_case_produces_nonempty_request() {
         // URL must not be empty at all.
         if req.url().is_empty() {
             failures.push(format!(
-                "{}: case id={} mode={} — url is empty",
+                "{}: case id={} mode={}, url is empty",
                 path.display(),
                 case.id,
                 case.mode
@@ -258,12 +258,12 @@ fn corpus_case_counts_per_class_reasonable() {
         *by_class.entry(case.class.clone()).or_default() += 1;
     }
     // Every class that appears at all must have at least 8 cases (same
-    // floor as bench_corpus_integrity.rs — a single class below 8 means
+    // floor as bench_corpus_integrity.rs, a single class below 8 means
     // per-class bypass-rate cells are statistical noise).
     for (class, count) in &by_class {
         assert!(
             *count >= 8,
-            "class `{class}` has only {count} case(s) in the full corpus — \
+            "class `{class}` has only {count} case(s) in the full corpus. \
              below the statistical floor of 8"
         );
     }

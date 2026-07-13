@@ -19,7 +19,7 @@ async fn spawn_query_aware_mock() -> std::net::SocketAddr {
                 let req = String::from_utf8_lossy(&buf[..n]).to_string();
                 let leaked = req.contains("WAFRIFT_ATTACK_TOKEN");
                 let body: String = if leaked {
-                    "<html>attack token seen in query — long response body</html>".into()
+                    "<html>attack token seen in query, long response body</html>".into()
                 } else {
                     "<html>baseline</html>".into()
                 };
@@ -58,7 +58,7 @@ fn query_diff_finds_divergences_against_query_aware_mock() {
         "--delay-ms",
         "0",
     ]);
-    assert_eq!(code, 0, "query-diff should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "query-diff should exit 0, stderr:\n{stderr}");
 
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     assert_eq!(parsed["baseline_status"], 200);
@@ -92,7 +92,7 @@ fn query_diff_against_unreachable_target_exits_1() {
     ]);
     assert_eq!(
         code, 1,
-        "unreachable target must exit 1 — stderr:\n{stderr}"
+        "unreachable target must exit 1, stderr:\n{stderr}"
     );
 }
 
@@ -120,13 +120,13 @@ fn query_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "query", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff query --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff query --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["query-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift query-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift query-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }

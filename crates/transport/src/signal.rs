@@ -1,4 +1,4 @@
-//! Rich response classification — replaces binary `is_waf_block` with
+//! Rich response classification, replaces binary `is_waf_block` with
 //! a structured signal the strategy engine can learn from.
 //!
 //! Instead of "blocked or not," every upstream response produces a
@@ -43,17 +43,17 @@ pub enum BlockClass {
     HardBlock,
     /// 200 OK but body contains block indicators (captcha, access denied)
     SoftBlock,
-    /// Rate limited — back off, don't change technique
+    /// Rate limited, back off, don't change technique
     RateLimit,
-    /// JS challenge (Cloudflare challenge-platform, etc.) — back off
+    /// JS challenge (Cloudflare challenge-platform, etc.), back off
     Challenge,
-    /// Not blocked — the payload passed through
+    /// Not blocked, the payload passed through
     Pass,
 }
 
 impl BlockClass {
     /// Whether this response indicates the WAF blocked the request.
-    /// Rate limits and challenges are NOT technique failures — they
+    /// Rate limits and challenges are NOT technique failures, they
     /// shouldn't penalize the current technique.
     #[must_use]
     pub fn is_blocked(&self) -> bool {
@@ -117,7 +117,7 @@ pub struct HeaderMarker {
 /// Untagged enum lets TOML express either a single substring (OR
 /// semantics across the `challenge_markers` array) or a conjunction
 /// of substrings (`{ all = [..] }`, AND semantics within one entry).
-/// The Cloudflare profile uses both forms — `"challenge-platform"`
+/// The Cloudflare profile uses both forms: `"challenge-platform"`
 /// is a single substring; `{ all = ["captcha", "cloudflare"] }`
 /// preserves the legacy detector for pre-challenge-platform pages.
 #[derive(Debug, Clone, Deserialize)]
@@ -205,7 +205,7 @@ impl ResponseProfileDb {
             Err(e) => {
                 tracing::error!(
                     error = %e,
-                    "compiled-in WAF response profiles failed to parse — \
+                    "compiled-in WAF response profiles failed to parse. \
                      this is a build-time bug, please report it. \
                      Falling back to empty profile DB."
                 );
@@ -246,7 +246,7 @@ impl ResponseProfileDb {
         // Check for interactive challenges via each profile's own
         // `challenge_status_codes` + `challenge_markers`. First match
         // wins, matching the prior hardcoded behaviour. Profiles with
-        // empty challenge_markers silently skip this loop — only WAFs
+        // empty challenge_markers silently skip this loop, only WAFs
         // that ship interactive challenges (Cloudflare today; Akamai /
         // PerimeterX / hCaptcha when those profiles get markers) opt
         // in.
@@ -272,7 +272,7 @@ impl ResponseProfileDb {
         // Score each profile against the response. Track header-marker
         // hits separately from body-marker hits: a Server: cloudflare
         // header on a benign 200 OK page does NOT mean Cloudflare
-        // blocked the request — it just means the site sits behind
+        // blocked the request, it just means the site sits behind
         // Cloudflare. Soft-block must require a body marker hit
         // (high-confidence "block page text in body") on top of the
         // vendor identification.
@@ -288,7 +288,7 @@ impl ResponseProfileDb {
                 score += 2;
             }
 
-            // Body marker matches (high-confidence — block-page text)
+            // Body marker matches (high-confidence, block-page text)
             // Audit (2026-05-10): cap body-marker score at +3 per profile
             // to prevent double-counting when multiple markers match the
             // same body text (e.g. "Sucuri" is a substring of
@@ -344,14 +344,14 @@ impl ResponseProfileDb {
                 // challenge interstitial served as 200).
                 BlockClass::SoftBlock
             } else {
-                // Vendor identified by header alone — every Cloudflare-
+                // Vendor identified by header alone, every Cloudflare-
                 // hosted 200 OK has `Server: cloudflare`. That is NOT
                 // a block; treat as Pass so per-host counters stay
                 // honest.
                 BlockClass::Pass
             }
         } else {
-            // No profile matched — fall back to status-based detection.
+            // No profile matched (fall back to status-based detection).
             // The canonical 403/406/503 set lives in
             // `response::is_waf_block_status` (audited 2026-05-10 to
             // exclude 429 / 451). Calling through the shared classifier
@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn classify_legacy_fallback() {
-        // No profiles loaded — should still detect via legacy keywords
+        // No profiles loaded, should still detect via legacy keywords
         let db = ResponseProfileDb::empty();
         let sig = db.classify(200, &[], b"Access Denied by Web Application Firewall");
         assert_eq!(sig.classification, BlockClass::SoftBlock);

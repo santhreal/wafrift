@@ -93,16 +93,16 @@ mod wafmodel_cmd;
 #[derive(Parser, Debug)]
 #[command(
     name = "wafrift",
-    about = "WAF evasion toolkit — run without arguments for interactive mode",
-    long_about = "WAF evasion toolkit — run without arguments for interactive mode.\n\n\
+    about = "WAF evasion toolkit, run without arguments for interactive mode",
+    long_about = "WAF evasion toolkit, run without arguments for interactive mode.\n\n\
                   Exit codes (CI-friendly):\n\
                     0  success\n\
                     1  generic error (IO failure, runtime error, etc.)\n\
-                    2  argument / input error (unknown flag, contradictory selectors, malformed value, unknown technique selector, unrecognised algorithm, missing required field) — clap convention; ALSO used by bench-waf for 'zero bypasses' and by replay for 'saved bypass blocked' (legacy: per perf-hunt N01 the dual usage is documented rather than split because the bench-waf/replay overload is well-established in CI scripts)\n\
+                    2  argument / input error (unknown flag, contradictory selectors, malformed value, unknown technique selector, unrecognised algorithm, missing required field), clap convention; ALSO used by bench-waf for 'zero bypasses' and by replay for 'saved bypass blocked' (legacy: per perf-hunt N01 the dual usage is documented rather than split because the bench-waf/replay overload is well-established in CI scripts)\n\
                     3  bench-diff: regression vs baseline (see --bypass-drop-pp)\n\
                     4  bench-waf --validate-only: corpus integrity errors (duplicate id, TOML parse failure, missing required field)\n\
-                    5  scan: aborted — target rate-limited the probes (inconclusive, not 'no bypass')\n\
-                    7  scan --scan-timeout-secs: wall-clock budget exceeded — partial results emitted (check truncated_by_scan_timeout in JSON output)\n\n\
+                    5  scan: aborted: target rate-limited the probes (inconclusive, not 'no bypass')\n\
+                    7  scan --scan-timeout-secs: wall-clock budget exceeded, partial results emitted (check truncated_by_scan_timeout in JSON output)\n\n\
                   Environment variables (R50 pass-12 I5 / CLAUDE.md §10):\n\
                     HOME, USERPROFILE      home dir for ~/.wafrift state (gene-bank, hunt, keys)\n\
                     RUST_LOG               tracing filter (e.g. RUST_LOG=wafrift=debug); default is `warn`\n\
@@ -117,12 +117,12 @@ mod wafmodel_cmd;
     version,
     // R44 fix (dogfood pass 4): propagate -V/--version to every
     // subcommand. Pre-fix `wafrift evade --version` errored as
-    // "unexpected argument" — operator muscle memory expects the
+    // "unexpected argument", operator muscle memory expects the
     // flag to work on any subcommand of any clap tool.
     propagate_version = true,
 )]
 struct Cli {
-    /// Suppress human-readable output — emit only machine-parseable results (JSON).
+    /// Suppress human-readable output (emit only machine-parseable results (JSON)).
     #[arg(long, short, global = true)]
     quiet: bool,
 
@@ -132,7 +132,7 @@ struct Cli {
     config: Option<PathBuf>,
 
     /// Differential-baseline bypass verification. Credit a payload as a WAF
-    /// bypass only when the UN-EVADED base is BLOCKED in the same delivery —
+    /// bypass only when the UN-EVADED base is BLOCKED in the same delivery 
     /// proving the evasion is what passed it, not a payload the WAF never
     /// policed. Off by default (anti-rig: the headline bypass metric is
     /// unchanged unless you opt in). Costs ~one extra probe per delivery arm.
@@ -144,7 +144,7 @@ struct Cli {
 
     /// Detonation engine used whenever wafrift proves execution
     /// (`--prove-execution`, `exploit`, proxy classification): `jsdet` (default,
-    /// fast QuickJS sandbox) or `chrome` (real headless Chrome — also fires
+    /// fast QuickJS sandbox) or `chrome` (real headless Chrome, also fires
     /// mutation-XSS and browser-only handlers the sandbox cannot model). The
     /// chrome engine needs a Chrome/Chromium binary (`$WAFRIFT_CHROME_BIN`).
     #[arg(long = "detonate-engine", global = true, default_value = "jsdet",
@@ -159,20 +159,20 @@ struct Cli {
 // structs (some 500+ bytes for the rich scan/bench/proxy flag sets,
 // others ~16 bytes for trivial subcommands). Boxing each variant
 // would slow every dispatch by an indirection and complicate clap
-// derive macros for no operational benefit — Commands is matched
+// derive macros for no operational benefit. Commands is matched
 // once per invocation, not on a hot path.
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Transform a payload with evasion techniques.
     Evade(evade_cmd::EvadeArgs),
-    /// Detonation-guided evasion — find a payload that bypasses the WAF AND
+    /// Detonation-guided evasion, find a payload that bypasses the WAF AND
     /// actually executes (`alert(1)` fires), proven by the `detonate` sandbox.
     Exploit(exploit_cmd::ExploitArgs),
     /// Emit the WAF-blind CLIENT-SIDE delivery plan for an XSS payload: the
     /// fragment / window.name / postMessage / storage / client-route channels
     /// whose taint source never reaches the server, so no WAF/CDN inspects them.
-    /// Sends nothing — it prints a copy-pasteable browser-delivery plan (text or
+    /// Sends nothing, it prints a copy-pasteable browser-delivery plan (text or
     /// `wafrift.client_deliver.v1` JSON for scald) confirmed by DOM execution,
     /// not a server response. The lane modern reflected-XSS bypasses live in.
     #[command(name = "client-deliver")]
@@ -183,13 +183,13 @@ enum Commands {
     ///
     /// ```text
     ///   wafrift detect --url https://target.com
-    ///     — fetches once, runs all four detection axes (HTTP
+    ///: fetches once, runs all four detection axes (HTTP
     ///       headers + body, DNS CNAME chain, reverse-DNS PTR,
     ///       BGP origin ASN).
     ///
     ///   wafrift detect --status 403 --headers 'Server: cloudflare'
     ///                  --headers 'CF-Ray: x' --body '<html>...'
-    ///     — feed a prior curl/Burp capture's response triple
+    ///: feed a prior curl/Burp capture's response triple
     ///       directly (no network call).
     /// ```
     ///
@@ -203,13 +203,13 @@ enum Commands {
     /// Fire evasion variants against a live target and report bypass results.
     Scan(ScanArgs),
     /// Reproducible WAF benchmark: measure raw block rate AND wafrift bypass rate.
-    /// Pass `--evade` to actually run the evasion engine (off by default — without it,
+    /// Pass `--evade` to actually run the evasion engine (off by default, without it,
     /// only the WAF's raw rejection rate is measured, no bypass claim is made).
     ///
     /// Environment variables (R50 pass-12 I5 / CLAUDE.md §10):
-    ///   - `WAFRIFT_BENCH_URL` — fallback target URL when `--base-url` is omitted.
-    ///   - `WAFRIFT_MODSEC_URL` — legacy alias for `WAFRIFT_BENCH_URL` (deprecated).
-    ///   - `WAFRIFT_CORPUS` — fallback corpus path when `--corpus` is omitted.
+    ///   - `WAFRIFT_BENCH_URL`: fallback target URL when `--base-url` is omitted.
+    ///   - `WAFRIFT_MODSEC_URL`: legacy alias for `WAFRIFT_BENCH_URL` (deprecated).
+    ///   - `WAFRIFT_CORPUS`: fallback corpus path when `--corpus` is omitted.
     #[command(name = "bench-waf", hide = true)]
     BenchWaf(bench_waf::BenchWafArgs),
     /// Compare two `bench-waf --output` JSON blobs and gate on regression.
@@ -231,7 +231,7 @@ enum Commands {
     /// or fire differential parameter mining. Emits `DiscoveredEndpoint` JSON
     /// suitable for piping into `wafrift scan --from-discovery`.
     Discover(discover_cmd::DiscoverArgs),
-    /// Replay a saved bypass against a target — proves reproducibility.
+    /// Replay a saved bypass against a target (proves reproducibility).
     Replay(replay::ReplayArgs),
     /// Generate a markdown findings report from the proxy gene bank.
     Report(report::ReportArgs),
@@ -255,7 +255,7 @@ enum Commands {
     /// Active-learning WAF bypass: learn the target's decision boundary
     /// online (L* membership queries via HTTP), mine bypass candidates
     /// offline against the learned SFA at ~1M/sec, and verify each online.
-    /// Deduces bypasses from the WAF's decision boundary — not from
+    /// Deduces bypasses from the WAF's decision boundary, not from
     /// mutation luck. Use `--budget` to cap live queries.
     #[command(name = "model-evade")]
     ModelEvade(model_evade_cmd::ModelEvadeArgs),
@@ -286,33 +286,33 @@ enum Commands {
     /// Emits the segments (seq + bytes) for a raw-socket sender to deliver.
     #[command(name = "tcp-overlap")]
     TcpOverlap(tcp_overlap_cmd::TcpOverlapArgs),
-    /// One-shot demo command — runs detect + fingerprint + bypass-probe
+    /// One-shot demo command, runs detect + fingerprint + bypass-probe
     /// (and optionally scan) against a single target, and stitches the
     /// results into one polished markdown writeup.
     Legendary(legendary::LegendaryArgs),
-    /// Out-of-band callback receiver — pre-mints unique tokens to
+    /// Out-of-band callback receiver, pre-mints unique tokens to
     /// embed in payloads (blind SQLi / stored XSS / blind SSRF / OOB
     /// command injection); logs any inbound HTTP request matching a
     /// minted token. The oracle for the vuln classes that never echo
     /// a verdict on the same response.
     Listener(listener_cmd::ListenerArgs),
-    /// Parser-differential fingerprinter — fires URL-shape variants
+    /// Parser-differential fingerprinter, fires URL-shape variants
     /// that exercise known WAF↔origin parser disagreements
     /// (semicolon-strip, backslash-as-separator, NUL truncation,
     /// double-URL-decode, fullwidth slash, dot-segment, percent
     /// case, empty-segment collapse, trailing dot). A divergence
     /// from baseline is evidence the WAF and the origin disagree
-    /// on what the URL means — exploit the seam without any
+    /// on what the URL means, exploit the seam without any
     /// payload mutation.
     #[command(name = "parser-diff", hide = true)]
     ParserDiff(parser_diff_cmd::ParserDiffArgs),
-    /// Differential analysis — surface WAF↔origin (and WAF↔cache,
+    /// Differential analysis, surface WAF↔origin (and WAF↔cache,
     /// H1↔H2, browser↔browser) parser disagreements, wafrift's deepest
     /// bypass seam. `wafrift diff <kind>` groups the whole family in one
     /// verb: `path` / `header` / `body` / `query` / `cache` / `h2` /
     /// `method` / `gql` / `jwt` / `cors` / `trailer`. `all` runs the
     /// SEVEN original parser-diff probes concurrently (path, header, body,
-    /// query, cache, h2, method) — it does NOT include `gql` / `jwt` /
+    /// query, cache, h2, method), it does NOT include `gql` / `jwt` /
     /// `cors` / `trailer`; run those individually. The legacy `<kind>-diff`
     /// commands and `attack` remain as deprecated hidden aliases (LAW 2).
     Diff(diff_cmd::DiffArgs),
@@ -320,12 +320,12 @@ enum Commands {
     /// (gzip / deflate / brotli / chain). The compression-confusion
     /// attack: WAFs that inspect raw bytes pass over the encoded
     /// body while the origin decompresses normally. Brotli is the
-    /// headline gap — many WAFs don't ship a brotli decompressor
+    /// headline gap, many WAFs don't ship a brotli decompressor
     /// even though Chrome / nginx / Apache all do.
     Compress(compress_cmd::CompressArgs),
     /// HTTP request smuggling probes (CL.TE / TE.CL / TE.TE / CL.0 /
     /// dual-CL / multi-value-CL, plus the CVE-class chunk-ext-lone-lf,
-    /// rapid-reset, made-you-reset, settings-storm — run `wafrift smuggle
+    /// rapid-reset, made-you-reset, settings-storm, run `wafrift smuggle
     /// list` for the authoritative, current variant set). Subcommands:
     /// `detect` runs the SAFE timing-differential probes that
     /// can't poison the connection pool; `probe` fires the
@@ -348,7 +348,7 @@ enum Commands {
     /// Emit the cartesian product of two smuggle-probe families as
     /// composed JSON artifacts. For every probe in family X × every
     /// probe in family Y, emit one merged artifact carrying both
-    /// probes' wire shapes — surfaces bypass-chain interactions that
+    /// probes' wire shapes, surfaces bypass-chain interactions that
     /// no single technique produces. Bound output size with `--cap N`
     /// (default 64); exit 2 when either side matches zero probes.
     #[command(name = "smuggle-cross-product")]
@@ -369,7 +369,7 @@ enum Commands {
     #[command(name = "smuggle-chain")]
     SmuggleChain(smuggle_chain_cmd::SmuggleChainArgs),
     /// Fire every smuggle probe against a live target. The
-    /// end-to-end execution pipeline — converts probe artifacts to
+    /// end-to-end execution pipeline, converts probe artifacts to
     /// real HTTP requests, fires via reqwest, captures
     /// status/body-length/latency, and reports a `bypass_signal`
     /// vs a baseline request (`canary-reflected` / `none` /
@@ -378,19 +378,19 @@ enum Commands {
     /// canary token appeared verbatim in the response (false-positive-
     /// free). Requires `--i-have-permission <REASON>` for non-
     /// allowlisted hosts. Frame-artifact probes (capsule /
-    /// quic-datagram / compression) are skipped — they live below
+    /// quic-datagram / compression) are skipped, they live below
     /// the HTTP layer.
     #[command(name = "smuggle-fire")]
     SmuggleFire(smuggle_fire_cmd::SmuggleFireArgs),
     /// Adversarial distillation via Zeller's ddmin: take a KNOWN-
     /// working bypass payload and find the minimum-edit-distance
-    /// subset that STILL bypasses. Useful for pentest reports —
+    /// subset that STILL bypasses. Useful for pentest reports 
     /// shorter payloads are easier for clients to reproduce, and
     /// the reduction reveals which payload features the WAF
     /// actually objected to vs. which were noise. Typically chained
     /// from `wafrift scan --format json | jq .bypass_variants[0].payload`.
     Distill(distill_cmd::DistillArgs),
-    /// Header parser-disagreement scanner — sister to `parser-diff`
+    /// Header parser-disagreement scanner, sister to `parser-diff`
     /// (which probes URL-path disagreements). Fires variants of the
     /// request header block that exercise known WAF↔origin
     /// parser disagreements (dup-header dispatch, X-Forwarded-For
@@ -398,35 +398,35 @@ enum Commands {
     /// X-Original-Host rebind, X-Rewrite-URL, X-Real-IP localhost
     /// spoof, trailing-whitespace + NUL truncation in values). A
     /// divergence from baseline is evidence the WAF and origin
-    /// disagree on what the header block means — exploit the seam
+    /// disagree on what the header block means, exploit the seam
     /// without any payload mutation.
     #[command(name = "header-diff", hide = true)]
     HeaderDiff(header_diff_cmd::HeaderDiffArgs),
-    /// Body parser-disagreement scanner — third in the parser-diff
+    /// Body parser-disagreement scanner, third in the parser-diff
     /// family. Fires variant request BODIES that exercise known
     /// WAF↔origin parser disagreements (JSON dup-key precedence,
     /// JSONC/JSON5 comment tolerance, UTF-7 charset smuggling,
     /// BOM-prefixed JSON, form-urlencoded HPP in body, JSON-as-form,
     /// form-as-JSON, multipart boundary collision). The body-level
-    /// seam — disagreements here let an attacker pass content the
+    /// seam, disagreements here let an attacker pass content the
     /// WAF declines to parse, that the origin nonetheless processes.
     #[command(name = "body-diff", hide = true)]
     BodyDiff(body_diff_cmd::BodyDiffArgs),
-    /// Query-string parser-disagreement scanner — fourth in the
+    /// Query-string parser-disagreement scanner, fourth in the
     /// parser-diff family. Fires variant URL QUERIES that exercise
     /// known WAF↔origin parser disagreements (HPP first-vs-last,
     /// array bracket notation, comma split, empty-value HPP,
     /// missing-value, percent-encoded keys, NUL truncation,
     /// semicolon separator, encoded `#`, trailing-dot keys). The
-    /// canonical place pentesters reach for first — every protected
+    /// canonical place pentesters reach for first, every protected
     /// route the WAF gates by URL query is fair game.
     #[command(name = "query-diff", hide = true)]
     QueryDiff(query_diff_cmd::QueryDiffArgs),
-    /// Unified parser-disagreement orchestrator — runs ALL seven
+    /// Unified parser-disagreement orchestrator, runs ALL seven
     /// parser-diff family probes (URL path, headers, body, query,
     /// cache, h2, HTTP-method) against one target concurrently and
     /// merges the results into one structured report. The end-to-end
-    /// pentester command — one invocation, one report, every
+    /// pentester command, one invocation, one report, every
     /// parser-disagreement seam surfaced.
     #[command(hide = true)]
     Attack(attack_cmd::AttackArgs),
@@ -442,7 +442,7 @@ enum Commands {
     CacheDiff(cache_diff_cmd::CacheDiffArgs),
     /// HTTP/1.1 vs HTTP/2 differential scanner. Fires the same
     /// logical request via both protocols and reports any response
-    /// divergence — evidence the WAF or origin treats H1 and H2
+    /// divergence, evidence the WAF or origin treats H1 and H2
     /// differently. Catches the common pattern of WAF rule corpus
     /// authored against H1 wire format + H2-to-H1 downgrade
     /// translation bugs.
@@ -452,7 +452,7 @@ enum Commands {
     /// with N HTTP method variants (POST/PUT/DELETE/PATCH,
     /// HEAD/OPTIONS/TRACE, WebDAV PROPFIND/MKCOL/MOVE/COPY/LOCK,
     /// custom token like BANANA, lowercase `get`, H2 preface `PRI`)
-    /// and reports response divergence — evidence a WAF rule only
+    /// and reports response divergence, evidence a WAF rule only
     /// fires on GET/POST while the origin routes the unusual verb
     /// somewhere meaningful.
     #[command(name = "method-diff", hide = true)]
@@ -486,9 +486,9 @@ enum Commands {
     /// HTTP/1.1 chunked-trailer field injection scanner. WAFs typically
     /// inspect the initial header block but NOT trailing headers (the
     /// trailer fields after the final chunk in chunked Transfer-Encoding).
-    /// This command fires two raw chunked POSTs — one baseline (no
+    /// This command fires two raw chunked POSTs, one baseline (no
     /// trailer sent) and one attack (payload injected as a trailer field)
-    /// — and reports any response divergence. A divergence is evidence
+    ///: and reports any response divergence. A divergence is evidence
     /// the backend processed the trailer while the WAF did not.
     #[command(name = "trailer-diff", hide = true)]
     TrailerDiff(trailer_diff_cmd::TrailerDiffArgs),
@@ -496,14 +496,14 @@ enum Commands {
     /// Sends the same probe through N wreq/BoringSSL-backed browser
     /// emulations (Chrome 120/131, Firefox 133, Safari 17.5/18,
     /// Edge 131, OkHttp 5) plus a reqwest baseline and flags any
-    /// profile whose status / body diverges — direct evidence the
+    /// profile whose status / body diverges, direct evidence the
     /// WAF in front of the target JA3/JA4-fingerprints the
     /// ClientHello. Requires `--features tls-impersonate` at build
     /// time (pulls in BoringSSL).
     #[cfg(feature = "tls-impersonate")]
     #[command(name = "ja3-diff", hide = true)]
     Ja3Diff(ja3_diff_cmd::Ja3DiffArgs),
-    /// Corpus minimization via Zeller's ddmin — alias for `wafrift distill`.
+    /// Corpus minimization via Zeller's ddmin (alias for `wafrift distill`).
     /// Familiar to AFL/libFuzzer users as `afl-tmin` / `tmin`. Takes a
     /// KNOWN-working bypass payload and finds the minimum-edit-distance
     /// substring that STILL bypasses. Reads payload from `--payload <P>`
@@ -514,7 +514,7 @@ enum Commands {
     /// Offline bypass clustering: group a `bench-waf --output` JSON by
     /// rule_id, payload class, and edit-distance similarity. Outputs
     /// clusters with a representative technique and member count per
-    /// cluster. Pure offline — no HTTP. Useful for triaging large bypass
+    /// cluster. Pure offline, no HTTP. Useful for triaging large bypass
     /// corpora and identifying duplicate root causes.
     Cluster(cluster_cmd::ClusterArgs),
     /// Emit SARIF 2.1.0 from a `bench-waf --output` or `scan --output`
@@ -522,7 +522,7 @@ enum Commands {
     /// accepted by GitHub Code Scanning, Azure DevOps, and most
     /// enterprise SAST/DAST UIs. Pipe a wafrift result into this and
     /// the bypass findings appear as first-class alerts on a PR or
-    /// dashboard. Pure offline — no HTTP. Use `-` to read from stdin.
+    /// dashboard. Pure offline (no HTTP. Use `-` to read from stdin).
     Sarif(sarif_cmd::SarifArgs),
     /// Long-running autonomous bypass campaign. Repeatedly runs
     /// `bench-waf --evade` rounds against a target with rotating
@@ -533,19 +533,19 @@ enum Commands {
     /// Every round records the winning payload + response evidence for each
     /// confirmed bypass to a per-target corpus under `~/.wafrift`; run
     /// `wafrift harvest` afterward to turn it into review-ready reports.
-    /// `hunt` NEVER submits — filing is a separate, deliberate, one-at-a-time
+    /// `hunt` NEVER submits, filing is a separate, deliberate, one-at-a-time
     /// `wafrift submit` step (auto-/batch-submitting is a bounty-ban risk).
     ///
     /// With `--target cumulusfire`: pre-fills the CF testing endpoint and
     /// authorization reason for the CumulusFire public bug-bounty scope.
     ///
     /// Environment variables (CLAUDE.md §10):
-    ///   - `WAFRIFT_BENCH_URL` — fallback target when `--base-url` / `--target` omitted.
+    ///   - `WAFRIFT_BENCH_URL`: fallback target when `--base-url` / `--target` omitted.
     Hunt(hunt_cmd::HuntArgs),
     /// Inspect a `wafrift corpus` artifact (rule_corpus + edge-POP coverage
     /// maps written by `wafrift bench-waf --corpus-out`). Subcommands:
     ///
-    /// `stats` — print a structured summary of rules seen, total bypasses /
+    /// `stats`: print a structured summary of rules seen, total bypasses /
     /// blocks, and edge POPs covered. Supports `--format json` for CI
     /// gate integration (if rules_seen < N, fail the hunt).
     #[command(name = "corpus", hide = true)]
@@ -556,13 +556,13 @@ enum Commands {
     /// drops duplicates and already-handled bypasses, RE-VERIFIES each unique
     /// candidate against the live target (so the report carries fresh proof,
     /// not a stale hit), and writes one Markdown report per still-working
-    /// bypass. NEVER submits — use `wafrift submit` to file reviewed reports
+    /// bypass. NEVER submits, use `wafrift submit` to file reviewed reports
     /// one at a time.
     Harvest(harvest_cmd::HarvestArgs),
     /// File a SINGLE reviewed harvest report to HackerOne (guarded).
     ///
     /// Dry-run by default; pass `--confirm` to actually file the one report.
-    /// wafrift never auto-submits and never batch-submits — mass-filing
+    /// wafrift never auto-submits and never batch-submits, mass-filing
     /// machine-generated reports at a bounty program is a ban risk.
     Submit(harvest_cmd::SubmitArgs),
 }
@@ -576,13 +576,13 @@ enum Commands {
 /// Default inter-request delay in milliseconds for scan/tmin/bench loops.
 /// Must agree with `#[arg(default_value_t)]` on [`ScanArgs::delay_ms`] and
 /// with every other site that constructs a [`ScanArgs`] inline. Changing
-/// the default requires updating ALL sites — this const is the canonical source.
+/// the default requires updating ALL sites (this const is the canonical source).
 pub(crate) const DEFAULT_DELAY_MS: u64 = 50;
 
 /// Default per-bypass fire cap for the auto-distill pass.
 /// Must agree with `#[arg(default_value_t)]` on [`ScanArgs::auto_distill_max_fires`]
 /// and with the hardcoded fallback in `import_curl.rs`. Changing the default
-/// requires updating ALL three sites — this const is the canonical source.
+/// requires updating ALL three sites (this const is the canonical source).
 pub(crate) const DEFAULT_AUTO_DISTILL_MAX_FIRES: u32 = 200;
 
 /// Default OOB-callback wait in seconds.
@@ -625,7 +625,7 @@ pub struct ScanArgs {
     )]
     pub target_positional: Option<String>,
 
-    /// Long-form alias for the positional target URL — kept so every
+    /// Long-form alias for the positional target URL, kept so every
     /// pre-existing `wafrift scan --target <URL>` invocation continues
     /// to parse. Mutually exclusive with the positional form.
     #[arg(
@@ -645,7 +645,7 @@ pub struct ScanArgs {
 
     /// Run a corpus-wide bench measurement instead of a single-payload scan:
     /// fire every payload in this corpus directory/file at the target and
-    /// report the block-rate + verified bypass-rate — the same measurement
+    /// report the block-rate + verified bypass-rate, the same measurement
     /// `bench-waf` performs ("scan pointed at bench"). `--payload` is ignored
     /// in this mode. Metric-safe: delegates to the unchanged bench engine.
     #[arg(long)]
@@ -664,7 +664,7 @@ pub struct ScanArgs {
     /// `ldap`, `xxe`, `ssrf`, `nosql`, `log4shell`) used for the
     /// per-class warm-start in the gene bank. When set, the pre-scan
     /// winner pool is biased toward techniques that historically
-    /// beat THIS WAF on THIS payload class — a SQLi scan against
+    /// beat THIS WAF on THIS payload class, a SQLi scan against
     /// Cloudflare starts from "what beat CF on SQLi yesterday", not
     /// "what beat anything on anything". When unset, the global
     /// warm-start path runs (unchanged behaviour). The post-scan
@@ -684,29 +684,29 @@ pub struct ScanArgs {
     )]
     pub payload_class: Option<String>,
 
-    /// Out-of-band callback URL — the base address of a `wafrift
+    /// Out-of-band callback URL, the base address of a `wafrift
     /// listener` instance. When set, every occurrence of
     /// `{{CALLBACK}}` in the payload is replaced per-variant with
     /// `<URL>/<unique-token>`. The operator then correlates any
     /// inbound callback at the listener back to a specific variant
-    /// by token — the oracle for blind SQLi (time-based), stored
+    /// by token, the oracle for blind SQLi (time-based), stored
     /// XSS, blind SSRF, OOB command injection. The token is also
     /// surfaced in each variant's scan report.
     #[arg(long, value_name = "URL")]
     pub callback_url: Option<String>,
 
-    /// Stateful chain mode — fire this curl-format request FIRST,
+    /// Stateful chain mode, fire this curl-format request FIRST,
     /// capture cookies + Authorization, then re-use them on every
     /// variant. The file format is identical to `wafrift import-curl`'s
     /// input (Burp / Chromium "Copy as cURL" pastes work verbatim).
-    /// Defeats WAFs that scrutinise unauthenticated traffic more —
+    /// Defeats WAFs that scrutinise unauthenticated traffic more 
     /// most do, by a wide margin.
     #[arg(long, value_name = "CURL_FILE")]
     pub session_init: Option<PathBuf>,
 
     /// Evasion intensity. Approximate variant counts on an XSS
     /// payload to set expectations: light ~12, medium ~58, heavy
-    /// ~1500. Heavy can produce 100x the variants of light — pair
+    /// ~1500. Heavy can produce 100x the variants of light, pair
     /// with `--dry-run` to preview the firing budget before
     /// committing to a rate-limited target. Heavy also triples the
     /// wall-clock at a fixed `--delay-ms`; use `--concurrency` to
@@ -726,7 +726,7 @@ pub struct ScanArgs {
     /// medium / heavy` to compare variant counts across intensity
     /// tiers without burning the rate budget. Exit 0. Text mode prints
     /// `dry-run: N variants (explore phase) · …`; the estimate covers the
-    /// EXPLORE phase only — the exploit/multi-vector phase fires more,
+    /// EXPLORE phase only, the exploit/multi-vector phase fires more,
     /// uncounted, so treat it as a LOWER BOUND. For reliable machine parsing
     /// use `--format json`: a stable object with `variants`,
     /// `estimated_seconds`, and `estimate_scope`.
@@ -773,14 +773,14 @@ pub struct ScanArgs {
     /// HTTP proxy to route every wafrift request through. Typical
     /// pentest setup: point at Burp Suite on `http://127.0.0.1:8080`
     /// so every probe and bypass attempt lands in Burp's request
-    /// history — copy-pasteable into Repeater, recordable into
+    /// history, copy-pasteable into Repeater, recordable into
     /// Scanner / Intruder, exportable into the final report. The
     /// proxy applies to HTTPS targets too (CONNECT tunnelling).
     #[arg(long, value_name = "URL")]
     pub proxy: Option<String>,
 
     /// Extra request header in `Name: Value` form, repeatable.
-    /// Equivalent to `curl -H` — applied to every probe wafrift
+    /// Equivalent to `curl -H`: applied to every probe wafrift
     /// fires. Use for bearer tokens, X-Real-User impersonation,
     /// or any custom header your target expects:
     /// `-H 'Authorization: Bearer …' -H 'X-Real-User: admin'`.
@@ -790,7 +790,7 @@ pub struct ScanArgs {
     /// Path to a Burp-style raw HTTP request file (the bytes from
     /// *Copy → Save raw → File* in Burp Repeater / Proxy). When set,
     /// wafrift loads the file as the request TEMPLATE and substitutes
-    /// each candidate payload at every `§§` marker before firing —
+    /// each candidate payload at every `§§` marker before firing 
     /// instead of building requests from `--target` / `--param`.
     ///
     /// Pentester workflow: intercept the real target request in Burp,
@@ -801,13 +801,13 @@ pub struct ScanArgs {
     ///
     /// The template must contain at least one `§§` marker; otherwise
     /// every variant fires the same un-mutated request (operator
-    /// mistake — wafrift rejects early with an actionable error).
+    /// mistake (wafrift rejects early with an actionable error)).
     #[arg(long, short = 'r', value_name = "FILE")]
     pub raw_request: Option<PathBuf>,
 
     /// URL scheme to assume when reconstructing the target URL from
     /// the raw request file's `Host:` header (the on-the-wire bytes
-    /// don't record TLS state). `http` by default — pass `https` for
+    /// don't record TLS state). `http` by default, pass `https` for
     /// TLS targets. Ignored unless `--raw-request` is set.
     #[arg(long, value_name = "SCHEME", default_value = "http")]
     pub raw_request_scheme: String,
@@ -823,7 +823,7 @@ pub struct ScanArgs {
     /// `--auto-distill-max-fires` per bypass to defend against
     /// pathological payloads.
     ///
-    /// Useful for pentest reports — shorter payloads are easier
+    /// Useful for pentest reports, shorter payloads are easier
     /// for the client to reproduce and easier for defenders to
     /// understand. Mirrors the standalone `wafrift distill`
     /// subcommand but applies to every bypass automatically.
@@ -838,7 +838,7 @@ pub struct ScanArgs {
     pub auto_distill_max_fires: u32,
 
     /// Concurrent in-flight variants per batch. 0 = use the dynamic
-    /// default (8 with no delay, 4 with a delay) — matches every
+    /// default (8 with no delay, 4 with a delay), matches every
     /// pre-flag invocation byte-for-byte. Useful when the operator's
     /// `.wafrift.toml` sets `scan.concurrency = N` to tune throughput
     /// for a slow / stable target.
@@ -877,7 +877,7 @@ pub struct ScanArgs {
     /// Maximum extra HTTP fires the EXPLOIT-CHAIN phase is allowed to
     /// make after the initial scan loop completes. The exploit phase
     /// chains successful bypasses into compound attacks (auth-bypass
-    /// header + path-traversal + tamper) — useful but unbounded by
+    /// header + path-traversal + tamper), useful but unbounded by
     /// default. Pre-flag the cap was hardcoded `500`, which at
     /// `--delay-ms 500` could silently add 250 s to a scan against a
     /// rate-limited target. Operators tuning for slow / strict targets
@@ -894,7 +894,7 @@ pub struct ScanArgs {
     ///
     /// Note: subsequent post-fire phases (multi-vector, header-
     /// obfuscation, intelligence loop) may add MORE fires beyond
-    /// the cap — they expand from successful bypasses, not from the
+    /// the cap, they expand from successful bypasses, not from the
     /// initial pool. Use `--exploit-cap` to bound those, and check
     /// `explore_variants` (not `total_variants`) in the JSON output
     /// to see the cap took effect.
@@ -906,7 +906,7 @@ pub struct ScanArgs {
     /// (localhost, 127.0.0.1, ::1, waf.cumulusfire.net, testing.santh.dev,
     /// ginandjuice.shop) and NOT in the operator's
     /// `~/.wafrift/permission.toml`. Supply any non-empty justification
-    /// string — e.g. `--i-have-permission "HackerOne #12345 pentest scope"`.
+    /// string (e.g. `--i-have-permission "HackerOne #12345 pentest scope"`).
     ///
     /// This guard is wafrift's refuse-by-default posture: the tool is
     /// a real attack engine and the operator must assert authorization
@@ -915,7 +915,7 @@ pub struct ScanArgs {
     #[arg(long, value_name = "REASON")]
     pub i_have_permission: Option<String>,
 
-    /// Force GraphQL evasion probing — inject the full
+    /// Force GraphQL evasion probing, inject the full
     /// `wafrift-graphql` payload battery (alias-flood, introspection,
     /// op-name-mismatch, depth-bomb, batch) into the scan regardless
     /// of whether auto-detection identifies a GraphQL endpoint.
@@ -956,11 +956,11 @@ pub struct ScanArgs {
     /// **Wall-clock budget for the WHOLE scan loop** in seconds.  When
     /// the budget expires, wafrift breaks out of the probe loop, emits
     /// whatever partial results it has, and exits with code **7**
-    /// ("scan-timeout-secs budget exceeded — partial results emitted").
+    /// ("scan-timeout-secs budget exceeded (partial results emitted")).
     ///
     /// This is a cap on TOTAL scan runtime, distinct from `--timeout-secs`
     /// which is a per-request HTTP timeout.  Use `--scan-timeout-secs` to
-    /// hard-bound a CI job that runs against a rate-limited target —
+    /// hard-bound a CI job that runs against a rate-limited target 
     /// e.g. `--scan-timeout-secs 120` caps the scan at 2 minutes and
     /// guarantees the CI step exits cleanly regardless of WAF latency.
     ///
@@ -977,7 +977,7 @@ pub struct ScanArgs {
     /// `--variants-cap` and `--exploit-cap` alone are insufficient (those only
     /// cap individual phase pools, not the global total).
     ///
-    /// Default: 10 000 — a generous ceiling that leaves normal scans entirely
+    /// Default: 10 000, a generous ceiling that leaves normal scans entirely
     /// unaffected while preventing runaway fires on deeply recursive payloads.
     /// Special value 0 = unlimited (preserves pre-flag behaviour byte-identical
     /// to omitting the flag; backward-compatible).
@@ -1019,7 +1019,7 @@ pub struct ScanArgs {
 }
 
 impl ScanArgs {
-    /// Resolved target URL — the positional form if supplied, else the
+    /// Resolved target URL, the positional form if supplied, else the
     /// long-form `--target` flag, else `None` (only possible when
     /// `--from-discovery` is in play; clap's
     /// `required_unless_present_any` guarantees the user-facing
@@ -1088,7 +1088,7 @@ struct CompletionArgs {
     shell: Shell,
 }
 fn main() -> ExitCode {
-    // Structured tracing — honours RUST_LOG (e.g. `RUST_LOG=wafrift=debug`).
+    // Structured tracing (honours RUST_LOG (e.g. `RUST_LOG=wafrift=debug`)).
     // Compact single-line format on stderr; target field on; fallback to `warn`
     // when RUST_LOG is unset.
     // Issue-9/10 fix (dogfood R43 cohort): tracing output now
@@ -1117,7 +1117,7 @@ fn main() -> ExitCode {
     // before any `ClientConfig::builder()` call. The raw-TLS commands
     // (trailer-diff, ja3-diff, scan's TLS probes) build a `ClientConfig`
     // directly and would otherwise panic ("no process-level
-    // CryptoProvider available") on the FIRST https target — a 100%
+    // CryptoProvider available") on the FIRST https target, a 100%
     // crash on `trailer-diff --url https://…`. reqwest installs its own
     // internally, so this may already be set; ignore AlreadyInstalled.
     let _ = tokio_rustls::rustls::crypto::ring::default_provider().install_default();
@@ -1127,7 +1127,7 @@ fn main() -> ExitCode {
     // panic on EPIPE the next time stdout is written, which surfaces
     // as `thread 'main' panicked at 'failed printing to stdout: Broken
     // pipe'`. Reset the SIGPIPE handler to SIG_DFL so the process
-    // exits silently when the consumer closes the pipe — the canonical
+    // exits silently when the consumer closes the pipe, the canonical
     // CLI idiom that `cat`, `ls`, `grep`, etc. all use.
     #[cfg(unix)]
     {
@@ -1142,7 +1142,7 @@ fn main() -> ExitCode {
 
     // Keep the raw `ArgMatches` (not just the derived struct) so the
     // scan path can ask clap whether each field came from the command
-    // line vs a compiled default — required to layer `.wafrift.toml`
+    // line vs a compiled default, required to layer `.wafrift.toml`
     // underneath CLI flags with correct precedence.
     let matches = Cli::command().get_matches();
     let cli = match Cli::from_arg_matches(&matches) {
@@ -1215,7 +1215,7 @@ fn main() -> ExitCode {
     // Publish the operator's User-Agent override to the process-wide
     // OnceLock that every command's HTTP-client builder reads. Prior
     // to this wiring the `http.user_agent` field in `.wafrift.toml`
-    // was parsed-and-ignored — `.user_agent("Mozilla/5.0 …")` was
+    // was parsed-and-ignored: `.user_agent("Mozilla/5.0 …")` was
     // hardcoded at every call site. Now setting the config field
     // actually changes the wire bytes for detect / cors-diff /
     // header-diff / body-diff / query-diff / cache-diff / h2-diff /
@@ -1231,14 +1231,14 @@ fn main() -> ExitCode {
 
     // Publish the detonation-engine selector (global `--detonate-engine`) so
     // every `detonate` subprocess wafrift spawns (prove-execution / exploit /
-    // proxy) uses the requested oracle — `chrome` for the browser-accurate
+    // proxy) uses the requested oracle: `chrome` for the browser-accurate
     // mutation-XSS path, `jsdet` (default) for the fast sandbox.
     config::install_detonate_engine(&cli.detonate_engine);
 
     let quiet = cli.quiet;
 
     // §7 DEDUP / §4 ELEGANCE: every diff-family command (the flat `<kind>-diff`
-    // aliases AND the consolidated `diff <kind>`) shares one shape — layer
+    // aliases AND the consolidated `diff <kind>`) shares one shape, layer
     // `.wafrift.toml` http defaults under the CLI flags (CLI wins), then
     // block-on the async runner. Pre-extract this was copy-pasted at 22 call
     // sites; now it lives in ONE place and each arm is a one-line dispatch, so
@@ -1286,7 +1286,7 @@ fn main() -> ExitCode {
             let args = cfg.apply_to_scan(args, matches.subcommand_matches("scan"));
             // "scan pointed at bench": `--corpus` runs the corpus-wide bench
             // measurement (block-rate + verified bypass-rate) instead of a
-            // single-payload scan. Metric-safe — it delegates to the UNCHANGED
+            // single-payload scan. Metric-safe, it delegates to the UNCHANGED
             // `run_bench_waf` engine (mapping target / timeout / permission
             // across); `--payload` is irrelevant here. Gated like the bench-waf
             // CLI arm (§15 least-privilege).
@@ -1327,7 +1327,7 @@ fn main() -> ExitCode {
                     if tokio::signal::ctrl_c().await.is_ok() {
                         eprintln!(
                             "\n{}",
-                            "⚠ Ctrl+C received — finishing current request and saving results..."
+                            "⚠ Ctrl+C received (finishing current request and saving results..)."
                                 .yellow()
                                 .bold()
                         );
@@ -1350,7 +1350,7 @@ fn main() -> ExitCode {
                     if tokio::signal::ctrl_c().await.is_ok() {
                         eprintln!(
                             "\n{}",
-                            "⚠ Ctrl+C received — finishing current request and exiting..."
+                            "⚠ Ctrl+C received (finishing current request and exiting..)."
                                 .yellow()
                                 .bold()
                         );
@@ -1610,7 +1610,7 @@ fn main() -> ExitCode {
         // (eleven `<kind>-diff` commands + `attack`) is grouped under one
         // advertised `diff` verb. Each arm reuses the SAME Args + run_*
         // function as the (now hidden, deprecated) flat command, so
-        // behaviour is byte-identical — pure surface consolidation. The
+        // behaviour is byte-identical, pure surface consolidation. The
         // nested `subcommand_matches("diff").and_then(... <kind>)` lookup
         // feeds each probe the same config-default detection it gets as a
         // top-level command.
@@ -1712,7 +1712,7 @@ fn main() -> ExitCode {
                     if tokio::signal::ctrl_c().await.is_ok() {
                         eprintln!(
                             "\n{}",
-                            "⚠ Ctrl+C received — finishing current probe and exiting..."
+                            "⚠ Ctrl+C received (finishing current probe and exiting..)."
                                 .yellow()
                                 .bold()
                         );
@@ -1787,7 +1787,7 @@ async fn run_scan_from_discovery(
         // R48-I3 fix (dogfood pass 9): wrong schema / no endpoints
         // is an input-format error, exit 2 (clap convention).
         eprintln!(
-            "{} discovery report has no `endpoints` — nothing to scan (is this `wafrift discover` JSON?)",
+            "{} discovery report has no `endpoints`: nothing to scan (is this `wafrift discover` JSON?)",
             "error:".red()
         );
         return ExitCode::from(2);
@@ -1814,7 +1814,7 @@ async fn run_scan_from_discovery(
             };
             Some(format!("{b}{suffix}"))
         } else {
-            // No scheme and no --target base — unresolvable.
+            // No scheme and no --target base (unresolvable).
             None
         }
     };
@@ -1856,7 +1856,7 @@ async fn run_scan_from_discovery(
     if unresolved > 0 {
         eprintln!(
             "[wafrift scan] {unresolved} discovered endpoint(s) had path-only URLs and no \
-             `--target` base was given — those endpoints were skipped. Re-run with \
+             `--target` base was given, those endpoints were skipped. Re-run with \
              `--target https://your-target/` to resolve them."
         );
     }
@@ -1869,18 +1869,18 @@ async fn run_scan_from_discovery(
 
     // When the operator asked for `--format json`, each underlying
     // `scan::run_scan` would write its own JSON object to stdout.
-    // For N jobs that produces N back-to-back JSON objects — invalid
+    // For N jobs that produces N back-to-back JSON objects, invalid
     // JSON (multiple root values) so `wafrift scan --from-discovery
     // X.json --format json | jq .` failed at the second object. Fix:
     // when JSON mode + discovery mode, redirect every sub-job to a
     // tmpfile, then read them all back and emit a single
     // `{"discovery_scan": {"jobs": [...]}}` envelope. Text mode is
-    // unchanged — per-job streaming output is the right shape there.
+    // unchanged (per-job streaming output is the right shape there).
     let want_json = args.format == "json";
 
     // --dry-run is a SAFETY CONTRACT: preview the blast radius, fire nothing.
     // Without this gate the loop below fires LIVE against every discovered
-    // endpoint — an operator sizing a scan with `--from-discovery X --dry-run`
+    // endpoint, an operator sizing a scan with `--from-discovery X --dry-run`
     // would unexpectedly hit the target N jobs × per-job-variant times (the
     // single-target scan path honours --dry-run; this multi-job path did not).
     if args.dry_run {
@@ -1892,7 +1892,7 @@ async fn run_scan_from_discovery(
             );
         } else {
             println!(
-                "dry-run: {} discovery endpoint(s) → {} scan job(s) · delay={}ms — re-run \
+                "dry-run: {} discovery endpoint(s) → {} scan job(s) · delay={}ms, re-run \
                  without --dry-run to fire (each job then fires its own variant budget)",
                 endpoints.len(),
                 jobs.len(),
@@ -1907,7 +1907,7 @@ async fn run_scan_from_discovery(
     for (i, (url, param)) in jobs.iter().enumerate() {
         if cancel.is_cancelled() {
             eprintln!(
-                "[wafrift scan] cancelled — {} job(s) not run",
+                "[wafrift scan] cancelled: {} job(s) not run",
                 jobs.len() - i
             );
             break;
@@ -1956,19 +1956,19 @@ async fn run_scan_from_discovery(
             proxy: args.proxy.clone(),
             header: args.header.clone(),
             // --from-discovery jobs always come from URL discovery,
-            // never from a raw request template — those modes are
+            // never from a raw request template, those modes are
             // alternative inputs, not stackable.
             raw_request: None,
             raw_request_scheme: args.raw_request_scheme.clone(),
             // Forward the operator's auto-distill choice to every
-            // discovered-endpoint scan job — they almost certainly
+            // discovered-endpoint scan job, they almost certainly
             // want consistent reporting across all hosts.
             auto_distill: args.auto_distill,
             auto_distill_max_fires: args.auto_distill_max_fires,
             concurrency: args.concurrency,
             timeout_secs: args.timeout_secs,
             // N8 fix (dogfood R29 cohort): suppress each per-job
-            // banner box — the from-discovery driver already prints
+            // banner box, the from-discovery driver already prints
             // a `── job N/M: <url> ──` boundary line, so the inner
             // banner would just repeat the WafRift logo, target,
             // and variant count N times in a row. Quiet is forced;

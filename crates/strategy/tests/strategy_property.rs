@@ -1,6 +1,6 @@
 //! Property-based tests for the strategy engine.
 //!
-//! - 10k random payloads through `evade()` — no panic.
+//! - 10k random payloads through `evade()`: no panic.
 //! - Deterministic output for identical (request, state, config).
 //! - Double-evade is a technique-selection no-op once a winner is cached
 //!   (the same technique list is produced on the second call).

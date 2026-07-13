@@ -1,4 +1,4 @@
-//! Info-gain payload scheduler — given prior bench history, schedule
+//! Info-gain payload scheduler, given prior bench history, schedule
 //! payload replays in descending order of expected information gain.
 //!
 //! ## Why this exists
@@ -6,7 +6,7 @@
 //! Operators frequently have a budget cap ("only send 1 000 requests
 //! against this WAF, not 100 000"). Running every payload greedily
 //! wastes the budget on payloads that already block trivially or
-//! already bypass trivially — neither outcome teaches the operator
+//! already bypass trivially, neither outcome teaches the operator
 //! anything new about the rule set. The payloads that DO teach
 //! something are the ones whose observed block rate is near 0.5: the
 //! WAF blocks them sometimes, passes them sometimes, depending on a
@@ -28,7 +28,7 @@
 //!   theta_mean = alpha / (alpha + beta)
 //! ```
 //!
-//! A payload with no prior observations starts at theta = 0.5 — the
+//! A payload with no prior observations starts at theta = 0.5, the
 //! cold-start payload carries one bit of uncertainty, the maximum.
 //! As observations accumulate, theta converges and H(theta) shrinks.
 //!
@@ -37,7 +37,7 @@
 //! Thompson sampling balances exploration vs exploitation toward
 //! reward maximisation (e.g. "find a bypass"). The scheduler's goal
 //! is **information gain about the rule set**, a research objective
-//! — posterior-mean entropy is the right objective for that. If a
+//!, posterior-mean entropy is the right objective for that. If a
 //! future caller wants the reward-maximisation variant, build it as
 //! a separate scheduler that shares this module's `PayloadStats`
 //! contract.
@@ -46,7 +46,7 @@
 //!
 //! When two payloads have equal entropy (frequently: many cold-start
 //! payloads at theta = 0.5), the secondary sort key is `n_trials`
-//! ascending — prefer the LESS-explored one. Without this tiebreak,
+//! ascending, prefer the LESS-explored one. Without this tiebreak,
 //! the schedule would re-run the same handful of cold-start payloads
 //! until one of them happened to differ, starving the rest. The
 //! final tiebreak is `id` ascending so the schedule is deterministic
@@ -78,7 +78,7 @@ pub(crate) struct PayloadStats {
 
 impl PayloadStats {
     /// Total number of observations contributed so far. Saturating
-    /// addition — `observe()` already caps each component at
+    /// addition: `observe()` already caps each component at
     /// `u32::MAX`, but the sum of two near-`u32::MAX` values would
     /// still overflow with plain `+`. Saturate to keep n_trials
     /// monotonically non-decreasing across the public API.
@@ -114,13 +114,13 @@ impl PayloadStats {
     /// clamped to `[0, 1]`.
     ///
     /// Useful for operators answering "how confident is the scheduler
-    /// in this estimate?" — a payload with theta=0.5 and n_trials=2
+    /// in this estimate?", a payload with theta=0.5 and n_trials=2
     /// has a much wider band than one with theta=0.5 and n_trials=200,
     /// even though their `info_gain` matches at 1.0 bit.
     ///
     /// For more accurate intervals near the boundary (theta close to
     /// 0 or 1), a future version could swap in Wilson score or the
-    /// exact Beta credible interval — both require either an
+    /// exact Beta credible interval, both require either an
     /// inverse-CDF dependency or tabulated approximations. The Wald
     /// form here is adequate for the scheduler's "is this estimate
     /// stable?" question without pulling in a stats crate on a leaf-
@@ -148,7 +148,7 @@ impl PayloadStats {
     }
 
     /// Update the posterior with a single observation. Saturating
-    /// arithmetic — a single payload that runs `u32::MAX` times
+    /// arithmetic, a single payload that runs `u32::MAX` times
     /// silently caps rather than wraps. Realistic budget ceilings are
     /// in the millions; saturation is a safety net for adversarial
     /// inputs, not a normal-path concern.
@@ -175,7 +175,7 @@ impl History {
         Self::default()
     }
 
-    /// Stats for a payload id — cold-start prior if unknown. Does NOT
+    /// Stats for a payload id, cold-start prior if unknown. Does NOT
     /// insert; the scheduler may call this on thousands of payloads
     /// without growing the history.
     #[must_use]
@@ -206,7 +206,7 @@ impl History {
     /// incremented by the other history's counts. New payload ids
     /// from `other` are inserted at their absolute counts.
     ///
-    /// Saturating arithmetic — if either side overflows `u32::MAX`,
+    /// Saturating arithmetic, if either side overflows `u32::MAX`,
     /// the merged total caps at `u32::MAX` rather than wrapping. In
     /// practice a single payload accumulating more than 4 billion
     /// observations is adversarial-input territory; the saturation
@@ -219,7 +219,7 @@ impl History {
     ///
     /// Wired into `bench-waf --history-merge` (repeatable) so the
     /// operator-facing path uses the same primitive the unit tests
-    /// pin. Do NOT add `#[cfg(test)]` here — the production wiring
+    /// pin. Do NOT add `#[cfg(test)]` here, the production wiring
     /// depends on it.
     pub fn merge(&mut self, other: &History) {
         for (id, other_stats) in &other.by_id {
@@ -231,7 +231,7 @@ impl History {
 }
 
 /// A scheduled payload paired with the diagnostics that justify its
-/// rank — `info_gain` bits, `theta_estimate` block probability,
+/// rank: `info_gain` bits, `theta_estimate` block probability,
 /// `theta_ci_95_*` Wald credible-interval bounds, and `n_trials` prior
 /// observations. Used by `schedule_with_diagnostics` and the
 /// `bench-waf --list-schedule` preview path.
@@ -258,7 +258,7 @@ pub(crate) struct ScheduleEntry {
 /// `budget` entries with their diagnostic fields preserved.
 ///
 /// Useful when the caller wants to display *why* a payload was
-/// chosen, not just *that* it was chosen — the `bench-waf
+/// chosen, not just *that* it was chosen, the `bench-waf
 /// --list-schedule` flag uses this to render an operator-readable
 /// preview table. The plain `schedule` function is a thin wrapper
 /// that discards the diagnostics and returns just the id list.
@@ -327,7 +327,7 @@ where
 /// `budget` payload ids in schedule order.
 ///
 /// `budget == 0` returns an empty Vec without iterating. `budget >=
-/// payloads.len()` returns every payload in schedule order — useful
+/// payloads.len()` returns every payload in schedule order, useful
 /// as a deterministic ordering primitive even when budget is not the
 /// binding constraint.
 ///
@@ -351,7 +351,7 @@ where
         .collect()
 }
 
-/// Schedule with per-class fairness — every class receives roughly
+/// Schedule with per-class fairness, every class receives roughly
 /// `budget / num_classes` slots; within each class, payloads are
 /// ordered by descending info gain (same primitive as `schedule`).
 ///
@@ -368,7 +368,7 @@ where
 /// remainder `extras = budget % num_classes` distributed one per
 /// class in iteration order (BTreeMap → alphabetical by class name).
 /// This makes the per-class allocation deterministic and reproducible
-/// across runs — critical for the `schedule` anti-rig guarantees.
+/// across runs (critical for the `schedule` anti-rig guarantees).
 ///
 /// If a class has fewer payloads than its allocation, the surplus
 /// is NOT redistributed: a class with 2 payloads and a 5-slot
@@ -380,7 +380,7 @@ where
 ///
 /// Classes interleave in BTreeMap iteration order (alphabetical),
 /// each class contributing its top picks in descending info_gain
-/// order. The result is NOT globally sorted by info_gain — operators
+/// order. The result is NOT globally sorted by info_gain, operators
 /// who want that should call `schedule` directly.
 ///
 /// Thin wrapper over [`schedule_per_class_with_diagnostics`] that
@@ -410,7 +410,7 @@ pub(crate) fn schedule_per_class(
 /// when `--fair-class` is the active mode.
 ///
 /// Same allocation rule + same interleaving order as
-/// `schedule_per_class` — the only difference is the return type.
+/// `schedule_per_class`: the only difference is the return type.
 #[must_use]
 pub(crate) fn schedule_per_class_with_diagnostics(
     history: &History,
@@ -438,7 +438,7 @@ pub(crate) fn schedule_per_class_with_diagnostics(
 }
 
 /// Load a persisted [`History`] from `path`, cold-starting (empty history) when
-/// the file is absent — the documented first-run path, which must not error — or
+/// the file is absent, the documented first-run path, which must not error, or
 /// when it fails to parse (a warning is emitted and a cold history returned, so a
 /// corrupt history never aborts a live run). A genuine IO error on an existing
 /// file IS propagated. Bounded read (no OOM / TOCTOU): single fd, hard cap.
@@ -476,7 +476,7 @@ pub(crate) fn save_history(path: &std::path::Path, history: &History) -> Result<
 /// Reorder `items` into descending info-gain schedule order under `history`,
 /// returning at most `budget` of them (`budget == 0` ⇒ all, just reordered).
 /// `id_of` maps an item to its scheduler id (e.g. a probe's token). When
-/// `budget` is binding, the dropped items are the LOWEST-info-gain ones — under
+/// `budget` is binding, the dropped items are the LOWEST-info-gain ones, under
 /// a warm history that is exactly the live-query budget spent where it teaches
 /// the most. Cold-start (empty history) is deterministic: every id ties at
 /// θ=0.5, so the order falls back to ascending id (the scheduler's final
@@ -536,7 +536,7 @@ mod tests {
     #[test]
     fn ci_95_narrows_as_evidence_accumulates() {
         // 100 evenly-balanced trials at theta=0.5 should produce a
-        // tight band — pinned at ≤ 0.2 to catch a regression that
+        // tight band, pinned at ≤ 0.2 to catch a regression that
         // accidentally widens the SE.
         let mut s = PayloadStats::default();
         for _ in 0..50 {
@@ -549,7 +549,7 @@ mod tests {
             width <= 0.2,
             "expected narrow band at n=100: width={width} ({lo}, {hi})"
         );
-        // Symmetry about 0.5 — pin so a future numerical change doesn't
+        // Symmetry about 0.5, pin so a future numerical change doesn't
         // shift the centre.
         assert!(
             (lo + hi - 1.0).abs() < 1e-9,
@@ -744,7 +744,7 @@ mod tests {
         let h = History::new();
         let s = h.stats("never-seen");
         assert_eq!(s, PayloadStats::default());
-        // And reading must not insert — anti-rig: a future "let me
+        // And reading must not insert, anti-rig: a future "let me
         // populate the cache lazily" change would silently inflate
         // history files.
         assert!(h.is_empty());
@@ -902,7 +902,7 @@ mod tests {
         let out = schedule(&h, &payloads, 3);
         assert_eq!(out[0], "p2", "p2 has max entropy; got order {out:?}");
         // p1 and p3 are symmetric; tie-broken by n_trials (both 10)
-        // then by id ascending — p1 before p3.
+        // then by id ascending (p1 before p3).
         assert_eq!(out[1], "p1");
         assert_eq!(out[2], "p3");
     }
@@ -1041,7 +1041,7 @@ mod tests {
 
     #[test]
     fn property_schedule_returns_unique_ids() {
-        // Schedule must NEVER return duplicate ids — even when the
+        // Schedule must NEVER return duplicate ids, even when the
         // input contains duplicates, the output should de-dup or
         // preserve only one. This catches a regression where a
         // future refactor stops de-duping at the corpus loader.
@@ -1097,7 +1097,7 @@ mod tests {
 
     #[test]
     fn property_schedule_idempotent_for_repeated_calls() {
-        // Anti-rig: schedule(h, p, b) must be a pure function — two
+        // Anti-rig: schedule(h, p, b) must be a pure function, two
         // calls with the same args return the same Vec. Already
         // covered by the per-class test but pin for the bare schedule
         // too (a future RNG sneak-in would slip past the per-class
@@ -1120,7 +1120,7 @@ mod tests {
     #[test]
     fn property_history_observe_preserves_invariants() {
         // Property sweep: after any sequence of observe() calls, the
-        // PayloadStats invariants must hold — theta ∈ [0,1],
+        // PayloadStats invariants must hold, theta ∈ [0,1],
         // info_gain ∈ [0,1], ci ⊆ [0,1], lo ≤ theta ≤ hi.
         let mut h = History::new();
         let outcomes = [
@@ -1283,7 +1283,7 @@ mod tests {
         let h = History::new();
         let out = schedule_per_class(&h, &per_class_inputs(), 5);
         // cmdi has only 1 payload, so contributes 1 even though
-        // allocated 2 — honest under-fill.
+        // allocated 2 (honest under-fill).
         // Expected: c1, s1, s2, x1 = 4 items (not 5).
         assert_eq!(out.len(), 4, "under-fill expected for cmdi: got {out:?}");
         assert!(out.contains(&"c1".to_string()));
@@ -1337,7 +1337,7 @@ mod tests {
             h.observe("s2", true);
         }
         let out = schedule_per_class(&h, &per_class_inputs(), 9);
-        // s2 is the certain one — should NOT appear (cold-start s1,
+        // s2 is the certain one, should NOT appear (cold-start s1,
         // s3, s4 absorb the 3 sql slots).
         assert!(
             !out.contains(&"s2".to_string()),
@@ -1421,7 +1421,7 @@ mod tests {
         // theta/info_gain/n_trials the plain per-class would have
         // observed via History::stats. Pinned so a future change
         // doesn't cache stale stats. Budget=12 (4 per class) so
-        // all sql payloads survive — s1's diagnostics are still
+        // all sql payloads survive, s1's diagnostics are still
         // reachable even though s1's info_gain is below cold-start.
         let mut h = History::new();
         for _ in 0..5 {
@@ -1441,7 +1441,7 @@ mod tests {
     fn pinned_info_gain_approaches_zero_with_more_evidence() {
         // Anti-rig: as evidence accumulates, info_gain MUST shrink
         // toward zero. The exact decay is `H(theta_n) ~ log2(n) / n`
-        // — at n = 10^6 trials it's about 22 microbits; at n = u32::MAX
+        //: at n = 10^6 trials it's about 22 microbits; at n = u32::MAX
         // (~4·10^9) it falls below 1 nanobit. We pin BOTH the
         // monotone-decreasing property and an upper bound for n=10^6
         // that catches a future bug that adds an epsilon floor and

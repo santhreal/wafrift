@@ -1,21 +1,21 @@
 //! Auth-bypass header probes (Orange Tsai parser-disagreement class).
 //!
-//! Many WAFs strip or never forward certain "trust" headers — but the
+//! Many WAFs strip or never forward certain "trust" headers, but the
 //! origin application accepts them and uses them for routing or
 //! authentication decisions. The classic exploit primitive is:
 //!
-//! - `X-Original-URL: /admin/secret` — IIS / ASP.NET URL rewriting.
+//! - `X-Original-URL: /admin/secret`: IIS / ASP.NET URL rewriting.
 //!   WAF sees `GET /public` and lets it through; backend rewrites to
 //!   `/admin/secret` and serves it.
-//! - `X-Rewrite-URL: /admin/secret` — same family, different stack.
-//! - `X-Forwarded-For: 127.0.0.1` — origin trusts this for IP-based
+//! - `X-Rewrite-URL: /admin/secret`: same family, different stack.
+//! - `X-Forwarded-For: 127.0.0.1`: origin trusts this for IP-based
 //!   allowlists ("internal calls only").
 //! - `X-Real-IP`, `X-Originating-IP`, `X-Client-IP`, `X-Remote-IP`,
-//!   `X-Forwarded-Host` — same family, different headers.
-//! - `X-HTTP-Method-Override: PUT` — origin overrides the actual HTTP
+//!   `X-Forwarded-Host`: same family, different headers.
+//! - `X-HTTP-Method-Override: PUT`: origin overrides the actual HTTP
 //!   method, turning a GET past the WAF into a destructive write.
 //!
-//! These are not "WAF evasion" in the traditional sense — they exploit
+//! These are not "WAF evasion" in the traditional sense, they exploit
 //! the WAF's correct behaviour (passing through unknown headers) plus
 //! the backend's incorrect behaviour (trusting them). Together: real
 //! pre-auth access on hardened-looking deployments. `ProxyShell`
@@ -43,7 +43,7 @@ pub struct AuthBypassProbe {
 }
 
 /// Canonical size of the auth-bypass probe set returned by
-/// [`auth_bypass_probes`] — the single source of truth for the count.
+/// [`auth_bypass_probes`] (the single source of truth for the count).
 /// Render-time consumers that cite "N auth-bypass probes" (e.g.
 /// `wafrift legendary`'s report prose) interpolate this const so the
 /// number cannot drift. The static doc sites that can't interpolate a
@@ -86,7 +86,7 @@ pub fn auth_bypass_probes(target_path: &str) -> Vec<AuthBypassProbe> {
 
     // ── IP-trust header family ───────────────────────────────────────
     // Many backends gate /admin or /internal on "is the source IP in
-    // the loopback / RFC1918 range?" — and read the header instead of
+    // the loopback / RFC1918 range?", and read the header instead of
     // the socket peer. Spoof the trusted IP.
     let trusted_ips = [
         "127.0.0.1",
@@ -117,7 +117,7 @@ pub fn auth_bypass_probes(target_path: &str) -> Vec<AuthBypassProbe> {
                 // RFC 7239 §4 + §6.3: node-name production requires
                 // IPv6 to be bracketed AND quoted (`for="[::1]"`).
                 // Bare hostnames like `localhost` are NOT valid as
-                // node-names — they must be obfnodes (`_internal`)
+                // node-names, they must be obfnodes (`_internal`)
                 // or the backend (nginx realip, Apache mod_remoteip)
                 // rejects the value silently and the probe never
                 // reaches the auth path it's meant to test.
@@ -200,7 +200,7 @@ pub fn auth_bypass_probes(target_path: &str) -> Vec<AuthBypassProbe> {
     // Cloud API gateways (Cloudflare Access, AWS API Gateway, Azure
     // Front Door, GCP IAP, Auth0 Authorization Code Flow) inject
     // identity headers AFTER the gateway authenticates the caller.
-    // Some backends trust these unconditionally — if the WAF is
+    // Some backends trust these unconditionally, if the WAF is
     // upstream of the gateway (uncommon but happens in zero-trust
     // chained-proxy setups) or if a misconfigured backend reads them
     // from any caller, spoofing the identity bypasses auth.
@@ -253,21 +253,21 @@ pub fn auth_bypass_probes(target_path: &str) -> Vec<AuthBypassProbe> {
     // reqwest client we use). They survive against custom / embedded
     // servers (some legacy app servers, internal RPC bridges) but
     // hit rate is low. Kept for defense-in-depth against non-compliant
-    // stacks rather than removed — see the LWS anti-rig test in
+    // stacks rather than removed, see the LWS anti-rig test in
     // tests/auth_bypass_deep.rs.
     for variant in [
         " X-Real-IP",       // leading space (RFC-illegal; legacy stacks only)
         "X-Real-IP\t",      // trailing tab (RFC-illegal; legacy stacks only)
         "X\u{00ad}Real-IP", // soft hyphen U+00AD inside (some parsers drop)
         "X-Real_IP",        // underscore swap (nginx default DROPS this;
-                            // Apache passes it through — divergence
+                            // Apache passes it through, divergence
                             // surfaces the misconfiguration).
     ] {
         out.push(AuthBypassProbe {
             header: variant.to_string(),
             value: "127.0.0.1".to_string(),
             label: "header-smuggle-lws",
-            description: "Whitespace / case / underscore variant of a trusted header — exploits WAF↔backend normalisation gap",
+            description: "Whitespace / case / underscore variant of a trusted header, exploits WAF↔backend normalisation gap",
         });
     }
 
@@ -373,7 +373,7 @@ mod tests {
     // reqwest must pre-validate via HeaderName::try_from and warn so
     // the operator can distinguish "fired and no divergence" from
     // "client refused to send." This test pins which ones are illegal
-    // — if a future cleanup quietly removes one, this fails first.
+    //: if a future cleanup quietly removes one, this fails first.
     #[test]
     fn header_smuggle_lws_family_contains_known_rfc_illegal_shapes() {
         let probes = auth_bypass_probes("/admin");
@@ -388,7 +388,7 @@ mod tests {
             "header-smuggle-lws family must contain at least 4 variants"
         );
         // Leading-space and trailing-tab variants are RFC 7230 §3.2-
-        // illegal — every compliant HTTP/1.1 parser rejects them.
+        // illegal (every compliant HTTP/1.1 parser rejects them).
         // The probe set keeps them anyway for raw-TCP delivery to
         // non-compliant origins.
         assert!(
@@ -405,7 +405,7 @@ mod tests {
             smuggle.iter().any(|p| p.header.contains('\u{00ad}')),
             "soft-hyphen variant missing"
         );
-        // X-Real_IP (underscore) is RFC-LEGAL — origin-side normalization
+        // X-Real_IP (underscore) is RFC-LEGAL, origin-side normalization
         // gap. This one SHOULD pass HeaderName validation.
         assert!(
             smuggle.iter().any(|p| p.header == "X-Real_IP"),

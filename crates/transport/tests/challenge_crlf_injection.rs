@@ -6,7 +6,7 @@
 //!   downstream requests when the captured cookie was replayed.
 //!
 //! Pre-fix the function returned the malicious value unchanged. The
-//! fix drops cookies containing CR / LF / NUL / `;` — propagating any
+//! fix drops cookies containing CR / LF / NUL / `;`: propagating any
 //! of those bytes into a `Cookie:` header is HTTP request smuggling.
 
 use wafrift_transport::challenge::{ChallengeKind, extract_clearance_cookie};
@@ -54,14 +54,14 @@ fn rejects_cookie_value_with_inline_semicolon() {
     if let Some((cookie, _)) = captured {
         assert!(
             !cookie.contains(';'),
-            "captured cookie must not contain ';' — got: {cookie}"
+            "captured cookie must not contain ';', got: {cookie}"
         );
     }
 }
 
 #[test]
 fn accepts_normal_cf_clearance_cookie() {
-    // Negative twin — clean cookies must still flow.
+    // Negative twin (clean cookies must still flow).
     let raw = "cf_clearance=clean_token_value; Path=/; Domain=example.com; Secure";
     let captured = extract_clearance_cookie(&[raw]).expect("clean cookie must be captured");
     assert_eq!(captured.0, "cf_clearance=clean_token_value");

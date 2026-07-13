@@ -21,13 +21,13 @@
 //! Why a bridge and not a new `xss_delivered` tier: a normalization-
 //! mismatch payload is *not* directly browser-executable (it executes
 //! only after the origin's decode), so it cannot pass
-//! `xss::still_executes_xss` — and weakening that anti-rig oracle to
+//! `xss::still_executes_xss`: and weakening that anti-rig oracle to
 //! admit it would be exactly the rigging the project forbids. These
 //! members are sound *relative to a declared decoding sink* (the same
 //! soundness model scald's existing double-URL tier uses: a member
-//! that the origin does not decode simply never verifies — no false
+//! that the origin does not decode simply never verifies, no false
 //! positive). Each member's payload, run through its declared sink,
-//! reconstructs the attack — asserted in the contract tests.
+//! reconstructs the attack (asserted in the contract tests).
 
 use crate::solve::{Solution, preimage_for};
 use crate::transduce::{Pipeline, Stage};
@@ -83,7 +83,7 @@ fn default_sinks() -> Vec<NamedSink> {
 /// through the identical `m.delivery.to_request(t, &m.payload)` path.
 ///
 /// Each member's `payload`, decoded by the sink its `rules` tag names,
-/// reconstructs `attack` — so against an origin that performs that
+/// reconstructs `attack`: so against an origin that performs that
 /// decode the live attack lands at the sink, and against one that does
 /// not it stays inert (never a false positive).
 #[must_use]
@@ -93,7 +93,7 @@ pub fn norm_mismatch_members(attack: &str, param: &str) -> Vec<EquivPayload> {
     for ns in default_sinks() {
         let pre = preimage_for(attack.as_bytes(), &ns.pipeline, false);
         // Skip-degenerate guard: a sink that produced no change (no byte the
-        // sink decodes / no codepoint it folds appears in the attack — e.g.
+        // sink decodes / no codepoint it folds appears in the attack (e.g).
         // best-fit on a quote-free XSS attack) yields the raw attack, which is
         // not an evasion. Emitting it would be unsound (the WAF sees the attack
         // directly) and would trip the anti-rig `payload != attack` contract.
@@ -130,7 +130,7 @@ pub fn norm_mismatch_members(attack: &str, param: &str) -> Vec<EquivPayload> {
 ///
 /// R54 pass-16 I5 fix (CLAUDE.md §15 AUDIT): pre-fix used
 /// `from_utf8_lossy(&sol.input).into_owned()` which silently replaces
-/// non-UTF-8 bytes with U+FFFD — the candidate the operator delivered
+/// non-UTF-8 bytes with U+FFFD, the candidate the operator delivered
 /// would then differ from the bytes the solver actually computed and
 /// the oracle would compare against the original attack rather than
 /// the mutilated version. Now: drop non-UTF-8 solutions with a

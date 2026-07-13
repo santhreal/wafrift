@@ -3,7 +3,7 @@
 //! exact behaviour the fix promises, with a negative twin so the
 //! assertion can't pass on a stub. Network-touching cases point at
 //! `127.0.0.1:1` (nothing listens) so they fail *fast and locally* with
-//! a connection error — which still proves the argument plumbing is
+//! a connection error, which still proves the argument plumbing is
 //! correct (the bug was "rejected at parse time", not "couldn't
 //! connect").
 
@@ -238,7 +238,7 @@ fn evade_text_mode_is_not_json_twin() {
 
 #[test]
 fn evade_payload_b64_carries_binary_safely() {
-    // base64 of bytes 0x00 0x01 'A' — impossible to pass via argv.
+    // base64 of bytes 0x00 0x01 'A' (impossible to pass via argv).
     let (code, out, _e) = wafrift(&["evade", "--payload-b64", "AAFB", "--format", "json"]);
     assert_eq!(code, 0, "--payload-b64 must decode and run");
     assert!(
@@ -303,7 +303,7 @@ fn seed_technique_is_required_and_marked() {
 fn seed_with_technique_dry_run_twin() {
     // Canonical technique ID: `encoding::DoubleUrlEncode` (the old
     // `EncodingDoubleUrl` flat ID was renamed when the namespaced
-    // encoding:: prefix was adopted — keep this test current with
+    // encoding:: prefix was adopted, keep this test current with
     // the live techniques list so `seed --dry-run` never silently
     // rejects its own test vector).
     let (code, out, err) = wafrift(&[
@@ -356,7 +356,7 @@ fn import_curl_rejects_non_curl_adversarial() {
 #[test]
 fn bench_waf_explicit_missing_corpus_errors_not_silently_substituted() {
     // An explicit --corpus that doesn't exist must FAIL with a clear
-    // message naming the path — never silently fall back to some other
+    // message naming the path, never silently fall back to some other
     // corpus discovered via exe-relative walking (that would benchmark
     // a corpus the operator never chose).
     let (code, out, e) = wafrift(&[
@@ -383,8 +383,8 @@ fn bench_waf_explicit_missing_corpus_errors_not_silently_substituted() {
 #[test]
 fn scan_with_missing_corpus_exits_2_like_other_input_errors() {
     // §13 dogfood round-2 DEFECT 1: `scan --corpus` delegates to the bench
-    // engine; a nonexistent explicit path must be exit 2 (input error) — the
-    // SAME code as `scan --payload ""` and an unknown flag — not exit 1.
+    // engine; a nonexistent explicit path must be exit 2 (input error), the
+    // SAME code as `scan --payload ""` and an unknown flag (not exit 1).
     // The 127.0.0.1:1 target is never reached because the corpus path is
     // validated before any network activity.
     let (code, _out, e) = wafrift(&[
@@ -455,7 +455,7 @@ fn smuggle_fire_accepts_positional_target_url() {
     // URL positionally; smuggle-fire must too (it previously required --target
     // and rejected a positional URL with "unexpected argument"). 127.0.0.1:1
     // refuses fast, so the run proceeds past arg parsing and fails at the
-    // baseline connect — the point is that the positional is ACCEPTED.
+    // baseline connect (the point is that the positional is ACCEPTED).
     let (_code, _out, e) = wafrift(&["smuggle-fire", "http://127.0.0.1:1/", "--limit", "1"]);
     assert!(
         !e.contains("unexpected argument"),
@@ -537,14 +537,14 @@ fn report_rejects_non_scan_json_adversarial() {
 // ───────────────────────── CLI: positional target ergonomics ─────────────
 //
 // `scan` and `origin-hints` historically required `--target` / `--host`
-// flags while `bypass-probe` already took a positional URL — users had
+// flags while `bypass-probe` already took a positional URL, users had
 // to consult `--help` for every subcommand. These tests pin the
 // both-forms-accepted contract end-to-end.
 
 #[test]
 fn scan_accepts_positional_target_url() {
     // The user-facing win: `wafrift scan <URL>` parses cleanly. We
-    // hit a closed port so the network step fails fast — the assertion
+    // hit a closed port so the network step fails fast, the assertion
     // is that the failure is the *network* path, NOT clap "unexpected
     // argument" / "required argument".
     let (_code, _o, e) = wafrift(&[
@@ -557,7 +557,7 @@ fn scan_accepts_positional_target_url() {
     ]);
     assert!(
         !e.contains("unexpected argument") && !e.contains("required"),
-        "positional target URL must parse — clap should not reject it: {e}"
+        "positional target URL must parse, clap should not reject it: {e}"
     );
     // The audit's earlier work made scan emit a startup banner the
     // instant clap accepts the args; that banner OR a connect error
@@ -572,7 +572,7 @@ fn scan_accepts_positional_target_url() {
 
 #[test]
 fn scan_still_accepts_legacy_target_flag() {
-    // LAW 2 — the long-form `--target <URL>` must keep working for
+    // LAW 2, the long-form `--target <URL>` must keep working for
     // every existing script and CI pipeline that uses it.
     let (_code, _o, e) = wafrift(&[
         "scan",
@@ -585,14 +585,14 @@ fn scan_still_accepts_legacy_target_flag() {
     ]);
     assert!(
         !e.contains("unexpected argument") && !e.contains("required"),
-        "--target flag must still parse — backwards-compat: {e}"
+        "--target flag must still parse, backwards-compat: {e}"
     );
 }
 
 #[test]
 fn scan_rejects_both_positional_and_target_flag_adversarial() {
     // Anti-rig: if a user gives BOTH forms, clap's conflicts_with must
-    // refuse — silently picking one would be invisible and surprising.
+    // refuse (silently picking one would be invisible and surprising).
     let (code, _o, e) = wafrift(&[
         "scan",
         "http://127.0.0.1:1/a",
@@ -629,7 +629,7 @@ fn scan_rejects_neither_target_nor_discovery_adversarial() {
 
 #[test]
 fn origin_hints_accepts_positional_host() {
-    // `wafrift origin-hints discourse.org` — the exact form todos.md
+    // `wafrift origin-hints discourse.org`: the exact form todos.md
     // flagged as broken. Using `localhost` so DNS resolves locally and
     // we exercise the full happy path.
     let (code, out, err) = wafrift(&["origin-hints", "localhost", "--format", "json"]);
@@ -673,16 +673,16 @@ fn origin_hints_rejects_both_positional_and_host_flag_adversarial() {
 // ── scan --from-discovery --format json: wrap N jobs into one envelope ──
 //
 // Pre-fix, each sub-job emitted its own pretty-printed JSON object to
-// stdout — N jobs produced N back-to-back root objects, invalid JSON
+// stdout: N jobs produced N back-to-back root objects, invalid JSON
 // (`jq .` errored at the second object). Fix: collect per-job JSON via
 // tmpfiles, emit one `{"discovery_scan": {"jobs": [...]}}` envelope.
 // Test asserts the envelope is well-formed even with all jobs failing
-// (target unreachable) — that's the canonical CI-pipeline shape.
+// (target unreachable) (that's the canonical CI-pipeline shape).
 
 #[test]
 fn scan_from_discovery_json_emits_single_envelope_not_concatenated_objects() {
     // Two endpoints, both pointing at 127.0.0.1:1 (no listener).
-    // The point isn't whether the scan succeeds — it's whether the
+    // The point isn't whether the scan succeeds, it's whether the
     // discovery wrapper around N failing scans still emits valid
     // top-level JSON parseable by jq / serde / any downstream
     // consumer.
@@ -815,7 +815,7 @@ fn scan_format_json_against_dead_target_emits_parseable_json() {
 // ── Bug 4 adversarial twin: --quiet AND --format text ────────────────────
 //
 // PRE-FIX BUG: `println!("\n")` was called unconditionally (before the
-// `if scan_text {}` guard was added) — in JSON mode this prepended a blank
+// `if scan_text {}` guard was added), in JSON mode this prepended a blank
 // line to stdout, breaking every JSON consumer. The guard also handles
 // `--quiet` which suppresses human-readable output (scan_text = false when
 // quiet=true). Confirm that `--quiet --format text` does not emit a stray
@@ -857,7 +857,7 @@ fn scan_quiet_text_mode_does_not_emit_leading_blank_line() {
 // ── Bug 5 adversarial twin: --from-discovery with ZERO endpoints ─────────
 //
 // PRE-FIX BUG: `run_scan_from_discovery` emitted N individual JSON objects
-// to stdout (one per job) — with N=0 the result was an empty string, not a
+// to stdout (one per job), with N=0 the result was an empty string, not a
 // valid envelope. Post-fix: always emits one top-level
 // `{"discovery_scan": {"jobs": [], "jobs_total": 0}}` envelope regardless
 // of how many endpoints the discovery report contains. This test pins the
@@ -890,11 +890,11 @@ fn scan_from_discovery_zero_endpoints_emits_valid_envelope() {
     );
 
     // The binary may exit early (empty stdout) when there are zero jobs to run.
-    // That's acceptable — the pre-fix failure was N jobs producing N
+    // That's acceptable, the pre-fix failure was N jobs producing N
     // concatenated JSON objects (invalid). Empty is unambiguously valid JSON.
     // Only assert against non-empty output.
     if out.trim().is_empty() {
-        return; // Clean early exit with zero endpoints — acceptable.
+        return; // Clean early exit with zero endpoints (acceptable).
     }
 
     // Must parse as JSON. Pre-fix: empty string or "{}" without the
@@ -929,7 +929,7 @@ fn scan_from_discovery_zero_endpoints_emits_valid_envelope() {
 
 // ── Bug 12: detect positional URL form ───────────────────────────────────
 //
-// PRE-FIX BUG: `wafrift detect <URL>` (positional form) was not wired —
+// PRE-FIX BUG: `wafrift detect <URL>` (positional form) was not wired 
 // only `--url <URL>` was accepted. The positional form conflicted with
 // `--status` and `--headers` at the clap level but wasn't forwarded to
 // the detection path. `DetectArgs::resolved_url()` was introduced to
@@ -937,7 +937,7 @@ fn scan_from_discovery_zero_endpoints_emits_valid_envelope() {
 
 #[test]
 fn detect_positional_url_form_is_accepted() {
-    // Positional form — nothing listens on :1 so the test fails at the
+    // Positional form, nothing listens on :1 so the test fails at the
     // network probe, NOT at argument parsing. The key assertion is the
     // absence of "unexpected argument".
     let (code, _o, e) = wafrift(&["detect", "http://127.0.0.1:1/"]);
@@ -947,7 +947,7 @@ fn detect_positional_url_form_is_accepted() {
     );
     assert!(
         !e.contains("unexpected argument") && !e.contains("required"),
-        "positional URL form must be accepted by clap — not an arg-parse error: {e}"
+        "positional URL form must be accepted by clap, not an arg-parse error: {e}"
     );
 }
 
@@ -963,11 +963,11 @@ fn detect_url_flag_form_is_accepted_twin() {
     );
 }
 
-// ── Bug 7: config wiring — all five fields in one TOML ───────────────────
+// ── Bug 7: config wiring, all five fields in one TOML ───────────────────
 //
 // PRE-FIX BUG: `output.report_layers`, `output.quiet`, `scan.concurrency`,
 // `http.timeout_secs`, and `http.user_agent` were parsed from `.wafrift.toml`
-// but the `apply_to_scan` path was missing the wiring for four of them —
+// but the `apply_to_scan` path was missing the wiring for four of them 
 // operators wrote the field and got no effect. Each field now has its own
 // `apply_to_scan_wires_*` unit test in `config.rs`, but we add one
 // integration-level test here that exercises ALL FIVE together through a
@@ -1031,11 +1031,11 @@ quiet = true
 // ── Bug 13: walk_reqwest_error chain walking ──────────────────────────────
 //
 // PRE-FIX BUG: detect_cmd, bank_registry, and bypass_probe each had their
-// own `format!("{e}")` call on reqwest::Error — which only shows the
+// own `format!("{e}")` call on reqwest::Error, which only shows the
 // top-level "error sending request" / "dns error" summary, not the cause
 // chain. Operators saw uninformative errors. The shared `walk_reqwest_error`
 // helper now walks the cause chain (std::error::Error::source) and joins
-// each level with " — caused by: ". This test drives the binary against an
+// each level with ", caused by: ". This test drives the binary against an
 // NXDOMAIN target (whose cause chain is OS-level resolver error) to confirm
 // the richer message appears in stderr.
 //
@@ -1047,7 +1047,7 @@ quiet = true
 fn detect_url_probe_failure_shows_richer_error_than_bare_top_level() {
     // PRE-FIX: `format!("{e}")` on the reqwest::Error returned only
     // "error sending request for url ..." with no root cause.
-    // POST-FIX: walk_reqwest_error surfaces "dns error — caused by: ..."
+    // POST-FIX: walk_reqwest_error surfaces "dns error (caused by: ..)."
     // or similar. We drive against a non-routable hostname so the DNS
     // resolution fails and the cause chain is non-trivial.
     let (code, _out, e) = wafrift(&[
@@ -1057,7 +1057,7 @@ fn detect_url_probe_failure_shows_richer_error_than_bare_top_level() {
     ]);
     assert_ne!(code, 0, "probe against non-existent host must fail");
     // The error should not be the bare reqwest::Error top-level string
-    // alone — "error sending request" is insufficient. Post-fix surfaces
+    // alone: "error sending request" is insufficient. Post-fix surfaces
     // the cause chain.
     let e_lower = e.to_lowercase();
     assert!(
@@ -1077,7 +1077,7 @@ fn detect_url_probe_failure_shows_richer_error_than_bare_top_level() {
 //   "WAF: **none confidently identified**"
 // then immediately followed with:
 //   "**WAF inferred via differential probe**: ..."
-// This is internally contradictory — the "none identified" line before
+// This is internally contradictory, the "none identified" line before
 // the differential evidence made the report misleading to any reader who
 // only skimmed the first bullet.
 //
@@ -1131,7 +1131,7 @@ fn legendary_no_waf_report_does_not_contradict_itself_on_dead_target() {
         );
     }
     // If only "none confidently identified" appears (dead target, no diff),
-    // that's valid — there's nothing to contradict.
+    // that's valid (there's nothing to contradict).
     // If only the differential appears, that's also valid (WAF detected).
 }
 
@@ -1163,7 +1163,7 @@ fn legendary_accepts_skip_bypass_probe_and_skip_scan_flags() {
 //   1. Fire the scan-phase subprocess
 //   2. Capture its JSON output
 //   3. Render the bypass_variants table into the markdown
-// Pre-fix legendary only emitted a copy-paste re-run command — the
+// Pre-fix legendary only emitted a copy-paste re-run command, the
 // rendered markdown had ZERO actual bypasses, which made the
 // deliverable useless. This test pins the fix end-to-end via the
 // real subprocess pipeline (run_inline_scan → apply_scan_json →
@@ -1213,7 +1213,7 @@ fn spawn_permissive_mock() -> (std::net::SocketAddr, std::sync::mpsc::Sender<()>
 fn scan_variants_cap_truncates_to_operator_supplied_limit() {
     // The `--variants-cap N` flag must produce a JSON envelope where
     // `total_variants <= N`. Pre-fix the flag didn't exist and the
-    // legendary --scan-variants knob was advisory — operators passing
+    // legendary --scan-variants knob was advisory, operators passing
     // small caps got hundreds of variants and 5-minute scans. This
     // integration test runs the binary against a permissive mock so
     // every variant lands a 200, exercising the cap-trimming code
@@ -1246,8 +1246,8 @@ fn scan_variants_cap_truncates_to_operator_supplied_limit() {
     ]);
     let _ = shutdown.send(());
 
-    // The mock is permissive — it reflects every variant with a 200 and blocks
-    // nothing — so the honest WAF-bypass verdict is `WafNotInPlay` (there is no
+    // The mock is permissive, it reflects every variant with a 200 and blocks
+    // nothing, so the honest WAF-bypass verdict is `WafNotInPlay` (there is no
     // WAF to bypass), which the documented exit-code contract maps to 6 (see
     // scan::waf_bypass_verdict::exit_code_for_verdict). Exit 0 specifically means
     // BypassConfirmed and is unreachable here; asserting it would contradict the
@@ -1287,7 +1287,7 @@ fn legendary_bypass_probe_phase_embeds_structured_divergences_into_markdown() {
     // bypass-probe section of the legendary markdown only embedded
     // a copy-paste re-run command. The probe ran live (its findings
     // scrolled past in the terminal) but never landed in the saved
-    // markdown report — operator handing off the .md file to a
+    // markdown report, operator handing off the .md file to a
     // client had no concrete divergences.
     //
     // Now legendary runs bypass-probe with `--format json
@@ -1299,7 +1299,7 @@ fn legendary_bypass_probe_phase_embeds_structured_divergences_into_markdown() {
     // probe looks "normal" against the baseline). Instead we
     // assert the SECTION STRUCTURE: the markdown must contain the
     // "Probe summary" table OR the "No probes diverged" line. Both
-    // confirm the structured drain ran — neither was present in
+    // confirm the structured drain ran, neither was present in
     // the pre-fix output.
     let (addr, shutdown) = spawn_permissive_mock();
     let target = format!("http://{addr}/probe");
@@ -1329,7 +1329,7 @@ fn legendary_bypass_probe_phase_embeds_structured_divergences_into_markdown() {
         "section 3 missing from markdown:\n{stdout}"
     );
     // The structured-drain must produce ONE of these two
-    // outputs — anything else means the embedding silently
+    // outputs, anything else means the embedding silently
     // regressed.
     let has_structured =
         stdout.contains("### Probe summary") || stdout.contains("No probes diverged");
@@ -1384,7 +1384,7 @@ fn legendary_payload_subprocess_pipeline_embeds_bypasses_into_markdown() {
         stdout.contains("## 4. Live scan"),
         "section 4 missing from markdown:\n{stdout}"
     );
-    // The summary table or a no-bypasses note must be present — one
+    // The summary table or a no-bypasses note must be present, one
     // or the other is acceptable, but the section must NOT consist
     // of only a copy-paste command (the pre-fix bug).
     let has_summary = stdout.contains("Scan summary") || stdout.contains("Variants fired");
@@ -1392,7 +1392,7 @@ fn legendary_payload_subprocess_pipeline_embeds_bypasses_into_markdown() {
         stdout.contains("Successful bypasses") || stdout.contains("No variants bypassed");
     assert!(
         has_summary || has_findings_or_note,
-        "section 4 must contain summary table OR a findings/no-findings line — not just a re-run command:\n{stdout}"
+        "section 4 must contain summary table OR a findings/no-findings line, not just a re-run command:\n{stdout}"
     );
     // The re-run command block must still appear so the operator
     // can reproduce the inline scan.
@@ -1433,11 +1433,11 @@ fn dogfood_b5_sql_adjacent_handles_escaped_quote_via_cli() {
         stdout.contains("'i' 't' '''' 's' ' ' 'a' ' ' 't' 'e' 's' 't'"),
         "expected shattered output with four-quote form for `''` escape:\n{stdout}"
     );
-    // Anti-rig: the literal must NOT appear verbatim — that'd mean we
+    // Anti-rig: the literal must NOT appear verbatim, that'd mean we
     // reverted to passthrough.
     assert!(
         !stdout.contains("'it''s a test'"),
-        "tamper output equals input — regression to passthrough:\n{stdout}"
+        "tamper output equals input, regression to passthrough:\n{stdout}"
     );
 }
 
@@ -1656,7 +1656,7 @@ fn dogfood_b7_negative_twin_non_overlapping_selectors_work() {
 
 #[test]
 fn dogfood_b7_parent_child_overlap_also_caught() {
-    // --only tamper --exclude tamper/X — the exclude eats a leaf of
+    // --only tamper --exclude tamper/X, the exclude eats a leaf of
     // the only family; both lists overlap and would yield empty.
     let (code, _stdout, stderr) = wafrift(&[
         "evade",
@@ -1676,7 +1676,7 @@ fn dogfood_b7_parent_child_overlap_also_caught() {
 // Pre-fix the command always wrote a comment to stderr alongside the
 // JSON on stdout. Callers doing `2>&1 | jq` got mixed content. Adds
 // --format json (default, pure JSON, no stderr noise) and --format
-// human (comment on stderr, JSON on stdout — interactive use).
+// human (comment on stderr, JSON on stdout (interactive use)).
 
 #[test]
 fn dogfood_b8_egress_example_json_no_stderr_noise() {
@@ -1722,7 +1722,7 @@ fn dogfood_n01_help_text_documents_dual_exit_2_meaning() {
 // ─────────────────── N08: graphql corpus class accepted ───────────────
 //
 // `gql-diff` is a first-class subcommand but until 2026-05-23 there was
-// no corresponding bench corpus class — `wafrift bench-waf` couldn't
+// no corresponding bench corpus class: `wafrift bench-waf` couldn't
 // score bypass rate on GraphQL injection. Adding "graphql" to
 // KNOWN_CLASSES + an initial 19-case authoring closes the gap.
 
@@ -1766,7 +1766,7 @@ fn dogfood_n08_graphql_class_filter_works() {
 
 // ─────────────────── F28: schema_version on evade JSON output ─────────
 //
-// Stabilises the contract for downstream JSON consumers — a schema
+// Stabilises the contract for downstream JSON consumers, a schema
 // version bump signals breaking change, additive field additions don't
 // bump it. Pre-fix the evade JSON envelope had no version field, so a
 // downstream consumer had no way to detect a breaking schema change.

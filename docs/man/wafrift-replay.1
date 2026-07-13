@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH replay 1  "replay " 
 .SH NAME
-replay \- Replay a saved bypass against a target — proves reproducibility
+replay \- Replay a saved bypass against a target, proves reproducibility
 .SH SYNOPSIS
 \fBreplay\fR <\fB\-\-target\fR> [\fB\-\-param\fR] <\fB\-\-payload\fR> [\fB\-\-method\fR] [\fB\-\-technique\fR] [\fB\-\-from\-host\fR] [\fB\-\-proxy\-bank\fR] [\fB\-\-from\-waf\fR] [\fB\-\-insecure\fR] [\fB\-\-timeout\-secs\fR] [\fB\-\-format\fR] [\fB\-\-host\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-Replay a saved bypass against a target — proves reproducibility
+Replay a saved bypass against a target, proves reproducibility
 .SH OPTIONS
 .TP
 \fB\-\-target\fR \fI<TARGET>\fR
@@ -16,7 +16,7 @@ Target URL, e.g. `https://api.example.com/search`
 Query/body parameter name to inject the payload into
 .TP
 \fB\-\-payload\fR \fI<PAYLOAD>\fR
-Raw payload to mutate via the saved technique chain. The same payload that produced the original bypass — the engine reapplies the same encoding pipeline to it
+Raw payload to mutate via the saved technique chain. The same payload that produced the original bypass, the engine reapplies the same encoding pipeline to it
 .TP
 \fB\-\-method\fR \fI<METHOD>\fR [default: GET]
 HTTP method to use for the replay (GET / POST / PUT / ...)

@@ -1,4 +1,4 @@
-//! Integration tests for wafrift-types — new modules added in features 1-6.
+//! Integration tests for wafrift-types (new modules added in features 1-6).
 
 use wafrift_types::discovery::{
     DiscoveredEndpoint, DiscoverySource, InjectionPoint, ParameterLocation,

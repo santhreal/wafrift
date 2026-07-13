@@ -14,7 +14,7 @@ use wafrift_evolution::body_padding::pad;
 fn regression_multibyte_content_type_param_no_panic() {
     let body = b"a=1&b=2";
     // Each of these has a `;`-parameter whose byte 9 lands inside a
-    // multibyte codepoint — the exact crash input class.
+    // multibyte codepoint (the exact crash input class).
     for ct in [
         "multipart/form-data; boundÿ=----x",      // 2-byte at the edge
         "multipart/form-data;日本語ary=----x",    // 3-byte chars

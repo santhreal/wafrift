@@ -454,7 +454,7 @@ mod tests {
     fn footer_shows_request_counters() {
         let mut s = State::new();
         // Switch to a non-Flow tab so the footer doesn't fill its
-        // width with Flow-specific hints — keeps the counter span
+        // width with Flow-specific hints, keeps the counter span
         // inside a 200-col render area.
         s.tab = Tab::Intercept;
         s.total = 42;
@@ -476,7 +476,7 @@ mod tests {
 
     #[test]
     fn outcome_chip_labels_match_filter() {
-        // outcome_chip is private — exercise through draw_header
+        // outcome_chip is private, exercise through draw_header
         // by setting each filter mode.
         for (filter, expected) in [
             (OutcomeFilter::BypassOnly, "BYPASS"),

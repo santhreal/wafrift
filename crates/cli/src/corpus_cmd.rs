@@ -1,4 +1,4 @@
-//! `wafrift corpus stats` — read-only inspection of an existing
+//! `wafrift corpus stats`: read-only inspection of an existing
 //! corpus + edge-POP coverage map.
 //!
 //! Closes the "first production caller" gap for
@@ -35,7 +35,7 @@ pub(crate) enum CorpusAction {
     /// < N, fail the hunt") and operator dashboards.
     Stats(StatsArgs),
     /// Copy a corpus (and its coverage sibling) to a timestamped
-    /// snapshot — an off-machine backstop for the irreplaceable
+    /// snapshot, an off-machine backstop for the irreplaceable
     /// bypass corpus, which otherwise lives only in machine-local
     /// `~/.wafrift`. Point `--dest` at a backed-up location (the Santh
     /// share, an external drive) and run it before/after a hunt.
@@ -50,7 +50,7 @@ pub(crate) struct StatsArgs {
     /// Path to the edge_pop_coverage JSON file.
     #[arg(long)]
     pub coverage: PathBuf,
-    /// Optional path to the H1Archive — fingerprints in this file
+    /// Optional path to the H1Archive, fingerprints in this file
     /// are excluded from the "novel" count.
     #[arg(long)]
     pub h1_archive: Option<PathBuf>,
@@ -174,7 +174,7 @@ fn run_stats(args: StatsArgs) -> u8 {
     // default is only valid when the caller intentionally requests
     // it (no path supplied).
     // PathBuf fields with empty default sentinel ("") are treated
-    // as "no path supplied" — only a non-empty + nonexistent path
+    // as "no path supplied", only a non-empty + nonexistent path
     // is a hard error. Optional fields (h1_archive) are checked
     // only when Some(p).
     let required: [(&str, &std::path::Path); 2] =
@@ -206,7 +206,7 @@ fn run_stats(args: StatsArgs) -> u8 {
     let corpus = recorder.corpus();
     let coverage = recorder.coverage();
 
-    // Per-rule inferred alphabet preview — top 4 rules by activity,
+    // Per-rule inferred alphabet preview, top 4 rules by activity,
     // shows the bytes the L* learner WOULD use if mining was driven
     // by this corpus. Routes through wafrift_evolution::rule_alphabet
     // so the inference path is exercised by every `corpus stats` run.
@@ -223,7 +223,7 @@ fn run_stats(args: StatsArgs) -> u8 {
         }
     }
 
-    // Encoding-lattice chain budget preview — shows how many encoder
+    // Encoding-lattice chain budget preview, shows how many encoder
     // chains the lattice search WOULD enumerate at default depth.
     // Exercises wafrift_evolution::encoding_lattice from the read-only
     // path so the search budget math is always one `corpus stats` away.
@@ -317,7 +317,7 @@ mod tests {
         ))
     }
 
-    /// Empty-PathBuf sentinel — `run_stats` treats this as "no path
+    /// Empty-PathBuf sentinel: `run_stats` treats this as "no path
     /// supplied" and routes through the in-process default loader.
     /// R45 (pass-7 §11) hard-errors on a *non-empty* path that doesn't
     /// exist, so tests that want the fallback path must pass an empty

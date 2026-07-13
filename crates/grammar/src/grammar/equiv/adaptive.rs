@@ -1,4 +1,4 @@
-//! Phase C — adaptive feedback search over the provably-sound
+//! Phase C, adaptive feedback search over the provably-sound
 //! equivalence space.
 //!
 //! Phase B gives an infinite space where *every* member is a real
@@ -6,7 +6,7 @@
 //! rewrite-profile as a bandit arm, plays it against the *live* WAF,
 //! and uses the verified-bypass signal as reward. Within a handful of
 //! rounds the search concentrates the request budget on exactly the
-//! primitives that beat *this* WAF — instead of blindly sampling
+//! primitives that beat *this* WAF, instead of blindly sampling
 //! shapes the WAF blocks. Because the space is sound by construction,
 //! no round is ever wasted on a destroyed payload (the failure mode
 //! of blind mutation / classic fuzzing).
@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn converges_with_noisy_stochastic_rewards() {
-        // Arm 1 pays 0.8, arm 3 pays 0.3, rest 0.05 — deterministic
+        // Arm 1 pays 0.8, arm 3 pays 0.3, rest 0.05, deterministic
         // pseudo-noise so the test is reproducible.
         let mut b = Bandit::new(5);
         let payoff = |a: usize, k: u32| -> f64 {

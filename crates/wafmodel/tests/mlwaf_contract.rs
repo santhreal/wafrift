@@ -3,7 +3,7 @@
 //! The decisive anti-rig property: a "bypass" is only ever an input
 //! that (a) the ML-WAF passes AND (b) is still a working attack. The
 //! manifold projection is enforced on every accepted candidate, and an
-//! ML-WAF that blocks the entire attack manifold yields `None` — never
+//! ML-WAF that blocks the entire attack manifold yields `None`: never
 //! a fabricated off-manifold "win".
 
 use wafrift_types::Request;
@@ -45,7 +45,7 @@ impl MlWaf for BrittleMl {
     }
 }
 
-/// A *robust* ML-WAF: its feature is case-insensitive — i.e. it keys
+/// A *robust* ML-WAF: its feature is case-insensitive, i.e. it keys
 /// on the manifold itself. Nothing on the attack manifold can evade
 /// it; the only "bypass" would be to stop attacking.
 struct RobustMl;
@@ -78,7 +78,7 @@ fn score_guided_boundary_attack_finds_an_on_manifold_bypass() {
 
 #[test]
 fn decision_only_boundary_walk_also_succeeds() {
-    // No score exposed — the realistic black-box ML-WAF. The manifold-
+    // No score exposed, the realistic black-box ML-WAF. The manifold-
     // constrained randomized walk must still find a bypass.
     let start = b"<script>alert(1)</script>";
     let mut waf = BrittleMl {
@@ -97,7 +97,7 @@ fn decision_only_boundary_walk_also_succeeds() {
 #[test]
 fn an_ml_waf_covering_the_whole_manifold_yields_none_not_a_fabrication() {
     // RobustMl blocks anything on the manifold. The ONLY way to make
-    // it pass is to leave the manifold — which the projection forbids.
+    // it pass is to leave the manifold (which the projection forbids).
     // The honest result is None, and crucially the search must have
     // *tried and rejected* off-manifold candidates rather than cheat.
     let start = b"<script>alert(1)</script>";
@@ -111,7 +111,7 @@ fn an_ml_waf_covering_the_whole_manifold_yields_none_not_a_fabrication() {
 
 #[test]
 fn non_attack_start_is_rejected_no_vacuous_bypass() {
-    // If the seed is not even an attack, there is nothing to evade —
+    // If the seed is not even an attack, there is nothing to evade 
     // must return None rather than declare a meaningless success.
     let mut waf = BrittleMl { expose_score: true };
     let out = evade_ml(b"hello world", &mut waf, &is_attack, &body, 1000, 0).unwrap();

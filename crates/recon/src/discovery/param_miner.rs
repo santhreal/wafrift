@@ -11,7 +11,7 @@
 //!
 //! Concurrency is governed by `MiningConfig::concurrency`. Per-request
 //! delay (`delay_ms`) is honoured between the START of consecutive
-//! candidate probes — the baseline burst at the top is unmetered.
+//! candidate probes (the baseline burst at the top is unmetered).
 
 use crate::discovery::openapi::DiscoveryError;
 use std::sync::Arc;
@@ -191,7 +191,7 @@ async fn probe_one(target: &str, word: &str, client: &reqwest::Client) -> Option
     let sep = if target.contains('?') { "&" } else { "?" };
     // F96: pre-fix `word` was interpolated raw. A wordlist entry
     // containing `&`, `=`, `#`, or whitespace silently injected
-    // unintended params or fragments — turning `&inject=1` into
+    // unintended params or fragments, turning `&inject=1` into
     // `?&inject=1=wafrift_canary_x9k2`, which probes the wrong
     // parameter and never registers as a hit. Percent-encode the
     // word so any byte sequence is parsed as a single param name.
@@ -209,14 +209,14 @@ async fn probe_one(target: &str, word: &str, client: &reqwest::Client) -> Option
 }
 
 /// Stream a response body and return ONLY the byte count, capped at
-/// [`MAX_PROBE_BODY_BYTES`]. We don't keep the bytes — only the length
-/// is consumed by the differential signal — so streaming + dropping
+/// [`MAX_PROBE_BODY_BYTES`]. We don't keep the bytes, only the length
+/// is consumed by the differential signal, so streaming + dropping
 /// chunks gives us a fixed memory ceiling regardless of upstream size.
 ///
 /// Returns the bounded count (matches actual bytes received up to the
 /// cap; capped responses report exactly `MAX_PROBE_BODY_BYTES` rather
 /// than the true upstream length, which is fine for differential
-/// detection — the divergence still fires).
+/// detection (the divergence still fires)).
 async fn read_bounded_len(resp: reqwest::Response) -> usize {
     use futures_util::StreamExt;
     let mut len = 0usize;
@@ -263,7 +263,7 @@ fn is_hit(probe: &ProbeResult, baseline: &BaselineEnvelope, config: &MiningConfi
 /// tiebreaker, `HashMap::into_iter().max_by_key()` has non-deterministic
 /// ordering across runs (HashMap uses a random seed), which meant the
 /// baseline envelope could report different modal statuses across identical
-/// baseline bursts when, say, 200 and 404 both appeared twice — flipping
+/// baseline bursts when, say, 200 and 404 both appeared twice, flipping
 /// is_hit's status-change branch unpredictably.
 fn mode_status(statuses: &[u16]) -> u16 {
     let mut counts = std::collections::HashMap::new();
@@ -312,11 +312,11 @@ mod tests {
             ..Default::default()
         };
         let b = baseline(200, 1000.0, 100.0);
-        // 1100 is +10% — should NOT trigger (threshold is strict gt).
+        // 1100 is +10% (should NOT trigger (threshold is strict gt)).
         assert!(!is_hit(&probe("a", 200, 1100, 100), &b, &cfg));
-        // 1200 is +20% — triggers.
+        // 1200 is +20% (triggers).
         assert!(is_hit(&probe("b", 200, 1200, 100), &b, &cfg));
-        // 800 is -20% — also triggers (absolute deviation).
+        // 800 is -20% (also triggers (absolute deviation)).
         assert!(is_hit(&probe("c", 200, 800, 100), &b, &cfg));
     }
 
@@ -375,9 +375,9 @@ mod tests {
     /// is_hit's status-change branch to flip unpredictably between runs.
     #[test]
     fn mode_status_tie_broken_by_lower_code() {
-        // 200 and 404 each appear once — must always return 200.
+        // 200 and 404 each appear once (must always return 200).
         assert_eq!(mode_status(&[200, 404]), 200);
-        // Same tie, reversed order of elements — must still return 200.
+        // Same tie, reversed order of elements (must still return 200).
         assert_eq!(mode_status(&[404, 200]), 200);
         // Three-way tie: 200, 301, 500 each appear once.
         assert_eq!(mode_status(&[500, 301, 200]), 200);
@@ -385,7 +385,7 @@ mod tests {
 
     #[test]
     fn mode_status_majority_beats_lower_code() {
-        // 404 appears more than 200 — majority wins even though 200 is lower.
+        // 404 appears more than 200 (majority wins even though 200 is lower).
         assert_eq!(mode_status(&[200, 404, 404, 404]), 404);
     }
 
@@ -396,14 +396,14 @@ mod tests {
 
     #[test]
     fn mode_status_tie_between_200_and_200() {
-        // All identical — trivially 200.
+        // All identical (trivially 200).
         assert_eq!(mode_status(&[200, 200, 200]), 200);
     }
 
     #[test]
     fn mode_status_is_stable_across_repeated_calls() {
         // Run the same call 1000 times and confirm the result never changes.
-        // This catches HashMap random-seed non-determinism — if the old code
+        // This catches HashMap random-seed non-determinism, if the old code
         // were still in use, this would flake across process runs (each
         // invocation in the same process uses the same seed, so intra-run
         // it might always agree, but the test is documentation of the

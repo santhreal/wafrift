@@ -3,7 +3,7 @@
 //! This is the payoff of the crate: it drives the **same** L*/SFA decompiler
 //! that learns a server WAF over a [`SanitizerOracle`],
 //! then intersects the learned "survives-executable" language with an XSS attack
-//! grammar to mine concrete bypass candidates — inputs that stay executable
+//! grammar to mine concrete bypass candidates, inputs that stay executable
 //! after this exact sanitizer config runs.
 //!
 //! Because the oracle is a pure in-process function (no network), learning is
@@ -11,7 +11,7 @@
 //! terminates. Every mined candidate is then **re-verified against the model**
 //! (a CEGIS-style soundness gate): a string that does not genuinely survive is
 //! dropped, never reported. Surviving candidates are flagged for live scald DOM
-//! confirmation — the model proposes, the browser disposes.
+//! confirmation (the model proposes, the browser disposes).
 
 use wafrift_types::Request;
 use wafrift_wafmodel::{
@@ -28,7 +28,7 @@ use crate::model::SanitizerOracle;
 pub struct SanitizerBypass {
     /// The surviving payload (re-verified against the model).
     pub payload: String,
-    /// Always `true` here — the soundness gate drops non-survivors. Emitted
+    /// Always `true` here, the soundness gate drops non-survivors. Emitted
     /// explicitly so a consumer never has to assume.
     pub survives_executable: bool,
     /// Which executable vector class survived (`script` / `event_handler`).
@@ -50,7 +50,7 @@ pub struct MineResult {
     pub mined_before_verify: usize,
 }
 
-/// The XSS learning alphabet — every byte that appears in a needle MUST be
+/// The XSS learning alphabet, every byte that appears in a needle MUST be
 /// distinguished, or the KMP abstraction silently makes that needle unmatchable
 /// (the exact invariant `model-evade` documents). `b'A'` is the catch-all.
 fn xss_alphabet() -> Alphabet {
@@ -112,23 +112,23 @@ fn vector_class(payload: &str) -> &'static str {
 /// Per-equivalence-round membership-query budget. The membership predicate is a
 /// pure in-process function (cost is CPU, not HTTP round-trips), but the BFS
 /// frontier over the 24-symbol XSS alphabet reaches ~1M words at `eq_max_len=6`,
-/// and a *strict* (no-bypass) model must reject every one of them every round —
+/// and a *strict* (no-bypass) model must reject every one of them every round 
 /// an unbounded sweep that, combined with per-query regex compilation, hung the
 /// decompiler for minutes. Capping per-round queries bounds the sweep to a fixed
 /// budget; the obvious bypasses are guaranteed by the Tier-B canonical-vector
 /// seed regardless, so the SFA search staying bounded never costs a real
-/// survivor — it only trims deep, speculative variants.
+/// survivor (it only trims deep, speculative variants).
 const EQ_QUERY_BUDGET: u64 = 40_000;
 
 /// Maximum number of L* equivalence ROUNDS. [`EQ_QUERY_BUDGET`] bounds work
 /// *within* a round, but L* requests one round per refinement and a language with
 /// a large minimal automaton (a complex extracted strip regex can produce one)
-/// can demand many — so without this cap total work is `rounds × budget`, i.e.
+/// can demand many (so without this cap total work is `rounds × budget`, i.e).
 /// unbounded. That let a single `decompile_and_mine` peg several cores for
 /// minutes on certain configs. After the cap the learner stops refining and
 /// proceeds with its current hypothesis; the Tier-B canonical-vector seed still
 /// guarantees the obvious bypasses, so a capped (less-refined) SFA only trims
-/// deep speculative variants — soundness is untouched (every survivor is still
+/// deep speculative variants, soundness is untouched (every survivor is still
 /// re-verified). Total membership work is therefore bounded by
 /// `MAX_EQ_ROUNDS × EQ_QUERY_BUDGET` plus table-filling.
 const MAX_EQ_ROUNDS: usize = 12;
@@ -183,7 +183,7 @@ pub fn decompile_and_mine(
 
     // The model oracle is a pure function, so unbounded-membership L* with a
     // bounded equivalence search always terminates. A learning error is treated
-    // as "no model" — we still fall through to zero bypasses, never panic.
+    // as "no model" (we still fall through to zero bypasses, never panic).
     let report = l_star(&mut oracle, &build, &alpha, &mut eq);
     let (sfa, membership_queries, equivalence_rounds) = match report {
         Ok(r) => (r.sfa, r.membership_queries, r.equivalence_rounds),
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn every_reported_bypass_genuinely_survives_the_model() {
         // The core soundness contract: whatever decompile_and_mine reports must
-        // actually survive the model — the re-verification gate guarantees it.
+        // actually survive the model (the re-verification gate guarantees it).
         let m = model(&["script"], None, false);
         let result = decompile_and_mine(m.clone(), 64, 16, 5);
         for b in &result.bypasses {
@@ -307,7 +307,7 @@ mod tests {
         // Regression for the multi-minute hang: a strict (no-bypass) model that
         // ALSO carries an extracted regex `strip_pattern` once recompiled that
         // regex on every one of ~1M membership queries per EQ round, across
-        // multiple rounds. The fix is two-fold — the oracle compiles strip
+        // multiple rounds. The fix is two-fold, the oracle compiles strip
         // patterns once, and the EQ round is query-bounded (`EQ_QUERY_BUDGET`).
         // This is the exact CLI default-parameter case that hung the e2e.
         let mut m = model(

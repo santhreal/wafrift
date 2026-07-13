@@ -54,7 +54,7 @@ FAIL=()
 for stack in "${STACKS[@]}"; do
     port="${STACKS_PORT[$stack]:-}"
     if [ -z "$port" ]; then
-        echo "[$stack] unknown stack — skip" >&2
+        echo "[$stack] unknown stack, skip" >&2
         continue
     fi
 
@@ -69,7 +69,7 @@ for stack in "${STACKS[@]}"; do
         --format json \
         --output "$output"; then
         bypass=$(jq -r '.evaded_summary.overall_bypass_rate // "n/a"' "$output" 2>/dev/null || echo "n/a")
-        echo "  [$stack] done — bypass_rate=$bypass"
+        echo "  [$stack] done, bypass_rate=$bypass"
         PASS+=("$stack")
     else
         echo "  [$stack] FAILED" >&2

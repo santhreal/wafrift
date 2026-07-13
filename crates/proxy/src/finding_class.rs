@@ -5,25 +5,25 @@
 //! manual → wafrift-proxy → target). Those tools provide the payloads; wafrift,
 //! sitting in the path, classifies each transaction it forwards: did a request
 //! input **reflect** in the response, and does that reflection actually
-//! **execute**? This turns wafrift-as-a-proxy into a live exploit-classifier —
+//! **execute**? This turns wafrift-as-a-proxy into a live exploit-classifier 
 //! separating "the input came back" (noise every scanner floods you with) from
 //! "the input runs" (a confirmed client-side exploit), for whatever tool is
 //! driving the traffic.
 //!
 //! Reflection detection is cheap and always on. Execution proof is opt-in (it
 //! shells out to the external `detonate` tool) and only attempted when a
-//! reflection landed in an HTML response — see [`classify`].
+//! reflection landed in an HTML response (see [`classify`]).
 
 /// How a single proxied transaction classifies as a (potential) finding.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FindingClass {
-    /// No request input reflected in the response — nothing to flag.
+    /// No request input reflected in the response (nothing to flag).
     None,
     /// One or more inputs reflected, but execution was not proven (response
     /// wasn't HTML, the detonate tool was unavailable, or the reflection lands
-    /// in a non-executable context). Worth a human look — the noisy default.
+    /// in a non-executable context). Worth a human look (the noisy default).
     Reflected { params: Vec<String> },
-    /// A reflected input EXECUTED in the jsdet sandbox — a confirmed
+    /// A reflected input EXECUTED in the jsdet sandbox, a confirmed
     /// client-side exploit (e.g. `alert(1)` fired), not merely a reflection.
     ExploitConfirmed {
         params: Vec<String>,
@@ -39,7 +39,7 @@ impl FindingClass {
         match self {
             FindingClass::None => None,
             FindingClass::Reflected { params } => Some(format!(
-                "REFLECTED — input(s) {} echoed in the response (review for XSS)",
+                "REFLECTED, input(s) {} echoed in the response (review for XSS)",
                 params.join(", ")
             )),
             FindingClass::ExploitConfirmed {
@@ -47,13 +47,13 @@ impl FindingClass {
                 sink,
                 message,
             } => Some(format!(
-                "EXPLOIT CONFIRMED — input(s) {} reflect and EXECUTE `{sink}({message})` in a sandbox (client-side exploit)",
+                "EXPLOIT CONFIRMED, input(s) {} reflect and EXECUTE `{sink}({message})` in a sandbox (client-side exploit)",
                 params.join(", ")
             )),
         }
     }
 
-    /// True for the strongest verdict — a proven, executing exploit.
+    /// True for the strongest verdict (a proven, executing exploit).
     #[must_use]
     pub fn is_exploit(&self) -> bool {
         matches!(self, FindingClass::ExploitConfirmed { .. })
@@ -67,7 +67,7 @@ const MIN_REFLECT_LEN: usize = 6;
 
 /// Which of `inputs` (the param/body values the driving tool sent) appear
 /// verbatim in `body`. Skips values shorter than [`MIN_REFLECT_LEN`] and
-/// de-duplicates. The match is a raw byte-substring check — exactly the
+/// de-duplicates. The match is a raw byte-substring check, exactly the
 /// "did my input come back unmodified" question reflection-XSS turns on.
 #[must_use]
 pub fn reflected_inputs(inputs: &[String], body: &[u8]) -> Vec<String> {
@@ -91,7 +91,7 @@ fn contains(haystack: &[u8], needle: &[u8]) -> bool {
     haystack.windows(needle.len()).any(|w| w == needle)
 }
 
-/// True when a response Content-Type can carry executable HTML/JS — the only
+/// True when a response Content-Type can carry executable HTML/JS, the only
 /// case where detonation can meaningfully prove execution.
 #[must_use]
 pub fn is_html_like(content_type: &str) -> bool {
@@ -106,7 +106,7 @@ pub fn is_html_like(content_type: &str) -> bool {
 /// - `prove`: when `true` and a reflection landed in an HTML-like response,
 ///   detonate the body (out-of-process) to confirm execution.
 ///
-/// `detonate` is the injected execution-proof hook — `None` from it (tool
+/// `detonate` is the injected execution-proof hook. `None` from it (tool
 /// absent / no sink fired) degrades the verdict to [`FindingClass::Reflected`].
 /// Taking it as a parameter keeps this module pure and unit-testable without a
 /// subprocess.
@@ -144,8 +144,8 @@ pub struct DetonationVerdict {
     pub message: String,
 }
 
-/// Extract the candidate input VALUES the driving tool sent — query-string
-/// params plus `application/x-www-form-urlencoded` body params — percent-decoded
+/// Extract the candidate input VALUES the driving tool sent, query-string
+/// params plus `application/x-www-form-urlencoded` body params, percent-decoded
 /// so they match the (decoded) bytes that would reflect in the response. These
 /// are the injection points reflection-XSS turns on; passing them to
 /// [`reflected_inputs`] answers "did the tool's payload come back unmodified".
@@ -184,7 +184,7 @@ fn collect_pairs(raw: &[u8], out: &mut Vec<String>) {
 }
 
 /// Percent + `+`-decode a form/query value to the bytes that would appear in
-/// the response if reflected. Lossy-UTF8 — the reflection check is byte-based.
+/// the response if reflected. Lossy-UTF8 (the reflection check is byte-based).
 fn percent_decode(v: &[u8]) -> String {
     let mut bytes = Vec::with_capacity(v.len());
     let mut i = 0;
@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn classify_reflected_when_not_html() {
-        // Reflected into a JSON response — no executable context, so no
+        // Reflected into a JSON response, no executable context, so no
         // detonation is attempted and the verdict stays Reflected.
         let c = classify(
             &["<script>alert(1)</script>".into()],
@@ -359,7 +359,7 @@ mod tests {
 
     // ---- helpers -----------------------------------------------------------
 
-    /// A detonate hook that must never be invoked — proves a code path skips
+    /// A detonate hook that must never be invoked, proves a code path skips
     /// detonation entirely (panics loudly if the contract is violated).
     fn no_detonate(_: &[u8]) -> Option<DetonationVerdict> {
         panic!("detonate hook must not be called on this path");
@@ -383,14 +383,14 @@ mod tests {
 
     #[test]
     fn reflect_value_exactly_one_below_min_never_reflects() {
-        // 5 bytes — below MIN_REFLECT_LEN(6) — present verbatim, must NOT flag.
+        // 5 bytes (below MIN_REFLECT_LEN(6) (present verbatim, must NOT flag)).
         let body = b"prefix ABCDE suffix";
         assert!(reflected_inputs(&inv(&["ABCDE"]), body).is_empty());
     }
 
     #[test]
     fn reflect_value_exactly_at_min_reflects() {
-        // 6 bytes — exactly MIN_REFLECT_LEN — present verbatim, must flag.
+        // 6 bytes (exactly MIN_REFLECT_LEN (present verbatim, must flag)).
         let body = b"prefix ABCDEF suffix";
         assert_eq!(reflected_inputs(&inv(&["ABCDEF"]), body), inv(&["ABCDEF"]));
     }
@@ -421,7 +421,7 @@ mod tests {
 
     #[test]
     fn reflect_value_longer_than_body_not_reflected() {
-        // needle longer than haystack — contains() must short-circuit false.
+        // needle longer than haystack (contains() must short-circuit false).
         assert!(
             reflected_inputs(&inv(&["this-needle-is-way-longer-than-body"]), b"short").is_empty()
         );
@@ -522,7 +522,7 @@ mod tests {
 
     #[test]
     fn decode_invalid_hex_capital_z_kept_literal() {
-        // %ZZ is not valid hex — the '%' is emitted literally and parsing
+        // %ZZ is not valid hex, the '%' is emitted literally and parsing
         // resumes at the next byte.
         let out = extract_request_inputs("h://t?x=ab%ZZcd", None, "");
         assert_eq!(out, inv(&["ab%ZZcd"]));
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn decode_trailing_percent_one_hex_kept_literal() {
-        // "%4" at the very end — only one trailing byte after '%'. The decoder's
+        // "%4" at the very end, only one trailing byte after '%'. The decoder's
         // bounds guard (i+2 < len) means this is NOT decoded; '%' stays literal.
         let out = extract_request_inputs("h://t?x=value1%4", None, "");
         assert_eq!(out, inv(&["value1%4"]));

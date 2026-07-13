@@ -24,8 +24,8 @@
 //! | [`wrap_in_grpc_frame`] | 5-byte gRPC framing around arbitrary bytes |
 //! | [`proto_string_field`] | Single protobuf string field (field_number, wire type 2) |
 //! | [`embed_attack_in_message`] | payload → field 1 → gRPC frame |
-//! | [`embed_attack_in_nested`] | N-level submessage nesting — defeats depth-limited inspectors |
-//! | [`split_attack_across_fields`] | payload split across N string fields — WAF sees only fragments |
+//! | [`embed_attack_in_nested`] | N-level submessage nesting, defeats depth-limited inspectors |
+//! | [`split_attack_across_fields`] | payload split across N string fields. WAF sees only fragments |
 //!
 //! # Wire-format notes (no protoc required)
 //!
@@ -54,7 +54,7 @@
 /// Encode a protobuf varint (unsigned, variable-length).
 ///
 /// Protobuf varints use 7 bits of data per byte; the MSB signals
-/// continuation. This matches both proto2 and proto3 — the wire format
+/// continuation. This matches both proto2 and proto3, the wire format
 /// is identical for unsigned integers.
 fn encode_varint(mut value: u64) -> Vec<u8> {
     let mut buf = Vec::with_capacity(10);
@@ -87,7 +87,7 @@ fn field_tag(field_number: u32, wire_type: u8) -> Vec<u8> {
 /// - Bytes 5..: the raw protobuf message
 ///
 /// WAFs that do not parse gRPC framing will see a binary blob whose first
-/// bytes are `\x00` followed by a 4-byte length — no plaintext signal.
+/// bytes are `\x00` followed by a 4-byte length (no plaintext signal).
 #[must_use]
 pub fn wrap_in_grpc_frame(payload_bytes: &[u8]) -> Vec<u8> {
     let len = payload_bytes.len() as u32;
@@ -350,12 +350,12 @@ pub fn decode_string_fields(buf: &[u8]) -> Option<Vec<(u32, Vec<u8>)>> {
         let wire_type = (tag & 0x07) as u8;
 
         match wire_type {
-            // Wire type 0: varint — skip value
+            // Wire type 0: varint, skip value
             0 => {
                 let (_, next) = decode_varint(buf, offset)?;
                 offset = next;
             }
-            // Wire type 1: 64-bit — skip 8 bytes
+            // Wire type 1: 64-bit, skip 8 bytes
             1 => {
                 offset = offset.checked_add(8)?;
                 if offset > buf.len() {
@@ -373,7 +373,7 @@ pub fn decode_string_fields(buf: &[u8]) -> Option<Vec<(u32, Vec<u8>)>> {
                 fields.push((field_number, buf[offset..end].to_vec()));
                 offset = end;
             }
-            // Wire type 5: 32-bit — skip 4 bytes
+            // Wire type 5: 32-bit, skip 4 bytes
             5 => {
                 offset = offset.checked_add(4)?;
                 if offset > buf.len() {
@@ -606,7 +606,7 @@ mod tests {
 
     /// Anti-rig: the compression flag byte MUST be 0 (uncompressed).
     /// Any change that starts emitting 1 here is a silent protocol
-    /// compatibility break — the origin's gRPC stub will try to
+    /// compatibility break, the origin's gRPC stub will try to
     /// decompress the body and produce garbage.
     #[test]
     fn wrap_in_grpc_frame_compression_flag_is_always_zero() {
@@ -681,7 +681,7 @@ mod tests {
     // ── field_tag correctness ────────────────────────────────────────────
 
     /// Anti-rig: field 1, wire type 2 tag must be exactly 0x0A.
-    /// This is the standard protobuf field-1 string tag — thousands of
+    /// This is the standard protobuf field-1 string tag, thousands of
     /// generated protobuf clients expect it. Changing it silently breaks
     /// interop.
     #[test]
@@ -810,7 +810,7 @@ mod tests {
 
     #[test]
     fn split_payload_shorter_than_field_count_pads_with_empty_last_fields() {
-        // 2-byte payload split across 5 fields — 3 fields must be empty.
+        // 2-byte payload split across 5 fields: 3 fields must be empty.
         let payload = "ab";
         let frame = split_attack_across_fields(payload, 5);
         let (_, _, proto_body) = decode_grpc_frame(&frame).expect("decode");
@@ -830,7 +830,7 @@ mod tests {
     #[test]
     fn nested_depth_255_valid_frame_and_no_panic() {
         let payload = "test";
-        // 255 nesting levels is adversarial — must not panic or OOM.
+        // 255 nesting levels is adversarial (must not panic or OOM).
         let frame = embed_attack_in_nested(payload, 255);
         let result = decode_grpc_frame(&frame);
         assert!(result.is_ok(), "depth-255 frame must decode without error");
@@ -855,7 +855,7 @@ mod tests {
 
     // ── Concurrent encoding safety ───────────────────────────────────────
 
-    /// All encoding functions are pure — they must produce identical output
+    /// All encoding functions are pure, they must produce identical output
     /// when called from multiple threads on the same input simultaneously.
     #[test]
     fn concurrent_embed_attack_is_deterministic() {

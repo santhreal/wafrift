@@ -60,7 +60,7 @@ fn cloudflare_200_with_challenge_body_still_classifies_as_challenge() {
     let body = b"<script src=\"/cdn-cgi/challenge-platform/h/g/orchestrate.js\"></script>";
     let signal = db.classify(200, &headers, body);
     // Whether it is Challenge or SoftBlock, the engine MUST treat it
-    // as not-pass — what we're guarding against is the false PASS
+    // as not-pass, what we're guarding against is the false PASS
     // misclassification of an actual challenge page.
     let classification = &signal.classification;
     assert!(

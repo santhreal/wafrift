@@ -1,6 +1,6 @@
 use super::*;
 
-// Symbols carved out of main.rs into focused modules — the tests
+// Symbols carved out of main.rs into focused modules, the tests
 // were written when these all lived inline; re-import them at the
 // new locations so the test surface keeps its existing coverage.
 use crate::findings::{render_live_findings, sanitize_for_markdown};
@@ -888,7 +888,7 @@ fn ffuf_404_with_akamai_reference_not_blocked() {
 #[test]
 fn ffuf_200_with_same_body_is_blocked() {
     // Same body on 200 SHOULD still be flagged (real WAF block page).
-    // Uses "access denied" — an explicit block-page marker retained
+    // Uses "access denied", an explicit block-page marker retained
     // after the 2026-05-10 audit that removed high-FP terms like
     // "forbidden" to avoid false-positives on benign content.
     assert!(is_waf_block(
@@ -1038,7 +1038,7 @@ fn render_live_findings_does_not_render_attacker_markdown() {
     state.hosts.insert("evil`alert(1)`.com".into(), hs);
 
     let md = render_live_findings(&state);
-    // No raw backticks from the host or waf name — both should be
+    // No raw backticks from the host or waf name, both should be
     // sanitised to underscores before interpolation.
     assert!(
         !md.contains("evil`alert"),
@@ -1048,7 +1048,7 @@ fn render_live_findings_does_not_render_attacker_markdown() {
         !md.contains("Cloud`Flare`"),
         "attacker waf-name backtick survived:\n{md}"
     );
-    // Sanity — sanitised form should still be present.
+    // Sanity (sanitised form should still be present).
     assert!(
         md.contains("evil_alert_1__.com"),
         "sanitised host missing:\n{md}"
@@ -1090,7 +1090,7 @@ fn split_url_for_mutation_returns_none_for_relative() {
 
 #[test]
 fn split_url_for_mutation_returns_none_for_authority_only() {
-    // No path component — there's nothing for the mutator to chew on.
+    // No path component (there's nothing for the mutator to chew on).
     assert_eq!(split_url_for_mutation("https://x.com"), None);
 }
 
@@ -1100,7 +1100,7 @@ fn mutate_url_atomic_default_off() {
     MUTATE_URL_ENABLED.store(false, std::sync::atomic::Ordering::Relaxed);
     assert!(
         !MUTATE_URL_ENABLED.load(std::sync::atomic::Ordering::Relaxed),
-        "MUTATE_URL_ENABLED must default to false — opt-in only"
+        "MUTATE_URL_ENABLED must default to false, opt-in only"
     );
 }
 
@@ -1115,7 +1115,7 @@ fn mutate_url_full_mutation_pipeline_round_trip() {
     let mutated_url = format!("{authority}{mutated_pq}");
     assert_ne!(
         mutated_url, url,
-        "mutated URL must differ from original — got identical {mutated_url}"
+        "mutated URL must differ from original, got identical {mutated_url}"
     );
     assert!(
         mutated_url.starts_with("https://api.target.com/admin?"),
@@ -1188,7 +1188,7 @@ fn challenge_capture_round_trip_via_extract_and_store() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// ADVERSARIAL SWEEP TESTS — 2026-05-10
+// ADVERSARIAL SWEEP TESTS: 2026-05-10
 // ═════════════════════════════════════════════════════════════════════════════
 
 // ── 1. Gene-bank backward compat (v0.1 flat HashMap) ───────────────────────
@@ -1240,7 +1240,7 @@ fn restore_gene_bank_enforces_10k_cap() {
     // F141 changed the cap semantic from insert-all-then-evict to
     // skip-on-overflow. Pre-F141 a 10_001-host bank inserted all
     // 10_001 (briefly spiking RAM ~GBs for adversarial banks) then
-    // popped to 10_000 — returned 10_001. Post-F141 the loop skips
+    // popped to 10_000, returned 10_001. Post-F141 the loop skips
     // inserts past the cap, so `restored` is bounded at 10_000.
     // Pin: the function returns the count actually inserted, AND
     // the state never exceeds MAX_RESTORED_HOSTS.
@@ -1275,7 +1275,7 @@ fn restore_gene_bank_evicts_oldest_on_overflow() {
     assert_eq!(state.hosts.len(), 10_000, "must be capped at 10k");
     assert_eq!(state.host_fifo.len(), 10_000, "fifo must stay in sync");
     // HashMap iteration order is arbitrary, so we can't predict which
-    // specific host was evicted — only that one of the 10_001 is gone.
+    // specific host was evicted (only that one of the 10_001 is gone).
 }
 
 #[test]

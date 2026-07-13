@@ -113,7 +113,7 @@ impl fmt::Display for BlockReason {
     }
 }
 
-/// WAF response verdict — the output of the response oracle.
+/// WAF response verdict (the output of the response oracle).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Verdict {
     /// Request was blocked by the WAF.
@@ -146,14 +146,14 @@ pub enum Verdict {
         /// Signals that led to this verdict.
         signals: Vec<Signal>,
     },
-    /// Soft block — partial body redaction or modified response.
+    /// Soft block (partial body redaction or modified response).
     Partial {
         /// Why the response was considered partial.
         reason: Option<BlockReason>,
         /// Signals that led to this verdict.
         signals: Vec<Signal>,
     },
-    /// Conflicting signals — multiple plausible verdicts.
+    /// Conflicting signals (multiple plausible verdicts).
     Ambiguous {
         /// Competing verdicts and their supporting signals.
         competing: Vec<(Verdict, Vec<Signal>)>,

@@ -4,7 +4,7 @@
 //!     like `consider`, `validate`, `since` and pushed benign text into
 //!     `CommandInjection`.
 //!   MEDIUM #2: `cmd_signals` fell through to `CommandInjection` even when
-//!     no separator was present — a bare `/etc/passwd` was being labelled
+//!     no separator was present, a bare `/etc/passwd` was being labelled
 //!     as a shell command.
 //!
 //! Both tests would have failed pre-fix.
@@ -64,7 +64,7 @@ fn classifier_does_not_misroute_id_inside_android() {
 
 #[test]
 fn classifier_still_detects_real_id_command() {
-    // Negative twin — the fix must not regress real injection detection.
+    // Negative twin (the fix must not regress real injection detection).
     assert_eq!(
         classify("; id"),
         PayloadType::CommandInjection,
@@ -118,7 +118,7 @@ fn classifier_does_not_call_bare_bin_ls_a_shell_command() {
 
 #[test]
 fn classifier_still_detects_real_path_with_separator_as_cmdi() {
-    // Negative twin — once the separator is back, it IS CMDi.
+    // Negative twin (once the separator is back, it IS CMDi).
     assert_eq!(
         classify("; cat /etc/passwd"),
         PayloadType::CommandInjection,
@@ -133,7 +133,7 @@ fn classifier_still_detects_real_path_with_separator_as_cmdi() {
 
 #[test]
 fn classifier_does_not_panic_on_empty_or_unicode_garbage() {
-    // Defence-in-depth — the byte-level whole-word scan must handle
+    // Defence-in-depth, the byte-level whole-word scan must handle
     // edge inputs without panicking.
     let _ = classify("");
     let _ = classify("\0\0\0");

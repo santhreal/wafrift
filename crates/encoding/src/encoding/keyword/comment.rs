@@ -14,7 +14,7 @@ pub fn sql_comment_insert(payload: &str) -> String {
     payload.replace(' ', "/**/")
 }
 
-/// `MySQL` versioned comment (`/*!50000SELECT*/`) — executed by `MySQL`, ignored by WAFs.
+/// `MySQL` versioned comment (`/*!50000SELECT*/`) (executed by `MySQL`, ignored by WAFs).
 pub fn mysql_versioned_comment(payload: &str, version: u32) -> String {
     let mut result = String::with_capacity(payload.len() * 2);
     let chars: Vec<char> = payload.chars().collect();

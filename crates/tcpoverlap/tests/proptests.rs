@@ -14,7 +14,7 @@ use wafrift_tcpoverlap::reassemble::{MAX_REASSEMBLY_SPAN, Segment, reassemble};
 use wafrift_tcpoverlap::{differential_matrix, differential_plan};
 
 /// Independent reference reassembler. Iterates each absolute position and folds
-/// the covering segments in arrival order under the policy — structurally
+/// the covering segments in arrival order under the policy, structurally
 /// different from the production engine, so a shared bug is unlikely.
 fn reference_reassemble(segments: &[Segment], policy: ReassemblyPolicy) -> Vec<u8> {
     if segments.is_empty() {
@@ -96,7 +96,7 @@ proptest! {
 
     /// THEOREM (why unequal-length differentials are rejected, not a gap): the
     /// reassembled length is identical under every policy. A position is filled
-    /// iff some segment covers it — coverage, and therefore the first hole and
+    /// iff some segment covers it, coverage, and therefore the first hole and
     /// the delivered length, are policy-independent; policies differ only on
     /// WHICH byte wins a contested position, never on how many bytes are
     /// delivered. So no two policies can ever reassemble the same segments into
@@ -111,7 +111,7 @@ proptest! {
         prop_assert!(lens.windows(2).all(|w| w[0] == w[1]), "lengths diverged: {lens:?}");
     }
 
-    /// Disjoint, gap-free segments are policy-invariant — overlap resolution can
+    /// Disjoint, gap-free segments are policy-invariant, overlap resolution can
     /// only matter where bytes actually overlap.
     #[test]
     fn prop_disjoint_is_policy_invariant(
@@ -134,7 +134,7 @@ proptest! {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(4000))]
 
-    /// Soundness: every plan the matrix returns ACTUALLY splits — re-simulate
+    /// Soundness: every plan the matrix returns ACTUALLY splits, re-simulate
     /// both policies and confirm the claimed views, for random EQUAL-length pairs.
     #[test]
     fn prop_matrix_plans_are_genuine_differentials(
@@ -169,7 +169,7 @@ proptest! {
         }
     }
 
-    /// Identical views have nothing to hide — no differential exists.
+    /// Identical views have nothing to hide (no differential exists).
     #[test]
     fn prop_identical_views_have_no_differential(data in proptest::collection::vec(any::<u8>(), 1..16)) {
         prop_assert!(differential_matrix(&data, &data).is_empty());

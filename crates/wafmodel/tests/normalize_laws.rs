@@ -1,8 +1,8 @@
-//! E3/23 — algebraic laws of the CRS `t:` transforms, at 10k.
+//! E3/23 (algebraic laws of the CRS `t:` transforms, at 10k).
 //!
 //! Honest contract: assert ONLY laws that genuinely hold. The two
 //! *decoders* (`UrlDecodeUni`, `HtmlEntityDecode`) are deliberately NOT
-//! claimed idempotent — `%2525 → %25 → %` and re-forming entities are
+//! claimed idempotent: `%2525 → %25 → %` and re-forming entities are
 //! exactly why the normalization-mismatch bypass class exists; a test
 //! asserting their idempotence would be a lie. We pin that
 //! non-idempotence explicitly (a concrete witness) so it can never be
@@ -59,7 +59,7 @@ proptest! {
             let _ = t.apply(&x);
         }
 
-        // Idempotence — only for the transforms that truly satisfy it.
+        // Idempotence (only for the transforms that truly satisfy it).
         for t in IDEMPOTENT {
             let once = t.apply(&x);
             prop_assert_eq!(t.apply(&once), once.clone(),
@@ -108,7 +108,7 @@ fn decoders_are_not_idempotent_pinned_precision_twin() {
     let p1 = Transform::UrlDecodeUni.apply(url);
     let p2 = Transform::UrlDecodeUni.apply(&p1);
     assert_eq!(p1, b"%25", "first url-decode pass");
-    assert_eq!(p2, b"%", "second pass decodes again — NOT idempotent");
+    assert_eq!(p2, b"%", "second pass decodes again. NOT idempotent");
     assert_ne!(
         p1, p2,
         "UrlDecodeUni must NOT be idempotent (mismatch class)"
@@ -130,7 +130,7 @@ fn decoders_are_not_idempotent_pinned_precision_twin() {
 // `url_decode_uni` / `html_entity_decode` / `compress_ws` had no test
 // (the prior laws only checked length/idempotence/membership), so
 // `cargo-mutants` left 36 survivors in the decoder arithmetic. These
-// decoders ARE the WAF's normalization — if their bytes are wrong every
+// decoders ARE the WAF's normalization, if their bytes are wrong every
 // mismatch-bypass conclusion is built on sand. Independent reference
 // reimplementations (in the test, never mutated) are the oracle; the
 // engine must match them byte-for-byte over an exhaustive + edge +
@@ -216,7 +216,7 @@ fn url_decode_uni_is_byte_exact_exhaustive_and_edge() {
         assert_eq!(d(up.as_bytes()), ref_url_decode_uni(up.as_bytes()));
     }
 
-    // %uXXXX narrows to the low 8 bits (ModSecurity) — pins the
+    // %uXXXX narrows to the low 8 bits (ModSecurity), pins the
     // i+5 bound, the case-insensitive `|0x20 == 'u'` test, the four
     // hexval indices, the `<<12|<<8|<<4` assembly, the `&0xff`
     // narrowing and the `i += 6` advance.
@@ -274,7 +274,7 @@ fn html_entity_decode_is_byte_exact() {
         // Numeric digits running to END OF INPUT (no `;`): the scan
         // index reaches j == rest.len(). Correct `j < rest.len()`
         // stops and decodes; `j <= rest.len()` would OOB-index
-        // rest[rest.len()] (panic) — pins that boundary.
+        // rest[rest.len()] (panic) (pins that boundary).
         (b"&#12", &[12u8]),
         (b"&#x1f", &[0x1fu8]),
         (b"&#;", b"&#;"),             // empty number ⇒ literal
@@ -312,7 +312,7 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(pc()))]
 
     /// The engine decoders equal the independent references on random
-    /// byte strings biased toward `%`/`&`/whitespace structure — any
+    /// byte strings biased toward `%`/`&`/whitespace structure, any
     /// arithmetic mutation in the decoders diverges here.
     #[test]
     fn decoders_match_independent_references(

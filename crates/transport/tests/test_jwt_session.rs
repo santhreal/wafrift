@@ -1,8 +1,8 @@
 //! Adversarial tests for JWT manipulation and session handling.
 //!
 //! These cover zero-test areas identified in the audit:
-//! - `transport/src/jwt.rs` — `manipulate()` had ZERO tests
-//! - `transport/src/session.rs` — `load_jar`, `save_jar`, `extract_csrf`, `inject_csrf` had ZERO tests
+//! - `transport/src/jwt.rs`: `manipulate()` had ZERO tests
+//! - `transport/src/session.rs`: `load_jar`, `save_jar`, `extract_csrf`, `inject_csrf` had ZERO tests
 
 use authjar::{AuthSession, SessionStore};
 use std::io::Write;

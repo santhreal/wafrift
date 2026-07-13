@@ -6,13 +6,13 @@
 //! explicit_permission)` that:
 //!
 //! 1. Allows any target on the built-in **bounty allowlist** (programs
-//!    that publicly permit automated security testing — primarily
+//!    that publicly permit automated security testing, primarily
 //!    Cloudflare's CumulusFire surface and the wafrift-bench-local
 //!    Docker stacks).
 //! 2. Allows any target if `--i-have-permission <reason>` was passed
 //!    on the command line.
 //! 3. Otherwise prints a clear refusal message naming the target and
-//!    exits with code 2 — the argument-class error bucket. An
+//!    exits with code 2, the argument-class error bucket. An
 //!    unauthorized target is an invalid-input condition, so it shares
 //!    the exit code of "unknown flag" / "missing required field".
 //!    (Exit 3 is reserved for `bench-diff` regression gating.)
@@ -34,13 +34,13 @@
 //!   It's a single boolean: did the operator opt in for this target?
 //!
 //! - It does not gate `wafrift scan` against `localhost` /
-//!   `127.0.0.1` / RFC1918 ranges — local Docker bench targets are
+//!   `127.0.0.1` / RFC1918 ranges, local Docker bench targets are
 //!   always permitted (`is_local_target`).
 
 use std::collections::BTreeSet;
 use std::sync::OnceLock;
 
-/// Built-in bounty / lab allowlist — hosts that publicly permit
+/// Built-in bounty / lab allowlist, hosts that publicly permit
 /// automated security testing. Kept small + auditable; extensions go
 /// in the operator's `~/.wafrift/permission.toml`.
 ///
@@ -54,7 +54,7 @@ const BUILTIN_ALLOWLIST: &[&str] = &[
     // Public DNS but private bypass purpose; operator authorizes via
     // ownership.
     "testing.santh.dev",
-    // PortSwigger's deliberately-vulnerable training labs — public,
+    // PortSwigger's deliberately-vulnerable training labs, public,
     // documented as fair-game for security tooling.
     "ginandjuice.shop",
     // Local-loopback aliases used by Docker bench stacks.
@@ -70,10 +70,10 @@ pub(crate) enum PermissionVerdict {
     AllowedByList,
     /// The operator passed `--i-have-permission <reason>` explicitly.
     AllowedByOperator { reason: String },
-    /// The target is a private-network / loopback address — local
+    /// The target is a private-network / loopback address, local
     /// Docker bench is always permitted (it's the operator's own box).
     AllowedLocal,
-    /// No path to authorization — refuse to send a single probe.
+    /// No path to authorization (refuse to send a single probe).
     Refused,
 }
 
@@ -87,7 +87,7 @@ pub(crate) fn is_local_target(host: &str) -> bool {
     if let Ok(ip) = host.parse::<IpAddr>() {
         // SSRF hardening: cloud metadata endpoints (AWS/GCP/Azure IMDS) live in
         // the link-local / unique-local ranges that would otherwise auto-allow,
-        // but they are NEVER a benign "local bench" — they are the canonical SSRF
+        // but they are NEVER a benign "local bench", they are the canonical SSRF
         // objective. Require explicit --i-have-permission for them. (A target may
         // redirect here; the permission gate is the backstop.)
         if is_cloud_metadata_ip(&ip) {
@@ -148,7 +148,7 @@ fn operator_allowlist() -> &'static BTreeSet<String> {
         };
         if !path.exists() {
             // First run: scaffold a self-documenting template so the operator
-            // has a discoverable file to extend — the refusal message points
+            // has a discoverable file to extend, the refusal message points
             // here, so it must actually exist. Best-effort; a read-only HOME
             // just means "built-in allowlist only".
             scaffold_permission_file(&path);
@@ -168,7 +168,7 @@ fn operator_allowlist() -> &'static BTreeSet<String> {
 
 /// Parse the `allowed_hosts = [ ... ]` array from a `permission.toml` body.
 /// Minimal hand-roll instead of pulling serde::Deserialize on a single-field
-/// struct — keeps this module zero-dep beyond `dirs`. Handles the multi-line
+/// struct, keeps this module zero-dep beyond `dirs`. Handles the multi-line
 /// array form (one quoted host per line); comments and blanks are ignored.
 fn parse_allowed_hosts(raw: &str) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
@@ -187,7 +187,7 @@ fn parse_allowed_hosts(raw: &str) -> BTreeSet<String> {
                 in_array = false;
                 continue;
             }
-            // Crude quote strip — accept `"foo",` or `'foo'`.
+            // Crude quote strip (accept `"foo",` or `'foo'`).
             let cleaned: String = line
                 .trim_end_matches(',')
                 .trim_matches(|c: char| c == '"' || c == '\'' || c.is_whitespace())
@@ -203,7 +203,7 @@ fn parse_allowed_hosts(raw: &str) -> BTreeSet<String> {
 /// First-run scaffold: write a commented `permission.toml` template at `path`
 /// if it does not yet exist. Uses `create_new` so a file written concurrently
 /// (or already edited by the operator) is never clobbered. Silent on any error
-/// — the gate degrades to "built-in allowlist only" and never blocks on a
+///: the gate degrades to "built-in allowlist only" and never blocks on a
 /// read-only HOME.
 fn scaffold_permission_file(path: &std::path::Path) {
     use std::io::Write;
@@ -226,7 +226,7 @@ fn scaffold_permission_file(path: &std::path::Path) {
 /// the refusal message, so the file an operator opens matches what they were
 /// told to edit.
 const PERMISSION_TEMPLATE: &str = "\
-# wafrift operator allowlist — hosts you are AUTHORISED to test.
+# wafrift operator allowlist (hosts you are AUTHORISED to test).
 #
 # wafrift refuses to fire offensive traffic at a target unless its host is on an
 # allowlist (this file or the built-in bounty list) OR you pass
@@ -284,7 +284,7 @@ pub(crate) fn check_permission(
     PermissionVerdict::Refused
 }
 
-/// Enforce the permission check — print refusal + exit 2 on Refused.
+/// Enforce the permission check (print refusal + exit 2 on Refused).
 /// Returns silently on Allowed.
 pub(crate) fn assert_permitted(target_url: &str, explicit_permission: Option<&str>) {
     let verdict = check_permission(target_url, explicit_permission);
@@ -305,13 +305,13 @@ pub(crate) fn assert_permitted(target_url: &str, explicit_permission: Option<&st
         // "contradictory selectors", "missing required field"). Permission
         // refusal is fundamentally an argument-class error: the operator
         // supplied a target URL that is not authorized. It is NOT exit 3
-        // (bench-diff regression) — using 3 here was a code-overload bug.
+        // (bench-diff regression) (using 3 here was a code-overload bug).
         std::process::exit(2);
     }
 }
 
 fn extract_host(url: &str) -> Option<String> {
-    // Avoid pulling `url` crate for a one-shot parse — handle the
+    // Avoid pulling `url` crate for a one-shot parse, handle the
     // forms we actually accept: full URL, `host:port`, bare host.
     let stripped = url
         .strip_prefix("https://")
@@ -330,7 +330,7 @@ fn extract_host(url: &str) -> Option<String> {
 
 fn host_matches(actual: &str, allowed_suffix: &str) -> bool {
     // Exact match OR `actual` ends with `.allowed_suffix` (true
-    // subdomain — boundary at `.` so `evilexample.com` does NOT match
+    // subdomain, boundary at `.` so `evilexample.com` does NOT match
     // `example.com`).
     let allowed = allowed_suffix.to_ascii_lowercase();
     actual == allowed
@@ -368,7 +368,7 @@ mod tests {
     fn cloud_metadata_ips_are_not_auto_permitted() {
         // SSRF hardening: the IMDS endpoints sit in the link-local / unique-local
         // ranges that otherwise auto-allow, but they are the canonical SSRF
-        // objective — they MUST require explicit --i-have-permission.
+        // objective (they MUST require explicit --i-have-permission).
         for host in &["169.254.169.254", "fd00:ec2::254", "::ffff:169.254.169.254"] {
             assert!(
                 !is_local_target(host),
@@ -407,7 +407,7 @@ mod tests {
         let path = dir.path().join("permission.toml");
         std::fs::write(&path, "allowed_hosts = [\n  \"my.scope.example\",\n]\n").unwrap();
         scaffold_permission_file(&path);
-        // The operator's edits must survive — create_new means no overwrite.
+        // The operator's edits must survive (create_new means no overwrite).
         let body = std::fs::read_to_string(&path).unwrap();
         assert!(
             body.contains("my.scope.example"),
@@ -457,7 +457,7 @@ mod tests {
             check_permission("https://evilwaf.cumulusfire.net.attacker.com/xss", None),
             PermissionVerdict::Refused
         );
-        // Suffix-only — no dot boundary — also refused.
+        // Suffix-only (no dot boundary (also refused)).
         assert_eq!(
             check_permission("https://evilcumulusfire.net/xss", None),
             PermissionVerdict::Refused
@@ -531,7 +531,7 @@ mod tests {
     // Permission refusal verdict is Refused (not any allowed variant).
     // The assert_permitted path calls process::exit(2) on Refused; we test
     // the verdict shape here since the exit-code assertion requires a
-    // subprocess test — that exit-2 contract is pinned by
+    // subprocess test, that exit-2 contract is pinned by
     // tests/smuggle_fire_e2e.rs::smuggle_fire_refuses_non_allowlist_target_without_permission.
     #[test]
     fn refused_verdict_for_unlisted_target_without_permission() {
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn refused_verdict_for_whitespace_permission_string() {
-        // Whitespace-only justifications must NOT grant authorization —
+        // Whitespace-only justifications must NOT grant authorization 
         // they're a common operator typo (e.g. `--i-have-permission "  "`).
         let v = check_permission("https://arbitrary-target.example.com/", Some("  \t "));
         assert!(

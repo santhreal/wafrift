@@ -1,4 +1,4 @@
-# Shadow Daemon bench app — nginx + PHP-FPM with the shadowd-php connector.
+# Shadow Daemon bench app (nginx + PHP-FPM with the shadowd-php connector).
 #
 # The connector library (zecure/shadowd_php) is cloned from GitHub since it is
 # not published on Packagist. The echo.php app reflects all GET/POST parameters
@@ -17,7 +17,7 @@ RUN curl -fsSL https://getcomposer.org/installer | php -- --install-dir=/usr/loc
 
 WORKDIR /app
 
-# shadowd_php is not on Packagist — clone the source from GitHub.
+# shadowd_php is not on Packagist (clone the source from GitHub).
 # The library has no build step; just copy src/ and inc/ alongside a minimal
 # composer.json that sets up the PSR-4 autoloader and polyfill.
 RUN git clone --depth 1 https://github.com/zecure/shadowd_php.git /shadowd_php_src
@@ -52,7 +52,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/vendor /app/vendor
-# The autoloader references the source at /shadowd_php_src — keep it in runtime.
+# The autoloader references the source at /shadowd_php_src (keep it in runtime).
 COPY --from=build /shadowd_php_src /shadowd_php_src
 COPY echo.php /app/public/index.php
 # The connector's SHADOWD_DEFAULT_CONFIG_FILE constant is /etc/shadowd/connectors.ini

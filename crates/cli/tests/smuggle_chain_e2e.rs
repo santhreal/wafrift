@@ -14,7 +14,7 @@ fn smuggle_chain_help_lists_family_and_cap_flags() {
 
 #[test]
 fn smuggle_chain_requires_at_least_two_families() {
-    // One --family alone is not a chain — exit 2 (clap requires
+    // One --family alone is not a chain, exit 2 (clap requires
     // at least one via required=true, then our own check
     // requires >=2).
     let (code, _stdout, stderr) = wafrift(&["smuggle-chain", "--family", "cookie"]);

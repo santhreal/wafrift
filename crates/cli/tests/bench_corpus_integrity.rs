@@ -1,6 +1,6 @@
 //! Integrity gate for the bench corpus shipped under
 //! `wafrift-bench/corpus/`. The scoreboard's credibility depends on
-//! every payload class being exercised on every WAF stack — and the
+//! every payload class being exercised on every WAF stack, and the
 //! cheapest way for that to silently break is for a class subdirectory
 //! to be emptied or accidentally deleted. This test fails CI the
 //! moment that happens.
@@ -11,14 +11,14 @@
 //!    file under `wafrift-bench/corpus/<class>/`.
 //! 2. Every canonical payload class contributes at least the floor
 //!    case count we consider statistically meaningful for a per-class
-//!    bypass-rate cell on the scoreboard (currently 8 — well below
+//!    bypass-rate cell on the scoreboard (currently 8, well below
 //!    even the smallest class today, intentionally headroom).
 //! 3. Every `[[case]]` entry has a non-empty `id`, `class`, and
 //!    `payload` field, and the `class` matches its directory.
 //!
 //! Why a test and not a script: this lives alongside the bench
 //! runner, runs on every `cargo test`, and is a single Rust source
-//! that an outside reviewer can read in 30 seconds — versus a shell
+//! that an outside reviewer can read in 30 seconds, versus a shell
 //! script that drifts.
 
 use std::collections::BTreeMap;
@@ -27,7 +27,7 @@ use std::path::PathBuf;
 
 /// The canonical payload classes the scoreboard reports on. Adding a
 /// new class is a deliberate two-line edit: this slice + the renderer
-/// `CANONICAL_CLASSES` list. Removing one is a deliberate edit too —
+/// `CANONICAL_CLASSES` list. Removing one is a deliberate edit too 
 /// not a silent drift.
 const REQUIRED_CLASSES: &[&str] = &[
     "sql",
@@ -52,7 +52,7 @@ const REQUIRED_CLASSES: &[&str] = &[
 const MIN_CASES_PER_CLASS: usize = 8;
 
 fn corpus_root() -> PathBuf {
-    // Tests run from the crate root (`crates/cli/`) — climb to the
+    // Tests run from the crate root (`crates/cli/`), climb to the
     // workspace root so `wafrift-bench/corpus` resolves regardless of
     // which crate's tests cargo is currently running.
     let workspace = std::env::var("CARGO_MANIFEST_DIR")
@@ -73,7 +73,7 @@ fn every_required_class_has_a_corpus_directory() {
         let dir = root.join(class);
         assert!(
             dir.is_dir(),
-            "missing corpus dir for class `{class}` at {} — the scoreboard \
+            "missing corpus dir for class `{class}` at {}, the scoreboard \
              will silently drop this column",
             dir.display()
         );
@@ -97,7 +97,7 @@ fn every_required_class_has_at_least_one_toml_file() {
             .count();
         assert!(
             toml_count >= 1,
-            "class `{class}` has zero .toml corpus files — bench will skip \
+            "class `{class}` has zero .toml corpus files, bench will skip \
              this class entirely"
         );
     }
@@ -111,7 +111,7 @@ fn every_required_class_meets_minimum_case_count() {
         assert!(
             n >= MIN_CASES_PER_CLASS,
             "class `{class}` has only {n} case(s), below the floor of \
-             {MIN_CASES_PER_CLASS} — per-class scoreboard rate would be \
+             {MIN_CASES_PER_CLASS}, per-class scoreboard rate would be \
              statistical noise"
         );
     }
@@ -140,7 +140,7 @@ fn every_case_has_id_class_and_payload_fields() {
                 }
             };
             // Hand-parse rather than pulling the full bench-waf
-            // `CorpusFile` deserialiser into the test — the integrity
+            // `CorpusFile` deserialiser into the test, the integrity
             // gate must keep working even if the bench-waf struct
             // shape evolves. We check the three load-bearing fields
             // and the class match; richer validation belongs in the
@@ -168,7 +168,7 @@ fn every_case_has_id_class_and_payload_fields() {
                         id.as_deref().unwrap_or("?")
                     ));
                 }
-                // `cve_pocs/` is intentionally cross-class — each case is
+                // `cve_pocs/` is intentionally cross-class, each case is
                 // a real-world CVE PoC tagged by its actual primary
                 // attack class (e.g. a Confluence SSTI CVE keeps
                 // `class = "ssti"` so the scoreboard rolls it into the
@@ -247,7 +247,7 @@ fn every_case_has_id_class_and_payload_fields() {
 }
 
 /// Helper: pull `"value"` or `'value'` out of a line shaped like
-/// `= "value"` or `= 'value'` (with optional whitespace) — TOML
+/// `= "value"` or `= 'value'` (with optional whitespace). TOML
 /// supports both double-quoted (escapes interpreted) and single-quoted
 /// (literal) string forms. Sufficient for well-formed corpus TOML
 /// files; richer parsing lives in the bench-waf serde deserialiser.
@@ -299,7 +299,7 @@ fn corpus_total_is_in_a_sensible_range() {
     let total: usize = case_counts_per_class().values().sum();
     assert!(
         total >= 300,
-        "corpus total {total} is below the sensible floor of 300 — bulk \
+        "corpus total {total} is below the sensible floor of 300, bulk \
          deletion regression?"
     );
 }
@@ -308,13 +308,13 @@ fn corpus_total_is_in_a_sensible_range() {
 fn every_corpus_toml_file_parses_via_serde() {
     // Real serde parse on every corpus file. The hand-rolled
     // line-walker tests above only check that the *fields we look at*
-    // are present — they cheerfully accept files whose TOML is invalid
+    // are present, they cheerfully accept files whose TOML is invalid
     // (e.g. backslash-line-continuation inside single-line basic
     // strings) because the bench runner is the thing that ultimately
     // calls `toml::from_str`. That gap shipped 17 broken files in
     // 2026-05; this test closes it. If a file can't be parsed by the
     // canonical `toml` crate, the bench harness can't load it, and we
-    // want CI to fail on the PR — not the production scoreboard.
+    // want CI to fail on the PR (not the production scoreboard).
     let root = corpus_root();
     let mut violations: Vec<String> = Vec::new();
     for class in REQUIRED_CLASSES {
@@ -336,7 +336,7 @@ fn every_corpus_toml_file_parses_via_serde() {
                 }
             };
             if let Err(e) = toml::from_str::<toml::Value>(&body) {
-                violations.push(format!("{}: invalid TOML — {e}", path.display()));
+                violations.push(format!("{}: invalid TOML: {e}", path.display()));
             }
         }
     }

@@ -1,4 +1,4 @@
-//! Explanation engine tests — rule attribution and bypass explanation.
+//! Explanation engine tests (rule attribution and bypass explanation).
 
 use wafrift_detect::explain::explain_block;
 

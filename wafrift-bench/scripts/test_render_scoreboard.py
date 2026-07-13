@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """Tests for `render-scoreboard.py`.
 
-The renderer is a public-facing artefact — it drives docs/SCOREBOARD.md.
+The renderer is a public-facing artefact (it drives docs/SCOREBOARD.md).
 A regression that mis-sorts the columns or silently drops a stack
 would mislead anyone reading the dashboard. These tests gate the
 renderer against:
 
 - File-name inference (multiple stacks share substring fragments).
-- Missing classes (cell rendered as `—`, not omitted or zero).
+- Missing classes (cell rendered as `: `, not omitted or zero).
 - Multiple files per stack (latest by mtime wins).
 - Malformed JSON files (skipped with a warning, not panic).
 - Empty input dir (renders a sensible "no data" page).
 - BTreeMap-style alphabetical key stability across runs.
 
-Stdlib-only — no pytest. Run:
+Stdlib-only: no pytest. Run:
 
     python wafrift-bench/scripts/test_render_scoreboard.py
 
@@ -127,7 +127,7 @@ class LoadByClass(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             p = pathlib.Path(tmp) / "naxsi-broken.json"
             p.write_text("{ not valid json", encoding="utf-8")
-            # Must NOT raise — the renderer keeps going.
+            # Must NOT raise (the renderer keeps going).
             result = RS.load_by_class(p)
             self.assertEqual(result, {})
 
@@ -176,7 +176,7 @@ class RenderScoreboard(unittest.TestCase):
             self.assertIn("18.0", md)  # xss bypass-rate
 
     def test_class_not_exercised_renders_em_dash(self):
-        # A stack that only ran sql must show `—` in xss / cmdi / etc.
+        # A stack that only ran sql must show `: ` in xss / cmdi / etc.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_p = pathlib.Path(tmp)
             _write_result(
@@ -185,7 +185,7 @@ class RenderScoreboard(unittest.TestCase):
                 {"by_class": {"sql": {"bypass_rate": 0.1, "cases": 50}}},
             )
             md = RS.render_scoreboard(RS.latest_per_stack(tmp_p))
-            self.assertIn("—", md)  # the em-dash appears for non-exercised classes
+            self.assertIn(": ", md)  # the em-dash appears for non-exercised classes
 
     def test_per_stack_rollup_is_consistent_with_per_class_cells(self):
         # The rollup row's "total bypassed" must equal the sum of
@@ -239,13 +239,13 @@ class RenderScoreboard(unittest.TestCase):
 
 class FormatCell(unittest.TestCase):
     def test_none_returns_em_dash(self):
-        self.assertEqual(RS.fmt_cell(None), "—")
+        self.assertEqual(RS.fmt_cell(None), ": ")
 
     def test_zero_cases_returns_em_dash(self):
-        self.assertEqual(RS.fmt_cell({"bypass_rate": 0.5, "cases": 0}), "—")
+        self.assertEqual(RS.fmt_cell({"bypass_rate": 0.5, "cases": 0}), ". ")
 
     def test_missing_bypass_rate_returns_em_dash(self):
-        self.assertEqual(RS.fmt_cell({"cases": 100}), "—")
+        self.assertEqual(RS.fmt_cell({"cases": 100}), ": ")
 
     def test_canonical_value_formats_to_one_decimal_percent(self):
         self.assertEqual(RS.fmt_cell({"bypass_rate": 0.25, "cases": 100}), "25.0")

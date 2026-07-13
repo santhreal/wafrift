@@ -89,7 +89,7 @@ fn chunk_size_mutations_positive_vectors_remain_two_messages_when_suffix_present
                 assert_eq!(
                     reqs.len(),
                     2,
-                    "Fix: well-formed chunk lines must leave a full trailing HTTP message — {}",
+                    "Fix: well-formed chunk lines must leave a full trailing HTTP message. {}",
                     p.description
                 );
             }

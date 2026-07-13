@@ -1,4 +1,4 @@
-//! Escalation levels — how aggressively we need to evade.
+//! Escalation levels (how aggressively we need to evade).
 //!
 //! One enum, one job: represent the intensity of evasion required.
 
@@ -11,13 +11,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum EscalationLevel {
-    /// No evasion needed — requests go through.
+    /// No evasion needed (requests go through).
     None,
-    /// Light evasion — case alternation, basic encoding, header obfuscation.
+    /// Light evasion (case alternation, basic encoding, header obfuscation).
     Light,
-    /// Medium evasion — encoding + Content-Type switching + grammar mutations.
+    /// Medium evasion (encoding + Content-Type switching + grammar mutations).
     Medium,
-    /// Heavy evasion — all techniques layered together.
+    /// Heavy evasion (all techniques layered together).
     Heavy,
 }
 

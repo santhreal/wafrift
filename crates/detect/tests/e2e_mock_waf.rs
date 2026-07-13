@@ -116,7 +116,7 @@ async fn e2e_modsecurity_block_page() {
 }
 
 // ──────────────────────────────────────────────
-//  AWS WAF — headers-only detection
+//  AWS WAF, headers-only detection
 // ──────────────────────────────────────────────
 
 #[tokio::test]
@@ -201,7 +201,7 @@ async fn e2e_silent_block_drift_detection() {
 }
 
 // ──────────────────────────────────────────────
-//  Clean response — zero false positives
+//  Clean response, zero false positives
 // ──────────────────────────────────────────────
 
 #[tokio::test]
@@ -271,7 +271,7 @@ async fn e2e_akamai_kona_detection() {
 }
 
 // ──────────────────────────────────────────────
-//  Incapsula — cookie-based detection
+//  Incapsula, cookie-based detection
 // ──────────────────────────────────────────────
 
 #[tokio::test]

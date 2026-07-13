@@ -1,7 +1,7 @@
 //! Minimal protobuf wire-format encoder for injection payloads.
 //!
 //! Wraps the payload as a single `bytes` field (field number 1, wire
-//! type 2) and length-prefixes it with a real protobuf varint — not a
+//! type 2) and length-prefixes it with a real protobuf varint, not a
 //! single u8 (the previous implementation silently truncated payloads
 //! larger than 255 bytes, which is the hot SQL/XSS injection size range).
 
@@ -26,7 +26,7 @@ pub fn serialize(payload: &str) -> Vec<u8> {
 
 /// Deserialise a single-field protobuf message back to its string body.
 /// Returns an empty string if the wire prefix is wrong or the buffer
-/// is short. Lossy UTF-8 on the body — invalid bytes become U+FFFD.
+/// is short. Lossy UTF-8 on the body (invalid bytes become U+FFFD).
 pub fn deserialize(bytes: &[u8]) -> String {
     if bytes.is_empty() || bytes[0] != 0x0A {
         return String::new();
@@ -115,14 +115,14 @@ mod tests {
 
     #[test]
     fn deserialize_wrong_wire_tag_returns_empty() {
-        // Tag 0x12 (field 2, wire type 2) — wrong field number.
+        // Tag 0x12 (field 2, wire type 2) (wrong field number).
         let bytes = [0x12, 0x01, b'x'];
         assert_eq!(deserialize(&bytes), "");
     }
 
     #[test]
     fn deserialize_truncated_buffer_safe() {
-        // Tag + claims-len-100 + 3 actual bytes — must not panic.
+        // Tag + claims-len-100 + 3 actual bytes (must not panic).
         let bytes = [0x0A, 100, b'a', b'b', b'c'];
         assert_eq!(deserialize(&bytes), "");
     }
@@ -131,7 +131,7 @@ mod tests {
     fn deserialize_huge_varint_length_fails_closed_no_panic() {
         // Adversarial / overflow audit: a length-prefix varint encoding a
         // value near u64::MAX. Pre-fix `start + len as usize` overflowed
-        // usize — panicking on the add under the test profile's
+        // usize, panicking on the add under the test profile's
         // overflow-checks, and in release wrapping to a tiny `end` that
         // slipped past the `end > bytes.len()` bound check and then panicked
         // the `&bytes[start..end]` slice ("starts at {start} but ends at

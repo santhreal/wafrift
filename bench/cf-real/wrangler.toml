@@ -1,9 +1,9 @@
-# wrangler.toml — wafrift bench/cf-real
+# wrangler.toml: wafrift bench/cf-real
 #
 # Deploy: from this directory
 #   wrangler deploy
 #
-# Local dev (no CF WAF; for sanity-checking the Worker code only —
+# Local dev (no CF WAF; for sanity-checking the Worker code only 
 # real WAF testing requires `wrangler deploy` against a zone):
 #   wrangler dev
 #
@@ -15,7 +15,7 @@ name = "wafrift-bench"
 main = "worker/src/index.ts"
 compatibility_date = "2026-05-01"
 
-# Bounded outbound — the Worker doesn't fetch anywhere external,
+# Bounded outbound, the Worker doesn't fetch anywhere external,
 # so we don't grant any outbound binding. Any future change that
 # adds a fetch() out of the Worker must explicitly request the
 # permission here.
@@ -33,7 +33,7 @@ enabled = true
 # install a representative ruleset against the zone. Re-run after
 # wrangler deploy to refresh.
 
-# Routes / custom domains — left commented; uncomment and fill in
+# Routes / custom domains, left commented; uncomment and fill in
 # after `wrangler deploy` succeeds on the workers.dev subdomain.
 # [[routes]]
 # pattern = "wafrift-bench.example.com/*"

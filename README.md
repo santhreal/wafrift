@@ -1,33 +1,31 @@
 # WafRift
 
-[![CI](https://github.com/santhreal/wafrift/actions/workflows/ci.yml/badge.svg)](https://github.com/santhreal/wafrift/actions/workflows/ci.yml)
+[![CI](https://github.com/santhsecurity/wafrift/actions/workflows/ci.yml/badge.svg)](https://github.com/santhsecurity/wafrift/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Crates.io](https://img.shields.io/crates/v/wafrift-cli)](https://crates.io/crates/wafrift-cli)
-
-Part of [Santh](https://santh.dev) - open source Rust security and infrastructure tooling. Follow [@SanthProject](https://x.com/SanthProject) on X.
 
 ![WafRift Demo](wafrift-demo.gif)
 
 > Part of the [Santh](https://santh.dev) security research ecosystem.
 
-**A programmable WAF-evasion engine.** Encoding × grammar-aware mutation × HTTP smuggling × content-type confusion × TLS fingerprint rotation — every layer addressable, every winning combination cached. Point it at a WAF and an evolutionary loop (hill-climb / SA / tabu / novelty / MAP-Elites) discovers what bypasses that exact stack, then persists the winners to a per-WAF gene bank so the next scan starts with zero discovery.
+**A programmable WAF-evasion engine.** Encoding × grammar-aware mutation × HTTP smuggling × content-type confusion × TLS fingerprint rotation, every layer addressable, every winning combination cached. Point it at a WAF and an evolutionary loop (hill-climb / SA / tabu / novelty / MAP-Elites) discovers what bypasses that exact stack, then persists the winners to a per-WAF gene bank so the next scan starts with zero discovery.
 
-> **Status: BETA.** Local stacks under [`wafrift-bench/`](./wafrift-bench/) (ModSec PL1–4, Coraza, BunkerWeb, naxsi) are exercised in CI. Cloud-WAF coverage (Cloudflare, AWS WAF, Akamai, Imperva, F5) is still sparse; treat those results as preliminary. PRs welcome — open against [github.com/santhreal/wafrift](https://github.com/santhreal/wafrift). Full version history in [CHANGELOG.md](CHANGELOG.md).
+> **Status: BETA.** Local stacks under [`wafrift-bench/`](./wafrift-bench/) (ModSec PL1–4, Coraza, BunkerWeb, naxsi) are exercised in CI. Cloud-WAF coverage (Cloudflare, AWS WAF, Akamai, Imperva, F5) is still sparse; treat those results as preliminary. PRs welcome, open against [github.com/santhsecurity/wafrift](https://github.com/santhsecurity/wafrift). Full version history in [CHANGELOG.md](CHANGELOG.md).
 
 ## What's in the box
 
-- **`wafrift evade`** — offline payload mutator. Pipe a payload in, get N bypass variants out. Every encoding strategy and grammar dialect is addressable as a path (`encoding/url/triple`, `grammar/sql/tautology`) for `--only` / `--exclude`.
-- **`wafrift scan`** — fire variants at a live target, classify each response with a multi-signal oracle (block / bypass / challenge / rate-limit), respect server `Retry-After`, surface winning chains. JSON reports a blunt **`waf_bypass`** object: `waf_in_play`, `bypass_confirmed`, `verdict` (`bypass_confirmed` | `waf_active_no_bypass` | `waf_not_in_play`). Exit codes: **0** = WAF bypass confirmed, **4** = WAF fought back but no variant won, **6** = no WAF on this param (not a bypass measurement). **`--auto-escalate`** (default on) harvests forms/API paths and pivots to guarded surfaces before the main evasion loop; **`--no-auto-escalate`** scans only the CLI URL/param. Legacy `bypass_rate_pct` is `null` when `waf_in_play` is false. `--session-init <CURL_FILE>` runs an auth-phase request first and replays the resulting cookies on every variant — the **stateful chain mode** real exploits use. `--callback-url URL` substitutes `{{CALLBACK}}` in the payload with a per-variant token to verify blind/stored vulns at a `wafrift listener`. `--payload-class CLASS` warm-starts the per-class gene-bank winners. **`--differential-baseline`** (global; also applies to `bench-waf` / `hunt`) credits a payload as a bypass *only* when the un-evaded base is blocked in the same delivery — so a payload the WAF never policed (returns 200 because no rule matches it) is not mis-counted as an evasion. Off by default (the headline metric is unchanged); costs ~one extra probe per delivery arm.
-- **`wafrift detect`** — fingerprint the WAF / CDN / origin on four independent axes that each survive when the layer above is stripped: HTTP response headers + body (160+ vendor rules), DNS CNAME chain resolution (37 vendor rules), reverse-DNS (PTR) on the leaf IP, and BGP origin-ASN lookup via cymru's DNS service.  Multi-vendor chains surface every layer — nytimes.com gets Envoy + Fastly, eBay's CNAME chain reveals Akamai under their custom proxy banner, Stripe's `Server: nginx` is finally outed as AWS-hosted via the ASN axis.  See [CHANGELOG.md](CHANGELOG.md) for the detection catalog.
-- **`wafrift discover`** — parse OpenAPI / GraphQL introspection / parameter-mine a single endpoint into a deduplicated `DiscoveredEndpoint` list with `ParameterLocation` + `InjectionContext` — feed straight into `scan`.
-- **`wafrift bypass-probe`** — Tsai-class differential auth/path/method bypass scanner. 230 auth-bypass header probes (incl. gateway-injected-identity headers: Cloudflare Access, GCP IAP, AWS ALB OIDC, Azure Easy Auth, Authentik, oauth2-proxy, Traefik forwardAuth, Grafana — and header-smuggling-via-LWS variants), full path-routing-disagreement family, method overrides. Sorted divergence report with reproduce-it `curl` commands.
-- **`wafrift attack`** — end-to-end parser-disagreement orchestrator. One call, every parser-disagreement seam surfaced: URL-path, headers, request body, query-string, cache-key, HTTP/1.1-vs-HTTP/2, HTTP-method variants. Runs the seven individual sub-probes (`parser-diff`, `header-diff`, `body-diff`, `query-diff`, `cache-diff`, `h2-diff`, `method-diff`) concurrently and merges into one structured report. See `wafrift --help` for the individual sub-commands; [CHANGELOG.md](CHANGELOG.md) describes each probe family.
-- **`wafrift distill`** — adversarial distillation via Zeller's ddmin. Take a KNOWN-working bypass payload, find the minimum-edit-distance subset that STILL bypasses **and is still a working attack** — every reduction is gated by the matching semantic oracle (`--class`, auto-detected), so the minimal form can't collapse into a benign byte that merely passes the filter. The local attack check runs before each HTTP fire, so dead candidates cost zero requests. Shorter, still-firing payloads ship cleaner reports.
-- **`wafrift compress`** — wrap a request body in `Content-Encoding: gzip` / `deflate` / `br` (or chain them). Compression-confusion attack: most WAFs inspect raw bytes; brotli especially is widely unsupported in WAF decompressors while every modern origin handles it. Operator pipes a body in, gets compressed bytes + the matching header out.
-- **`wafrift listener`** — OOB callback receiver. Pre-mints 128-bit base32 tokens; any inbound HTTP request containing a token is logged. The oracle for blind SQLi (time-based), stored XSS, blind SSRF, OOB cmdi — vuln classes that never echo a verdict on the same response.
-- **`wafrift legendary`** — one-shot demo command. Runs detect → fingerprint → bypass-probe (and optionally scan with **auto-escalate** + `waf_bypass` verdict) against a single target, stitches the results into one polished markdown writeup. The executive summary leads with the scan headline (`WAF BYPASS CONFIRMED` / `NO WAF ON THIS PARAM` / `WAF IN PLAY — no bypass`). The fastest way to show what wafrift does.
-- **`wafrift-proxy`** — forward HTTP proxy. Chain Burp / Caido / mitmproxy → wafrift-proxy → target; wafrift applies evasion at the upstream forward and records bypasses to its gene bank. MITM mode + TLS impersonation (Chrome / Firefox / Safari ClientHellos, with **header-order coherence** so the wire matches the chosen browser end-to-end) + per-host adaptive rotation + live TUI dashboard.
-- **`wafrift replay`** — deterministic re-fire of a known-good bypass against any target. Exits 0 on bypass, 2 on block.
+- **`wafrift evade`**, offline payload mutator. Pipe a payload in, get N bypass variants out. Every encoding strategy and grammar dialect is addressable as a path (`encoding/url/triple`, `grammar/sql/tautology`) for `--only` / `--exclude`.
+- **`wafrift scan`**, fire variants at a live target, classify each response with a multi-signal oracle (block / bypass / challenge / rate-limit), respect server `Retry-After`, surface winning chains. JSON reports a blunt **`waf_bypass`** object: `waf_in_play`, `bypass_confirmed`, `verdict` (`bypass_confirmed` | `waf_active_no_bypass` | `waf_not_in_play`). Exit codes: **0** = WAF bypass confirmed, **4** = WAF fought back but no variant won, **6** = no WAF on this param (not a bypass measurement). **`--auto-escalate`** (default on) harvests forms/API paths and pivots to guarded surfaces before the main evasion loop; **`--no-auto-escalate`** scans only the CLI URL/param. Legacy `bypass_rate_pct` is `null` when `waf_in_play` is false. `--session-init <CURL_FILE>` runs an auth-phase request first and replays the resulting cookies on every variant, the **stateful chain mode** real exploits use. `--callback-url URL` substitutes `{{CALLBACK}}` in the payload with a per-variant token to verify blind/stored vulns at a `wafrift listener`. `--payload-class CLASS` warm-starts the per-class gene-bank winners. **`--differential-baseline`** (global; also applies to `bench-waf` / `hunt`) credits a payload as a bypass *only* when the un-evaded base is blocked in the same delivery, so a payload the WAF never policed (returns 200 because no rule matches it) is not mis-counted as an evasion. Off by default (the headline metric is unchanged); costs ~one extra probe per delivery arm.
+- **`wafrift detect`**, fingerprint the WAF / CDN / origin on four independent axes that each survive when the layer above is stripped: HTTP response headers + body (160+ vendor rules), DNS CNAME chain resolution (37 vendor rules), reverse-DNS (PTR) on the leaf IP, and BGP origin-ASN lookup via cymru's DNS service.  Multi-vendor chains surface every layer, nytimes.com gets Envoy + Fastly, eBay's CNAME chain reveals Akamai under their custom proxy banner, Stripe's `Server: nginx` is finally outed as AWS-hosted via the ASN axis.  See [CHANGELOG.md](CHANGELOG.md) for the detection catalog.
+- **`wafrift discover`**, parse OpenAPI / GraphQL introspection / parameter-mine a single endpoint into a deduplicated `DiscoveredEndpoint` list with `ParameterLocation` + `InjectionContext` (feed straight into `scan`).
+- **`wafrift bypass-probe`**: Tsai-class differential auth/path/method bypass scanner. 230 auth-bypass header probes (incl. gateway-injected-identity headers: Cloudflare Access, GCP IAP, AWS ALB OIDC, Azure Easy Auth, Authentik, oauth2-proxy, Traefik forwardAuth, Grafana, and header-smuggling-via-LWS variants), full path-routing-disagreement family, method overrides. Sorted divergence report with reproduce-it `curl` commands.
+- **`wafrift attack`**, end-to-end parser-disagreement orchestrator. One call, every parser-disagreement seam surfaced: URL-path, headers, request body, query-string, cache-key, HTTP/1.1-vs-HTTP/2, HTTP-method variants. Runs the seven individual sub-probes (`parser-diff`, `header-diff`, `body-diff`, `query-diff`, `cache-diff`, `h2-diff`, `method-diff`) concurrently and merges into one structured report. See `wafrift --help` for the individual sub-commands; [CHANGELOG.md](CHANGELOG.md) describes each probe family.
+- **`wafrift distill`**, adversarial distillation via Zeller's ddmin. Take a KNOWN-working bypass payload, find the minimum-edit-distance subset that STILL bypasses **and is still a working attack**, every reduction is gated by the matching semantic oracle (`--class`, auto-detected), so the minimal form can't collapse into a benign byte that merely passes the filter. The local attack check runs before each HTTP fire, so dead candidates cost zero requests. Shorter, still-firing payloads ship cleaner reports.
+- **`wafrift compress`**, wrap a request body in `Content-Encoding: gzip` / `deflate` / `br` (or chain them). Compression-confusion attack: most WAFs inspect raw bytes; brotli especially is widely unsupported in WAF decompressors while every modern origin handles it. Operator pipes a body in, gets compressed bytes + the matching header out.
+- **`wafrift listener`**: OOB callback receiver. Pre-mints 128-bit base32 tokens; any inbound HTTP request containing a token is logged. The oracle for blind SQLi (time-based), stored XSS, blind SSRF, OOB cmdi (vuln classes that never echo a verdict on the same response).
+- **`wafrift legendary`**, one-shot demo command. Runs detect → fingerprint → bypass-probe (and optionally scan with **auto-escalate** + `waf_bypass` verdict) against a single target, stitches the results into one polished markdown writeup. The executive summary leads with the scan headline (`WAF BYPASS CONFIRMED` / `NO WAF ON THIS PARAM` / `WAF IN PLAY (no bypass`). The fastest way to show what wafrift does).
+- **`wafrift-proxy`**, forward HTTP proxy. Chain Burp / Caido / mitmproxy → wafrift-proxy → target; wafrift applies evasion at the upstream forward and records bypasses to its gene bank. MITM mode + TLS impersonation (Chrome / Firefox / Safari ClientHellos, with **header-order coherence** so the wire matches the chosen browser end-to-end) + per-host adaptive rotation + live TUI dashboard.
+- **`wafrift replay`** (deterministic re-fire of a known-good bypass against any target. Exits 0 on bypass, 2 on block).
 
 Built so each crate is usable standalone: [`wafrift-encoding`](https://docs.rs/wafrift-encoding), [`wafrift-grammar`](https://docs.rs/wafrift-grammar), [`wafrift-detect`](https://docs.rs/wafrift-detect), [`wafrift-smuggling`](https://docs.rs/wafrift-smuggling), [`wafrift-evolution`](https://docs.rs/wafrift-evolution), [`wafrift-oracle`](https://docs.rs/wafrift-oracle), [`wafrift-strategy`](https://docs.rs/wafrift-strategy). No façade required.
 
@@ -37,30 +35,30 @@ Built so each crate is usable standalone: [`wafrift-encoding`](https://docs.rs/w
 |---|---|---|
 | `evade` | Offline mutation | Transform a payload with encoding + grammar strategies; no target required |
 | `scan` | Scan | Fire evasion variants at a live target; report bypass chains |
-| `client-deliver` | XSS delivery | Emit the **WAF-blind client-side** delivery plan for an XSS payload — the `location.hash` / `window.name` / `postMessage` / `localStorage` / `sessionStorage` / client-route channels whose taint source never reaches the server, so no WAF/CDN inspects them (the lane modern reflected-XSS bypasses live in). Sends nothing: prints a copy-pasteable browser-delivery plan (each channel → its scald `dom.rs` taint source + the exact navigate / set-state action), including the `javascript:` sanitizer-prefix-bypass variants (Paddle `substring(0,11)` class). `--format json` emits `wafrift.client_deliver.v1` for scald to confirm DOM execution — never a server verdict. |
-| `sanitizer-decompile` | XSS delivery | Decompile a **client-side HTML sanitizer** — the DOM-XSS dual of `fingerprint`. Recovers the sanitizer source from a JS source map (`--source-map`, reads embedded `sourcesContent`) or raw JS (`--js`), extracts its allow/deny model (DOMPurify `FORBID_TAGS`/`ALLOWED_TAGS`, `sanitize-html` allowlist, `js-xss` whitelist, hand-rolled `replace()` strips, handler/scheme blocking), then drives the **same L\*/SFA decompiler** over a model oracle to mine the XSS vectors that survive it. Every reported bypass is re-verified against the extracted model (CEGIS soundness gate) and flagged for live scald DOM confirmation — proposed, never asserted executed. It also emits **`mxss_candidates`**: reachable mutation-XSS trigger pairs (`<svg><style>`, `<math><mtext>`, foreign-content / MathML / `<noscript>` parsing differentials) the in-model executability check *cannot* prove — the frontier DOMPurify bypass class — drawn from a Tier-B table (`rules/mxss_combinations.toml`) and likewise flagged for live-DOM confirmation. Exit 0 = a bypass survives, 4 = sanitizer modeled but model-proven safe, 6 = no sanitizer recognised. `--format json` → `wafrift.sanitizer_decompile.v1`. |
+| `client-deliver` | XSS delivery | Emit the **WAF-blind client-side** delivery plan for an XSS payload, the `location.hash` / `window.name` / `postMessage` / `localStorage` / `sessionStorage` / client-route channels whose taint source never reaches the server, so no WAF/CDN inspects them (the lane modern reflected-XSS bypasses live in). Sends nothing: prints a copy-pasteable browser-delivery plan (each channel → its scald `dom.rs` taint source + the exact navigate / set-state action), including the `javascript:` sanitizer-prefix-bypass variants (Paddle `substring(0,11)` class). `--format json` emits `wafrift.client_deliver.v1` for scald to confirm DOM execution, never a server verdict. |
+| `sanitizer-decompile` | XSS delivery | Decompile a **client-side HTML sanitizer**, the DOM-XSS dual of `fingerprint`. Recovers the sanitizer source from a JS source map (`--source-map`, reads embedded `sourcesContent`) or raw JS (`--js`), extracts its allow/deny model (DOMPurify `FORBID_TAGS`/`ALLOWED_TAGS`, `sanitize-html` allowlist, `js-xss` whitelist, hand-rolled `replace()` strips, handler/scheme blocking), then drives the **same L\*/SFA decompiler** over a model oracle to mine the XSS vectors that survive it. Every reported bypass is re-verified against the extracted model (CEGIS soundness gate) and flagged for live scald DOM confirmation, proposed, never asserted executed. It also emits **`mxss_candidates`**: reachable mutation-XSS trigger pairs (`<svg><style>`, `<math><mtext>`, foreign-content / MathML / `<noscript>` parsing differentials) the in-model executability check *cannot* prove, the frontier DOMPurify bypass class, drawn from a Tier-B table (`rules/mxss_combinations.toml`) and likewise flagged for live-DOM confirmation. Exit 0 = a bypass survives, 4 = sanitizer modeled but model-proven safe, 6 = no sanitizer recognised. `--format json` → `wafrift.sanitizer_decompile.v1`. |
 | `detect` | Recon | Fingerprint WAF/CDN/origin (HTTP headers, DNS CNAME, reverse-DNS, BGP ASN) |
 | `discover` | Recon | Parse OpenAPI / GraphQL introspection / mine parameters into injection points |
 | `recon` | Recon | Origin discovery via CT logs (crt.sh) + DNS history |
 | `origin-hints` | Recon | DNS hints for origin-bypass (authorized targets only) |
 | `probe` | Recon | Generate differential analysis probes |
 | `bypass-probe` | Scan | 230 auth-bypass header probes + path/method variants (Tsai-class) |
-| `diff <kind>` | Differential | **Unified differential surface** — one verb for every parser-disagreement probe (replaces 11 `*-diff` commands + `attack`). Kinds: `path` (URL-path shape), `header` (dup-header / XFF spoof / LWS), `body` (JSON dup-key, UTF-7, BOM, multipart collision), `query` (HPP, bracket, semicolon), `cache` (cache-key confusion / poisoning), `h2` (HTTP/1.1-vs-HTTP/2), `method` (WebDAV / lowercase / H2 preface), `gql` (alias bomb, op-name spoof, introspection), `jwt` (alg:none, kid injection, role elevation), `cors` (10 origin-validation pitfalls), `trailer` (chunked-trailer injection), `ja3` (TLS-fingerprint differential, needs `--features tls-impersonate`), and `all` (the seven path/header/body/query/cache/h2/method probes concurrently — NOT gql/jwt/cors/trailer; run those individually). The flat `<kind>-diff` names and `attack` keep working as deprecated aliases. |
-| `smuggle` | Smuggling | HTTP request smuggling CLI. Variant families include: detect-cl-te, detect-te-cl, cl-te, te-cl, te-te, cl-0, dual-cl, multi-cl, chunk-ext-lone-lf, rapid-reset, made-you-reset, settings-storm, method-body, http10-persistence, http09-downgrade, cl-obfuscation, chunk-size-mutation, plus the Kettle BH-USA-2025 "Desync Endgame" family (zero-cl-desync, expect-100-desync, expect-100-obf, cl-0-via-expect, double-desync, vh-masked-host, malformed-host-split, chunk-ext-keyval) — 25 variants total (run `wafrift smuggle list` for the authoritative set). |
-| `smuggle-emit` | Smuggling | Emit every wafrift smuggle probe as JSON (one per line) across 11 families — cookie, auth, range, path (URL-normalization differentials), host (vhost-routing differentials), jwt (validation-pipeline differentials), content-type (multipart), json (parser differentials), HTTP/3 capsule, QUIC datagram, WebSocket compression. Pipe to `jq` / Burp / `xargs curl`. `--family <prefix>` filters; `--kind headers\|body\|frames` filters by artifact shape; `--canary-header NAME` attaches OOB instrumentation; exit 2 when zero match. |
-| `smuggle-cross-product` | Smuggling | Emit the cartesian product of two smuggle-probe families as composed JSON artifacts. `--lhs cookie --rhs auth` produces one merged artifact per cookie × auth probe pair, carrying both wire shapes — surfaces bypass-chain interactions no single technique produces. `--canary-header NAME` propagates canary tags through the chain for OOB attribution. `--cap N` bounds output (default 64). `--fire-target URL` fires the composed chain at a live target and reports `ComposedFireReport`s with `bypass_signal` per chain. |
+| `diff <kind>` | Differential | **Unified differential surface**: one verb for every parser-disagreement probe (replaces 11 `*-diff` commands + `attack`). Kinds: `path` (URL-path shape), `header` (dup-header / XFF spoof / LWS), `body` (JSON dup-key, UTF-7, BOM, multipart collision), `query` (HPP, bracket, semicolon), `cache` (cache-key confusion / poisoning), `h2` (HTTP/1.1-vs-HTTP/2), `method` (WebDAV / lowercase / H2 preface), `gql` (alias bomb, op-name spoof, introspection), `jwt` (alg:none, kid injection, role elevation), `cors` (10 origin-validation pitfalls), `trailer` (chunked-trailer injection), `ja3` (TLS-fingerprint differential, needs `--features tls-impersonate`), and `all` (the seven path/header/body/query/cache/h2/method probes concurrently. NOT gql/jwt/cors/trailer; run those individually). The flat `<kind>-diff` names and `attack` keep working as deprecated aliases. |
+| `smuggle` | Smuggling | HTTP request smuggling CLI. Variant families include: detect-cl-te, detect-te-cl, cl-te, te-cl, te-te, cl-0, dual-cl, multi-cl, chunk-ext-lone-lf, rapid-reset, made-you-reset, settings-storm, method-body, http10-persistence, http09-downgrade, cl-obfuscation, chunk-size-mutation, plus the Kettle BH-USA-2025 "Desync Endgame" family (zero-cl-desync, expect-100-desync, expect-100-obf, cl-0-via-expect, double-desync, vh-masked-host, malformed-host-split, chunk-ext-keyval). 25 variants total (run `wafrift smuggle list` for the authoritative set). |
+| `smuggle-emit` | Smuggling | Emit every wafrift smuggle probe as JSON (one per line) across 11 families, cookie, auth, range, path (URL-normalization differentials), host (vhost-routing differentials), jwt (validation-pipeline differentials), content-type (multipart), json (parser differentials), HTTP/3 capsule, QUIC datagram, WebSocket compression. Pipe to `jq` / Burp / `xargs curl`. `--family <prefix>` filters; `--kind headers\|body\|frames` filters by artifact shape; `--canary-header NAME` attaches OOB instrumentation; exit 2 when zero match. |
+| `smuggle-cross-product` | Smuggling | Emit the cartesian product of two smuggle-probe families as composed JSON artifacts. `--lhs cookie --rhs auth` produces one merged artifact per cookie × auth probe pair, carrying both wire shapes, surfaces bypass-chain interactions no single technique produces. `--canary-header NAME` propagates canary tags through the chain for OOB attribution. `--cap N` bounds output (default 64). `--fire-target URL` fires the composed chain at a live target and reports `ComposedFireReport`s with `bypass_signal` per chain. |
 | `smuggle-stats` | Smuggling | Operator probe-budget snapshot. JSON breakdown of probe count per family, per artifact kind, total wire-byte budget, and largest probe. `--family X` drills into one family. Pipe to `jq` for CI gates or shell vars before firing a scan against a rate-limited target. |
 | `smuggle-chain` | Smuggling | N-way smuggle-probe composition. Takes 2+ `--family <NAME>` flags and emits the cartesian product of probes across all N families as composed JSON artifacts. The N-way generalization of `smuggle-cross-product`. Bound output size with `--cap N` (default 64); exit 2 when any family matches zero probes. `--fire-target URL` fires each N-way chain at a live target. |
-| `smuggle-fire` | Smuggling | Fire every smuggle probe at a live target — the end-to-end execution pipeline. Converts probe artifacts to real HTTP requests via reqwest, captures status/body-length/latency, and reports a `bypass_signal` vs a baseline request (`canary-reflected` / `none` / `status-diverged` / `body-diverged` / `both-diverged`). With `--canary-header NAME`, the response headers and body are scanned for the probe's canary token — a verbatim echo (e.g. into `Location`, `Set-Cookie`, a debug echo header, or the body) yields `canary-reflected` (strongest, false-positive-free signal) and lists the token in `reflected_canaries`. Per-probe JSON on stdout, end-of-run summary on stderr. Requires `--i-have-permission <REASON>` for non-allowlisted hosts. Frame-artifact probes (capsule / quic-datagram / compression) are skipped — they live below the HTTP layer. |
-| `tcp-overlap` | Smuggling | Below-HTTP **TCP segment-overlap desync**: emit two overlapping TCP segments at the same sequence number so a WAF and an origin that resolve the overlap by *different* reassembly policies see different streams — the WAF inspects `--benign`, the origin executes `--attack`. Enumerates every disagreeing policy pair (`first`/`last`/`strict`-favouring) or targets one with `--waf-policy`/`--origin-policy`. Every emitted plan is **self-verified** in-crate (simulating the WAF policy must yield benign, the origin policy must yield attack) — a guard rejects the trivial benign==attack case, so a green result is a genuine split, not a tautology. `--benign`/`--attack` must be equal length for a clean full overlap (else exit 4). `--format json` → `wafrift.tcp_overlap.v1` with per-segment `seq`/`bytes`; deliver with a raw-socket sender. |
+| `smuggle-fire` | Smuggling | Fire every smuggle probe at a live target, the end-to-end execution pipeline. Converts probe artifacts to real HTTP requests via reqwest, captures status/body-length/latency, and reports a `bypass_signal` vs a baseline request (`canary-reflected` / `none` / `status-diverged` / `body-diverged` / `both-diverged`). With `--canary-header NAME`, the response headers and body are scanned for the probe's canary token, a verbatim echo (e.g. into `Location`, `Set-Cookie`, a debug echo header, or the body) yields `canary-reflected` (strongest, false-positive-free signal) and lists the token in `reflected_canaries`. Per-probe JSON on stdout, end-of-run summary on stderr. Requires `--i-have-permission <REASON>` for non-allowlisted hosts. Frame-artifact probes (capsule / quic-datagram / compression) are skipped, they live below the HTTP layer. |
+| `tcp-overlap` | Smuggling | Below-HTTP **TCP segment-overlap desync**: emit two overlapping TCP segments at the same sequence number so a WAF and an origin that resolve the overlap by *different* reassembly policies see different streams, the WAF inspects `--benign`, the origin executes `--attack`. Enumerates every disagreeing policy pair (`first`/`last`/`strict`-favouring) or targets one with `--waf-policy`/`--origin-policy`. Every emitted plan is **self-verified** in-crate (simulating the WAF policy must yield benign, the origin policy must yield attack), a guard rejects the trivial benign==attack case, so a green result is a genuine split, not a tautology. `--benign`/`--attack` must be equal length for a clean full overlap (else exit 4). `--format json` → `wafrift.tcp_overlap.v1` with per-segment `seq`/`bytes`; deliver with a raw-socket sender. |
 | `compress` | Mutation | Wrap a body in gzip / deflate / brotli chains |
-| `distill` | Analysis | Adversarial ddmin — find the minimal bypass payload (Zeller) |
-| `tmin` | Analysis | Corpus minimizer (afl-tmin alias for `distill`) — same ddmin engine, familiar entry point |
+| `distill` | Analysis | Adversarial ddmin, find the minimal bypass payload (Zeller) |
+| `tmin` | Analysis | Corpus minimizer (afl-tmin alias for `distill`), same ddmin engine, familiar entry point |
 | `cluster` | Analysis | Offline bypass clustering: group a `bench-waf` result by rule, class, and edit-distance |
 | `model-evade` | Advanced | L*-active-learning WAF decompiler + offline SFA bypass mining. Supports egress rotation (`--socks5`, `--http-proxy`, `--tailscale-exit-node`) for IP-reputation evasion during the L* membership-query phase |
 | `audit` | Defender | X-ray a CRS ruleset; report bypassable holes |
 | `harden` | Defender | Synthesize closure rules; proves zero benign false positives |
-| `fingerprint` | Advanced | Live origin-normalization decompiler: probes a target by reflection to detect which decode/normalize stages its origin applies (url/base64/hex/overlong-UTF8/NUL-strip/NFKC/best-fit), then with `--attack` solves a TARGETED bypass against that exact pipeline and re-verifies it against the live target (no fabrication). Add `--characterize-filter` to differentially probe *which* attack tokens the WAF actually policies (each dangerous token paired with a signature-broken benign twin) — telling you which tokens must be encoded vs. which reach the sink in plaintext, plus the per-token decode-gaps (which encodings the WAF fails to decode). The probe battery is Tier-B data; override it with `--filter-battery <file.toml>`. For a rate-limited target, `--filter-budget N` caps the probe count and spends it on the highest-**information-gain** tokens first (Beta-Bernoulli entropy), warm-started across runs from `--filter-history <file.json>` (same scheduler as `bench-waf --history-file`) so repeated assessments converge the budget onto the genuinely-uncertain tokens instead of re-confirming what a prior run already pinned. The live block/pass oracle is **self-calibrating** (learns this target's block signal from benign/malicious controls), **content-aware** (catches a block served with HTTP 200 — override the signatures with `--block-signatures <file.toml>`), and **rate-limit-aware** (429/503 are retried with backoff, never counted as a false block). Requires `--permission <REASON>` for non-RFC1918 hosts |
+| `fingerprint` | Advanced | Live origin-normalization decompiler: probes a target by reflection to detect which decode/normalize stages its origin applies (url/base64/hex/overlong-UTF8/NUL-strip/NFKC/best-fit), then with `--attack` solves a TARGETED bypass against that exact pipeline and re-verifies it against the live target (no fabrication). Add `--characterize-filter` to differentially probe *which* attack tokens the WAF actually policies (each dangerous token paired with a signature-broken benign twin), telling you which tokens must be encoded vs. which reach the sink in plaintext, plus the per-token decode-gaps (which encodings the WAF fails to decode). The probe battery is Tier-B data; override it with `--filter-battery <file.toml>`. For a rate-limited target, `--filter-budget N` caps the probe count and spends it on the highest-**information-gain** tokens first (Beta-Bernoulli entropy), warm-started across runs from `--filter-history <file.json>` (same scheduler as `bench-waf --history-file`) so repeated assessments converge the budget onto the genuinely-uncertain tokens instead of re-confirming what a prior run already pinned. The live block/pass oracle is **self-calibrating** (learns this target's block signal from benign/malicious controls), **content-aware** (catches a block served with HTTP 200, override the signatures with `--block-signatures <file.toml>`), and **rate-limit-aware** (429/503 are retried with backoff, never counted as a false block). Requires `--permission <REASON>` for non-RFC1918 hosts |
 | `replay` | Utility | Deterministic re-fire of a saved bypass (exits 0 bypass / 2 block) |
 | `import-curl` | Utility | Parse a Burp "Copy as cURL" capture and run scan against it |
 | `bank` | Utility | Gene-bank management: list / export / import / sign / trust / pull / submit |
@@ -78,19 +76,19 @@ Built so each crate is usable standalone: [`wafrift-encoding`](https://docs.rs/w
 | `bench-waf` | Bench | Measure raw WAF block rate + wafrift bypass rate against a corpus. `--budget N` schedules the most informative payloads first (binary Shannon entropy of block probability), `--history-file` warm-starts across runs, `--fair-class` enforces per-class fairness. |
 | `bench-diff` | Bench | Gate on regression between two `bench-waf` JSON blobs |
 | `hunt` | Autonomous | Long-running bypass campaign: repeated `bench-waf` rounds, rotating strategies, resumable by `--campaign-id`. Records every confirmed bypass's winning payload to a per-target corpus under `~/.wafrift`. `--target cumulusfire` for the authorised bounty surface. Never submits. |
-| `harvest` | Bounty | Turn a hunt/bench bypass corpus into review-ready HackerOne reports: dedupes, RE-VERIFIES each candidate live (fresh request+response proof), writes one Markdown report per still-working bypass. With the global `--differential-baseline`, each candidate is credited only if the class's **un-evaded** policing probe (Tier-B `rules/policing_probes.toml`) is BLOCKED in the same delivery — proving the WAF actually polices that sink, so a payload reaching an unpoliced endpoint (e.g. CumulusFire returns 200 for a bare `;id`) is dropped as a never-policed false positive rather than reported as a bypass. Never submits. |
+| `harvest` | Bounty | Turn a hunt/bench bypass corpus into review-ready HackerOne reports: dedupes, RE-VERIFIES each candidate live (fresh request+response proof), writes one Markdown report per still-working bypass. With the global `--differential-baseline`, each candidate is credited only if the class's **un-evaded** policing probe (Tier-B `rules/policing_probes.toml`) is BLOCKED in the same delivery, proving the WAF actually polices that sink, so a payload reaching an unpoliced endpoint (e.g. CumulusFire returns 200 for a bare `;id`) is dropped as a never-policed false positive rather than reported as a bypass. Never submits. |
 | `submit` | Bounty | File a SINGLE reviewed harvest report to HackerOne. Dry-run by default; `--confirm` files that one report. No auto/batch path (bounty-program ban risk); set `H1_API_KEY` + `H1_USERNAME`. |
 
 ## Install
 
 ```bash
 # Prebuilt binaries (recommended)
-curl -sSfL https://github.com/santhreal/wafrift/releases/latest/download/wafrift-$(uname -m)-unknown-linux-gnu.tar.gz | tar xz
+curl -sSfL https://github.com/santhsecurity/wafrift/releases/latest/download/wafrift-$(uname -m)-unknown-linux-gnu.tar.gz | tar xz
 sudo mv wafrift wafrift-proxy /usr/local/bin/
 
 # From crates.io  (the wafrift-cli crate installs the `wafrift` binary)
 cargo install wafrift-cli
-cargo install wafrift-cli   --features tls-impersonate     # optional: enables `wafrift ja3-diff` (BoringSSL — Linux/macOS only)
+cargo install wafrift-cli   --features tls-impersonate     # optional: enables `wafrift ja3-diff` (BoringSSL. Linux/macOS only)
 cargo install wafrift-proxy --features tls-impersonate     # optional: BoringSSL impersonation  (Linux/macOS only)
 ```
 
@@ -102,7 +100,7 @@ those build prerequisites. Every other wafrift surface (scan, detect,
 attack, parser-diff family, bench-waf, smuggle, listener, ...) works
 on Windows out of the box.
 
-macOS: `wafrift-aarch64-apple-darwin.tar.gz`. Windows: `.zip` of the same name. Full asset list under [Releases](https://github.com/santhreal/wafrift/releases). From source: `cargo install --path crates/cli`.
+macOS: `wafrift-aarch64-apple-darwin.tar.gz`. Windows: `.zip` of the same name. Full asset list under [Releases](https://github.com/santhsecurity/wafrift/releases). From source: `cargo install --path crates/cli`.
 
 ## Quickstart
 
@@ -245,9 +243,9 @@ wafrift replay --target https://target.com --param id \
 
 > Genomes accumulate per-WAF as you scan, but a cold install is **not** cold:
 > the first scan against an unseen WAF warm-starts from a bundled *default*
-> genome of proven generic techniques — and from a Cloudflare-class default of
+> genome of proven generic techniques, and from a Cloudflare-class default of
 > delivery-vector confusions (JSON dup-key / multipart / CBOR / overlong-UTF8)
-> when the target is Cloudflare-fronted — instead of discovering from zero.
+> when the target is Cloudflare-fronted (instead of discovering from zero).
 > What is *not* shipped is any accumulated per-vendor genome or target-specific
 > payload (only generic technique-keys + priors). Your scans then specialise
 > `~/.wafrift/genomes/<waf>.json`, which persists and is never clobbered by the
@@ -270,7 +268,7 @@ wafrift scan --target https://target.com/admin/users \
 ```
 
 Defeats WAFs that scrutinise unauthenticated traffic more (most do).
-Re-uses `import-curl`'s curl parser — same syntax you'd hand `wafrift
+Re-uses `import-curl`'s curl parser, same syntax you'd hand `wafrift
 import-curl --evade`. Cookies are captured from every `Set-Cookie`
 the login chain produces (including redirects) AND any `Cookie:` /
 `Authorization:` you set in the curl itself. The most-recent cookie
@@ -279,7 +277,7 @@ wins on name collision (browser semantics).
 ### 👁️ Blind / stored vulns: "the payload lands but the response says nothing"
 
 For blind SQLi (time-based), stored XSS, blind SSRF, and OOB command
-injection — the response that triggers the vuln NEVER carries the
+injection: the response that triggers the vuln NEVER carries the
 verdict. Start a `wafrift listener` on infrastructure you control,
 embed `{{CALLBACK}}` in the payload, and `wafrift scan` substitutes a
 per-variant token. Any inbound hit at the listener with a matching
@@ -303,7 +301,7 @@ which variant landed.
 ### 🛠️ Compression-confusion bodies: "the WAF inspects bytes; the origin decompresses"
 
 ```bash
-# Pipe a payload through gzip + brotli — outermost first per RFC 9110 §8.4.
+# Pipe a payload through gzip + brotli (outermost first per RFC 9110 §8.4).
 echo -n "' UNION SELECT username,password FROM users--" \
     | wafrift compress --algo gzip --algo br > /tmp/body.bin
 # stderr: Content-Encoding: gzip, br
@@ -397,17 +395,17 @@ wafrift bank export --output bundle.json    # share with teammate
 wafrift bank import bundle.json             # on teammate's machine
 ```
 
-**Community genome registry.** Bundles can be signed (ed25519) and pulled from a community registry — the trust list lives at `~/.wafrift/trusted-keys.toml` (per-host publisher allowlist), so an untrusted bundle is rejected on `wafrift bank pull` before it ever lands on disk:
+**Community genome registry.** Bundles can be signed (ed25519) and pulled from a community registry, the trust list lives at `~/.wafrift/trusted-keys.toml` (per-host publisher allowlist), so an untrusted bundle is rejected on `wafrift bank pull` before it ever lands on disk:
 
 ```bash
-wafrift bank gen-key                              # writes ~/.wafrift/signing-key.hex (mode 0600); prints public-key hex — share that
+wafrift bank gen-key                              # writes ~/.wafrift/signing-key.hex (mode 0600); prints public-key hex, share that
 wafrift bank sign bundle.json --signing-key ~/.wafrift/signing-key.hex
 wafrift bank trust add --pubkey <ed25519-hex> --label "alice@example"
 wafrift bank pull https://registry.example/bundles/cloudflare-2026q2.signed.json
 wafrift bank submit https://registry.example/upload bundle.signed.json
 ```
 
-The signing + trust primitives live in the `wafrift-genome-registry` crate; the HTTP pull/submit transport is wired in `wafrift bank pull` / `wafrift bank submit`. There is **no central wafrift-hosted registry** today — operators run their own (a single static-file HTTP server is enough for pull; submit needs a tiny POST endpoint). See `crates/genome-registry/README.md` for the bundle wire format.
+The signing + trust primitives live in the `wafrift-genome-registry` crate; the HTTP pull/submit transport is wired in `wafrift bank pull` / `wafrift bank submit`. There is **no central wafrift-hosted registry** today, operators run their own (a single static-file HTTP server is enough for pull; submit needs a tiny POST endpoint). See `crates/genome-registry/README.md` for the bundle wire format.
 
 Replay any saved finding deterministically:
 
@@ -424,14 +422,14 @@ wafrift replay --target https://target/login --param username \
 |------|---------|
 | `0`  | Success |
 | `1`  | Generic error (IO failure, runtime error) |
-| `2`  | Argument / input error (unknown flag, contradictory selectors, malformed value, missing required field, **target not on any permission allowlist**). Also: `bench-waf` "zero bypasses", `replay` "saved bypass blocked", `harvest` missing `--base-url`/`--target`, and `submit` malformed-or-unverified report (incl. `--confirm` on an UNVERIFIED report) — well-established CI overload. |
+| `2`  | Argument / input error (unknown flag, contradictory selectors, malformed value, missing required field, **target not on any permission allowlist**). Also: `bench-waf` "zero bypasses", `replay` "saved bypass blocked", `harvest` missing `--base-url`/`--target`, and `submit` malformed-or-unverified report (incl. `--confirm` on an UNVERIFIED report), well-established CI overload. |
 | `3`  | `bench-diff` regression vs baseline (see `--bypass-drop-pp`) |
-| `4`  | **"WAF active but nothing bypassed / nothing achieved"** — the run completed, the WAF was in play, but no variant won. Emitted by `scan` (verdict `waf_active_no_bypass`), `exploit` (no payload executed in a live sink), and `bench-waf` (zero bypasses, or `--validate-only` corpus integrity errors: duplicate id, TOML parse, missing required field). Distinct from `6` (no WAF to bypass) and `0` (something bypassed). |
-| `5`  | `scan` aborted — target rate-limited the probes (inconclusive, not "no bypass") |
-| `6`  | **"Inconclusive — no clean measurement"**, distinct from `0` (clean run, nothing found). Emitted by `scan` (verdict `waf_not_in_play` / `inconclusive` — the param has no WAF policing it, so a "bypass" is not even measurable) and `diff h2` / `h2-diff` (every H2 probe failed to negotiate on an H1-only target, so the H1↔H2 differential was never measured). CI must NOT read `6` as "no divergence / no bypass"; read it as "could not measure." |
-| `7`  | `scan --scan-timeout-secs` wall-clock budget exceeded — partial results emitted (the scan loop broke early; check `truncated_by_scan_timeout: true` in JSON output) |
+| `4`  | **"WAF active but nothing bypassed / nothing achieved"**: the run completed, the WAF was in play, but no variant won. Emitted by `scan` (verdict `waf_active_no_bypass`), `exploit` (no payload executed in a live sink), and `bench-waf` (zero bypasses, or `--validate-only` corpus integrity errors: duplicate id, TOML parse, missing required field). Distinct from `6` (no WAF to bypass) and `0` (something bypassed). |
+| `5`  | `scan` aborted, target rate-limited the probes (inconclusive, not "no bypass") |
+| `6`  | **"Inconclusive, no clean measurement"**, distinct from `0` (clean run, nothing found). Emitted by `scan` (verdict `waf_not_in_play` / `inconclusive`, the param has no WAF policing it, so a "bypass" is not even measurable) and `diff h2` / `h2-diff` (every H2 probe failed to negotiate on an H1-only target, so the H1↔H2 differential was never measured). CI must NOT read `6` as "no divergence / no bypass"; read it as "could not measure." |
+| `7`  | `scan --scan-timeout-secs` wall-clock budget exceeded, partial results emitted (the scan loop broke early; check `truncated_by_scan_timeout: true` in JSON output) |
 
-R52 pass-14 I6 (CLAUDE.md §10 COHERENCE): exit codes 4 + 5 were undocumented prior to that round; CI scripts treating any non-zero as failure would misread them as infrastructure errors. R-hunt2 (§10 COHERENCE / claims-integrity): code `6` was entirely absent from this table while `scan` (`exit_code_for_verdict`, `crates/cli/src/scan/waf_bypass_verdict.rs`) and `diff h2` (`crates/cli/src/h2_diff_cmd.rs`) both emit it, and code `4` was scoped to `bench-waf --validate-only` only while `scan`/`exploit` also emit it — both gaps closed here. The `scan` verdict→exit mapping is the single source of truth (`exit_code_for_verdict`: timeout→7, rate-limit→5, then `bypass_confirmed`→0 / `waf_active_no_bypass`→4 / `waf_not_in_play`|`inconclusive`→6).
+R52 pass-14 I6 (CLAUDE.md §10 COHERENCE): exit codes 4 + 5 were undocumented prior to that round; CI scripts treating any non-zero as failure would misread them as infrastructure errors. R-hunt2 (§10 COHERENCE / claims-integrity): code `6` was entirely absent from this table while `scan` (`exit_code_for_verdict`, `crates/cli/src/scan/waf_bypass_verdict.rs`) and `diff h2` (`crates/cli/src/h2_diff_cmd.rs`) both emit it, and code `4` was scoped to `bench-waf --validate-only` only while `scan`/`exploit` also emit it, both gaps closed here. The `scan` verdict→exit mapping is the single source of truth (`exit_code_for_verdict`: timeout→7, rate-limit→5, then `bypass_confirmed`→0 / `waf_active_no_bypass`→4 / `waf_not_in_play`|`inconclusive`→6).
 
 ### Environment variables
 
@@ -450,10 +448,10 @@ R68 pass-21 (CLAUDE.md §10 COHERENCE): these five env vars are accepted by vari
 
 Three tabs. Switch with `Tab` or `1`/`2`/`3` (or `f`/`o`/`h`).
 
-- **Flow** — bounded ring of 500 requests with status-graded coloring (2xx green, 3xx cyan, 4xx yellow, 5xx red; outcome BYPASS green, BLOCK red, PASS white). `j`/`k` navigate, `g`/`G` jump first / last, `Enter` toggles a side detail pane (full request + response + technique chain). Two sparklines below: req/s and bypasses/s over 60 s.
-- **Overview** — counters, TLS rotation gauge, WAFs identified.
-- **Hosts** — per-host bypass table sortable by sent count, with bypass-rate color grading and the identified WAF column.
-- `q` / `Esc` — graceful quit (flushes the gene bank).
+- **Flow**, bounded ring of 500 requests with status-graded coloring (2xx green, 3xx cyan, 4xx yellow, 5xx red; outcome BYPASS green, BLOCK red, PASS white). `j`/`k` navigate, `g`/`G` jump first / last, `Enter` toggles a side detail pane (full request + response + technique chain). Two sparklines below: req/s and bypasses/s over 60 s.
+- **Overview** (counters, TLS rotation gauge, WAFs identified).
+- **Hosts** (per-host bypass table sortable by sent count, with bypass-rate color grading and the identified WAF column).
+- `q` / `Esc`: graceful quit (flushes the gene bank).
 
 ### Fine-grained technique selection
 
@@ -466,7 +464,7 @@ wafrift scan --target http://target.com --payload "' OR 1=1--" \
     --exclude encoding/url/triple,encoding/sql/comment
 ```
 
-Unknown selectors fail fast — no silent drops.
+Unknown selectors fail fast (no silent drops).
 
 ### Differential bypass probing (`wafrift bypass-probe`)
 
@@ -492,7 +490,7 @@ Honours server `Retry-After` via a shared deadline (jittered ±20%), surfaces `r
 
 ### WAF go-around: probe the origin directly (`unmask` → `smuggle-fire --origin-ip`)
 
-When the WAF sits at the edge and the origin *trusts that edge* — an admin panel behind a hard 404, an IP-allowlisted backend, a gateway that injects identity headers — bypassing the WAF's *rules* isn't the win; reaching the origin *past* the edge is. Two steps:
+When the WAF sits at the edge and the origin *trusts that edge*, an admin panel behind a hard 404, an IP-allowlisted backend, a gateway that injects identity headers, bypassing the WAF's *rules* isn't the win; reaching the origin *past* the edge is. Two steps:
 
 ```bash
 # 1. Find the real origin IP behind the CDN/WAF (CT logs, DNS history,
@@ -508,7 +506,7 @@ wafrift smuggle-fire --target https://target.example.com/admin \
     --i-have-permission HACKERONE-1234
 ```
 
-`--origin-ip` pins the target host to the discovered IP at the connector, so an origin that only trusts requests *arriving via its edge* becomes reachable directly — turning the 230-probe auth-bypass set into a direct-to-origin trust test.
+`--origin-ip` pins the target host to the discovered IP at the connector, so an origin that only trusts requests *arriving via its edge* becomes reachable directly (turning the 230-probe auth-bypass set into a direct-to-origin trust test).
 
 ### Burp / Caido / mitmproxy chaining
 
@@ -549,7 +547,7 @@ wafrift import-curl --curl-file /tmp/req.curl \
   --level heavy --format json > /tmp/scan.json
 ```
 
-CLI output is line-delimited JSON when `--quiet` is set, so it pipes cleanly into `jq`, `head`, `grep -m 1`, etc. (`SIGPIPE` is handled silently — no broken-pipe panics on `wafrift evade ... | head`.)
+CLI output is line-delimited JSON when `--quiet` is set, so it pipes cleanly into `jq`, `head`, `grep -m 1`, etc. (`SIGPIPE` is handled silently, no broken-pipe panics on `wafrift evade ... | head`.)
 
 ### Proxy scope, rate limit, live findings
 
@@ -573,11 +571,11 @@ Globs use a tiny ASCII grammar (`*` matches any run, `?` matches one byte, case-
 
 ### Authorisation
 
-`wafrift-proxy` refuses upstream targets in private / loopback / RFC1918 / link-local ranges by default; pass `--allow-private-upstream` only against lab targets you own. `wafrift replay` and `bypass-probe` send genuinely exploitable strings — see the [Lawful Use](#lawful-use--repository-responsibility) clause at the bottom of this README.
+`wafrift-proxy` refuses upstream targets in private / loopback / RFC1918 / link-local ranges by default; pass `--allow-private-upstream` only against lab targets you own. `wafrift replay` and `bypass-probe` send genuinely exploitable strings (see the [Lawful Use](#lawful-use--repository-responsibility) clause at the bottom of this README).
 
 ## Measured bypass rates
 
-Live scoreboard: [`docs/SCOREBOARD.md`](./docs/SCOREBOARD.md) — refreshed nightly from CI; per-(WAF × payload-class) verified-bypass rate across ModSec PL1-4, Coraza, BunkerWeb, and naxsi. Every number below is reproducible from [`wafrift-bench/`](./wafrift-bench/); methodology in [`wafrift-bench/methodology.md`](./wafrift-bench/methodology.md); machine-readable JSON in `wafrift-bench/results/`.
+Live scoreboard: [`docs/SCOREBOARD.md`](./docs/SCOREBOARD.md), refreshed nightly from CI; per-(WAF × payload-class) verified-bypass rate across ModSec PL1-4, Coraza, BunkerWeb, and naxsi. Every number below is reproducible from [`wafrift-bench/`](./wafrift-bench/); methodology in [`wafrift-bench/methodology.md`](./wafrift-bench/methodology.md); machine-readable JSON in `wafrift-bench/results/`.
 
 **Target: ModSecurity + OWASP CRS.** Corpus: 557 cases across 10 attack classes (sql / xss / cmdi / ssti / path / ldap / xxe / ssrf / nosql / log4shell). 10 evasion strategies combined; oracle-gated (each "bypass" verified structurally as a valid attack, not garbage that slipped past).
 
@@ -588,13 +586,13 @@ Live scoreboard: [`docs/SCOREBOARD.md`](./docs/SCOREBOARD.md) — refreshed nigh
 | PL=3 | 60k | 17.3k | 28% | 557 / 557 (100%) |
 | **PL=4** (most aggressive) | 60k | 16.3k | **27%** | **557 / 557 (100%)** |
 
-**At every paranoia level — including PL=4, CRS's most paranoid preset — every single attack case in the corpus has at least one working bypass when the full strategy stack is applied with 60+ variants per case.** Once a working seed exists, the per-host gene bank (`~/.wafrift/genomes/`) replays it indefinitely.
+**At every paranoia level, including PL=4, CRS's most paranoid preset, every single attack case in the corpus has at least one working bypass when the full strategy stack is applied with 60+ variants per case.** Once a working seed exists, the per-host gene bank (`~/.wafrift/genomes/`) replays it indefinitely.
 
 > "557/557 cases bypassed" is a search-budget result, not a one-shot rate. The proxy alone (HTTP-layer evasion only) still gets blocked on a naked SQLi against PL=4; payload-byte mutation lives in `wafrift scan` / `wafrift bench-waf`. Worked example: [`docs/PRACTITIONER_WALKTHROUGH.md`](./docs/PRACTITIONER_WALKTHROUGH.md).
 
 ```bash
 # Reproduce
-git clone https://github.com/santhreal/wafrift && cd wafrift
+git clone https://github.com/santhsecurity/wafrift && cd wafrift
 wafrift-bench/scripts/up.sh modsec-pl4
 cargo run --release -p wafrift-cli -- bench-waf \
     --base-url http://127.0.0.1:18084 \
@@ -617,7 +615,7 @@ jq .evaded_summary repro.json
 | HTTP Request Smuggler | – | – | yes | – | – | Burp ext. | – |
 | **WafRift** | **15+ strategies** | **SQL/XSS/CMD/SSTI/path/LDAP/SSRF** | **CL.TE / TE.CL / TE.TE** | **multipart/json/xml** | **gene-bank** | **standalone + MITM** | **deterministic** |
 
-WafRift is the evasion layer you add when sqlmap / Burp / ffuf are blocked by a WAF — not a replacement. Once a working seed exists, the per-host gene bank replays it indefinitely: a Cloudflare scan starts with proven bypasses on every subsequent run, **zero discovery phase**. Grammar mutations are validated against `sqlparser-rs` AST equivalence, so SQL variants actually parse — most tampers ship broken payloads and don't know it.
+WafRift is the evasion layer you add when sqlmap / Burp / ffuf are blocked by a WAF, not a replacement. Once a working seed exists, the per-host gene bank replays it indefinitely: a Cloudflare scan starts with proven bypasses on every subsequent run, **zero discovery phase**. Grammar mutations are validated against `sqlparser-rs` AST equivalence, so SQL variants actually parse (most tampers ship broken payloads and don't know it).
 
 ## Architecture
 
@@ -676,7 +674,7 @@ use wafrift_core::encoding::{self, Strategy};
 let encoded = encoding::encode(b"' OR 1=1--", Strategy::UnicodeEncode)?;
 ```
 
-Or pull individual crates — every public API has a runnable doctest on [docs.rs](https://docs.rs/wafrift-encoding):
+Or pull individual crates, every public API has a runnable doctest on [docs.rs](https://docs.rs/wafrift-encoding):
 
 ```toml
 wafrift-encoding  = "0.2"   # 15+ encoding strategies
@@ -688,7 +686,7 @@ wafrift-oracle    = "0.2"   # Response verdict classification
 wafrift-strategy  = "0.2"   # Per-WAF evasion pipeline planning
 ```
 
-The CLI's `scan` flow is `wafrift-strategy + wafrift-transport + wafrift-detect` — embed those directly if you need the same pipeline without the binary.
+The CLI's `scan` flow is `wafrift-strategy + wafrift-transport + wafrift-detect`: embed those directly if you need the same pipeline without the binary.
 
 ## Custom WAF detection
 

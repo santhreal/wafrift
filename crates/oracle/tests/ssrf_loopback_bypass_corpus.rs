@@ -3,12 +3,12 @@
 //! Each fixture is a known WAF/SSRF-allowlist bypass shape that
 //! resolves to 127.0.0.1 when the URL parser is permissive (browsers
 //! and many backend HTTP clients are). The oracle's job is to flag
-//! these as semantically-valid SSRF payloads — accepting a
+//! these as semantically-valid SSRF payloads, accepting a
 //! same-target rewrite means the evasion engine's mutators can
 //! safely emit them without losing exploit semantics.
 //!
 //! These fixtures previously lived in an orphan `oracle/src/test_url.rs`
-//! that wasn't even declared as a module — it printed parse results
+//! that wasn't even declared as a module, it printed parse results
 //! with no assertions. Converting to a real integration test means a
 //! regression in url::Url parsing, in `has_ssrf_structure`, or in
 //! `has_valid_url_syntax` will fire a CI signal instead of silently
@@ -34,7 +34,7 @@ fn hex_loopback_url_is_valid_ssrf_payload() {
 #[test]
 fn percent_encoded_nul_in_authority_is_valid_ssrf_payload() {
     // Some backends terminate hostname parsing at NUL but report the
-    // full host to the SSRF allowlist — a real split-parsing bypass
+    // full host to the SSRF allowlist, a real split-parsing bypass
     // (CVE-2017-15046, CVE-2018-1002105 family). url::Url::parse
     // rejects this as malformed authority, so SsrfOracle uses the
     // nul_in_authority_salvage fallback: strip from the first
@@ -66,7 +66,7 @@ fn literal_nul_in_authority_is_valid_ssrf_payload() {
 #[test]
 fn nul_in_non_ssrf_host_is_still_rejected() {
     // Negative twin: the salvage fallback must not start accepting
-    // arbitrary NUL-bearing URLs as SSRF — only those whose pre-NUL
+    // arbitrary NUL-bearing URLs as SSRF, only those whose pre-NUL
     // prefix is itself an SSRF target.
     let oracle = SsrfOracle;
     let original = "http://127.0.0.1/";
@@ -79,7 +79,7 @@ fn nul_in_non_ssrf_host_is_still_rejected() {
 
 #[test]
 fn empty_userinfo_at_loopback_is_valid_ssrf_payload() {
-    // http://@127.0.0.1/ — empty userinfo parses identically to
+    // http://@127.0.0.1/, empty userinfo parses identically to
     // http://127.0.0.1/ in stdlib + browsers, but defeats naive
     // host extraction that splits on '@'.
     let oracle = SsrfOracle;
@@ -131,7 +131,7 @@ fn octal_loopback_url_is_valid_ssrf_payload() {
 #[test]
 fn loopback_bypass_corpus_covers_all_shapes() {
     // Sanity: if we ever drop a fixture above, the count check fires.
-    // (This is a meta-test on this file's coverage — the per-shape
+    // (This is a meta-test on this file's coverage, the per-shape
     // assertions are the real contract.)
     let shapes = [
         "http://0x7f000001/",

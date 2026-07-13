@@ -7,13 +7,13 @@
 //! (not "textually identical to the original"), so it inspects the transformed
 //! bytes only and accepts EITHER:
 //!
-//! - a traversal SEQUENCE survives — `../` or a known encoded form
+//! - a traversal SEQUENCE survives: `../` or a known encoded form
 //!   (`..%2f`, `..%5c`, `%2e%2e/`, …) from `sequences.toml`; OR
 //! - a literal target path (`/etc/passwd`, …) is present together with `..`.
 //!
 //! A bare traversal sequence with NO literal target is deliberately accepted:
 //! the target is frequently percent-/double-encoded (the whole point of the
-//! evasion), so it can't be matched textually — requiring a literal target
+//! evasion), so it can't be matched textually, requiring a literal target
 //! here would false-negative exactly the encoded bypasses this oracle exists to
 //! validate. If a transform destroyed the traversal sequence entirely, the
 //! server can't climb directories and the check correctly fails.
@@ -39,7 +39,7 @@ const PATH_TRAVERSAL_TOML: &str = include_str!("../rules/path_traversal/sequence
 
 // Per consolidation F13/F30: `description`/`encoding`/`os` TOML fields
 // are human-readable docs not consumed at runtime. Serde silently
-// ignores unknown TOML fields by default — drop them from the struct
+// ignores unknown TOML fields by default, drop them from the struct
 // rather than allocating a heap String per rule on every parse.
 
 /// Traversal sequence definition from TOML.

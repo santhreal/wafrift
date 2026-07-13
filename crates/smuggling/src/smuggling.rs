@@ -24,7 +24,7 @@ pub enum SmugglingVariant {
     MultiValueCl,
     ClObfuscation,
     ChunkExtension,
-    /// CVE-2025-55315 — chunk-extension with a lone LF embedded inside
+    /// CVE-2025-55315, chunk-extension with a lone LF embedded inside
     /// the extension field. Proxies that treat bare `\n` as a line
     /// terminator (Akamai, F5, some IIS configurations) split the
     /// stream at the LF; Kestrel and .NET-class back-ends search only
@@ -33,7 +33,7 @@ pub enum SmugglingVariant {
     /// `0\r\n\r\n` chunk terminator become a smuggled request that
     /// reaches the origin invisible to the WAF (which doesn't inspect
     /// chunk extensions). CVSS 9.9; Praetorian disclosure Oct 2025.
-    /// R69 pass-21 — frontier technique per the 2025 research scan.
+    /// R69 pass-21 (frontier technique per the 2025 research scan).
     ChunkExtensionLoneLf,
     Http10,
     Http09,
@@ -41,7 +41,7 @@ pub enum SmugglingVariant {
     DetectClTe,
     DetectTeCl,
     MethodBody,
-    /// Kettle BH25: 0.CL desync — front-end ignores CL, back-end honors it.
+    /// Kettle BH25: 0.CL desync (front-end ignores CL, back-end honors it).
     KettleDesync,
     /// Kettle BH25: Browser-powered H2→H1 downgrade with conflicting CL.
     Browser0CL,
@@ -90,7 +90,7 @@ pub fn te_obfuscations() -> Vec<String> {
         "Transfer-Encoding: chunked\r\nTransfer-Encoding: identity",
         "Transfer-Encoding:\n chunked",
         "Transfer-Encoding:\r\n chunked",
-        // CVE-2024-1135 (Gunicorn) class — single header, multiple
+        // CVE-2024-1135 (Gunicorn) class, single header, multiple
         // comma-separated encodings. WAFs normalising to the FIRST
         // value see `identity` (whitelisted RFC 2616, skip), backend
         // parses left-to-right, finds identity valid, processes body
@@ -101,11 +101,11 @@ pub fn te_obfuscations() -> Vec<String> {
         "Transfer-Encoding: identity ,chunked",
         "Transfer-Encoding: chunked, identity",
         "Transfer-Encoding: chunked , identity",
-        // Three-element variant — some parsers stop after the first
+        // Three-element variant, some parsers stop after the first
         // valid value, others scan to the last; both interpretations
         // disagree with at least one WAF normaliser.
         "Transfer-Encoding: identity, chunked, identity",
-        // Casing variant on identity itself — same logic, smaller
+        // Casing variant on identity itself, same logic, smaller
         // overlap with case-folded WAF rules.
         "Transfer-Encoding: Identity, chunked",
     ];
@@ -152,14 +152,14 @@ pub fn te_obfuscations() -> Vec<String> {
 /// Build a canonical Portswigger CL.TE smuggle.
 ///
 /// Sets Content-Length to the FULL body length so the CL-following
-/// front-end reads (and forwards) every body byte — including the
-/// smuggled prefix — while the TE-following backend reads `0\r\n`,
+/// front-end reads (and forwards) every body byte, including the
+/// smuggled prefix, while the TE-following backend reads `0\r\n`,
 /// stops at the chunked-end marker, and leaves the post-chunk bytes
 /// in its connection buffer to be parsed as the next request.
 ///
 /// Pre-fix this hardcoded CL=0 ("Backward-compatible CL.TE
 /// (hardcodes CL=0)") which produced a CL-front-end that
-/// forwarded ZERO body bytes — the smuggled prefix never reached
+/// forwarded ZERO body bytes, the smuggled prefix never reached
 /// the TE-backend's buffer and the desync never fired. Caller
 /// scripts that wanted a non-canonical CL value have always had
 /// `cl_te_custom` available.
@@ -387,7 +387,7 @@ pub fn chunk_extension(
     })
 }
 
-/// CVE-2025-55315 — chunk-extension TERM.EXT desync via lone LF.
+/// CVE-2025-55315 (chunk-extension TERM.EXT desync via lone LF).
 ///
 /// The smuggled request rides inside what looks (to one parser) like
 /// the chunk-extension token, separated from the chunk-size with a
@@ -398,7 +398,7 @@ pub fn chunk_extension(
 /// and everything after as the next. Kestrel and other .NET-class
 /// back-ends scan for `\r` ONLY when parsing chunk extensions, so the
 /// same bytes look like a single chunk-extension parameter. WAFs
-/// rarely inspect chunk-extension values — the smuggled bytes are
+/// rarely inspect chunk-extension values, the smuggled bytes are
 /// invisible to them.
 ///
 /// Wire shape (lone-LF marked `\n` explicitly):
@@ -421,7 +421,7 @@ pub fn chunk_extension(
 /// `XXXXX`) which keeps the framing valid even for the parser that
 /// processed the extension correctly.
 ///
-/// Pass 21 R69 — CVE-2025-55315 frontier technique.
+/// Pass 21 R69: CVE-2025-55315 frontier technique.
 pub fn chunk_extension_lone_lf(
     host: &str,
     smuggled_prefix: &str,
@@ -601,9 +601,9 @@ pub fn pipeline_builder(
 /// ```
 ///
 /// That's exactly 6 bytes (`0`, `\r`, `\n`, `\r`, `\n`, `X`).
-/// Pre-fix this used `0\r\nX\r\n\r\n` — 8 bytes with data AFTER the
+/// Pre-fix this used `0\r\nX\r\n\r\n`: 8 bytes with data AFTER the
 /// final chunk terminator. RFC 7230 §4.1 says trailers may follow
-/// `0\r\n` but only as `name: value\r\n*` then `\r\n` — a bare
+/// `0\r\n` but only as `name: value\r\n*` then `\r\n`: a bare
 /// byte like `X` makes the body invalid chunked encoding. Strict
 /// parsers (Apache, recent nginx, Envoy) return 400 instead of
 /// hanging, defeating the timing oracle. The canonical form keeps
@@ -644,7 +644,7 @@ pub fn detect_te_cl(host: &str) -> Result<SmugglingPayload, crate::safety::Safet
     //
     // Byte accounting for the body section:
     //   "5\r\n" = 3 bytes  (chunk-size line: '5', CR, LF)
-    //   "\r\n"  = 2 bytes  (that is the chunk-data — 5 is the chunk-size but
+    //   "\r\n"  = 2 bytes  (that is the chunk-data: 5 is the chunk-size but
     //                        the body here uses "\r\n" as placeholder data,
     //                        followed by the terminating chunk)
     //   "0\r\n\r\n" = 5 bytes
@@ -703,7 +703,7 @@ pub fn h2c_smuggle(
 ) -> Result<SmugglingPayload, crate::safety::SafetyError> {
     let host = sanitize_input(host)?;
     let settings = http2_settings.unwrap_or(DEFAULT_HTTP2_SETTINGS);
-    // Guard the caller-supplied settings value — it is interpolated
+    // Guard the caller-supplied settings value, it is interpolated
     // verbatim into `HTTP2-Settings: {settings}\r\n`. A CRLF-embedded
     // value (e.g. `"AAAA\r\nEvil: hdr"`) would inject a raw header.
     // The default constant is safe; only caller-supplied values need
@@ -782,7 +782,7 @@ pub fn h2c_post_smuggle(
 ) -> Result<SmugglingPayload, crate::safety::SafetyError> {
     let host = sanitize_input(host)?;
     let settings = http2_settings.unwrap_or(DEFAULT_HTTP2_SETTINGS);
-    // Same guard as h2c_smuggle — settings is interpolated verbatim
+    // Same guard as h2c_smuggle, settings is interpolated verbatim
     // into `HTTP2-Settings: {settings}\r\n`.
     if http2_settings.is_some() {
         crate::safety::guard_no_crlf(settings)?;
@@ -807,7 +807,7 @@ pub fn h2c_post_smuggle(
     })
 }
 
-/// CVE-2024-1019 — ModSecurity v3.0.0–3.0.11 URI pre-decode path/query split.
+/// CVE-2024-1019: ModSecurity v3.0.0–3.0.11 URI pre-decode path/query split.
 ///
 /// ModSec URL-decodes the entire URI before splitting on `?`. A `%3F`
 /// (the URL-encoded `?`) embedded in what the backend considers the
@@ -837,7 +837,7 @@ pub fn modsec_uri_pre_decode_split(
 /// internal CF-* headers). Headers beyond that threshold are silently
 /// discarded by the rule engine but forwarded to origin. Send N
 /// benign padding headers (`X-Pad-i: v`) plus one payload header
-/// past the truncation cutoff — origin sees the payload, WAF does not.
+/// past the truncation cutoff (origin sees the payload, WAF does not).
 ///
 /// `padding_count` is parameterised so MCTS can sweep 90..=110 and
 /// find each WAF vendor's exact cutoff.
@@ -951,7 +951,7 @@ pub fn all_payloads(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Kettle BH USA 2025 — "HTTP/1.1 Must Die: The Desync Endgame" primitives
+// Kettle BH USA 2025: "HTTP/1.1 Must Die: The Desync Endgame" primitives
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Registry of all Kettle BH25 primitive names for integration testing.
@@ -977,8 +977,8 @@ pub const IIS_RESERVED_PATHS: &[&str] = &["/con", "/aux", "/nul", "/prn", "/com1
 ///
 /// The front-end ignores `Content-Length` and routes the request based on
 /// method/path alone.  The back-end treats `Content-Length: <attack_cl>` as
-/// authoritative and reads that many bytes off the connection — including the
-/// `smuggled_request` bytes that follow — poisoning the next victim's request
+/// authoritative and reads that many bytes off the connection, including the
+/// `smuggled_request` bytes that follow, poisoning the next victim's request
 /// buffer.
 ///
 /// IIS reserved paths (`/con`, `/aux`, `/nul`, `/prn`, `/com1`, `/lpt1`)
@@ -1090,8 +1090,8 @@ pub fn vh_masked_header(
 /// Many front-ends respond to `Expect: 100-continue` immediately with a
 /// `100 Continue` response and do not wait for body bytes.  This means the
 /// front-end treats the request as complete (0 body bytes consumed), while the
-/// back-end honors `Content-Length: <cl>` and reads that many bytes —
-/// including `smuggled_request` — off the shared connection.
+/// back-end honors `Content-Length: <cl>` and reads that many bytes 
+/// including `smuggled_request`: off the shared connection.
 ///
 /// Wire format:
 /// ```text
@@ -1128,7 +1128,7 @@ pub fn expect_100_smuggle(
 /// Variants that obfuscate `100-continue` so one parser recognises the Expect
 /// directive and another doesn't:
 ///
-/// - `prefix + " 100-continue" + suffix` — e.g., `"y 100-continue"`, `" 100-continue "`
+/// - `prefix + " 100-continue" + suffix`: e.g., `"y 100-continue"`, `" 100-continue "`
 /// - Leading space: `" 100-continue"`
 /// - Trailing space: `"100-continue "`
 /// - Trailing tab: `"100-continue\t"`
@@ -1149,7 +1149,7 @@ pub fn expect_100_obfuscated(
         (" ", ""),        // leading space
         ("", "\t"),       // trailing tab
         ("y ", ""),       // "y 100-continue" (Kettle example)
-        ("", ""),         // canonical — for baseline reference
+        ("", ""),         // canonical, for baseline reference
     ];
     let case_variants: &[&str] = &["100-Continue", "100-CONTINUE", "100-continue"];
     let mut out = Vec::new();
@@ -1191,7 +1191,7 @@ pub fn expect_100_obfuscated(
 
 /// **CL.0 via Expect** (Kettle BH25 §5.3).
 ///
-/// `POST /images/` with `Expect: 100-continue` — many static-file or image
+/// `POST /images/` with `Expect: 100-continue`: many static-file or image
 /// endpoints return `405 Method Not Allowed` or `100 Continue` immediately,
 /// causing the front-end to treat the body as consumed (CL.0 equivalent).
 /// The back-end, which routes to a different handler, honors `Content-Length`
@@ -1227,10 +1227,10 @@ pub fn cl_zero_via_expect(
     })
 }
 
-/// **Double desync — 0.CL → CL.0 conversion** (Kettle BH25 §6).
+/// **Double desync: 0.CL → CL.0 conversion** (Kettle BH25 §6).
 ///
 /// Stage 1: A 0.CL desync on `stage1_path` plants a partial HTTP/1.1 request
-/// in the back-end's buffer — specifically the beginning of a CL.0 attack.
+/// in the back-end's buffer (specifically the beginning of a CL.0 attack).
 /// Stage 2: A normal CL.0 request on `stage2_path` completes the poisoned
 /// request such that a victim's request is mis-routed.
 ///
@@ -1291,7 +1291,7 @@ pub fn double_desync(
 pub fn malformed_host_split(
     host_value: &str,
 ) -> Result<Vec<SmugglingPayload>, crate::safety::SafetyError> {
-    // Guard first — host_value is interpolated verbatim into
+    // Guard first, host_value is interpolated verbatim into
     // `Host: {mangled}\r\n`. A caller passing `"abc\r\nX-Evil: yes"` would
     // inject a raw header into each of the 8 probe payloads.
     crate::safety::guard_no_crlf(host_value)?;
@@ -1338,7 +1338,7 @@ pub fn malformed_host_split(
 /// embedded `transfer-encoding: chunked` designed to trigger H2.CL or H2.TE
 /// desync upon downgrade.
 ///
-/// Uses the existing `H2Evasion` struct from `h2_evasion.rs` — no new
+/// Uses the existing `H2Evasion` struct from `h2_evasion.rs`: no new
 /// constructors added there.
 pub fn browser_powered_h2_downgrade(
     method: &str,
@@ -1367,7 +1367,7 @@ pub fn browser_powered_h2_downgrade(
             (":scheme".into(), "https".into()),
         ],
         headers: vec![
-            // Conflicting CL — front-end inherits from H2, back-end re-parses.
+            // Conflicting CL (front-end inherits from H2, back-end re-parses).
             ("content-length".into(), declared_cl.to_string()),
             // TE header causes H2.TE if the back-end is TE-first.
             ("transfer-encoding".into(), "chunked".into()),
@@ -1397,7 +1397,7 @@ pub fn browser_powered_h2_downgrade(
 ///  <fold_text>\r\n
 /// ```
 pub fn line_folded_header(header: &str, value: &str, fold_text: &str) -> Vec<u8> {
-    // We deliberately allow CRLF in value/fold_text here — that's the technique.
+    // We deliberately allow CRLF in value/fold_text here (that's the technique).
     // The header name itself must not contain CRLF.
     let raw = format!("{header}: {value}\r\n {fold_text}\r\n");
     raw.into_bytes()
@@ -1411,14 +1411,14 @@ pub fn line_folded_header(header: &str, value: &str, fold_text: &str) -> Vec<u8>
 /// ends.
 ///
 /// Variants:
-/// 1. `5;x=y`           — standard key=value extension
-/// 2. `5;\tx=y`         — tab-separated extension name
-/// 3. `5;;x=y`          — duplicate semicolons
-/// 4. `5;`              — empty extension (semicolon, no name)
-/// 5. `5;x="y;z"`       — quoted-string extension with semicolon inside
-/// 6. `5;x=y;z=w`       — two extensions
-/// 7. `5;0x=y`          — extension name starts with digit
-/// 8. `5;\x00ext=v`     — NUL byte in extension (null-terminator confusion)
+/// 1. `5;x=y`: standard key=value extension
+/// 2. `5;\tx=y`: tab-separated extension name
+/// 3. `5;;x=y`: duplicate semicolons
+/// 4. `5;`: empty extension (semicolon, no name)
+/// 5. `5;x="y;z"`: quoted-string extension with semicolon inside
+/// 6. `5;x=y;z=w`: two extensions
+/// 7. `5;0x=y`: extension name starts with digit
+/// 8. `5;\x00ext=v`: NUL byte in extension (null-terminator confusion)
 ///
 /// Each `SmugglingPayload` uses the chunk line to wrap a single-byte chunk
 /// (`X`) so the body is deterministic regardless of `body` length.  The full
@@ -1431,7 +1431,7 @@ pub fn line_folded_header(header: &str, value: &str, fold_text: &str) -> Vec<u8>
 pub fn chunk_extension_variants(
     body: &str,
 ) -> Result<Vec<SmugglingPayload>, crate::safety::SafetyError> {
-    // OOM guard: 8 payloads × body — without this a 500 MiB body = ~4 GiB.
+    // OOM guard: 8 payloads × body (without this a 500 MiB body = ~4 GiB).
     // The comment in the previous version said "length-only guard" but no
     // guard was ever implemented. Fixed here.
     crate::safety::guard_prefix_len(body, 64 * 1024)?;

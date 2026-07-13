@@ -1,6 +1,6 @@
 //! Regression coverage for the 2026-05-10 swarm-audit CRITICAL:
 //!   Cookie Domain attribute had no PSL guard. `Domain=co.uk`,
-//!   `Domain=com`, `Domain=github.io`, etc. were silently accepted —
+//!   `Domain=com`, `Domain=github.io`, etc. were silently accepted 
 //!   a captured cookie would then replay on EVERY site under that
 //!   suffix (the classic supercookie vulnerability). RFC 6265 §5.2.3
 //!   plus Mozilla's PSL project document this exact failure mode.
@@ -18,7 +18,7 @@ fn rejects_top_level_dot_com() {
     let cookie = "cf_clearance=tok; Domain=com";
     assert!(
         parse_domain(cookie).is_none(),
-        "Domain=com is a public suffix — accepting it lets the cookie supercookie every .com site"
+        "Domain=com is a public suffix, accepting it lets the cookie supercookie every .com site"
     );
 }
 
@@ -32,7 +32,7 @@ fn rejects_country_code_etld() {
 
 #[test]
 fn rejects_gh_pages_class_psl() {
-    // github.io is a private-namespace eTLD — supercookie risk
+    // github.io is a private-namespace eTLD, supercookie risk
     // across every github.io project.
     assert!(parse_domain("cf_clearance=tok; Domain=github.io").is_none());
     assert!(parse_domain("cf_clearance=tok; Domain=netlify.app").is_none());
@@ -69,7 +69,7 @@ fn accepts_subdomain_under_psl_namespace() {
 
 #[test]
 fn accepts_leading_dot_domain() {
-    // RFC 6265 says leading dot is stripped — must still pass PSL guard.
+    // RFC 6265 says leading dot is stripped (must still pass PSL guard).
     assert_eq!(
         parse_domain("cf_clearance=tok; Domain=.example.com").as_deref(),
         Some("example.com")

@@ -1,4 +1,4 @@
-//! Encoding chain order — assert that `evade_adaptive` applies encoders
+//! Encoding chain order, assert that `evade_adaptive` applies encoders
 //! in the order declared by `EvasionPlan.encoding_strategies` and that
 //! reordering the list produces a different payload.
 

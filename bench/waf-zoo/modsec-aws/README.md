@@ -1,10 +1,10 @@
-# waf-zoo/modsec-aws — ModSecurity + AWS WAF Common Rule Set emulation
+# waf-zoo/modsec-aws: ModSecurity + AWS WAF Common Rule Set emulation
 
 ## What this is
 
 ModSecurity 3 (Apache) running OWASP CRS 4 at Paranoia Level 2, with the rule
 exclusions and scoring overrides that mirror **AWSManagedRulesCommonRuleSet
-(ACR)** — the default managed rule group applied to AWS ALB/CloudFront/API
+(ACR)**, the default managed rule group applied to AWS ALB/CloudFront/API
 Gateway customers.
 
 This is an emulation, not the real AWS WAF (which is a proprietary SaaS). The
@@ -21,11 +21,11 @@ References:
 
 ## Port
 
-`18101` — does not conflict with any other waf-zoo or wafrift-bench/targets stack.
+`18101`: does not conflict with any other waf-zoo or wafrift-bench/targets stack.
 
 ## Backend
 
-`kennethreitz/httpbin` — echoes the request. A 200 with the payload echoed in
+`kennethreitz/httpbin`: echoes the request. A 200 with the payload echoed in
 the response body means the WAF forwarded it (bypass). A 403 / 406 means block.
 
 ## How to run
@@ -34,7 +34,7 @@ the response body means the WAF forwarded it (bypass). A 403 / 406 means block.
 # 1. Start the stack
 docker compose -f bench/waf-zoo/modsec-aws/docker-compose.yml up -d
 
-# 2. Smoke test — expect 200 OK from httpbin
+# 2. Smoke test: expect 200 OK from httpbin
 curl -si http://127.0.0.1:18101/get | head -2
 
 # 3. Verify WAF blocks a raw SQLi payload
@@ -57,6 +57,6 @@ docker compose -f bench/waf-zoo/modsec-aws/docker-compose.yml down -v
 
 ## Licensing
 
-`owasp/modsecurity-crs` — Apache 2.0.
-`kennethreitz/httpbin` — ISC.
+`owasp/modsecurity-crs`: Apache 2.0.
+`kennethreitz/httpbin`: ISC.
 No commercial or trial licenses required.

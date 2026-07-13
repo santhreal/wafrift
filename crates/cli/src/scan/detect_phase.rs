@@ -1,4 +1,4 @@
-//! Scan's Step 1 — WAF detection + advisor planning.
+//! Scan's Step 1: WAF detection + advisor planning.
 //!
 //! Fires a baseline GET at the target, runs the 160+ TOML rules
 //! to identify the WAF in front, then asks the advisor for a
@@ -17,7 +17,7 @@ use std::process::ExitCode;
 use wafrift_detect::waf_detect::{self, DetectedWaf};
 use wafrift_evolution::advisor::{self, EvasionPlan};
 
-/// Everything Step 1 produced — feeds the rest of the scan.
+/// Everything Step 1 produced (feeds the rest of the scan).
 #[derive(Debug, Clone)]
 pub(crate) struct DetectOutcome {
     /// HTTP status code of the baseline GET.
@@ -49,7 +49,7 @@ pub(crate) struct DetectOutcome {
 
 /// Run Step 1 against `target`. Prints progress when `scan_text`,
 /// otherwise stays quiet. Returns `Err(ExitCode::from(1))` if the
-/// baseline request fails at the transport layer — every
+/// baseline request fails at the transport layer, every
 /// downstream phase becomes meaningless without one, so we bail
 /// early with a clear error.
 pub(crate) async fn run(
@@ -87,7 +87,7 @@ pub(crate) async fn run(
     // Content-Encoding: gzip/brotli. A hostile WAF can serve a 1 KB
     // compressed bomb that expands to hundreds of MB before .bytes()
     // returns, OOM-crashing the CLI. Cap at DEFAULT_MAX_RESPONSE_BYTES
-    // (8 MiB) — more than enough for any WAF block page / detection
+    // (8 MiB), more than enough for any WAF block page / detection
     // corpus, safe on a laptop. Fall back to empty body on overrun
     // (detection still succeeds on headers alone).
     let body_bytes = match crate::safe_body::read_bounded(
@@ -100,7 +100,7 @@ pub(crate) async fn run(
         Err(e) => {
             if scan_text {
                 eprintln!(
-                    "  {} baseline body read aborted ({e}) — WAF detection \
+                    "  {} baseline body read aborted ({e}). WAF detection \
                      continuing on headers only",
                     "warn:".yellow().bold()
                 );
@@ -308,7 +308,7 @@ mod tests {
 
         // Status captured correctly before the body read.
         assert_eq!(outcome.baseline_status, 403);
-        // Body empty — the overrun defence discards the body and
+        // Body empty, the overrun defence discards the body and
         // continues on headers (waf_name may be "Unknown" since
         // there are no detection signals in this mock response).
         assert!(

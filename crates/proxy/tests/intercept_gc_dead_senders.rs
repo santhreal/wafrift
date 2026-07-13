@@ -23,14 +23,14 @@ async fn dropped_receivers_are_gced_on_next_register() {
     }
     // Yield so the closed-channel state is observable.
     tokio::time::sleep(Duration::from_millis(1)).await;
-    // Trigger the GC by registering one more — register() opportunistically
+    // Trigger the GC by registering one more, register() opportunistically
     // sweeps closed senders. The freshly-registered one stays.
     let (_id, _rx) = store.register("h", "GET", "/last");
     // Pre-fix: pending_count would be 101. Post-fix: 1.
     let count = store.pending_count();
     assert!(
         count <= 5,
-        "pending_count {count} did not GC dropped receivers — \
+        "pending_count {count} did not GC dropped receivers: \
          intercept queue leaks ghost entries"
     );
 }

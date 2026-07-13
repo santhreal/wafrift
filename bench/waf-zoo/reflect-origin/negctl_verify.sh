@@ -5,7 +5,7 @@
 # through CRS. The obvious reviewer challenge: "is the WAF even working, or does
 # everything execute?" This isolates the cause by firing the SAME executable
 # corpus, through the SAME exploit harness and detonation oracle, with NO
-# app-transform — i.e. the raw payloads CRS is designed to catch — and asserting
+# app-transform: i.e. the raw payloads CRS is designed to catch, and asserting
 # ~0 executions. A near-zero raw count next to the sweep's many transform-borne
 # executions proves the win is the opaque-decoder property, not a broken WAF.
 #
@@ -52,4 +52,4 @@ for r in $RENDERS; do
   total=$((total + exe))
 done
 compose down >/dev/null 2>&1
-echo "NEGCTL_VERIFY_DONE raw_executing=$total (expect ~0 — CRS blocks the un-transformed corpus)"
+echo "NEGCTL_VERIFY_DONE raw_executing=$total (expect ~0. CRS blocks the un-transformed corpus)"

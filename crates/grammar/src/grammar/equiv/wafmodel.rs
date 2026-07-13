@@ -1,31 +1,31 @@
-//! Phase A — learned WAF decision-boundary model + CEGIS synthesis.
+//! Phase A (learned WAF decision-boundary model + CEGIS synthesis).
 //!
 //! The deepest layer of the moat. The WAF is a black-box recogniser;
 //! ModSecurity/CRS (and most WAFs) decide block via an *anomaly score*
-//! — a weighted sum of matched features against a threshold. That is a
+//!, a weighted sum of matched features against a threshold. That is a
 //! **linear-threshold function**, so the principled model class is a
 //! linear classifier (an averaged perceptron), not a bag of tricks.
 //!
 //! Pipeline:
-//!  1. **Feature map** — turn any `(payload, delivery)` into a fixed
+//!  1. **Feature map**: turn any `(payload, delivery)` into a fixed
 //!     boolean feature vector (SQL constructs + delivery shape).
-//!  2. **Learn** — from labelled probes `(features, blocked)`, fit a
+//!  2. **Learn**: from labelled probes `(features, blocked)`, fit a
 //!     deterministic averaged perceptron. This *is* the WAF's decision
 //!     boundary, learned from behaviour alone (no rules needed).
-//!  3. **CEGIS** — over the provably-sound equivalence space, pick the
+//!  3. **CEGIS**: over the provably-sound equivalence space, pick the
 //!     member the model predicts is *most* allowed; confirm live; if
 //!     wrong, add the counterexample, refit, repeat. Converges with
 //!     far fewer live requests than blind sampling AND generalises to
 //!     unseen payloads.
 //!
 //! The learned model `(weights, threshold)` is serialisable per WAF
-//! fingerprint — a compounding, unclonable asset (clones copy code,
+//! fingerprint, a compounding, unclonable asset (clones copy code,
 //! not 10 000 learned WAF boundaries).
 
 use wafrift_types::hash::{FNV_OFFSET_64, FNV_PRIME_64, fnv1a_64};
 
 /// The fixed feature space. Order is the weight-vector index space and
-/// must never be reordered (only appended) — it is a serialisation
+/// must never be reordered (only appended), it is a serialisation
 /// contract.
 pub const FEATURES: &[&str] = &[
     "has_union",              // 0
@@ -73,14 +73,14 @@ pub const FEATURES: &[&str] = &[
 /// Compile-time index constants for each feature.
 ///
 /// §1 SPEED: `featurize` used to call `FEATURES.iter().position(name)`
-/// for every feature it sets — O(37) string scan × ~20 calls = ~740
+/// for every feature it sets. O(37) string scan × ~20 calls = ~740
 /// comparisons per invocation. These constants collapse that to a single
 /// direct array-index write. The index comments in `FEATURES` above are
 /// the ground truth; the constants below are derived from them. Any
 /// reorder/add to FEATURES must update BOTH.
 ///
 /// The `feature_space_is_stable_and_sized` test enforces that every
-/// constant matches the live FEATURES array position — schema drift is
+/// constant matches the live FEATURES array position, schema drift is
 /// caught at test time, not silently at runtime.
 mod feat {
     pub const HAS_UNION: usize = 0;
@@ -135,7 +135,7 @@ pub fn feature_count() -> usize {
 /// §1 SPEED: two optimizations in this commit:
 ///
 /// 1. **Direct-index writes**: the old `set(name)` closure called
-///    `FEATURES.iter().position(name)` for every feature — O(37) linear
+///    `FEATURES.iter().position(name)` for every feature. O(37) linear
 ///    scan × ~20 calls = ~740 string comparisons per invocation. Each
 ///    feature now writes to its `feat::*` compile-time constant index
 ///    directly: zero lookups.
@@ -164,7 +164,7 @@ pub fn featurize(payload: &str, delivery_arm: usize) -> Vec<f64> {
     // Design note on `--` and `0x` detection: these occur outside block
     // comments and pass through to `norm` verbatim. We detect them with a
     // post-loop `norm.contains()` call (a SIMD-optimised search on the full
-    // lowercased string) rather than tracking byte-by-byte in the loop —
+    // lowercased string) rather than tracking byte-by-byte in the loop 
     // this avoids adding branch overhead per byte for longer payloads.
     // Only `has_block_comment` and `has_mysql_cond_comment` need inline
     // flags because block comment content is STRIPPED from `norm` (so
@@ -209,7 +209,7 @@ pub fn featurize(payload: &str, delivery_arm: usize) -> Vec<f64> {
     let has = |s: &str| norm.contains(s);
     let mut v = vec![0.0_f64; FEATURES.len()];
 
-    // §1 SPEED: direct index writes — no FEATURES.iter().position() lookups.
+    // §1 SPEED: direct index writes (no FEATURES.iter().position() lookups).
     let has_union = has("union");
     let has_select = has("select");
     if has_union {
@@ -291,7 +291,7 @@ pub fn featurize(payload: &str, delivery_arm: usize) -> Vec<f64> {
 
     // Delivery one-hot: direct index into the dlv_* block.
     // Unknown arm → dlv_query (index 31); never silently fold a known
-    // channel into query — that blinds the learner to channels that beat WAF.
+    // channel into query (that blinds the learner to channels that beat WAF).
     let dlv_idx = match delivery_arm {
         0 => feat::DLV_MULTIPART_FILE,
         1 => feat::DLV_PATH_SEGMENT,
@@ -316,7 +316,7 @@ pub fn featurize(payload: &str, delivery_arm: usize) -> Vec<f64> {
 
 /// A learned linear WAF decision boundary: `blocked` iff
 /// `w·x + bias > 0`. Trained by an averaged perceptron (deterministic,
-/// convergent on linearly-separable data — and a CRS anomaly score IS
+/// convergent on linearly-separable data, and a CRS anomaly score IS
 /// linearly separable in this feature space).
 #[derive(Debug, Clone)]
 pub struct WafModel {
@@ -415,7 +415,7 @@ impl WafModel {
     }
 
     /// Parse [`Self::to_model_toml`]. Returns `None` if the file's
-    /// `feature_sig` does not match the current feature space — a
+    /// `feature_sig` does not match the current feature space, a
     /// schema change invalidates old models (safe default: never load
     /// a misaligned weight vector).
     #[must_use]
@@ -445,7 +445,7 @@ impl WafModel {
             }
         }
         if sig != Some(feature_sig()) {
-            return None; // stale / foreign schema — refuse
+            return None; // stale / foreign schema, refuse
         }
         Some(Self { w, bias, n })
     }
@@ -468,7 +468,7 @@ impl WafModel {
 /// FNV-1a 64 of the feature names, in order. Any add/reorder/rename of
 /// [`FEATURES`] changes this, invalidating every persisted model
 /// (prevents silently loading a weight vector against a shifted index
-/// space — the one way persistence could corrupt a run).
+/// space (the one way persistence could corrupt a run)).
 #[must_use]
 pub fn feature_sig() -> u64 {
     let mut h: u64 = FNV_OFFSET_64;
@@ -484,7 +484,7 @@ pub fn feature_sig() -> u64 {
 }
 
 /// Stable per-WAF fingerprint from a behavioural signature string
-/// (e.g. `server` header + canary-probe status). Hex FNV-1a — the
+/// (e.g. `server` header + canary-probe status). Hex FNV-1a, the
 /// model file name, so the same WAF deployment reuses its learned
 /// boundary across runs (the compounding asset).
 ///
@@ -515,15 +515,15 @@ pub fn model_path(dir: &std::path::Path, fingerprint: &str) -> std::path::PathBu
 
 /// CEGIS over a sound equivalence space against a learned model.
 ///
-/// `candidates` are `(payload, delivery_arm)` — assumed already
+/// `candidates` are `(payload, delivery_arm)`: assumed already
 /// sound-by-construction (the equiv generator's invariant). Returns
 /// the candidate the model predicts is *most allowed* (lowest block
 /// score) among those not yet tried. The caller confirms it live; if
 /// blocked, push `(features, true)` into the sample set, re-`learn`,
-/// and call again — classic counterexample-guided synthesis.
+/// and call again (classic counterexample-guided synthesis).
 ///
 /// §1 SPEED: the old `min_by` closure called `featurize` TWICE per
-/// comparison — O(2 log N) featurize calls per synthesize in the
+/// comparison: O(2 log N) featurize calls per synthesize in the
 /// worst case. With N=52 candidates that's ~120 featurize calls.
 /// The new implementation featurizes each untried candidate exactly
 /// ONCE (O(N)), then finds the minimum score in a single linear scan.
@@ -625,7 +625,7 @@ mod tests {
         use crate::grammar::equiv::sql::{DELIVERY_ARMS, delivery_kind_label};
         assert_eq!(feature_count(), FEATURES.len());
         // The one-hot delivery block is exactly the LAST `DELIVERY_ARMS`
-        // entries and is `dlv_<delivery_kind_label(i)>` for every arm —
+        // entries and is `dlv_<delivery_kind_label(i)>` for every arm 
         // derived, not a hand-copied 8-list, so adding an arm (0.2.17
         // added header_value/cookie) is auto-checked and `featurize`'s
         // `dlv` mapper can never silently fold an arm into query.
@@ -822,7 +822,7 @@ mod tests {
         assert_ne!(
             feature_sig(),
             FNV_OFFSET_64,
-            "feature_sig must not be the bare seed — it must depend on FEATURES content"
+            "feature_sig must not be the bare seed, it must depend on FEATURES content"
         );
     }
 
@@ -851,7 +851,7 @@ mod tests {
         learned.save(&path).expect("save must succeed");
 
         let warm = WafModel::load(&path).expect("second run must warm-start");
-        // The warm-started model is the learned boundary verbatim — the
+        // The warm-started model is the learned boundary verbatim, the
         // next run begins from knowledge instead of probing from zero.
         let ui = FEATURES.iter().position(|x| x == &"has_union").unwrap();
         let mut union_x = vec![0.0; FEATURES.len()];

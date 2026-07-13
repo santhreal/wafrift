@@ -170,7 +170,7 @@ fn encoding_case_alternation_preserves_non_alpha() {
 fn content_type_malformed_body_no_equals() {
     let body = b"malformed&data&without&equals";
     let variants = content_type::generate_variants_from_body(body);
-    // Segments without '=' are not valid key=value pairs — no variants produced
+    // Segments without '=' are not valid key=value pairs, no variants produced
     assert!(variants.is_empty());
 }
 

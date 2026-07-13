@@ -1,8 +1,8 @@
 //! Cross-document drift detector for the auth-bypass probe count.
 //!
-//! The count cited in prose — README, `docs/ARCHITECTURE.md`, the
+//! The count cited in prose. README, `docs/ARCHITECTURE.md`, the
 //! `bypass-probe` clap help in `main.rs`, and the `bypass_probe.rs`
-//! module docstring — MUST match the canonical
+//! module docstring: MUST match the canonical
 //! [`wafrift_encoding::auth_bypass::AUTH_BYPASS_PROBE_COUNT`].
 //!
 //! ## Why this exists
@@ -13,7 +13,7 @@
 //! client-facing deliverable across releases. The sibling
 //! `auth_bypass_probe_count_documented` test (in the encoding crate)
 //! pins the *runtime* count and lists the doc sites in its failure
-//! message — but it never reads them, so the prose drift slipped
+//! message, but it never reads them, so the prose drift slipped
 //! through. This test reads each prose site and fails (naming the
 //! file) the moment it stops citing the canonical number, turning a
 //! silent doc lie into a red build.
@@ -33,7 +33,7 @@ fn prose_docs_cite_canonical_auth_bypass_count() {
         .expect("workspace root is two levels above crates/cli");
 
     // Hand-typed doc sites that cite the count in prose. `legendary.rs`
-    // is deliberately absent — it derives the number from the const.
+    // is deliberately absent (it derives the number from the const).
     let sites: [(std::path::PathBuf, &str); 4] = [
         (workspace_root.join("README.md"), "README.md"),
         (
@@ -49,7 +49,7 @@ fn prose_docs_cite_canonical_auth_bypass_count() {
 
     // Canonical phrase every site must contain, e.g. "230 auth-bypass".
     // Derived from the const so bumping the count changes what this test
-    // demands in lockstep — there is no second literal to keep in sync.
+    // demands in lockstep (there is no second literal to keep in sync).
     let phrase = format!("{AUTH_BYPASS_PROBE_COUNT} auth-bypass");
 
     let mut stale = Vec::new();

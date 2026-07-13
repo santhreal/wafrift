@@ -15,7 +15,7 @@ use crate::target_context::{TargetContext, context_applicability};
 /// Emit an operator-input error to stderr and return exit code **2**.
 ///
 /// Use this for every failure that is caused by an operator-supplied value
-/// being wrong — a missing/unreadable input file, malformed content in an
+/// being wrong, a missing/unreadable input file, malformed content in an
 /// operator-chosen file, an empty required argument, or an unknown selector.
 ///
 /// Exit-code contract (documented in `main.rs`):
@@ -24,7 +24,7 @@ use crate::target_context::{TargetContext, context_applicability};
 ///          algorithm, missing required field).
 ///
 /// Runtime/network failures (connection refused, TLS handshake, timeout)
-/// are NOT input errors — use `ExitCode::from(1)` for those.
+/// are NOT input errors (use `ExitCode::from(1)` for those).
 pub fn input_error(message: impl AsRef<str>) -> ExitCode {
     eprintln!("error: {}", message.as_ref());
     ExitCode::from(2)
@@ -33,7 +33,7 @@ pub fn input_error(message: impl AsRef<str>) -> ExitCode {
 /// ANSI-C-quote bytes for safe single-line shell consumption.
 /// Uses bash's `$'...'` form so backslash escapes are interpreted:
 /// `\n` -> LF, `\r` -> CR, `\xXX` -> arbitrary byte. Required for
-/// body bytes that may contain newlines / control bytes — single-
+/// body bytes that may contain newlines / control bytes, single-
 /// quote `'...'` would split a curl command across multiple lines
 /// and operators piping to bash would only see fragments.
 ///
@@ -59,13 +59,13 @@ pub fn sh_ansi_c_quote_bytes(b: &[u8]) -> String {
     out
 }
 
-/// Single-quote a string for safe shell consumption — the curl-family
+/// Single-quote a string for safe shell consumption, the curl-family
 /// alias for [`shell_single_quote`], kept for naming symmetry with
 /// [`sh_ansi_c_quote_bytes`]. Delegates so there is exactly ONE
 /// single-quote implementation in the crate (CLAUDE.md §7): besides the
 /// standard `'` → `'\''` escape it also neutralises NUL and CR via
 /// ANSI-C splices. That matters here because smuggle probes deliberately
-/// carry raw `\r` bytes (the LWS / CRLF header-smuggling family) — the
+/// carry raw `\r` bytes (the LWS / CRLF header-smuggling family), the
 /// naive `'…'` wrap would emit that CR verbatim into the reproducer,
 /// and a pasted CR resets the terminal cursor and hides preceding
 /// output, making the curl look shorter than it is.
@@ -76,7 +76,7 @@ pub fn sh_quote(s: &str) -> String {
 
 /// Render a probe's wire artifact as a single-line `curl` command
 /// targeting `url`. Returns `None` for Frame artifacts (which can't
-/// ride curl — they live at a lower transport layer).
+/// ride curl (they live at a lower transport layer)).
 ///
 /// Operators consuming this string can `bash -c "<line>"` or paste
 /// into Burp Repeater. The output is shell-safe (ANSI-C quoting for
@@ -113,7 +113,7 @@ pub fn render_artifact_as_curl(
     Some(render_curl_parts(method, url, &headers, body))
 }
 
-/// Splice the URL's path component with `new_path`. Pure URL utility —
+/// Splice the URL's path component with `new_path`. Pure URL utility 
 /// honours a `?query` suffix in `new_path` (replacing the base URL's
 /// query) and returns the original URL unchanged on parse failure (no
 /// panic).
@@ -183,7 +183,7 @@ pub(crate) fn render_curl_parts(
 ///
 /// Used by every `wafrift smuggle-*` subcommand to convert the
 /// `--form` flag into the `ProbeSeeds.form_params` shape the
-/// aggregator expects. Single source of truth — every smuggle
+/// aggregator expects. Single source of truth, every smuggle
 /// subcommand parses `--form` identically.
 #[must_use]
 pub fn parse_form_pairs(s: &str) -> Vec<(String, String)> {
@@ -210,7 +210,7 @@ pub fn parse_form_pairs(s: &str) -> Vec<(String, String)> {
 /// tmp-path / TOCTOU). The PID is kept only as a human-readable hint,
 /// never as the security boundary.
 ///
-/// Single source of truth for transient tmp paths in production code —
+/// Single source of truth for transient tmp paths in production code 
 /// before this, `legendary` and the multi-job `scan` driver each
 /// hand-rolled `temp_dir().join("…-{pid}-{nanos}")` (and one used only
 /// `{pid}-{job_index}`, fully guessable). `tempfile` would add O_EXCL +
@@ -234,7 +234,7 @@ pub(crate) fn secure_tmp_path(prefix: &str, ext: &str) -> std::path::PathBuf {
 /// line is not a recognisable `HTTP/x.y <code> …` status line.
 ///
 /// Range-validation is delegated to [`crate::detect_cmd::parse_http_status`]
-/// so the "valid HTTP status = 100..=599" rule has exactly one home — a
+/// so the "valid HTTP status = 100..=599" rule has exactly one home, a
 /// raw `220 ESMTP` banner or a bogus `999` is rejected here, not mis-read
 /// as a status (the prior fork in `trailer_diff_cmd` did neither).
 pub(crate) fn http_status_from_raw(bytes: &[u8]) -> Option<u16> {
@@ -261,7 +261,7 @@ pub(crate) const MED_CONFIDENCE_THRESHOLD: f64 = 0.75;
 
 /// Grammar bonus per rule applied (additive, capped at GRAMMAR_BONUS_CAP).
 /// Extracted from `variant_confidence` so the growth rate and ceiling are
-/// visible in one place — previously both were magic float literals
+/// visible in one place, previously both were magic float literals
 /// embedded inside the scoring function (§6).
 pub(crate) const GRAMMAR_BONUS_PER_RULE: f64 = 0.04;
 pub(crate) const GRAMMAR_BONUS_CAP: f64 = 0.12;
@@ -274,7 +274,7 @@ pub(crate) const GRAMMAR_BONUS_CAP: f64 = 0.12;
 ///
 /// R55 pass-18 I2 (CLAUDE.md §15 AUDIT, SSRF): four sites
 /// (`scan/mod.rs`, `replay.rs`, `scan/raw_runner.rs`,
-/// `parser_diff_common`) used `Policy::limited(5)` — no bogon check,
+/// `parser_diff_common`) used `Policy::limited(5)`: no bogon check,
 /// no cross-origin protection. Centralising the policy here means
 /// the next refactor doesn't have to find all four (or notice when a
 /// fifth subcommand grows its own client).
@@ -283,13 +283,13 @@ pub(crate) const GRAMMAR_BONUS_CAP: f64 = 0.12;
 /// 1. Cap at `max_hops` (default 5 for scan, 8 for session_init).
 /// 2. Refuse redirects to a bogon IP literal (loopback / RFC1918 /
 ///    169.254.169.254 metadata / IPv6 ULA, etc.).
-/// 3. Stop (do not follow) cross-origin hops — reqwest's `Attempt`
+/// 3. Stop (do not follow) cross-origin hops, reqwest's `Attempt`
 ///    API has no way to strip auth from the next request, so the
 ///    only safe move is to halt and let the caller observe the 302
 ///    body without leaking Cookie/Authorization to a third party.
 pub(crate) fn safe_redirect_policy(max_hops: usize) -> reqwest::redirect::Policy {
     // §7 DEDUPLICATION: delegate to the canonical transport-layer impl so
-    // there is exactly ONE redirect policy — and the core `EvasionClient`
+    // there is exactly ONE redirect policy, and the core `EvasionClient`
     // shares the identical bogon + cross-origin guard, not just the CLI's
     // own clients. (Was a full copy here; moved down to the HTTP layer.)
     wafrift_transport::safe_redirect_policy(max_hops)
@@ -305,11 +305,11 @@ pub(crate) struct Variant {
 
 /// Split a single `Name: Value` header line on the first colon and
 /// trim surrounding whitespace. Accepts empty values per RFC 9110
-/// §5.5 — the WAF / origin server decides whether an empty value is
+/// §5.5, the WAF / origin server decides whether an empty value is
 /// meaningful, not this parser. Rejects missing colon and empty name.
 ///
 /// Returns a short error fragment ("missing ':' separator", "empty
-/// name") so callers can compose their own context — `"invalid
+/// name") so callers can compose their own context: `"invalid
 /// header \`{raw}\`; {frag}"` for [`parse_headers`], `"-H/--header
 /// {raw:?} {frag}"` for [`crate::scan::pentest_client::parse_header`].
 pub(crate) fn parse_header_pair(raw: &str) -> Result<(String, String), String> {
@@ -330,13 +330,13 @@ pub(crate) fn parse_header_pair(raw: &str) -> Result<(String, String), String> {
 /// CLAUDE.md §7 DEDUPLICATION: 14 dispatch arms in `main.rs` ran
 /// the same 8-line match-Runtime-new boilerplate; one canonical
 /// source now. Per CLAUDE.md §14 INTROSPECTION the right time to
-/// extract was when the third copy appeared — we are well past
+/// extract was when the third copy appeared, we are well past
 /// that threshold.
 pub(crate) fn block_on_with_runtime<F>(fut: F) -> std::process::ExitCode
 where
     F: std::future::Future<Output = std::process::ExitCode>,
 {
-    // Tokio worker + blocking-pool threads default to a ~2 MiB stack —
+    // Tokio worker + blocking-pool threads default to a ~2 MiB stack 
     // too small for wafrift's deep (bounded) search frames. `wafrift hunt`
     // runs bench-waf nested inside a `spawn_blocking` thread, so the
     // equiv-cegis synthesis lands on a runtime-spawned thread and overflows
@@ -360,7 +360,7 @@ where
 }
 
 /// Current Unix time in whole seconds, or `0` if the system clock is set
-/// before the epoch — an impossible-in-practice state we refuse to panic
+/// before the epoch, an impossible-in-practice state we refuse to panic
 /// on (a campaign/evidence timestamp is never worth aborting a long hunt).
 ///
 /// CLAUDE.md §7 DEDUPLICATION + §14 INTROSPECTION: the
@@ -393,7 +393,7 @@ pub(crate) fn confirm_output_overwrite_safe(
     force: bool,
 ) -> Result<(), String> {
     // R52 pass-14 I2 fix (CLAUDE.md §15 AUDIT): the prior
-    // `starts_with("/dev/fd/")` check was traversal-bypassable —
+    // `starts_with("/dev/fd/")` check was traversal-bypassable 
     // `--output /dev/fd/../etc/shadow` matched and skipped the
     // existence check, then `fs::write` resolved through the symlink
     // upward into a non-FD path. Tighten the check so the suffix
@@ -448,12 +448,12 @@ pub(crate) fn parse_headers(raw_headers: &[String]) -> Result<Vec<(String, Strin
 }
 
 /// Walk a `reqwest::Error`'s cause chain and return a string that includes
-/// every level, joined by " — caused by: ".
+/// every level, joined by " (caused by: ").
 ///
-/// reqwest's own `Display` is famously short — "error sending request" —
+/// reqwest's own `Display` is famously short: "error sending request" 
 /// without the underlying DNS / TCP / TLS cause.  This helper, first
 /// extracted during dogfood pass 5 (2026-05), surfaces the full chain
-/// (e.g. "dns error — caused by: No such host is known. (os error 11001)")
+/// (e.g. "dns error, caused by: No such host is known. (os error 11001)")
 /// so operators never have to guess whether the failure is NXDOMAIN,
 /// connection refused, TLS handshake failure, or something else.
 ///
@@ -464,7 +464,7 @@ pub(crate) fn walk_reqwest_error(e: &reqwest::Error) -> String {
     let mut detail = format!("{e}");
     let mut src: Option<&dyn std::error::Error> = std::error::Error::source(e);
     while let Some(s) = src {
-        detail.push_str(" — caused by: ");
+        detail.push_str(", caused by: ");
         detail.push_str(&s.to_string());
         src = std::error::Error::source(s);
     }
@@ -494,7 +494,7 @@ pub(crate) fn shell_single_quote(s: &str) -> String {
             // cursor and can hide preceding output (operator
             // copies a curl from logs that looks shorter than
             // it is). Bash's `$'\\x00'` / `$'\\r'` ANSI-C
-            // quoting is the safe form — fall out of the
+            // quoting is the safe form, fall out of the
             // single-quote run, splice the ANSI-C literal,
             // reopen the run.
             '\0' => out.push_str("'$'\\x00''"),
@@ -508,14 +508,14 @@ pub(crate) fn shell_single_quote(s: &str) -> String {
 
 /// Build the canonical `curl -G --data-urlencode` reproducer for a
 /// URL-query bypass. The non-raw scan loop emits `bypass_variants`
-/// with `payload` but historically NOT a `repro_curl` field — making
+/// with `payload` but historically NOT a `repro_curl` field, making
 /// the JSON twin of the raw-runner output incomplete. Operators
 /// pasting bypass_variants into a pentest report had to re-construct
 /// the curl by hand, which both wastes time and risks under-escaping
 /// shell metacharacters in the payload.
 ///
 /// Uses `shell_single_quote` for both the param=value pair and the
-/// target URL — the same primitive every other curl emitter in this
+/// target URL, the same primitive every other curl emitter in this
 /// crate uses, so a single round-trip-through-bash test exercises
 /// every caller.
 #[must_use]
@@ -542,12 +542,12 @@ pub(crate) fn url_query_repro_curl(target: &str, param: &str, payload: &str) -> 
 ///  functions.
 ///
 /// # Arguments
-/// *  — HTTP method override.  or  omits the
+/// *: HTTP method override.  or  omits the
 ///    flag (curl defaults to GET). Any other value emits .
-/// *  — the request URL, shell-escaped via [].
-/// *  — extra request headers. Each  pair becomes
+/// * (the request URL, shell-escaped via []).
+/// *, extra request headers. Each  pair becomes
 ///   .
-/// *  — optional body data.  prepends
+/// *, optional body data.  prepends
 ///    and appends  (lossy-UTF-8
 ///   for the body bytes).  omits both.
 ///
@@ -938,7 +938,7 @@ mod tests {
         // characters must NOT be treated as a virtual-fd shortcut.
         // It falls through to the existence check; since the
         // string `/dev/fd/../etc/shadow` doesn't resolve to an
-        // existing file from the test cwd, the guard returns Ok —
+        // existing file from the test cwd, the guard returns Ok 
         // but the important thing is it does NOT short-circuit
         // (which would skip the existence check entirely even on
         // a real file).
@@ -949,9 +949,9 @@ mod tests {
 
     #[test]
     fn fd_n_admits_only_decimal_within_range() {
-        // /dev/fd/1 (stdout) — allowed.
+        // /dev/fd/1 (stdout) (allowed).
         assert!(confirm_output_overwrite_safe(std::path::Path::new("/dev/fd/1"), false,).is_ok());
-        // /dev/fd/9999999 — out of range, NOT admitted as virtual.
+        // /dev/fd/9999999 (out of range, NOT admitted as virtual).
         // Falls through to exists() check; the path doesn't exist
         // so returns Ok. The key property: the guard does not
         // SHORT-CIRCUIT on the out-of-range suffix.
@@ -1079,7 +1079,7 @@ mod tests {
     #[test]
     fn payload_type_label_covers_every_known_class() {
         // A new PayloadType variant added without updating
-        // payload_type_label silently falls into "Unknown" — locks
+        // payload_type_label silently falls into "Unknown", locks
         // every named variant in.
         assert_eq!(payload_type_label(PayloadType::Sql), "SQL Injection");
         assert_eq!(payload_type_label(PayloadType::Xss), "XSS");
@@ -1137,7 +1137,7 @@ mod tests {
     fn variant_confidence_grammar_bonus_caps_at_grammar_bonus_cap() {
         // Per GRAMMAR_BONUS_PER_RULE / GRAMMAR_BONUS_CAP: at 100 rules
         // (100 * 0.04 = 4.0) the cap (0.12) kicks in, same as at 3
-        // rules (3 * 0.04 = 0.12 — exactly at cap). Both must be equal
+        // rules (3 * 0.04 = 0.12, exactly at cap). Both must be equal
         // up to floating-point precision (§6: magic literals replaced by
         // the named consts so drift is caught here).
         let a = variant_confidence(PayloadType::Sql, 100, false, Strategy::CaseAlternation);
@@ -1237,7 +1237,7 @@ mod tests {
     #[test]
     fn parse_headers_preserves_value_internal_colons() {
         // A `Date: Wed, 21 Oct 2015 07:28:00 GMT` style header
-        // contains colons inside the value — splitting on the FIRST
+        // contains colons inside the value, splitting on the FIRST
         // `:` must preserve the rest.
         let r = parse_headers(&["Date: Wed, 21 Oct 2015 07:28:00 GMT".into()]).unwrap();
         assert_eq!(r[0].0, "Date");
@@ -1246,7 +1246,7 @@ mod tests {
 
     #[test]
     fn parse_headers_rejects_empty_key() {
-        // A `: value` line is malformed — key half is empty.
+        // A `: value` line is malformed (key half is empty).
         let r = parse_headers(&[": value".into()]);
         assert!(r.is_err(), "empty key must be rejected");
     }
@@ -1269,7 +1269,7 @@ mod tests {
 
     #[test]
     fn parse_header_pair_preserves_value_internal_colons() {
-        // Bearer tokens / dates / URLs may contain `:` — the FIRST
+        // Bearer tokens / dates / URLs may contain `:`: the FIRST
         // colon is the separator, everything after stays in the value.
         let (_, v) = parse_header_pair("X-Time: 12:34:56").unwrap();
         assert_eq!(v, "12:34:56");
@@ -1298,7 +1298,7 @@ mod tests {
 
     /// R55 pass-18 I8 (CLAUDE.md §12 TESTING / §15 AUDIT):
     /// `parse_header_pair` is a *pure splitter*; it does NOT validate
-    /// the value bytes — RFC 9110 / CRLF-injection rejection lives one
+    /// the value bytes: RFC 9110 / CRLF-injection rejection lives one
     /// level up in [`crate::scan::pentest_client::parse_header_kv`],
     /// which routes the trimmed value through `HeaderValue::from_str`.
     /// Pin the trust boundary so a future fast-path that bypasses
@@ -1331,7 +1331,7 @@ mod tests {
 
     #[test]
     fn safe_redirect_policy_constructs_without_panic() {
-        // Trivial existence check — the policy is a closure; this
+        // Trivial existence check, the policy is a closure; this
         // confirms `safe_redirect_policy(n)` is wired and matches
         // the type reqwest::ClientBuilder::redirect expects. Stops
         // the SSRF fix from regressing silently if a future refactor
@@ -1372,7 +1372,7 @@ mod tests {
 
     #[test]
     fn shell_single_quote_passes_dangerous_metacharacters_verbatim() {
-        // Single-quoting means metacharacters lose meaning — `$`, `;`,
+        // Single-quoting means metacharacters lose meaning: `$`, `;`,
         // backticks, parens all ride through as bytes.
         assert_eq!(
             shell_single_quote("$(rm -rf /); `whoami`"),
@@ -1386,7 +1386,7 @@ mod tests {
         // token silently truncates the argument at the libc layer.
         // Use bash ANSI-C quoting to splice the NUL safely.
         let out = shell_single_quote("a\0b");
-        // Output must not contain a raw NUL — every byte must be
+        // Output must not contain a raw NUL, every byte must be
         // representable in a shell here-doc / copy-paste.
         assert!(!out.contains('\0'), "raw NUL must be escaped, got: {out:?}");
         // Bash form: `'a'$'\x00''b'` (close + ANSI-C + reopen).
@@ -1408,7 +1408,7 @@ mod tests {
     #[test]
     fn sh_quote_delegates_to_hardened_single_quote() {
         // §7: sh_quote is an alias for the one canonical single-quoter,
-        // so it MUST be byte-identical to shell_single_quote — including
+        // so it MUST be byte-identical to shell_single_quote, including
         // the NUL/CR neutralisation that the pre-dedup naive `'…'` wrap
         // lacked.
         for s in ["safe", "it's", "$(whoami)", "a\rb", "a\0b", ""] {
@@ -1520,7 +1520,7 @@ mod tests {
             http_status_from_raw(b"HTTP/1.1 200 OK\r\nX: y\r\n\r\nbody"),
             Some(200)
         );
-        // Partial response (status line only, no full header block) — the
+        // Partial response (status line only, no full header block), the
         // desync case: a back-end that emits the line then hangs.
         assert_eq!(
             http_status_from_raw(b"HTTP/1.1 503 Service Unavailable\r\n"),
@@ -1530,7 +1530,7 @@ mod tests {
             http_status_from_raw(b"HTTP/1.0 404 Not Found\r\n\r\n"),
             Some(404)
         );
-        // Non-HTTP first line (raw banner) must NOT be mis-read as a status —
+        // Non-HTTP first line (raw banner) must NOT be mis-read as a status 
         // the `HTTP/` prefix guard the old trailer_diff fork lacked.
         assert_eq!(
             http_status_from_raw(b"220 mail.example.com ESMTP\r\n"),
@@ -1546,7 +1546,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn shell_single_quote_round_trips_through_bash() {
-        // Single canonical shell escape — round-tripped through bash
+        // Single canonical shell escape, round-tripped through bash
         // to confirm both halves (wrap + apostrophe escape) are wire-
         // compatible. Replaces the bash round-trip previously in
         // report.rs (one source of truth for the escape).
@@ -1583,14 +1583,14 @@ mod tests {
     //   `curl -s -H '{}' '{}'`  (no escaping of ' inside the value)
     // A probe value containing `'` (e.g. X-Original-URL: /admin';DROP) or a
     // URL path with `'` produced a curl_cmd that was syntactically broken
-    // shell — the practitioner couldn't copy-paste it to reproduce the finding.
+    // shell (the practitioner couldn't copy-paste it to reproduce the finding).
     //
     // POST-FIX: every argument in the curl reproducer passes through
     // `shell_single_quote()`, which converts internal `'` → `'\''` (close,
     // escape, open). The resulting command is always valid Bourne shell.
     //
     // We test `shell_single_quote` directly because that's the deduped
-    // primitive — all three probe kinds (header, path, method) now route
+    // primitive, all three probe kinds (header, path, method) now route
     // through it.
 
     #[test]
@@ -1616,7 +1616,7 @@ mod tests {
         let chars: Vec<char> = inner.chars().collect();
         while i < chars.len() {
             if chars[i] == '\'' {
-                // A `'` in the interior must be followed by `\''` — that's
+                // A `'` in the interior must be followed by `\''`: that's
                 // the close-escape-reopen sequence.
                 assert!(
                     i + 3 < chars.len()
@@ -1624,7 +1624,7 @@ mod tests {
                         && chars[i + 2] == '\''
                         && chars[i + 3] == '\'',
                     "bare apostrophe in shell_single_quote output interior \
-                     — should be '\\''  (the standard Bourne escape).\n\
+Should be '\\''  (the standard Bourne escape).\n\
                      input={url:?}\noutput={quoted:?}\nposition={i}"
                 );
                 i += 4;
@@ -1657,15 +1657,15 @@ mod tests {
     //
     // PRE-FIX BUG: detect_cmd, bank_registry, and bypass_probe called
     // `format!("{e}")` on reqwest::Error, which only shows the top-level
-    // description ("error sending request for url ...") — not the underlying
+    // description ("error sending request for url ..."), not the underlying
     // DNS / TCP / TLS cause. Operators saw uninformative one-liners.
     //
     // POST-FIX: `walk_reqwest_error` was extracted and now walks
     // `std::error::Error::source` until it returns None, joining each level
-    // with " — caused by: ".
+    // with " (caused by: ").
     //
     // We test the walker with a mock error chain using a std::error::Error
-    // implementation — this is a pure unit test that doesn't need reqwest.
+    // implementation (this is a pure unit test that doesn't need reqwest).
 
     #[derive(Debug)]
     struct ChainedError {
@@ -1690,7 +1690,7 @@ mod tests {
         let mut detail = e.to_string();
         let mut src = e.source();
         while let Some(s) = src {
-            detail.push_str(" — caused by: ");
+            detail.push_str(", caused by: ");
             detail.push_str(&s.to_string());
             src = s.source();
         }
@@ -1728,7 +1728,7 @@ mod tests {
         let walked = walk_std_error(&top);
         assert_eq!(
             walked,
-            "error sending request — caused by: tcp connect failed — caused by: connection refused",
+            "error sending request, caused by: tcp connect failed, caused by: connection refused",
             "walk_std_error must join every level of the cause chain"
         );
         // Anti-regression: the result must NOT be just the top-level string.
@@ -1760,10 +1760,10 @@ mod tests {
     fn url_query_repro_curl_handles_apostrophe_in_payload() {
         // The canonical SQLi `' OR 1=1--` contains the same quote
         // character we use to wrap the arg. shell_single_quote
-        // escapes it via '\'' — the curl must still be parseable
+        // escapes it via '\'', the curl must still be parseable
         // by bash.
         let curl = url_query_repro_curl("https://x", "q", "' OR 1=1--");
-        // Resulting form: 'q='\'' OR 1=1--' — the '\'' is the close-
+        // Resulting form: 'q='\'' OR 1=1--', the '\'' is the close-
         // escape-open sequence.
         assert!(curl.contains("'\\''"), "apostrophe not escaped: {curl}");
         // The literal payload bytes must appear unmangled across
@@ -1781,7 +1781,7 @@ mod tests {
     #[test]
     fn url_query_repro_curl_handles_ampersand_in_payload_without_breaking_arg() {
         // & inside the payload must NOT split into a second curl
-        // argument — single-quoting protects it.
+        // argument (single-quoting protects it).
         let curl = url_query_repro_curl("https://x", "q", "a&b=c");
         assert!(
             curl.contains("'q=a&b=c'"),
@@ -1838,7 +1838,7 @@ mod tests {
 
     #[test]
     fn render_simple_curl_special_chars_in_url_are_shell_escaped() {
-        // single-quote, dollar, backtick — all must survive round-trip.
+        // single-quote, dollar, backtick (all must survive round-trip).
         // shell_single_quote escapes ' → '\'' (Bourne close-escape-reopen).
         let out = render_simple_curl(
             None,
@@ -1846,7 +1846,7 @@ mod tests {
             &[],
             None,
         );
-        // The ' in "it's" must be escaped as '\'' — NOT triple-quote.
+        // The ' in "it's" must be escaped as '\''. NOT triple-quote.
         assert!(
             out.contains("it'\\''s+"),
             "apostrophe in URL must be Bourne-escaped as '\\'': got: {out}"
@@ -1952,14 +1952,14 @@ mod tests {
     #[test]
     fn normalize_scheme_typo_passes_through_for_caller_error() {
         // A misspelled scheme like "htps://example.com" still contains "://"
-        // so it passes through unchanged — reqwest will surface the parse error.
+        // so it passes through unchanged (reqwest will surface the parse error).
         let out = normalize_target_url("htps://example.com");
         assert_eq!(out, "htps://example.com");
     }
 
     #[test]
     fn normalize_empty_input_prepends_https() {
-        // Empty string → "https://" — reqwest will error, which is correct.
+        // Empty string → "https://" (reqwest will error, which is correct).
         assert_eq!(normalize_target_url(""), "https://");
     }
 
@@ -1978,7 +1978,7 @@ mod tests {
 
     #[test]
     fn normalize_ftp_scheme_passes_through() {
-        // Any declared scheme passes through — caller decides if it's valid.
+        // Any declared scheme passes through (caller decides if it's valid).
         assert_eq!(
             normalize_target_url("ftp://files.example.com"),
             "ftp://files.example.com"

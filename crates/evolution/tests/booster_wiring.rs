@@ -1,4 +1,4 @@
-//! Integration tests for #102 — WAFBooster wiring into the evolution engine.
+//! Integration tests for #102: WAFBooster wiring into the evolution engine.
 //!
 //! Covers: engine prefers low-score candidates after observations, --no-booster
 //! flag preserves baseline ordering, scorer is updated on every oracle result.
@@ -226,10 +226,10 @@ fn rule_id_forwarded_to_booster_on_block() {
 #[test]
 fn booster_not_updated_on_cache_hit_path() {
     // When a candidate is served from cache, submit_batch is never called
-    // for it — the booster must not be contaminated.  We verify by checking
+    // for it, the booster must not be contaminated.  We verify by checking
     // that no_booster=false and no panic occur across the full cache path.
     let mut engine = EvolutionEngine::new(10);
-    // First batch — real evaluations.
+    // First batch (real evaluations).
     let batch1 = engine.batch_candidates(2);
     if batch1.is_empty() {
         return;
@@ -241,7 +241,7 @@ fn booster_not_updated_on_cache_hit_path() {
         .collect();
     let _ = engine.submit_batch(results);
 
-    // Second batch — some candidates may hit the cache.
+    // Second batch (some candidates may hit the cache).
     let _batch2 = engine.batch_candidates(2);
     assert!(!engine.no_booster, "booster flag must remain false");
 }
@@ -266,7 +266,7 @@ fn booster_rank_candidates_via_scorer() {
     ];
     let ranked = engine.booster.rank_candidates(&payloads);
     assert_eq!(ranked.len(), payloads.len());
-    // Sorted ascending — each score must be <= the next.
+    // Sorted ascending (each score must be <= the next).
     for window in ranked.windows(2) {
         assert!(
             window[0].1 <= window[1].1,

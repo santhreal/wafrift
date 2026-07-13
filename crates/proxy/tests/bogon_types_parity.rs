@@ -1,5 +1,5 @@
 //! Parity between `wafrift_types::ip_addr_is_bogon` and proxy upstream
-//! policy expectations — focused on IPv6 6to4 (2002::/16) embeds.
+//! policy expectations (focused on IPv6 6to4 (2002::/16) embeds).
 
 use std::net::IpAddr;
 use wafrift_types::ip_addr_is_bogon;

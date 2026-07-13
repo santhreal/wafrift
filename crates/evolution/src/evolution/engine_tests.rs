@@ -185,7 +185,7 @@ fn out_of_bounds_feedback_errors() {
 // sees the error.
 //
 // Here we verify the CONTRACT that `record_feedback` returns Err for an
-// index that was never issued — the calling code's eprintln path depends
+// index that was never issued, the calling code's eprintln path depends
 // on this being an Err rather than silently OK.
 
 #[test]
@@ -199,7 +199,7 @@ fn record_feedback_invalid_index_returns_err_not_ok() {
     assert!(
         result.is_err(),
         "record_feedback with an index not in in_flight must return Err (bench_waf \
-         suppression regression — the err branch drives the eprintln! warning)"
+         suppression regression, the err branch drives the eprintln! warning)"
     );
 
     // Verify the error is specifically InvalidChromosomeIndex.
@@ -216,7 +216,7 @@ fn record_feedback_invalid_index_returns_err_not_ok() {
 
 #[test]
 fn record_feedback_valid_index_after_next_candidate_is_ok() {
-    // Adversarial twin: the happy path must still work — a valid index
+    // Adversarial twin: the happy path must still work, a valid index
     // issued by next_candidate must NOT produce InvalidChromosomeIndex.
     let mut engine = EvolutionEngine::new(5);
     let (idx, _) = engine
@@ -295,7 +295,7 @@ fn seed_population_advances_rng() {
         let best_a = engine_a.best().map(|c| c.genes.clone());
         let best_b = engine_b.best().map(|c| c.genes.clone());
         // It's valid for them to be the same if hill-climbing happened to
-        // pick the same local optimum — but at minimum both must have a best.
+        // pick the same local optimum (but at minimum both must have a best).
         assert!(
             best_a.is_some() && best_b.is_some(),
             "both engines must produce a best chromosome"
@@ -322,7 +322,7 @@ fn active_bypass_scores_above_baseline_pass() {
 // `initialize` again. Because every SearchAlgorithm::initialize impl is
 // last-call-wins (HillClimbing overwrites current/best; MapElites clears the
 // grid; NoveltySearch overwrites self.population), the net effect was 2×
-// chromosome generation + 2× initialize calls for the same final state —
+// chromosome generation + 2× initialize calls for the same final state 
 // twice as much entropy consumed, double the allocations. Critically,
 // determinism was still preserved (same seed → same second-call result), so
 // the bug was invisible in practice but wasted resources and indicated a
@@ -336,7 +336,7 @@ fn new_seeded_population_not_double_sized() {
     // (not a Vec), so we can't count chromosomes directly. Instead we
     // verify that requesting batch_candidates never returns a batch
     // larger than `population_size` worth of unique first-generation
-    // chromosomes — if initialize were called twice the RNG would be
+    // chromosomes, if initialize were called twice the RNG would be
     // twice as far ahead and we'd see genome divergence on re-seed.
     //
     // The observable contract: two engines with the SAME seed and SAME
@@ -684,7 +684,7 @@ fn empty_population_zero_clamp_produces_one() {
 fn max_population_size_clamp_to_10000() {
     // population_size > 10_000 must clamp to 10_000.
     let engine = EvolutionEngine::new_seeded(100_000, 2);
-    // The engine must not OOM or panic — just clamping is sufficient.
+    // The engine must not OOM or panic (just clamping is sufficient).
     assert!(engine.best().is_some() || engine.population_snapshot().len() <= 10_000);
 }
 
@@ -832,7 +832,7 @@ fn stagnation_counter_increments_correctly() {
         engine.evolve();
     }
     let before = engine.stagnation_counter;
-    // One more non-improving generation — now the window is >= 10 so
+    // One more non-improving generation, now the window is >= 10 so
     // stagnation accumulation fires.
     let batch = engine.batch_candidates(1);
     if let Some((idx, _)) = batch.into_iter().next() {
@@ -914,7 +914,7 @@ fn generation_evals_does_not_accumulate_across_generations() {
     let _ = count; // suppress unused warning
 }
 
-/// Pins the speed of `batch_candidates` + `submit_batch` — the hot
+/// Pins the speed of `batch_candidates` + `submit_batch`: the hot
 /// evaluation loop.  Pre-fix: each submit called `cache_key()` twice
 /// per chromosome (2× Vec alloc + sort + join).  Post-fix: 1× call,
 /// result reused for both LRU insert and booster update.
@@ -1015,7 +1015,7 @@ fn exploration_boost_decays_per_evolve_and_expires() {
         "boost must decrement to 1 after 2 evolves"
     );
 
-    engine.evolve(); // round 3 — boost expires
+    engine.evolve(); // round 3, boost expires
     assert_eq!(
         engine.exploration_boost_remaining, 0,
         "boost must expire to 0 after 3 evolves"
@@ -1028,7 +1028,7 @@ fn exploration_boost_decays_per_evolve_and_expires() {
 }
 
 /// `cache_key` must produce the same string for identical gene sets regardless
-/// of the order genes are stored — the sort was removed because genes are
+/// of the order genes are stored, the sort was removed because genes are
 /// always emitted in canonical GenePool order, but this test pins that two
 /// chromosomes with the same gene content produce the same cache key.
 ///
@@ -1081,13 +1081,13 @@ fn cache_key_identical_content_same_key() {
             ),
         ])
         .unwrap();
-    // Both submitted without error — the second may or may not hit cache
+    // Both submitted without error, the second may or may not hit cache
     // depending on internal state, but no panic is the correctness signal.
     let _ = before;
 }
 
 /// `gene_stat_index` must produce a lookup that matches the linear-scan
-/// result for every (name, value) pair — anti-regression for the O(n)→O(1)
+/// result for every (name, value) pair, anti-regression for the O(n)→O(1)
 /// optimisation in `update_gene_stats`.
 #[test]
 fn gene_stat_index_matches_linear_scan() {
@@ -1117,7 +1117,7 @@ fn gene_stat_index_matches_linear_scan() {
         assert_eq!(*idx_a, *attempts, "attempts mismatch for ({name}, {value})");
     }
 
-    // A missing key must return None — not a stale or colliding entry.
+    // A missing key must return None (not a stale or colliding entry).
     assert!(
         !idx.contains_key(&("encoding", "NonExistent")),
         "missing key must not be in the index"

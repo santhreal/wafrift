@@ -4,7 +4,7 @@
 //! common floor: per-request timeout, optional `--insecure` cert
 //! bypass for lab targets, the operator-configurable User-Agent
 //! header. Pre-extract this trio was hand-rolled at ~13 call sites
-//! across cli / proxy / recon — drifting independently each time
+//! across cli / proxy / recon, drifting independently each time
 //! someone tuned e.g. the default timeout in one file.
 //!
 //! Each caller still owns its own redirect policy because those
@@ -33,7 +33,7 @@ use crate::egress_pool::{EgressError, EgressPool};
 /// A 0-second timeout with reqwest causes every request to fail
 /// immediately (the connect/send deadline is already exceeded before
 /// the socket opens). Callers that pass 0 almost always mean
-/// "no limit" — but wafrift probes must always have a ceiling so a
+/// "no limit", but wafrift probes must always have a ceiling so a
 /// hung upstream cannot park a task forever. Clamp to 1s as the
 /// absolute floor; callers that genuinely need no-limit should not
 /// call this helper.
@@ -41,14 +41,14 @@ const MIN_TIMEOUT_SECS: u64 = 1;
 
 /// Build a reqwest `ClientBuilder` pre-configured with the wafrift
 /// floor:
-/// - `timeout(timeout_secs.max(1) seconds)` — minimum 1 s; 0 is clamped
+/// - `timeout(timeout_secs.max(1) seconds)`: minimum 1 s; 0 is clamped
 ///   (see `MIN_TIMEOUT_SECS`)
 /// - `danger_accept_invalid_certs(insecure)` when `insecure == true`
 /// - `user_agent(user_agent)` when `Some` (callers pass `None` to
 ///   inherit reqwest's default UA, or the configured wafrift UA
 ///   from `wafrift_cli::config::shared_user_agent`)
 ///
-/// The redirect policy is INTENTIONALLY left unconfigured — callers
+/// The redirect policy is INTENTIONALLY left unconfigured, callers
 /// must add their own `.redirect(Policy::...)`. See module-level
 /// docs for why.
 pub fn base_client_builder(
@@ -101,24 +101,24 @@ pub fn base_client_builder_with_egress(
 
 /// SSRF-safe redirect policy shared by every wafrift HTTP client that
 /// follows redirects. reqwest's `Policy::limited` follows redirects to
-/// ANY host — a hostile target can `302 Location: http://169.254.169.254/`
+/// ANY host, a hostile target can `302 Location: http://169.254.169.254/`
 /// and exfil cloud metadata, or pivot into RFC1918, through the scanner.
 /// This caps hops, refuses a redirect INTO a bogon IP literal (loopback /
 /// RFC1918 / link-local metadata / IPv6 ULA, via the canonical
-/// `wafrift_types::ip_addr_is_bogon`) — *unless the hop originates from a
+/// `wafrift_types::ip_addr_is_bogon`): *unless the hop originates from a
 /// bogon already*, i.e. the operator deliberately chose to scan a
 /// private/loopback lab (the cross-origin guard below still pins the follow
 /// to the identical origin, so this can never pivot to a different internal
-/// host/port) — and stops cross-origin hops (reqwest can't strip auth from
+/// host/port), and stops cross-origin hops (reqwest can't strip auth from
 /// the next request, so the safe move is to halt and let the caller observe
 /// the 302 without leaking Cookie/Authorization to a third party).
 ///
 /// Canonical home (§7 DEDUPLICATION): `cli::helpers::safe_redirect_policy`
-/// delegates here, so there is exactly ONE implementation — in the HTTP
-/// layer where it belongs — protecting the core `EvasionClient`, not just
+/// delegates here, so there is exactly ONE implementation, in the HTTP
+/// layer where it belongs, protecting the core `EvasionClient`, not just
 /// the CLI commands that build their own clients (§15 SSRF). The decision
 /// is factored into the pure `redirect_decision` so the SSRF logic is
-/// unit-testable — `reqwest::redirect::Attempt` has no public constructor,
+/// unit-testable: `reqwest::redirect::Attempt` has no public constructor,
 /// but `reqwest::Url` does.
 #[must_use]
 pub fn safe_redirect_policy(max_hops: usize) -> reqwest::redirect::Policy {
@@ -142,18 +142,18 @@ pub fn safe_redirect_policy(max_hops: usize) -> reqwest::redirect::Policy {
 /// constructor, but the `Url`s this function takes are freely constructable.
 #[derive(Debug, PartialEq, Eq)]
 enum RedirectDecision {
-    /// Follow the redirect — same-origin, within the hop cap, not an SSRF pivot.
+    /// Follow the redirect (same-origin, within the hop cap, not an SSRF pivot).
     Follow,
-    /// Halt WITHOUT erroring — observe the 302 but do not follow (cross-origin
+    /// Halt WITHOUT erroring, observe the 302 but do not follow (cross-origin
     /// hops, to avoid leaking auth headers to a third party).
     Stop,
-    /// Refuse with an error — hop-cap exceeded, or an SSRF pivot into a bogon.
+    /// Refuse with an error (hop-cap exceeded, or an SSRF pivot into a bogon).
     Error(String),
 }
 
 /// True when `u`'s host is an IP literal in a bogon range (loopback /
-/// RFC1918 / link-local metadata / IPv6 ULA). Hostnames — even ones that
-/// would resolve to a bogon — return `false` here; the cross-origin guard
+/// RFC1918 / link-local metadata / IPv6 ULA). Hostnames, even ones that
+/// would resolve to a bogon, return `false` here; the cross-origin guard
 /// in `redirect_decision` is what stops hostname-based pivots, since any
 /// redirect to a *different* host is cross-origin and halted regardless.
 fn is_bogon_literal(u: &reqwest::Url) -> bool {
@@ -179,7 +179,7 @@ fn redirect_decision(
     // bogon (deliberate lab scan of a private/loopback range the operator
     // chose and gated via `assert_permitted`). The cross-origin guard below
     // still pins the follow to the identical origin, so "already on a bogon"
-    // can only ever stay on that exact host:port — never a pivot to a
+    // can only ever stay on that exact host:port, never a pivot to a
     // different internal service.
     if is_bogon_literal(next) && !prev.is_some_and(is_bogon_literal) {
         let ip = next.host_str().unwrap_or("?");
@@ -200,7 +200,7 @@ fn redirect_decision(
     RedirectDecision::Follow
 }
 
-/// `(scheme, lowercased-host, port)` — two URLs are same-origin iff these
+/// `(scheme, lowercased-host, port)`: two URLs are same-origin iff these
 /// match. `None` when the URL has no host or no derivable port.
 fn redirect_origin_triple(u: &reqwest::Url) -> Option<(String, String, u16)> {
     let host = u.host_str()?.to_ascii_lowercase();
@@ -234,7 +234,7 @@ mod tests {
     #[test]
     fn safe_redirect_policy_builds_and_composes() {
         // `reqwest::redirect::Attempt` has no public constructor, so the
-        // policy CLOSURE can't be invoked directly — but its decision logic
+        // policy CLOSURE can't be invoked directly, but its decision logic
         // is tested via `redirect_decision` below. Here we pin only that the
         // policy constructs and composes onto a builder (catches a signature
         // / API-drift regression).
@@ -470,7 +470,7 @@ mod tests {
 
     #[test]
     fn timeout_max_u64_does_not_overflow() {
-        // Duration::from_secs(u64::MAX) is ~585 billion years — reqwest
+        // Duration::from_secs(u64::MAX) is ~585 billion years, reqwest
         // accepts it. The builder must not panic on overflow arithmetic.
         let b = base_client_builder(u64::MAX, false, None);
         assert!(
@@ -493,14 +493,14 @@ mod tests {
 
     #[test]
     fn empty_user_agent_string_passes_through() {
-        // Empty string UA is unusual but not invalid — must not panic.
+        // Empty string UA is unusual but not invalid (must not panic).
         let b = base_client_builder(30, false, Some(""));
         assert!(b.build().is_ok());
     }
 
     #[test]
     fn empty_target_host_with_no_pool_is_ok() {
-        // Empty target_host is fine when egress_pool is None — the host
+        // Empty target_host is fine when egress_pool is None, the host
         // field is only used when a pool is present.
         let b = base_client_builder_with_egress(30, false, None, None, "").unwrap();
         assert!(b.build().is_ok());

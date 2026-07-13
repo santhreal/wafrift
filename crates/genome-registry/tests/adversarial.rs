@@ -291,7 +291,7 @@ fn revoked_publisher_no_longer_verifies() {
     );
 }
 
-// ── Happy paths still work — make sure the bounds didn't break them ──
+// ── Happy paths still work, make sure the bounds didn't break them ──
 
 #[test]
 fn from_json_accepts_a_normal_bundle() {

@@ -5,7 +5,7 @@
 # `wafrift exploit --detonate-engine chrome --all` and records the honest
 # bypass-vs-execute split. Answers: does a payload that BYPASSES CRS actually
 # EXECUTE once it lands in the context a real app reflects into (body, quoted
-# attribute, JS string, double-decode, javascript: URI) — not just the body+
+# attribute, JS string, double-decode, javascript: URI), not just the body+
 # innerHTML context the first-generation origin modelled.
 #
 # Run on a DISPOSABLE host (axiomexec / santhserver), never the dev box: it
@@ -77,5 +77,5 @@ for pl in $PARANOIAS; do
 done
 
 docker compose -f "${HERE}/docker-compose.yml" down >/dev/null 2>&1
-echo "[sweep] DONE — results:"
+echo "[sweep] DONE, results:"
 column -t "$RESULTS"

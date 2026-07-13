@@ -1,11 +1,11 @@
-//! `wafrift cache-diff` — cache-key confusion / cache-poisoning
+//! `wafrift cache-diff`: cache-key confusion / cache-poisoning
 //! surface scanner.
 //!
 //! ## The innovation
 //!
 //! In front of most origins sits a CACHING LAYER (CDN, Varnish,
 //! nginx proxy_cache, Apache mod_cache). The cache stores responses
-//! keyed by some subset of the request — typically `(method, host,
+//! keyed by some subset of the request, typically `(method, host,
 //! path, query)`, but the EXACT key construction varies. WAFs sit
 //! between the client and the cache; they make decisions on the
 //! REQUEST they see; the cache makes decisions on the KEY it
@@ -17,7 +17,7 @@
 //! variant request the WAF doesn't recognise but the origin
 //! processes (using the parser-diff family); the cache stores the
 //! resulting attack response under a key that ALSO matches benign
-//! user requests — and every subsequent visitor gets the poisoned
+//! user requests, and every subsequent visitor gets the poisoned
 //! payload until the cache entry expires.
 //!
 //! ## What this scanner finds
@@ -26,9 +26,9 @@
 //! a baseline (different surface form, same meaning) and reports:
 //!
 //! 1. Variants that return the SAME response (Age / ETag / body
-//!    hash) — strong cache key collision. Attacker can poison
+//!    hash), strong cache key collision. Attacker can poison
 //!    via the variant, victims fetched via the baseline get poisoned.
-//! 2. Variants that return DIFFERENT responses — separate cache
+//! 2. Variants that return DIFFERENT responses, separate cache
 //!    keys; weaker but still meaningful (the variant is a fresh
 //!    cache slot the attacker can poison, even if benign users
 //!    don't fetch via the variant directly).
@@ -59,7 +59,7 @@ use crate::parser_diff_common::severity_of_cache;
 
 #[derive(Args, Debug)]
 pub(crate) struct CacheDiffArgs {
-    /// Target URL — fixed authority + path. The scanner varies
+    /// Target URL, fixed authority + path. The scanner varies
     /// only key-affecting surface (host header case, query order,
     /// fragment, etc.).
     pub url: String,
@@ -96,7 +96,7 @@ pub(crate) struct CacheDiffArgs {
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
-    /// Quiet mode — suppress per-probe progress.
+    /// Quiet mode (suppress per-probe progress).
     #[arg(long, default_value_t = false)]
     pub quiet: bool,
 }
@@ -149,7 +149,7 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
     {
         out.push(CacheKeyProbe {
             kind: "host-case-upper",
-            description: "Host header in UPPERCASE — RFC says case-insensitive, but \
+            description: "Host header in UPPERCASE. RFC says case-insensitive, but \
                      some caches key on the literal byte string and treat the \
                      variant as a separate cache slot",
             probe_url: baseline_url.to_string(),
@@ -157,7 +157,7 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
         });
         out.push(CacheKeyProbe {
             kind: "host-case-mixed",
-            description: "Host header mixed-case (CamelCase) — same idea, harder to \
+            description: "Host header mixed-case (CamelCase), same idea, harder to \
                      spot in logs",
             probe_url: baseline_url.to_string(),
             extra_headers: vec![("Host".into(), camel_case(host))],
@@ -185,7 +185,7 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
         alt.set_path(&new_path);
         out.push(CacheKeyProbe {
             kind: "trailing-slash",
-            description: "Path with toggled trailing slash — many caches treat /foo and \
+            description: "Path with toggled trailing slash, many caches treat /foo and \
                  /foo/ as distinct keys; origins typically don't",
             probe_url: alt.to_string(),
             extra_headers: vec![],
@@ -196,13 +196,13 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
     out.push(CacheKeyProbe {
         kind: "query-param-order",
         // The single-param baseline (`{param}=baseline`) means this probe cannot
-        // isolate PURE reordering from added keys — it varies both at once. It
+        // isolate PURE reordering from added keys, it varies both at once. It
         // still detects the security-relevant property (does the cache normalise
         // the query, or key on the literal bytestring?); the description is
         // worded to match what is actually sent rather than claiming a pure
         // reorder of the same set (which a 1-param baseline can't express).
         description: "Canonical param wrapped in extra keys in non-canonical order \
-             (z=1&{param}=baseline&a=2) — caches keying on the literal query \
+             (z=1&{param}=baseline&a=2), caches keying on the literal query \
              bytestring (no param-sort, no unknown-key strip) treat this as a \
              separate slot; normalising caches collapse it to the baseline key, \
              exposing the collision via Age",
@@ -211,7 +211,7 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
     });
     out.push(CacheKeyProbe {
         kind: "query-baseline",
-        description: "Canonical query (also serves as the in-set baseline) — confirms \
+        description: "Canonical query (also serves as the in-set baseline), confirms \
              our probe shape matches the reference",
         probe_url: with_query(baseline_url, &format!("{param}=baseline")),
         extra_headers: vec![],
@@ -220,7 +220,7 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
     // ── 5. Param name case ───────────────────────────────────
     out.push(CacheKeyProbe {
         kind: "param-name-case",
-        description: "Param name in alternate case — RFC says case-sensitive but some \
+        description: "Param name in alternate case. RFC says case-sensitive but some \
              caches normalise; if they do, this is a key collision",
         probe_url: with_query(baseline_url, &format!("{}=baseline", upper_first(param))),
         extra_headers: vec![],
@@ -229,7 +229,7 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
     // ── 6. Trailing extra junk param ─────────────────────────
     out.push(CacheKeyProbe {
         kind: "tracking-param-junk",
-        description: "Added UTM-style tracking param — caches that strip known trackers \
+        description: "Added UTM-style tracking param, caches that strip known trackers \
              (Cloudflare, Akamai) collapse to the baseline key, exposing the \
              collision via Age",
         probe_url: with_query(
@@ -245,14 +245,14 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
         // NOTE: `with_query` routes the value through `Url::set_query`, whose
         // query percent-encode set encodes `#` → `%23`. So this sends
         // `{param}=baseline%23frag` (an encoded-hash query VALUE), NOT a real
-        // URL fragment — and that is unavoidable here: a true `#fragment` is
+        // URL fragment, and that is unavoidable here: a true `#fragment` is
         // never transmitted by a compliant HTTP client (incl. reqwest), so the
         // original "does a fragment reach the server" premise can't be tested
         // client-side at all. What this DOES test (encoded-`#` cache-key
         // normalisation) is still useful, so the probe stays with an honest
         // description (LAW 1: no fakes). Pinned by
         // `fragment_leak_probe_sends_encoded_hash_not_raw_fragment`.
-        description: "Query value with an encoded hash ({param}=baseline%23frag) — the \
+        description: "Query value with an encoded hash ({param}=baseline%23frag), the \
              URL parser encodes `#` into the query rather than emitting a \
              client-side fragment (compliant clients never transmit fragments). \
              Tests whether the cache decodes/normalises %23 to collide with the \
@@ -264,7 +264,7 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
     // ── 8. Cookie variation ──────────────────────────────────
     out.push(CacheKeyProbe {
         kind: "cookie-key-leak",
-        description: "Random Cookie value — caches that include Cookie in the key \
+        description: "Random Cookie value, caches that include Cookie in the key \
              give each cookie value its own slot; caches that DON'T let \
              cookied responses leak to anonymous users",
         probe_url: baseline_url.to_string(),
@@ -399,7 +399,7 @@ pub(crate) async fn run_cache_diff(mut args: CacheDiffArgs) -> ExitCode {
 struct FireOutcome {
     status: u16,
     body_len: usize,
-    /// Cheap rolling hash of the body bytes — used to compare
+    /// Cheap rolling hash of the body bytes, used to compare
     /// "is this the same response" without keeping the full body.
     body_hash: u64,
     /// Concatenated cache-relevant response headers (Age, X-Cache,
@@ -536,7 +536,7 @@ fn emit_output(
         // this stays inline rather than routing through
         // parser_diff_common::print_text_summary.
         println!(
-            "  {} {} cache-key collision(s) — {} strong, {} weak · {} error(s)",
+            "  {} {} cache-key collision(s): {} strong, {} weak · {} error(s)",
             "[wafrift cache-diff summary]".bright_cyan().bold(),
             (high + medium).to_string().bold().yellow(),
             high.to_string().bright_red().bold(),
@@ -548,7 +548,7 @@ fn emit_output(
     for r in results.iter().filter(|r| r.severity != "none") {
         let badge = crate::parser_diff_common::severity_badge(r.severity);
         println!();
-        println!("  [{badge}] {} — {}", r.kind.bold(), r.description);
+        println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         println!(
             "    {} body_hash_match={} · cache_signals_match={}",
             "↘".bright_black(),
@@ -642,7 +642,7 @@ mod tests {
         // §5/§11: `with_query` → Url::set_query percent-encodes `#` into the
         // query (`%23`), so the fragment-leak probe sends an encoded-hash query
         // VALUE, not a transmitted fragment. Pin this so the (now honest)
-        // description can't drift back to claiming a real fragment — and so a
+        // description can't drift back to claiming a real fragment, and so a
         // url-crate change that stopped encoding `#` (which would emit an
         // un-sent fragment, making the probe inert) is caught here.
         let v = generate_cache_variants("http://example.com/p", "q");
@@ -655,7 +655,7 @@ mod tests {
             "expected encoded-hash query value, got: {}",
             frag.probe_url
         );
-        // A raw `#frag` fragment must NOT survive — a compliant client would
+        // A raw `#frag` fragment must NOT survive, a compliant client would
         // strip it before sending, making the probe test nothing.
         assert!(
             !frag.probe_url.contains("#frag"),
@@ -722,7 +722,7 @@ mod tests {
         assert_ne!(fnv1a(b"hello"), fnv1a(b"hellp"));
     }
 
-    // severity_of tests live with the function — see
+    // severity_of tests live with the function, see
     // `parser_diff_common::tests::severity_of_cache_*`.
 
     // ── with_query ────────────────────────────────────────────

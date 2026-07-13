@@ -1,16 +1,16 @@
-//! Best-fit / charset down-conversion homoglyph engine — the complement to
+//! Best-fit / charset down-conversion homoglyph engine, the complement to
 //! [`super::nfkc_preimage`].
 //!
 //! ## Best-fit ≠ NFKC
 //!
 //! NFKC folds *compatibility* variants (styled letters, fullwidth). It does
-//! **not** touch typographic punctuation — `'` (U+2019 RIGHT SINGLE QUOTATION
+//! **not** touch typographic punctuation: `'` (U+2019 RIGHT SINGLE QUOTATION
 //! MARK) has no NFKC decomposition and survives unchanged. But a large class of
 //! origins perform **best-fit** charset coercion when they down-convert Unicode
 //! to a legacy/ANSI codepage:
 //!
 //! * Windows `WideCharToMultiByte` *without* `WC_NO_BEST_FIT_CHARS` (the
-//!   default) maps `' ' ‚ ′` → `'`, `" " „ ″` → `"`, `– — −` → `-`, etc.
+//!   default) maps `' ' ‚ ′` → `'`, `" " „ ″` → `"`, `–: −` → `-`, etc.
 //! * MySQL silently coerces many Unicode punctuation codepoints to their ASCII
 //!   equivalent when the column/connection charset is latin1/ascii.
 //! * .NET `Encoding.GetEncoding(1252)` best-fit, many CSV/Excel importers, and
@@ -24,7 +24,7 @@
 //! The mapping below is a sourced subset of the Windows-1252 best-fit table +
 //! the common cross-origin punctuation coercions. It is **Tier-B data**: append
 //! a `(codepoint, ascii)` pair to extend coverage. Soundness is enforced by the
-//! shared `super::homoglyph_gen` gate — every emitted variant best-fit-folds
+//! shared `super::homoglyph_gen` gate, every emitted variant best-fit-folds
 //! back to the exact attack under [`normalize`].
 
 use std::collections::HashMap;
@@ -34,7 +34,7 @@ use std::sync::OnceLock;
 ///
 /// Sourced from the Windows best-fit tables (CP1252 `bestfit1252.txt` /
 /// `WideCharToMultiByte` default behaviour) and MySQL/.NET/iconv punctuation
-/// coercion. Deliberately punctuation-only — best-fit's exploit value is the
+/// coercion. Deliberately punctuation-only, best-fit's exploit value is the
 /// quote/dash/space coercions that defeat string-delimiter WAF rules; letter
 /// homoglyphs are [`super::nfkc_preimage`]'s job.
 const BEST_FIT: &[(char, char)] = &[
@@ -63,19 +63,19 @@ const BEST_FIT: &[(char, char)] = &[
     ('\u{2011}', '-'), // ‑ NON-BREAKING HYPHEN
     ('\u{2012}', '-'), // ‒ FIGURE DASH
     ('\u{2013}', '-'), // – EN DASH
-    ('\u{2014}', '-'), // — EM DASH
+    ('\u{2014}', '-'), //. EM DASH
     ('\u{2015}', '-'), // ― HORIZONTAL BAR
     ('\u{2212}', '-'), // − MINUS SIGN
     ('\u{FF0D}', '-'), // － FULLWIDTH HYPHEN-MINUS
-    // → forward slash — path traversal `/`, scheme `//`, SQL `/**/`. NFKC
+    // → forward slash, path traversal `/`, scheme `//`, SQL `/**/`. NFKC
     //   leaves these alone; best-fit / confusable coercion maps them to `/`.
     ('\u{2044}', '/'), // ⁄ FRACTION SLASH
     ('\u{2215}', '/'), // ∕ DIVISION SLASH
-    // → backslash — Windows path traversal `..\`.
+    // → backslash: Windows path traversal `..\`.
     ('\u{2216}', '\\'), // ∖ SET MINUS
 ];
 
-/// Apply the best-fit coercion to `s` — the *origin-side* transform. Exposed so
+/// Apply the best-fit coercion to `s`: the *origin-side* transform. Exposed so
 /// callers can model "what the best-fit-coercing origin sees".
 #[must_use]
 pub fn normalize(s: &str) -> String {
@@ -126,7 +126,7 @@ pub fn first_preimage(c: char) -> Option<char> {
     preimage_map().get(&c).and_then(|v| v.first()).copied()
 }
 
-/// Layered best-fit + percent-encoding variants — a best-fit variant that is
+/// Layered best-fit + percent-encoding variants, a best-fit variant that is
 /// *also* `%XX`-encoded. See `super::homoglyph_gen::generate_composed`. Only
 /// an origin that url-decodes THEN best-fit-coerces reconstructs the injection.
 #[must_use]

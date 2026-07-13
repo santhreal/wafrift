@@ -9,7 +9,7 @@
 use proptest::prelude::*;
 use wafrift_wafmodel::sfa::{BytePred, Sfa};
 
-/// Proptest case count: full (10k) by default — the legendary lane —
+/// Proptest case count: full (10k) by default, the legendary lane 
 /// scaled down per-push via `WAFMODEL_PROPTEST_CASES` so the CI gate
 /// stays fast while the nightly `legendary` job runs the full count.
 /// The *property* is identical at any count; only confidence scales.
@@ -160,7 +160,7 @@ proptest! {
 }
 
 // ── E3/19 + E13/91: minimization is language-preserving, monotone,
-// and idempotent — 10k random automata over a 3-byte alphabet. ──
+// and idempotent: 10k random automata over a 3-byte alphabet. ──
 fn build_random_sfa(states: &[(bool, [u8; 4])]) -> Sfa {
     let n = states.len();
     let a = BytePred::byte(b'a');
@@ -194,7 +194,7 @@ proptest! {
     ) {
         let sfa = build_random_sfa(&states);
         let min = sfa.minimize();
-        // Language preserved (EXACT — distinguishing_word over bytes).
+        // Language preserved (EXACT (distinguishing_word over bytes)).
         prop_assert!(
             min.equivalent(&sfa),
             "minimize changed the language: {:?}",
@@ -211,8 +211,8 @@ proptest! {
 }
 
 // ── E3/18: the full Boolean-algebra laws hold for the SFA language
-// operators — De Morgan, double-complement/involution, idempotence,
-// and the complement laws — over 10k random *pairs* of automata. The
+// operators: De Morgan, double-complement/involution, idempotence,
+// and the complement laws, over 10k random *pairs* of automata. The
 // operators are byte-exact (`equivalent` returns a distinguishing word
 // on failure), so this is a truth contract, not a smoke test. ──
 proptest! {
@@ -253,7 +253,7 @@ proptest! {
         prop_assert!(a.union(&a).equivalent(&a), "a∪a ≠ a");
         prop_assert!(a.intersect(&a).equivalent(&a), "a∩a ≠ a");
 
-        // Complement laws: a∪¬a is universal, a∩¬a is empty — checked
+        // Complement laws: a∪¬a is universal, a∩¬a is empty, checked
         // against the derived universe/empty (no constructor needed),
         // and `difference` agrees with intersect-with-complement.
         let universe = a.union(&a.complement());
@@ -280,7 +280,7 @@ proptest! {
 // ── E5 ratchet: BytePred set-algebra vs an INDEPENDENT [bool;256]
 // oracle over OVERLAPPING operands. The pre-existing De Morgan test
 // used only disjoint sets (a–z, 0–9) so `or` and `xor` were
-// indistinguishable and `minus` was never called — `cargo-mutants`
+// indistinguishable and `minus` was never called: `cargo-mutants`
 // proved those paths were decoration (`| → ^`, `delete !`). Overlap +
 // an external truth array kills every BytePred op mutant. ──
 fn pred_from(mask: &dyn Fn(u8) -> bool) -> (BytePred, [bool; 256]) {
@@ -315,7 +315,7 @@ fn bytepred_ops_match_a_boolean_oracle_on_overlapping_sets() {
         assert_eq!(minus.contains(x), a.and(!b).contains(x), "minus≠a∧¬b @ {x}");
     }
     // Non-vacuous: the overlap is real (some byte in both, some in
-    // exactly one) — else or==xor and the test proves nothing.
+    // exactly one) (else or==xor and the test proves nothing).
     assert!(
         (0u8..=255).any(|x| sa[x as usize] && sb[x as usize]),
         "operands must overlap"
@@ -358,7 +358,7 @@ mod bytepred_props {
 #[test]
 fn sfa_soundness_primitives_are_non_vacuous() {
     // Pins, inside sfa.rs's OWN dedicated contract file, the soundness
-    // primitives the rest of the suite leans on — so they are caught
+    // primitives the rest of the suite leans on, so they are caught
     // here, not only by distant tests.
     let lt = contains_lt();
 
@@ -421,7 +421,7 @@ fn sfa_soundness_primitives_are_non_vacuous() {
 
     // A ≥2-word language (kills the `out.len() == max_words` early-stop
     // mutated to `!=`, which would return after the FIRST accepted word
-    // — a single-word language cannot distinguish that). L = {"", "a"}.
+    //: a single-word language cannot distinguish that). L = {"", "a"}.
     let two = Sfa::new(
         0,
         vec![true, true, false],

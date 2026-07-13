@@ -1,5 +1,5 @@
 //! Server-side template injection equivalence + the joint
-//! `(payload × delivery)` generator — the SSTI arm of Phase B.
+//! `(payload × delivery)` generator (the SSTI arm of Phase B).
 //!
 //! Rewrites are template-engine-evaluation-equivalent *by
 //! construction* (`{{7*7}}` ≡ `{{ 7 * 7 }}`; `a.b` ≡ `a['b']`; the
@@ -16,7 +16,7 @@ use crate::grammar::template::is_structured_ssti;
 /// re-wrap the expression can preserve the SAME delimiters they
 /// found. F103: pre-fix this returned only `(pre, expr, post)`,
 /// and every rewriter (`rw_inner_ws`, `rw_attr_subscript`,
-/// `rw_string_split`) hardcoded `{{` `}}` in the output —
+/// `rw_string_split`) hardcoded `{{` `}}` in the output 
 /// silently rewriting a FreeMarker `${…}` payload into Jinja
 /// `{{ … }}` (different engine, the rewritten variant is a no-op
 /// on the target). Now the original delimiters round-trip.
@@ -82,7 +82,7 @@ pub fn still_evaluates(original: &str, cand: &str) -> bool {
         // §7 DEDUP + §14: `contains_token` (shared boundary-aware matcher)
         // replaces the prior `cl.contains(t)` substring check, which let a
         // marker survive buried in a larger identifier (`config` in
-        // `reconfigure`) — not the original template expression.
+        // `reconfigure`) (not the original template expression).
         want.iter().all(|t| super::contains_token(&cl, t))
     } else {
         // arithmetic / detection probe: a non-empty expression in a
@@ -113,7 +113,7 @@ fn rw_inner_ws(payload: &str, rng: &mut Rng) -> Option<String> {
         }
     }
     let pad = |r: &mut Rng| if r.chance(1, 2) { " " } else { "" };
-    // Preserve `post` — dropping the tail after the closing
+    // Preserve `post`: dropping the tail after the closing
     // delimiter silently mutates the payload (loses any trailing
     // template context). F103: re-wrap with the SAME delimiters
     // (`open`/`close`) we extracted, not a hardcoded `{{` `}}`.
@@ -124,7 +124,7 @@ fn rw_inner_ws(payload: &str, rng: &mut Rng) -> Option<String> {
     ))
 }
 
-/// `obj.attr` ≡ `obj['attr']` — identical attribute resolution in
+/// `obj.attr` ≡ `obj['attr']`: identical attribute resolution in
 /// Jinja/Twig/Python templating.
 fn rw_attr_subscript(payload: &str, rng: &mut Rng) -> Option<String> {
     let (pre, e, post, open, close) = inner_expr(payload)?;
@@ -164,7 +164,7 @@ fn rw_attr_subscript(payload: &str, rng: &mut Rng) -> Option<String> {
 fn rw_delim_swap(payload: &str, rng: &mut Rng) -> Option<String> {
     let (pre, e, post, _, _) = inner_expr(payload)?;
     // F105: dropped `{{{E}}}` from the wrap candidates. Triple-brace
-    // is Handlebars/Mustache RAW-HTML syntax — NOT an alias for
+    // is Handlebars/Mustache RAW-HTML syntax. NOT an alias for
     // `{{E}}` in Jinja2 / Twig / FreeMarker / Velocity (wafrift's
     // SSTI target engines). `still_evaluates` couldn't catch the
     // mistake because `inner_expr` matches the inner `{{` of
@@ -174,7 +174,7 @@ fn rw_delim_swap(payload: &str, rng: &mut Rng) -> Option<String> {
     Some(format!("{pre}{}{post}", wrap.replace("{E}", &e)))
 }
 
-/// String-literal equivalence: `'os'` ≡ `'o''s'`? no — use the safe
+/// String-literal equivalence: `'os'` ≡ `'o''s'`? no, use the safe
 /// Jinja/Python concat `('o'+'s')` and quote swap. Value-identical.
 fn rw_string_split(payload: &str, rng: &mut Rng) -> Option<String> {
     let (pre, e, post, open, close) = inner_expr(payload)?;
@@ -188,13 +188,13 @@ fn rw_string_split(payload: &str, rng: &mut Rng) -> Option<String> {
             while j < bytes.len() && bytes[j] != b'\'' {
                 j += 1;
             }
-            // F106: was `chance(1, 1)` — always-true gate, the rewrite
+            // F106: was `chance(1, 1)`: always-true gate, the rewrite
             // fired deterministically on the first quoted literal,
             // collapsing diversity. Match the 50/50 cadence used in
             // sibling rewriters.
             if j < bytes.len() && j - st >= 2 && rng.chance(1, 2) {
                 let lit = &e[st..j];
-                // Split on a CHAR boundary, never a byte midpoint —
+                // Split on a CHAR boundary, never a byte midpoint 
                 // `lit` may hold multibyte content and `split_at(byte)`
                 // panics inside a codepoint (hostile-input crash).
                 let lc: Vec<char> = lit.chars().collect();

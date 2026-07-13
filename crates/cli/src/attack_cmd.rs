@@ -1,11 +1,11 @@
-//! `wafrift attack` — unified parser-disagreement orchestrator.
+//! `wafrift attack`: unified parser-disagreement orchestrator.
 //!
 //! Runs all seven members of the parser-diff family
 //! (`parser-diff`, `header-diff`, `body-diff`, `query-diff`,
 //! `cache-diff`, `h2-diff`, `method-diff`)
 //! against ONE target URL in a single invocation and merges the
 //! results into one structured report. This is the end-to-end
-//! pentester command — operators don't have to remember which
+//! pentester command, operators don't have to remember which
 //! subcommand probes which surface.
 //!
 //! ## Workflow
@@ -31,7 +31,7 @@
 //! Each sub-probe runs as a SUBPROCESS (`std::env::current_exe`
 //! re-invokes the same wafrift binary with the appropriate subcommand
 //! + `--format json --quiet`). This keeps the orchestrator decoupled
-//! from each subcommand's internals — they evolve independently
+//! from each subcommand's internals, they evolve independently
 //! and the orchestrator just merges JSON. Subprocesses run
 //! CONCURRENTLY via `tokio::join!`.
 
@@ -44,7 +44,7 @@ use serde_json::{Value, json};
 
 #[derive(Args, Debug)]
 pub(crate) struct AttackArgs {
-    /// Target URL — shared across all seven sub-probes.
+    /// Target URL (shared across all seven sub-probes).
     pub url: String,
 
     /// Parameter name for `query-diff`. Other probes ignore.
@@ -77,13 +77,13 @@ pub(crate) struct AttackArgs {
     #[arg(long, short = 'H', value_name = "HEADER", num_args = 0..)]
     pub header: Vec<String>,
 
-    /// Output format: `text` (default — colored summary table) or
+    /// Output format: `text` (default, colored summary table) or
     /// `json` (machine-readable structured blob with per-family
     /// sub-objects).
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
-    /// Quiet mode — suppress per-probe progress (still emits the
+    /// Quiet mode, suppress per-probe progress (still emits the
     /// final summary / JSON). R46-I3 fix: `-q` short alias added
     /// for parity with every other subcommand.
     #[arg(long, short = 'q', default_value_t = false)]
@@ -125,7 +125,7 @@ pub(crate) async fn run_attack(mut args: AttackArgs) -> ExitCode {
     // Issue-8 fix (dogfood R43 cohort): pre-fix `wafrift attack
     // ftp://example.com/` ran all seven sub-probes (each failing
     // with "exit status: 1") and then surfaced "0 divergences" /
-    // exit 0 — a CI consumer would believe the target had no
+    // exit 0, a CI consumer would believe the target had no
     // parser-diff issues. Reject any non-http(s) scheme at arg
     // validation time so the failure shows up before any probe
     // fires and the exit code reflects "bad input" not "clean".
@@ -133,7 +133,7 @@ pub(crate) async fn run_attack(mut args: AttackArgs) -> ExitCode {
         Ok(u) if u.scheme() == "http" || u.scheme() == "https" => {}
         Ok(u) => {
             eprintln!(
-                "{} unsupported scheme `{}` — wafrift attack runs HTTP/HTTPS \
+                "{} unsupported scheme `{}`: wafrift attack runs HTTP/HTTPS \
                  parser-diff probes only. Re-run with an http:// or https:// URL.",
                 "Argument error:".red().bold(),
                 u.scheme()
@@ -234,7 +234,7 @@ pub(crate) async fn run_attack(mut args: AttackArgs) -> ExitCode {
     // R44-I3 fix (dogfood pass 4): pre-fix attack exited 0 even when
     // EVERY sub-probe failed because the target was unreachable. A
     // CI consumer piping `attack` on a dead host saw "0 divergences"
-    // / exit 0 and believed the target had no parser-diff issues —
+    // / exit 0 and believed the target had no parser-diff issues 
     // when actually no probes had landed at all. Count error-flagged
     // sub-probes; if all 7 errored (or even just any of them errored
     // with "Cannot reach"), surface a non-zero exit so the failure
@@ -275,7 +275,7 @@ impl DivergenceCount {
 
 fn subprobe_args_path(args: &AttackArgs) -> Vec<String> {
     // R46-I1 fix (dogfood pass 7): parser-diff (the url-path sub-
-    // probe) does not currently accept --proxy / --insecure / -H —
+    // probe) does not currently accept --proxy / --insecure / -H 
     // so push_common_flags would forward them and parser-diff
     // would exit 2 on "unexpected argument", silently dropping
     // that entire sub-probe from every `attack` run that set
@@ -297,7 +297,7 @@ fn subprobe_args_path(args: &AttackArgs) -> Vec<String> {
     // doesn't silently leave the url-path sub-probe doing strict
     // TLS verification while every other sub-probe accepts the
     // lab self-signed cert. The --proxy / -H gap remains (parser-
-    // diff still doesn't take those — separate future round).
+    // diff still doesn't take those (separate future round)).
     if args.insecure {
         v.push("--insecure".into());
     }
@@ -331,7 +331,7 @@ fn subprobe_args_cache(args: &AttackArgs) -> Vec<String> {
 fn subprobe_args_h2(args: &AttackArgs) -> Vec<String> {
     // h2-diff is single-threaded by construction (H1 and H2 must
     // match request-shape exactly, no payload-axis fan-out), so it
-    // accepts a NARROWER flag set than the other sub-probes —
+    // accepts a NARROWER flag set than the other sub-probes 
     // notably no `--concurrency`, no `--proxy`, no `-H/--header`.
     // Before this filter, every `attack` invocation silently
     // dropped the H1/H2 differential probe (sonnet dogfood pass 3,
@@ -344,7 +344,7 @@ fn subprobe_args_h2(args: &AttackArgs) -> Vec<String> {
 }
 
 /// h2-diff's accepted-flags subset.  Run `wafrift h2-diff --help`
-/// for the canonical list — keep this in sync.
+/// for the canonical list (keep this in sync).
 fn push_h2_flags(out: &mut Vec<String>, args: &AttackArgs) {
     out.push("--format".into());
     out.push("json".into());
@@ -392,16 +392,16 @@ fn push_common_flags(out: &mut Vec<String>, args: &AttackArgs) {
 /// Spawn one `wafrift <subcmd> ...` subprocess, await it under a
 /// timeout, and parse the JSON output into a `Value`. On any
 /// failure (subprocess didn't launch, returned non-JSON, timed out)
-/// returns the error string — the orchestrator converts it into a
+/// returns the error string, the orchestrator converts it into a
 /// structured `{ "error": "..." }` value.
 ///
 /// Exit code handling:
 /// - 0 = success, parse JSON from stdout.
 /// - 6 = `h2-diff` inconclusive (all H2 probes failed: H1-only
 ///   target, ALPN mismatch). stdout still carries valid JSON; parse
-///   it. Do NOT treat this as an error — the operator should see
+///   it. Do NOT treat this as an error, the operator should see
 ///   "H2 not reachable on this target" from the sub-probe's JSON,
-///   not "subprobe h2-diff exited 6 — stderr: …".
+///   not "subprobe h2-diff exited 6 (stderr: …").
 /// - any other non-zero = genuine error; surface as Err.
 async fn spawn_subprobe(subcmd: &str, args: &[String], timeout_secs: u64) -> Result<Value, String> {
     let exe = std::env::current_exe()
@@ -416,7 +416,7 @@ async fn spawn_subprobe(subcmd: &str, args: &[String], timeout_secs: u64) -> Res
         .map_err(|e| format!("subprobe {subcmd} failed to launch: {e}"))?;
     let exit_code = result.status.code().unwrap_or(-1);
     // SIGPIPE on h2-diff: the mock/real server closed the write side before
-    // h2-diff finished sending — semantically identical to "H2 not reachable".
+    // h2-diff finished sending (semantically identical to "H2 not reachable").
     // On Linux, signal death → status.code() is None (we land on -1) and
     // status.signal() carries the signal number (13 = SIGPIPE).
     #[cfg(unix)]
@@ -429,18 +429,18 @@ async fn spawn_subprobe(subcmd: &str, args: &[String], timeout_secs: u64) -> Res
     let is_ok = result.status.success()
         // Exit 6 = h2-diff "inconclusive" (all H2 legs failed to negotiate).
         // The stdout still carries valid JSON; don't surface it as an error
-        // to the `attack` orchestrator — let the sub-probe's JSON speak for
+        // to the `attack` orchestrator, let the sub-probe's JSON speak for
         // itself (it says "h2_errors == total_probes", which is informative,
         // not a subprobe crash).
         || exit_code == 6
         // SIGPIPE from h2-diff means the server closed the connection before
         // h2-diff finished writing (H1-only target with no H2 support). Treat
-        // it the same as exit 6 — H2 not available, not a crash.
+        // it the same as exit 6. H2 not available, not a crash.
         || (subcmd == "h2-diff" && is_sigpipe);
     if !is_ok {
         let stderr = String::from_utf8_lossy(&result.stderr).to_string();
         return Err(format!(
-            "subprobe {subcmd} exited {} — stderr: {stderr}",
+            "subprobe {subcmd} exited {}, stderr: {stderr}",
             result.status
         ));
     }
@@ -500,7 +500,7 @@ fn emit_text(
     if !args.quiet {
         println!();
         println!(
-            "  {} {} divergence(s) against {} — {} high, {} medium",
+            "  {} {} divergence(s) against {}: {} high, {} medium",
             "[wafrift attack summary]".bright_cyan().bold(),
             (totals.high + totals.medium).to_string().bold().yellow(),
             args.url.bright_white(),
@@ -529,7 +529,7 @@ fn emit_text(
         let err = probe.get("error").and_then(Value::as_str);
         match err {
             Some(e) => println!(
-                "    {} {label} — {}: {e}",
+                "    {} {label}: {}: {e}",
                 "✗".red().bold(),
                 "subprobe error".red()
             ),
@@ -543,7 +543,7 @@ fn emit_text(
     }
 
     // Issue-8 fix (dogfood R29 cohort): pre-fix text mode printed
-    // only the summary table ("37 divergences — 37 high, 0 medium")
+    // only the summary table ("37 divergences: 37 high, 0 medium")
     // and the per-probe counts. Operators were stuck re-running
     // every sub-probe (`wafrift header-diff`, `wafrift query-diff`,
     // etc.) just to see WHICH divergences fired. Surface the next-
@@ -551,7 +551,7 @@ fn emit_text(
     //
     // Issue-13 fix (dogfood R43 cohort): the original format
     // concatenated the label and the command on a single line as
-    // `headers wafrift header-diff ...` — visually reads as one
+    // `headers wafrift header-diff ...`: visually reads as one
     // blob, terminal-wraps badly. Print each label on its own line
     // with the indented command on the next.
     if !args.quiet && (totals.high + totals.medium) > 0 {
@@ -653,7 +653,7 @@ mod tests {
         let v = into_value("body", Err("boom".to_string()));
         assert_eq!(v["family"], "body");
         assert_eq!(v["error"], "boom");
-        // Even on error the family carries empty divergence counts —
+        // Even on error the family carries empty divergence counts 
         // keeps the orchestrator's totalling code branch-free.
         assert_eq!(v["divergences"]["high"], 0);
         assert_eq!(v["divergences"]["medium"], 0);
@@ -800,7 +800,7 @@ mod tests {
     #[test]
     fn subprobe_args_h2_still_passes_format_delay_timeout() {
         // The narrower flag set must still include the flags
-        // h2-diff DOES accept — without them the output isn't JSON
+        // h2-diff DOES accept, without them the output isn't JSON
         // and the orchestrator can't parse it.
         let v = subprobe_args_h2(&min_args());
         let joined: String = v.join(" ");

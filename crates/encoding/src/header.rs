@@ -6,15 +6,15 @@
 //!
 //! # Techniques
 //!
-//! - **Case mixing** — `cOnTeNt-TyPe` instead of `Content-Type`
-//! - **Whitespace tricks** — tabs, spaces around colons and values
-//! - **Header folding** — obsolete but still parsed by many servers (RFC 7230 §3.2.4)
-//! - **Duplicate headers** — first vs. last wins disagreement
-//! - **Underscore substitution** — `Content_Type` accepted by some servers
-//! - **Null byte injection** — `Content-Type\x00` truncates header name
-//! - **`SPaced` header name** — `Content-Type ` trailing space before colon
-//! - **Header value wrapping** — Value spread across multiple continuation lines
-//! - **Comma-joined header values** — Multiple values in one header via comma
+//! - **Case mixing**: `cOnTeNt-TyPe` instead of `Content-Type`
+//! - **Whitespace tricks**: tabs, spaces around colons and values
+//! - **Header folding**: obsolete but still parsed by many servers (RFC 7230 §3.2.4)
+//! - **Duplicate headers**: first vs. last wins disagreement
+//! - **Underscore substitution**: `Content_Type` accepted by some servers
+//! - **Null byte injection**: `Content-Type\x00` truncates header name
+//! - **`SPaced` header name**: `Content-Type ` trailing space before colon
+//! - **Header value wrapping**: Value spread across multiple continuation lines
+//! - **Comma-joined header values**: Multiple values in one header via comma
 
 use std::fmt;
 use wafrift_types::hash::{FNV_OFFSET_64, FNV_PRIME_64};
@@ -80,7 +80,7 @@ pub fn case_mix(header_name: &str) -> String {
 
 /// Strip CR (`\r`), LF (`\n`), and NUL (`\0`) from a header value so
 /// the mutator output cannot smuggle a fake header line. Pre-fix every
-/// public mutator embedded `value` verbatim — a caller passing a value
+/// public mutator embedded `value` verbatim, a caller passing a value
 /// containing `\r\nEvil-Header: pwn` produced response splitting /
 /// request smuggling on the wire. The transport layer assumed these
 /// helpers had already sanitised; the helpers assumed the transport
@@ -106,7 +106,7 @@ pub fn tab_separator(header_name: &str, value: &str) -> String {
 /// via FNV-1a, NOT `rand::random`. A non-deterministic encoder cannot be
 /// regression-pinned and makes a successful bypass impossible to reproduce
 /// (every other tamper in this crate is deterministic for exactly this
-/// reason — see `parameter_pollute`'s F114 fix). The output pad range
+/// reason, see `parameter_pollute`'s F114 fix). The output pad range
 /// (2–5 spaces) is unchanged.
 #[must_use]
 pub fn whitespace_pad(header_name: &str, value: &str) -> String {
@@ -151,9 +151,9 @@ fn line_fold_with_ending(header_name: &str, value: &str, ending: &str) -> String
     )
 }
 
-/// Apply multi-line folding — value spread across 3+ continuation lines.
+/// Apply multi-line folding (value spread across 3+ continuation lines).
 ///
-/// More aggressive than single fold — splits value into thirds.
+/// More aggressive than single fold (splits value into thirds).
 /// Many WAFs only handle one continuation line.
 #[must_use]
 pub fn multi_line_fold(header_name: &str, value: &str) -> String {
@@ -229,7 +229,7 @@ pub fn null_byte_inject(header_name: &str) -> String {
 
 /// Add a trailing space before the colon separator.
 ///
-/// `Content-Type : value` — some parsers strip the space, making this
+/// `Content-Type : value`: some parsers strip the space, making this
 /// equivalent. WAFs that expect `Name:` or `Name: ` without extra space
 /// in the header name field may fail to match.
 #[must_use]
@@ -255,7 +255,7 @@ pub fn comma_join(header_name: &str, real_value: &str, benign_value: &str) -> St
 /// Build a `Content-Type` header with an exotic charset claim.
 ///
 /// CVE-2022-39956 (Content-Type/Content-Transfer-Encoding abuse) +
-/// CVE-2022-39957 (Accept-Charset bypass) — OWASP CRS pre-3.3.3 did
+/// CVE-2022-39957 (Accept-Charset bypass). OWASP CRS pre-3.3.3 did
 /// not validate the charset field before running UTF-8 regex rules.
 /// Attacker claims `charset=ibm037` (EBCDIC) or `charset=utf-32`;
 /// WAF runs regex against bytes that aren't even ASCII-`SELECT`, so
@@ -267,7 +267,7 @@ pub fn comma_join(header_name: &str, real_value: &str, benign_value: &str) -> St
 /// scanning. Fixed in CRS 3.3.3 / 3.2.2 (Sept 2022).
 #[must_use]
 pub fn charset_confusion(media_type: &str, charset: &str) -> String {
-    // No sanitize_header_value here — the whole point is exotic
+    // No sanitize_header_value here, the whole point is exotic
     // charset claims; the WAF SHOULD accept the line per RFC.
     format!("Content-Type: {media_type}; charset={charset}")
 }
@@ -276,16 +276,16 @@ pub fn charset_confusion(media_type: &str, charset: &str) -> String {
 /// Each is a real IANA charset that some backend will accept and a
 /// hand-rolled WAF regex won't decode.
 pub const EXOTIC_CHARSETS: &[&str] = &[
-    "ibm037", // EBCDIC — byte values disjoint from ASCII
+    "ibm037", // EBCDIC, byte values disjoint from ASCII
     "ibm500", // EBCDIC variant
-    "utf-32", // 4-byte-per-char — ASCII regex misses
+    "utf-32", // 4-byte-per-char: ASCII regex misses
     "utf-32be",
     "utf-16",
     "utf-16be",
     "utf-7",       // SELECT = +U0wAAA-
-    "shift_jis",   // Japanese — partial ASCII overlap
+    "shift_jis",   // Japanese, partial ASCII overlap
     "gb18030",     // Chinese
-    "iso-2022-jp", // Stateful — toggle-byte before SELECT
+    "iso-2022-jp", // Stateful, toggle-byte before SELECT
 ];
 
 /// Apply all header obfuscation techniques to a header name/value pair.
@@ -298,7 +298,7 @@ pub fn all_obfuscations(header_name: &str, value: &str) -> Vec<(HeaderTechnique,
     // Three entries below (CaseMixing, UnderscoreSubstitution,
     // NullByteInjection) transform only the header NAME and interpolate
     // the value inline, so they must sanitise it here the same way the
-    // helper-based entries do internally — otherwise a value containing
+    // helper-based entries do internally, otherwise a value containing
     // `\r\n` smuggles a header line on the wire. This is the exact gap
     // `sanitize_header_value` was added to close; these inline format!s
     // were missed by that fix. (The helper-based entries below sanitise

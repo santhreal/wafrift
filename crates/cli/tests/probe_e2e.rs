@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift probe`.
 //!
-//! All tests are purely offline — no HTTP, no mock server.
+//! All tests are purely offline (no HTTP, no mock server).
 //! `probe` generates differential-analysis probe payloads (NDJSON by default).
 //!
 //! Tests verify:

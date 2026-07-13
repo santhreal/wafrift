@@ -1,4 +1,4 @@
-//! Evasion configuration — knobs for the strategy engine.
+//! Evasion configuration (knobs for the strategy engine).
 //!
 //! One struct, one job: controls which evasion layers are enabled
 //! and how aggressively the engine escalates.
@@ -33,7 +33,7 @@ pub struct EvasionConfig {
     /// Manual origin bypass mapping from Host to IP.
     #[serde(default)]
     pub origin_bypass: std::collections::HashMap<String, std::net::IpAddr>,
-    /// Body padding (bytes) — pre-pend N bytes of inert filler to
+    /// Body padding (bytes), pre-pend N bytes of inert filler to
     /// JSON / form / multipart bodies so the malicious payload sits
     /// past cloud-WAF inspection windows (Cloudflare Pro 8 KB, AWS
     /// WAF 16 KB). 0 disables padding entirely. Anything below
@@ -46,7 +46,7 @@ pub struct EvasionConfig {
     /// When true, the evade pipeline applies the same encoding +
     /// grammar mutations to query-string parameter VALUES (not
     /// names) and to the path's last segment. This is the canonical
-    /// attack surface for SQLi-in-`?id=` / XSS-in-`?q=` etc — most
+    /// attack surface for SQLi-in-`?id=` / XSS-in-`?q=` etc, most
     /// production attacks live in URL parameters, not request bodies.
     ///
     /// **Off by default** because mutating the URL changes upstream
@@ -59,7 +59,7 @@ pub struct EvasionConfig {
     /// Allow upstream targets that fall in the bogon set
     /// (loopback / RFC1918 / CGN / Teredo / IMDS / etc.).
     ///
-    /// Off by default — wafrift-transport's `EvasionClient` rejects
+    /// Off by default, wafrift-transport's `EvasionClient` rejects
     /// literal-IP requests to these ranges as a defence-in-depth
     /// against accidental SSRF. Set true when targeting a lab
     /// upstream on 127.0.0.1 / 192.168.x or when running tests
@@ -80,7 +80,7 @@ pub struct EvasionConfig {
     /// ensemble (Cloudflare Managed Rules, AWS Core Rule Set). On non-ensemble
     /// WAFs this field has no effect regardless of value.
     ///
-    /// Default `0.0` (disabled) — callers opt in explicitly via CLI or TOML.
+    /// Default `0.0` (disabled) (callers opt in explicitly via CLI or TOML).
     #[serde(default)]
     pub dilution_weight: f64,
 }
@@ -145,10 +145,10 @@ impl EvasionConfig {
             insecure_tls: false,
             proxies: Vec::new(),
             origin_bypass: std::collections::HashMap::new(),
-            // Default to AWS-WAF-default-tier (16 KB) — covers
+            // Default to AWS-WAF-default-tier (16 KB), covers
             // Cloudflare Pro (8 KB), AWS WAF default, Akamai default.
             body_padding_bytes: 16 * 1024,
-            // maximum() is opt-in aggression — flip URL mutation on
+            // maximum() is opt-in aggression, flip URL mutation on
             // too. Operators reaching for `maximum()` already accept
             // the routing-semantics tradeoffs.
             mutate_url: true,

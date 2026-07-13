@@ -1,4 +1,4 @@
-//! `wafrift model-evade` — active-learning WAF bypass via L* decompilation.
+//! `wafrift model-evade`: active-learning WAF bypass via L* decompilation.
 //!
 //! This command implements the P1 attack paradigm:
 //!
@@ -7,7 +7,7 @@
 //!    request). Spend at most `--budget` membership queries.
 //! 2. **Mine**: Intersect the learned symbolic automaton (the WAF's
 //!    pass-language) with an attack grammar offline at ~1M candidates/s
-//!    — zero further live queries in this phase.
+//! (zero further live queries in this phase).
 //! 3. **Verify**: For every mined candidate, send ONE live probe to
 //!    confirm the learned model matches reality (model↔reality gap check).
 //! 4. **Report**: Write verified bypasses as structured JSON.
@@ -40,7 +40,7 @@ use wafrift_wafmodel::{
 /// Arguments for `wafrift model-evade`.
 #[derive(Args, Debug)]
 pub(crate) struct ModelEvadeArgs {
-    /// Target URL — the WAF-protected endpoint to decompile and bypass.
+    /// Target URL (the WAF-protected endpoint to decompile and bypass).
     /// Membership queries are sent as GET requests with the candidate
     /// payload in the `--param` query parameter.
     /// Local / RFC1918 targets (localhost, 127.x.x.x, 10.x, 192.168.x)
@@ -49,19 +49,19 @@ pub(crate) struct ModelEvadeArgs {
     pub target_url: String,
 
     /// Attack class to decompile and mine bypasses for.
-    /// `sqli`  — SQL injection markers (UNION SELECT, OR 1=1, sleep(), etc.)
-    /// `xss`   — Cross-site scripting markers (<script, onerror=, onload=, etc.)
-    /// `all`   — Both classes combined.
+    /// `sqli`: SQL injection markers (UNION SELECT, OR 1=1, sleep(), etc.)
+    /// `xss`: Cross-site scripting markers (<script, onerror=, onload=, etc.)
+    /// `all`: Both classes combined.
     #[arg(long, default_value = "sqli", value_parser = ["sqli", "xss", "all"])]
     pub class: String,
 
     /// Per-phase cap on live membership queries (each query = one HTTP
     /// request to the target). It bounds BOTH the L* membership phase AND
     /// each equivalence round's query count, so the total live requests are
-    /// roughly `budget × (1 + equivalence_rounds)` — typically 1–3 rounds,
+    /// roughly `budget × (1 + equivalence_rounds)`: typically 1–3 rounds,
     /// i.e. budget back-of-envelope ×2–4. Budget against a target's rate cap
     /// accordingly. Larger budgets produce more precise models; smaller
-    /// budgets produce coarser approximations (still useful — the miner works
+    /// budgets produce coarser approximations (still useful, the miner works
     /// with whatever boundary is learned). Budget-exhaustion is not an
     /// error: the command reports whatever bypasses the partial model
     /// yields and exits 0.
@@ -88,13 +88,13 @@ pub(crate) struct ModelEvadeArgs {
     /// I certify that I have permission to test this target (required
     /// for non-local targets not on the built-in allowlist).
     /// The value is logged so auditors can trace authorization back to
-    /// the person who ran the tool — keep it short and specific:
+    /// the person who ran the tool, keep it short and specific:
     /// `"Bug bounty HackerOne #12345"`, `"Authorized pen test SOW 2026-05"`.
     #[arg(long, value_name = "REASON")]
     pub i_have_permission: Option<String>,
 
     /// Disable TLS certificate verification (useful for self-signed
-    /// certs on internal test environments — do not use against
+    /// certs on internal test environments, do not use against
     /// production targets).
     #[arg(long, default_value_t = false)]
     pub insecure: bool,
@@ -142,7 +142,7 @@ pub(crate) struct ModelEvadeArgs {
 /// The alphabet covers every byte a WAF rule in this class branches on;
 /// the catch-all (`b'A'`) stands for every byte not otherwise listed.
 /// The needles are the minimal substrings any block-triggering pattern
-/// must contain — the attack grammar is their union.
+/// must contain (the attack grammar is their union).
 pub(crate) fn class_config(class: &str) -> (Alphabet, Vec<&'static [u8]>) {
     match class {
         "sqli" => (
@@ -151,12 +151,12 @@ pub(crate) fn class_config(class: &str) -> (Alphabet, Vec<&'static [u8]>) {
             // needle below MUST be in this set. kmp_sfa() uses the catch-all
             // representative (b'A') for unlisted bytes, so a needle byte not
             // here maps to the catch-all class and the KMP state machine can
-            // never advance past it — the needle becomes silently unmatchable.
+            // never advance past it (the needle becomes silently unmatchable).
             //
             // Pre-fix: only UPPERCASE u/n/i/o/s/e/l/t/r/c were listed (left
             // over from a draft that used uppercase needles), but ALL needles
             // are lowercase. Every character in "union select", "or 1=1",
-            // "sleep(", "; select" mapped to catch-all — zero bypasses were
+            // "sleep(", "; select" mapped to catch-all, zero bypasses were
             // ever mined from the sqli class.
             Alphabet::new(
                 vec![
@@ -187,7 +187,7 @@ pub(crate) fn class_config(class: &str) -> (Alphabet, Vec<&'static [u8]>) {
             // INVARIANT: every byte that appears in ANY needle below MUST
             // be in this set. kmp_sfa() uses alpha.byte_of(catch_all_idx)
             // (= b'A') as the representative for all non-distinguished
-            // bytes — so a needle byte not in the distinguished set maps
+            // bytes, so a needle byte not in the distinguished set maps
             // to the catch-all class, and kmp_next(state, b'A') will
             // never advance the KMP state machine past that needle byte,
             // making the needle silently unmatchable over the abstract alphabet.
@@ -209,7 +209,7 @@ pub(crate) fn class_config(class: &str) -> (Alphabet, Vec<&'static [u8]>) {
             ],
         ),
         _ => {
-            // "all" — union of both sqli and xss.
+            // "all" (union of both sqli and xss).
             let (sqli_alpha, mut sqli_needles) = class_config("sqli");
             let (xss_alpha, xss_needles) = class_config("xss");
             sqli_needles.extend(xss_needles);
@@ -237,11 +237,11 @@ pub(crate) fn class_config(class: &str) -> (Alphabet, Vec<&'static [u8]>) {
 /// retried with backoff and, if persistent, surfaced as an inconclusive error
 /// rather than a false `Block`.
 ///
-/// The oracle is `FnOracle<impl FnMut(...) -> Result<Outcome>>` — it
+/// The oracle is `FnOracle<impl FnMut(...) -> Result<Outcome>>`: it
 /// implements `WafOracle` exactly as the trait requires.
 ///
 /// When `egress_pool` is `Some`, the next available egress entry for the
-/// target host is applied to the reqwest client — identical to the pattern
+/// target host is applied to the reqwest client, identical to the pattern
 /// used by `bench-waf` (R52 pass-14 I1). Pre-fix, the pool was parsed and
 /// stored in `ModelEvadeArgs` but never applied here, so every
 /// `--socks5 / --http-proxy / --tailscale-exit-node` flag was silently
@@ -263,7 +263,7 @@ pub(crate) fn build_http_oracle(
     // Use the canonical transport builder so insecure / timeout / UA are
     // consistent with every other wafrift HTTP client.
     let mut client_builder = wafrift_transport::base_client_builder(
-        10, // 10 s oracle timeout — reasonable for membership queries
+        10, // 10 s oracle timeout, reasonable for membership queries
         insecure,
         Some("wafrift/model-evade (authorized security research)"),
     )
@@ -305,7 +305,7 @@ pub(crate) fn build_http_oracle(
     let calibration = Arc::new(calibrate_target(&rt, &client, &target_url, &param));
     if let Some(c) = calibration.as_ref() {
         eprintln!(
-            "{} oracle self-calibration — {}",
+            "{} oracle self-calibration: {}",
             "info:".cyan(),
             c.describe()
         );
@@ -331,7 +331,7 @@ pub(crate) fn build_http_oracle(
         // Compose the verdict: a rate-limit / gateway transient first (a
         // deferral, never a block), then the LEARNED per-target discriminator,
         // then the static signature/status classifier as the always-available
-        // fallback — so an unknown WAF is handled by calibration and a known
+        // fallback, so an unknown WAF is handled by calibration and a known
         // one by signatures, with neither able to fabricate a verdict.
         let classify = |r: &wafrift_liveoracle::verdict::ProbeResponse| {
             use wafrift_liveoracle::verdict::LiveVerdict;
@@ -399,7 +399,7 @@ fn send_live_probe(
 
 /// Run the calibration phase: probe a benign control and the malicious controls,
 /// then derive a per-target discriminator. `None` when the target cannot be
-/// calibrated (no WAF, or it blocks even the benign control) — the caller then
+/// calibrated (no WAF, or it blocks even the benign control), the caller then
 /// relies on the static classifier.
 fn calibrate_target(
     rt: &Arc<tokio::runtime::Runtime>,
@@ -439,7 +439,7 @@ fn calibrate_target(
 pub(crate) fn check_permission(url: &str, explicit_reason: &Option<String>) -> Result<(), String> {
     use std::net::IpAddr;
 
-    // Parse hostname from URL — strip scheme, then take the host:port part.
+    // Parse hostname from URL (strip scheme, then take the host:port part).
     let host = url
         .trim_start_matches("http://")
         .trim_start_matches("https://")
@@ -534,7 +534,7 @@ impl BypassEntry {
 
 // ── Accept-all SFA (fallback for budget-exhausted learning) ───────────────
 
-/// An SFA that accepts every input string — used as the fallback model
+/// An SFA that accepts every input string, used as the fallback model
 /// when the L* budget is exhausted before the hypothesis stabilised.
 /// Mining against an accept-all model proposes all attack-grammar strings
 /// as bypass candidates; online verification then filters them honestly.
@@ -584,7 +584,7 @@ pub(crate) fn run_model_evade(mut args: ModelEvadeArgs) -> ExitCode {
 
     // ── Step 1b: build egress pool (--socks5 / --http-proxy / --tailscale) ─
     // R52-style wiring (CLAUDE.md §9 WIRING): pre-fix these args were parsed,
-    // stored, and silently discarded — every oracle query routed direct.
+    // stored, and silently discarded (every oracle query routed direct).
     let want_egress = !args.egress_socks5.is_empty()
         || !args.egress_http_proxy.is_empty()
         || !args.egress_tailscale_nodes.is_empty();
@@ -678,7 +678,7 @@ pub(crate) fn run_model_evade(mut args: ModelEvadeArgs) -> ExitCode {
 
     // max_queries caps the EQ oracle's HTTP round-trips per equivalence
     // round. With a 22-symbol sqli alphabet the BFS frontier reaches
-    // 22⁵ ≈ 5 M entries at depth 5, capped to 1 M by FRONTIER_CAP —
+    // 22⁵ ≈ 5 M entries at depth 5, capped to 1 M by FRONTIER_CAP 
     // still 1 M HTTP calls per EQ round without this gate.
     //
     // §13 dogfood round-2 DEFECT 3: tie this cap to `--budget` instead of a
@@ -689,7 +689,7 @@ pub(crate) fn run_model_evade(mut args: ModelEvadeArgs) -> ExitCode {
     // choice (default 500 → eq cap 500, unchanged). A smaller cap merely
     // yields a coarser model (the EQ search is documented best-effort, never
     // an error). Total live requests ≈ budget (membership) + budget × eq
-    // rounds — the flag doc spells this out so rate-budgeting is honest.
+    // rounds (the flag doc spells this out so rate-budgeting is honest).
     let mut eq = BoundedExhaustiveEq {
         max_len: 6,
         max_queries: Some(args.budget),
@@ -711,7 +711,7 @@ pub(crate) fn run_model_evade(mut args: ModelEvadeArgs) -> ExitCode {
             Err(WafModelError::BudgetExhausted { queries }) => {
                 if !json_mode {
                     println!(
-                        "  {} budget of {} queries exhausted after {} queries — \
+                        "  {} budget of {} queries exhausted after {} queries. \
                          using optimistic accept-all model for mining.",
                         "Note:".bold().yellow(),
                         args.budget,
@@ -758,7 +758,7 @@ pub(crate) fn run_model_evade(mut args: ModelEvadeArgs) -> ExitCode {
 
     if candidates.is_empty() {
         let note = "No bypass candidates found. The learned model has no intersection \
-                    with the attack grammar — either the WAF blocks everything in \
+                    with the attack grammar, either the WAF blocks everything in \
                     this class, or the budget was too small to learn the boundary \
                     precisely. Try a larger --budget.";
         if json_mode {
@@ -907,7 +907,7 @@ pub(crate) fn run_model_evade(mut args: ModelEvadeArgs) -> ExitCode {
         if bypass_count == 0 {
             println!(
                 "\n{} No verified bypasses found. The model predicted candidates \
-                 but the live target blocked them — the model may need more budget. \
+                 but the live target blocked them, the model may need more budget. \
                  Try a larger --budget.",
                 "Note:".bold().yellow()
             );
@@ -960,7 +960,7 @@ mod tests {
         let r = check_permission("http://172.15.0.1/target", &None);
         assert!(
             r.is_err(),
-            "172.15.x.x is not RFC1918 — must require permission"
+            "172.15.x.x is not RFC1918, must require permission"
         );
     }
 
@@ -1218,7 +1218,7 @@ mod tests {
             max_len: 5,
             max_queries: None,
         };
-        // Budget of 1 is too small — must return BudgetExhausted.
+        // Budget of 1 is too small (must return BudgetExhausted).
         let result = l_star_budgeted(&mut waf, &build, &alpha, &mut eq, 1);
         assert!(
             matches!(result, Err(WafModelError::BudgetExhausted { .. })),
@@ -1317,7 +1317,7 @@ mod tests {
     /// INVARIANT test: every byte in every needle for each class MUST
     /// appear in the class's distinguished-symbol alphabet. Violation
     /// means the KMP SFA maps that byte to the catch-all representative
-    /// (b'A') and can never advance the needle match — the needle becomes
+    /// (b'A') and can never advance the needle match, the needle becomes
     /// silently unmatchable over the abstract alphabet. This is the exact
     /// bug that existed in the sqli alphabet before the fix (uppercase
     /// letters listed, lowercase needles).
@@ -1332,7 +1332,7 @@ mod tests {
                     assert!(
                         symbols.contains(&byte),
                         "class={class}: needle byte {byte:?} ({:?}) not in distinguished \
-                         alphabet — it maps to catch-all and kmp_sfa cannot match it.\n\
+                         alphabet: it maps to catch-all and kmp_sfa cannot match it.\n\
                          Needle: {:?}\nAlphabet: {:?}",
                         byte as char,
                         String::from_utf8_lossy(needle),
@@ -1349,7 +1349,7 @@ mod tests {
         // verify each class grammar accepts its attack language.  `mine_bypasses`
         // (enumerate_accepted, no seen-set) hits ENUMERATE_QUEUE_CAP on large
         // cyclic grammars when max_len is generous; it is NOT the correctness
-        // oracle — `minimal_bypass` is.
+        // oracle: `minimal_bypass` is.
         let accept_all = Sfa::new(0, vec![true], vec![vec![(BytePred::any(), 0)]]);
 
         // SQLi: the shortest bypass must contain an SQLi needle.

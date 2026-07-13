@@ -1,4 +1,4 @@
-//! Payload oracle trait — validates that evasion transforms preserve semantic meaning.
+//! Payload oracle trait (validates that evasion transforms preserve semantic meaning).
 //!
 //! Each injection type (SQL, XSS, SSTI, CMDI, path traversal) has different
 //! structural invariants. The Oracle trait provides a uniform interface for
@@ -15,8 +15,8 @@ pub trait PayloadOracle: Send + Sync {
     ///
     /// # Arguments
     ///
-    /// * `original` — The pre-transform payload (known-good injection).
-    /// * `transformed` — The post-transform payload to validate.
+    /// * `original`: The pre-transform payload (known-good injection).
+    /// * `transformed`: The post-transform payload to validate.
     ///
     /// # Contract
     ///
@@ -101,7 +101,7 @@ mod tests {
     #[test]
     fn oracle_rejects_when_original_lacks_required_property() {
         // Contract: oracle returns false when original itself
-        // doesn't satisfy the precondition — defensive.
+        // doesn't satisfy the precondition (defensive).
         let o = PreservesKeyOracle;
         assert!(!o.is_semantically_valid("no key here", "KEY: still no"));
     }
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn oracle_trait_supports_dyn_dispatch() {
-        // Build a heterogeneous oracle vec — the trait must be
+        // Build a heterogeneous oracle vec, the trait must be
         // dyn-compatible (object-safe).
         let oracles: Vec<Box<dyn PayloadOracle>> =
             vec![Box::new(EchoOracle), Box::new(PreservesKeyOracle)];

@@ -25,7 +25,7 @@ pub(crate) fn mysql_conditional_comment(keyword: &str) -> String {
 /// **MySQL / MariaDB ONLY.** Inline comments are treated as
 /// whitespace IN THE MIDDLE OF AN IDENTIFIER on those engines.
 /// PostgreSQL, MSSQL, Oracle, and SQLite all treat
-/// `S/**/E/**/L/**/E/**/C/**/T` as six separate identifiers — the
+/// `S/**/E/**/L/**/E/**/C/**/T` as six separate identifiers, the
 /// keyword `SELECT` no longer parses and the query 500s. The
 /// `mutate()` caller MUST gate this transform on a MySQL/MariaDB
 /// dialect tag; firing it against any other backend produces a
@@ -52,19 +52,19 @@ pub(crate) fn null_comment_split(keyword: &str) -> String {
 /// Build `MySQL`-dialect keyword comment mutations for the payload.
 ///
 /// **DIALECT CONTRACT.** Every output of this function is MySQL /
-/// MariaDB ONLY. Both strategies it emits — `mysql_conditional_comment`
+/// MariaDB ONLY. Both strategies it emits: `mysql_conditional_comment`
 /// (`/*!keyword*/`) and `inline_comment_split` (`S/**/E/**/L/**/E/**/C/**/T`)
-/// — are MySQL-specific syntax. PostgreSQL, MSSQL, Oracle, and
+///: are MySQL-specific syntax. PostgreSQL, MSSQL, Oracle, and
 /// SQLite REJECT the output: the conditional comment is treated
 /// as a regular comment (entire keyword stripped) on non-MySQL
 /// and the inline split parses as multiple separate identifiers.
 ///
 /// Callers MUST gate on detected dialect. The pipeline currently
-/// doesn't always have a dialect — when it doesn't, prefer
+/// doesn't always have a dialect, when it doesn't, prefer
 /// dialect-agnostic mutations (case-mixing, encoding) over this
 /// family. Firing this against a non-MySQL target produces a
 /// payload that fails server-side rather than bypassing the WAF
-/// — bench numbers look worse than they should AND the operator
+///: bench numbers look worse than they should AND the operator
 /// gets a `Verdict::Blocked` that's actually a `Verdict::Errored`.
 pub(crate) fn keyword_comment_mutations(
     payload: &str,
@@ -128,7 +128,7 @@ pub(crate) fn version_comment_mutations(
     for keyword in SQL_KEYWORDS {
         if let Some(position) = lower.find(&keyword.to_ascii_lowercase()) {
             let original = &payload[position..position + keyword.len()];
-            // Test multiple MySQL version numbers — different versions expose different behavior
+            // Test multiple MySQL version numbers, different versions expose different behavior
             for version in ["50000", "40000", "99999", "50001", "40100"] {
                 if results.len() >= max_mutations {
                     return results;
@@ -149,7 +149,7 @@ pub(crate) fn version_comment_mutations(
     results
 }
 
-/// Build nested comment mutations — exploits WAFs that strip first comment layer.
+/// Build nested comment mutations (exploits WAFs that strip first comment layer).
 ///
 /// `SELECT` → `/**/SELECT/**/` → `/* /**/ */ SELECT /* /**/ */`
 pub(crate) fn nested_comment_mutations(
@@ -172,16 +172,16 @@ pub(crate) fn nested_comment_mutations(
             //
             // Pre-fix this used `/*/**/*/{keyword}/*/**/ */` which
             // SQL parsers read as:
-            //   /*/**/  — first comment (body `/`), closes at
+            //   /*/**/, first comment (body `/`), closes at
             //             the first `*/`
-            //   */      — ORPHAN close token, SQL syntax error
-            //   ...     — rest of payload
+            //   */: ORPHAN close token, SQL syntax error
+            //   ..., rest of payload
             // Engines 400 on the orphan `*/`, the WAF never saw
             // the keyword, and the bypass-rate counter recorded
             // a phantom block.
             //
             // The new form is MySQL-specific (`/*!...*/` is a
-            // MySQL conditional-comment extension) — caller
+            // MySQL conditional-comment extension), caller
             // already gates this whole family behind the
             // dialect contract documented on
             // `keyword_comment_mutations`.

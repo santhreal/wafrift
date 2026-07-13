@@ -1,4 +1,4 @@
-//! Intelligence loop — connects differential analysis, evolution, and strategy.
+//! Intelligence loop (connects differential analysis, evolution, and strategy).
 
 use crate::differential::{DifferentialResult, Probe, generate_probes, generate_quick_probes};
 use crate::evolution::{Chromosome, EvolutionEngine};
@@ -108,14 +108,14 @@ impl IntelligenceLoop {
     }
 
     /// Record evolution feedback. An out-of-range `chromosome_index`
-    /// indicates a state-machine bug between caller and engine — log
+    /// indicates a state-machine bug between caller and engine, log
     /// loudly via tracing rather than swallowing the error silently.
     pub fn record_feedback(&mut self, chromosome_index: usize, passed: bool) {
         if let Err(e) = self.evolution.record_feedback(chromosome_index, passed) {
             tracing::warn!(
                 ?e,
                 chromosome_index,
-                "evolution.record_feedback rejected — likely stale chromosome index"
+                "evolution.record_feedback rejected, likely stale chromosome index"
             );
         }
         self.feedback_count += 1;
@@ -128,7 +128,7 @@ impl IntelligenceLoop {
             tracing::warn!(
                 ?e,
                 chromosome_index,
-                "evolution.record_verdict rejected — likely stale chromosome index"
+                "evolution.record_verdict rejected, likely stale chromosome index"
             );
         }
         self.feedback_count += 1;
@@ -181,7 +181,7 @@ impl IntelligenceLoop {
 
         // Handle target errors. record_target_error returns Err exactly when
         // health is critical, so we use its return value directly instead of
-        // re-querying is_healthy() — no computed-but-discarded result.
+        // re-querying is_healthy() (no computed-but-discarded result).
         // Backoff implicitly handled by caller observing returned delay.
         if let Feedback::TargetError(ref msg) = feedback
             && self.evolution.record_target_error(msg.clone()).is_err()

@@ -14,7 +14,7 @@
 //! before comparison), so a "bypass" it reports is a genuine structural gap in
 //! the sanitizer's configuration (e.g. "forbids `script` but not `svg`+`onload`"),
 //! not an artefact of a sloppy model. Every candidate is still flagged for live
-//! scald DOM confirmation — never asserted as executed here.
+//! scald DOM confirmation (never asserted as executed here).
 
 use regex::Regex;
 use std::sync::OnceLock;
@@ -27,7 +27,7 @@ use crate::extract::SanitizerModel;
 /// `<...>` tag matcher. Matches a complete `<...>` tag OR an **unterminated**
 /// `<...` run at end-of-input: a real HTML parser (and DOMPurify) starts a tag on
 /// a trailing `<script` even with no closing `>`, so the model must scrub it too
-/// — otherwise a script-forbidding config would falsely "leak" a bare `<script`
+///: otherwise a script-forbidding config would falsely "leak" a bare `<script`
 /// (a fabricated bypass). A lone `<` in benign text still matches but carries an
 /// empty tag name, so `scrub_tag` keeps it untouched.
 fn tag_re() -> &'static Regex {
@@ -57,7 +57,7 @@ fn exec_handler_re() -> &'static Regex {
 
 /// Translate a JS regex source into something Rust's `regex` crate accepts,
 /// best-effort. JS-only constructs (lookbehind, etc.) make `Regex::new` fail and
-/// the caller skips that strip pattern — never a panic, never an unsound match.
+/// the caller skips that strip pattern (never a panic, never an unsound match).
 fn js_to_rust_regex(src: &str) -> String {
     // `\/` (escaped slash, required in JS literals) is just `/` in Rust.
     src.replace("\\/", "/")
@@ -109,11 +109,11 @@ impl SanitizerModel {
 
     /// Compile this model's `strip_patterns` once. The membership hot path (the
     /// L*/SFA learner issues up to the per-round query budget of calls) must not
-    /// recompile the same regexes on every query — doing so once turned a strict,
+    /// recompile the same regexes on every query, doing so once turned a strict,
     /// no-bypass model carrying a single extracted strip regex into a multi-minute
     /// hang. Patterns that don't translate to Rust's `regex` engine are dropped;
     /// a dropped strip can only *keep* more of the input, so the model errs toward
-    /// reporting a bypass (the sound direction — scald confirms in a real browser).
+    /// reporting a bypass (the sound direction (scald confirms in a real browser)).
     #[must_use]
     pub fn compiled_strip_patterns(&self) -> Vec<Regex> {
         self.strip_patterns
@@ -122,7 +122,7 @@ impl SanitizerModel {
             .collect()
     }
 
-    /// Simulate the sanitizer on `input` using a pre-compiled strip-pattern set —
+    /// Simulate the sanitizer on `input` using a pre-compiled strip-pattern set 
     /// the hot path ([`SanitizerOracle`]) compiles once and calls this per query.
     #[must_use]
     pub fn sanitize_with(&self, input: &str, strip_res: &[Regex]) -> String {
@@ -136,7 +136,7 @@ impl SanitizerModel {
     }
 
     /// Simulate the sanitizer on `input`, returning the sanitized HTML. Compiles
-    /// the strip patterns on the fly — fine for one-off calls; a learner's hot
+    /// the strip patterns on the fly, fine for one-off calls; a learner's hot
     /// loop must use [`sanitize_with`](Self::sanitize_with) with a cached set.
     #[must_use]
     pub fn sanitize(&self, input: &str) -> String {
@@ -179,7 +179,7 @@ fn neutralize_scheme(tag: &str, scheme: &str) -> String {
     while i < tag.len() {
         if lower[i..].starts_with(&needle) {
             out.push_str(&tag[i..i + scheme.len()]);
-            out.push_str("%3a"); // defanged colon — no longer a live scheme
+            out.push_str("%3a"); // defanged colon, no longer a live scheme
             i += needle.len();
         } else {
             // Advance one char (UTF-8 safe).
@@ -192,7 +192,7 @@ fn neutralize_scheme(tag: &str, scheme: &str) -> String {
 }
 
 /// Does `html` still carry a live, executable XSS vector in a markup sink? We
-/// judge executability on the two **unambiguous** markup vectors — a surviving
+/// judge executability on the two **unambiguous** markup vectors, a surviving
 /// `<script>` tag and a surviving `on*=` event handler on a tag. URL-scheme
 /// execution (`javascript:` in `href`) depends on the specific tag/sink and is
 /// modelled separately by defanging (`neutralize_scheme`) in `sanitize`; treating
@@ -215,7 +215,7 @@ pub fn is_executable_html(html: &str) -> bool {
 pub struct SanitizerOracle {
     model: SanitizerModel,
     /// Strip-pattern regexes compiled once at construction. The membership hot
-    /// path must not recompile them per query — per-call `Regex::new` over a
+    /// path must not recompile them per query, per-call `Regex::new` over a
     /// strict model's extracted strip regex was the multi-minute-hang root cause.
     strip_res: Vec<Regex>,
     queries: u64,
@@ -295,7 +295,7 @@ mod tests {
     #[test]
     fn forbid_is_case_insensitive_so_case_variation_does_not_bypass() {
         let m = dompurify(&["script"], None, false);
-        // <ScRiPt> must also be dropped (real sanitizers lowercase) — NOT a bypass.
+        // <ScRiPt> must also be dropped (real sanitizers lowercase). NOT a bypass.
         assert!(!m.survives_executable("<ScRiPt>alert(1)</ScRiPt>"));
     }
 

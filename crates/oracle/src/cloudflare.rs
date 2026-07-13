@@ -60,7 +60,7 @@ pub struct CfBlockSignal {
     /// Which kind of mitigation CF applied.
     pub block_class: BlockClass,
     /// Composite rule-attribution string for `OracleVerdict.rule_id`:
-    /// `cf:<edge_pop>:<ruleset_hint>` — absent components become `?`.
+    /// `cf:<edge_pop>:<ruleset_hint>`: absent components become `?`.
     /// Example: `cf:SJC:owasp`.
     pub rule_attribution: String,
 }
@@ -77,13 +77,13 @@ impl CfBlockSignal {
 
 /// Parse Cloudflare-specific block signals from response headers and body.
 ///
-/// Pure and allocation-bounded — never blocks on I/O.
+/// Pure and allocation-bounded (never blocks on I/O).
 ///
 /// # Arguments
 ///
-/// * `response_headers` — All response headers as `(name, value)` pairs.
+/// * `response_headers`: All response headers as `(name, value)` pairs.
 ///   Header names are matched case-insensitively.
-/// * `body` — Raw (possibly HTML) response body bytes.
+/// * `body`: Raw (possibly HTML) response body bytes.
 #[must_use]
 pub fn parse_cf_block(response_headers: &[(String, String)], body: &[u8]) -> CfBlockSignal {
     let body_str = str::from_utf8(body).unwrap_or("").to_ascii_lowercase();
@@ -246,8 +246,8 @@ fn extract_rule_comment_id(body_lc: &str) -> Option<String> {
 /// Derive the ruleset hint from body text and extracted IDs.
 ///
 /// Priority:
-/// 1. Rule comment ID (actual rule number — most specific)
-/// 2. CVE ID in body (highly specific — beats generic error codes)
+/// 1. Rule comment ID (actual rule number, most specific)
+/// 2. CVE ID in body (highly specific, beats generic error codes)
 /// 3. CF error code mapped to known ruleset groups
 /// 4. Named ruleset group text patterns in body
 fn extract_ruleset_hint(
@@ -259,7 +259,7 @@ fn extract_ruleset_hint(
         return Some(id.clone());
     }
 
-    // CVE IDs are maximally specific — check before generic error code mapping.
+    // CVE IDs are maximally specific (check before generic error code mapping).
     if let Some(cve) = extract_cve_id(body_lc) {
         return Some(cve);
     }
@@ -375,7 +375,7 @@ fn classify_block_class(
     body_has_manual_review: bool,
     body_has_rate_limit: bool,
 ) -> BlockClass {
-    // `Retry-After` header is the strongest unambiguous rate-limit signal —
+    // `Retry-After` header is the strongest unambiguous rate-limit signal 
     // it wins over everything, even an explicit cf-mitigated header, because
     // a cf-mitigated:block response that ALSO carries Retry-After is CF's
     // way of combining a temporary ban with a structured retry directive.
@@ -390,7 +390,7 @@ fn classify_block_class(
                 // priority over weak body-text rate-limit patterns.  A block
                 // page that mentions "rate limit" in its footer (e.g. CF's own
                 // "your IP was rate-limited and then blocked" copy) must NOT
-                // be reclassified — only an explicit header or a body-only
+                // be reclassified, only an explicit header or a body-only
                 // rate-limit page without cf-mitigated should trigger
                 // RateLimited.
                 BlockClass::ManagedRulesetBlock
@@ -1316,7 +1316,7 @@ mod tests {
 
     #[test]
     fn retry_after_overrides_block_mitigated_to_rate_limited() {
-        // Retry-After header (strong) must still win even over cf-mitigated: block —
+        // Retry-After header (strong) must still win even over cf-mitigated: block 
         // this is the "temporary ban with retry directive" CF pattern.
         let hdrs = vec![
             h("cf-ray", "78f00b1c2d3e4f5a-EWR"),
@@ -1370,7 +1370,7 @@ mod tests {
         let hdrs = vec![h("cf-ray", "ab2c3d4e5f6a7b8c-ORD")];
         let sig = parse_cf_block(&hdrs, &body);
         // NUL bytes after valid UTF-8 are ignored by str::from_utf8 fallback
-        // but from_utf8_lossy keeps the valid prefix — "blocked" phrase fires.
+        // but from_utf8_lossy keeps the valid prefix: "blocked" phrase fires.
         assert!(sig.is_cloudflare_response());
     }
 
@@ -1393,7 +1393,7 @@ mod tests {
     #[test]
     fn mixed_encoding_body_cf_error_extraction() {
         // Bodies with latin-1 / windows-1252 high bytes mixed into otherwise
-        // ASCII content — str::from_utf8 will fail, should fall back to empty
+        // ASCII content, str::from_utf8 will fail, should fall back to empty
         // body rather than returning garbage extracted codes.
         let mut body = b"<!-- error code: 1020 -->".to_vec();
         body.extend_from_slice(&[0xc0, 0x80]); // overlong NUL in modified UTF-8
@@ -1411,7 +1411,7 @@ mod tests {
 
     #[test]
     fn very_long_body_does_not_stack_overflow() {
-        // 512 KB of repeated block-page content — must complete without stack
+        // 512 KB of repeated block-page content, must complete without stack
         // overflow and return a result within bounded time.
         let chunk = b"<html><body><p>Sorry, you have been blocked.</p>";
         let body: Vec<u8> = chunk.iter().cloned().cycle().take(512 * 1024).collect();
@@ -1425,7 +1425,7 @@ mod tests {
 
     #[test]
     fn cve_id_with_insufficient_digit_count_is_not_extracted() {
-        // CVE IDs with fewer than 4 trailing digits must not fire — "CVE-2021-123"
+        // CVE IDs with fewer than 4 trailing digits must not fire. "CVE-2021-123"
         // is not a valid CVE ID (needs >= 4 digits in the sequence number).
         let body = b"<html><body><p>Matched CVE-2021-123 heuristic.</p></body></html>";
         let hdrs = vec![h("cf-ray", "de5f6a7b8c9d0e1f-SYD")];

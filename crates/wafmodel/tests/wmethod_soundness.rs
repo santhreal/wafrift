@@ -1,4 +1,4 @@
-//! E1/E7 — pinned finding: **W-method conformance testing is only
+//! E1/E7, pinned finding: **W-method conformance testing is only
 //! *conditionally* complete**, and every exactness claim in this crate
 //! must therefore be driven by a *provably* complete oracle.
 //!
@@ -6,22 +6,22 @@
 //! `WMethodEq{extra_states:2}` to assert L\* / KV / passive all recover
 //! the exact language. For the self-overlapping pattern `<s/s` the
 //! first L\* hypothesis has **1** state, the target minimal DFA has
-//! **5**, and the shortest counterexample is `<s/s` itself (length 4) —
+//! **5**, and the shortest counterexample is `<s/s` itself (length 4) 
 //! strictly outside W-method{2}'s `state_cover · Σ^{≤3} · W` horizon.
 //! W-method found no counterexample and *silently certified the trivial
 //! 1-state "accept-everything" automaton as exact*. `passive_learn`
 //! (the bounded-RPNI learner) recovered the correct 5-state DFA, so the
 //! defect was the differential feeding L\*/KV an oracle too weak to
-//! prove the property it asserted — a **false green**, not a learner
+//! prove the property it asserted, a **false green**, not a learner
 //! bug.
 //!
 //! This test pins all three facts so they can never silently regress:
 //!   1. `WMethodEq{2}` genuinely *fails* to recover `<s/s` (the
-//!      limitation is real — nobody may over-claim W-method, and the
+//!      limitation is real, nobody may over-claim W-method, and the
 //!      test is non-vacuous).
 //!   2. `BoundedExhaustiveEq` (complete for any fault ≤ `max_len`)
 //!      recovers it exactly.
-//!   3. `passive_learn` (no equivalence oracle at all — a fixed
+//!   3. `passive_learn` (no equivalence oracle at all, a fixed
 //!      complete test-suite, bounded |states|) recovers it exactly and
 //!      *terminates*.
 
@@ -78,7 +78,7 @@ fn wmethod2_provably_underlearns_the_self_overlap_pattern() {
     // The limitation is REAL: assert W-method{2} does NOT recover the
     // language (and is in fact the degenerate 1-state hypothesis). If
     // someone strengthens W-method this test must be revisited
-    // deliberately — it is not allowed to pass by accident.
+    // deliberately (it is not allowed to pass by accident).
     let alpha = Alphabet::new(vec![b'<', b's', b'/'], b'A');
     let mut w = waf(PAT);
     let mut wm = WMethodEq { extra_states: 2 };
@@ -88,7 +88,7 @@ fn wmethod2_provably_underlearns_the_self_overlap_pattern() {
     assert_eq!(
         learned.len(),
         1,
-        "W-method{{2}} unexpectedly grew the hypothesis — the pinned \
+        "W-method{{2}} unexpectedly grew the hypothesis, the pinned \
          under-learning finding changed; re-audit every exactness test"
     );
     // …and the trivial automaton is wrong on the witness `<s/s`.
@@ -103,7 +103,7 @@ fn wmethod2_provably_underlearns_the_self_overlap_pattern() {
     );
     assert!(
         !truth(PAT, &alpha, &w4),
-        "ground truth blocks `<s/s` — the divergence is real"
+        "ground truth blocks `<s/s`: the divergence is real"
     );
 }
 
@@ -125,7 +125,7 @@ fn sound_oracle_and_passive_both_recover_the_exact_language() {
     };
     let kv = kv_learn(&mut w2, &jb, &alpha, &mut e2).unwrap().sfa;
 
-    // (3) passive_learn uses NO equivalence oracle — a fixed complete
+    // (3) passive_learn uses NO equivalence oracle, a fixed complete
     // test-suite with |states| ≤ |suite|; it must terminate AND be
     // exact for depth ≥ the Myhill–Nerode bound (4 here; we give 7).
     let mut w3 = waf(PAT);
@@ -137,7 +137,7 @@ fn sound_oracle_and_passive_both_recover_the_exact_language() {
     assert!(la.equivalent(&pv), "passive must equal the sound L* result");
 
     // Exact vs the real WAF on every word up to length 8 (well past
-    // the 4-state MN bound) — and the pinned witness is now correct.
+    // the 4-state MN bound) (and the pinned witness is now correct).
     for c in words(alpha.len(), 8) {
         let t = truth(PAT, &alpha, &c);
         let conc = alpha.concretize(&c);

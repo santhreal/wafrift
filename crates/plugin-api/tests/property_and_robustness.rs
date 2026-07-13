@@ -60,7 +60,7 @@ description = "Adversarial test plugin"
 #[test]
 fn oversized_toml_rejected() {
     let dir = TempDir::new().unwrap();
-    // 300 KiB description — well over the 256 KiB cap.
+    // 300 KiB description (well over the 256 KiB cap).
     let huge = "x".repeat(300 * 1024);
     let content = minimal_toml_with_rules(
         "huge",
@@ -82,7 +82,7 @@ fn oversized_toml_rejected() {
 #[test]
 fn manifest_only_no_rules_loads_as_passthrough() {
     // External contributors should be able to register metadata
-    // (manifest only) without shipping rules yet — useful as a
+    // (manifest only) without shipping rules yet, useful as a
     // placeholder while wiring up a future WASM upgrade.
     let dir = TempDir::new().unwrap();
     let content = r#"
@@ -108,7 +108,7 @@ description = "Manifest-only identity tamper"
     assert_eq!(result, "hello world");
 }
 
-// ── 3. Manifest validation — every required field ───────────
+// ── 3. Manifest validation, every required field ───────────
 
 #[test]
 fn empty_name_rejected() {
@@ -155,7 +155,7 @@ fn description_513_chars_rejected() {
 
 #[test]
 fn name_with_unicode_rejected() {
-    // Names are ASCII-alphanumeric + underscore only — a unicode name
+    // Names are ASCII-alphanumeric + underscore only, a unicode name
     // would break the plugin URL / dispatch table contract.
     let mf = manifest_with("naïve_name", "1.0.0", "A", "desc");
     assert!(matches!(
@@ -166,7 +166,7 @@ fn name_with_unicode_rejected() {
 
 #[test]
 fn name_with_dash_rejected() {
-    // Underscore is allowed, dash is not — this is a deliberate
+    // Underscore is allowed, dash is not, this is a deliberate
     // ergonomic choice (snake_case in Rust dispatch).
     let mf = manifest_with("dash-name", "1.0.0", "A", "desc");
     assert!(matches!(
@@ -208,7 +208,7 @@ fn empty_wasm_file_rejected() {
     write_plugin(&dir, "empty.wasm", "");
     let mut reg = TamperRegistry::new();
     let errors = reg.load_dir(dir.path());
-    // Either a wasm-load error or none-registered — both acceptable;
+    // Either a wasm-load error or none-registered, both acceptable;
     // the contract is no-panic and no-zombie-registration.
     assert_eq!(reg.len(), 0);
     assert!(!errors.is_empty(), "empty wasm must error");
@@ -258,7 +258,7 @@ fn nested_subdirectory_does_not_recurse() {
     let dir = TempDir::new().unwrap();
     let sub = dir.path().join("subdir");
     std::fs::create_dir_all(&sub).unwrap();
-    // Valid TOML inside the subdir should NOT be loaded — loader is
+    // Valid TOML inside the subdir should NOT be loaded, loader is
     // explicitly one-level (no recursion) to keep tamper directory
     // semantics flat.
     std::fs::write(
@@ -526,7 +526,7 @@ fn registry_all_returns_all_loaded() {
 // ── 13. Size_limit wiring: invalid-regex patterns are rejected ─────────
 
 /// Anti-regression: ensures `size_limit` is wired into TOML plugin
-/// regex compilation — an invalid pattern (verifiable at compile time)
+/// regex compilation, an invalid pattern (verifiable at compile time)
 /// must be rejected with `PluginError::InvalidRegex`.
 ///
 /// The regex crate uses linear-time matching so classical backtracking
@@ -538,7 +538,7 @@ fn registry_all_returns_all_loaded() {
 #[test]
 fn syntactically_invalid_regex_is_rejected_at_load_time() {
     let dir = TempDir::new().unwrap();
-    // Unmatched parenthesis — rejected at regex compile time.
+    // Unmatched parenthesis (rejected at regex compile time).
     write_plugin(
         &dir,
         "bomb.toml",

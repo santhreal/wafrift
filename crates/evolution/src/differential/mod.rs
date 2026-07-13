@@ -1,4 +1,4 @@
-//! WAF rule differential analysis — reverse-engineer what a WAF blocks.
+//! WAF rule differential analysis (reverse-engineer what a WAF blocks).
 //!
 //! Sends a matrix of carefully crafted probe payloads that isolate
 //! individual WAF rule triggers. By observing which probes get blocked

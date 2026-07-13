@@ -1,7 +1,7 @@
 //! Exact-correctness + differential truth contract for the learners.
 //!
 //! The learner's correctness is asserted against a ground-truth WAF
-//! whose language we control — *exactly*, not by `!is_empty()` and not
+//! whose language we control: *exactly*, not by `!is_empty()` and not
 //! against itself:
 //!
 //! 1. **Exact recovery**: every abstract word up to a length well past
@@ -117,7 +117,7 @@ fn kv_and_lstar_agree_exactly_and_kv_is_no_costlier() {
     let kv = kv_learn(&mut wb, &json_body, &alpha, &mut eqb).unwrap();
 
     // Differential: identical recognised language (exact automaton
-    // equivalence — a distinguishing word would be returned if not).
+    // equivalence (a distinguishing word would be returned if not)).
     assert!(
         la.sfa.equivalent(&kv.sfa),
         "L* and KV learned different languages: {:?}",
@@ -156,7 +156,7 @@ fn learned_model_is_not_equivalent_to_a_different_waf() {
         let other = waf_passes("<t", &alpha, &w);
         if model != other {
             found_split = true;
-            // Sanity: the split is real — `<s` is one such witness
+            // Sanity: the split is real: `<s` is one such witness
             // (blocked by A, passed by B).
             break;
         }
@@ -165,13 +165,13 @@ fn learned_model_is_not_equivalent_to_a_different_waf() {
         found_split,
         "model trained on WAF-A must NOT be equivalent to WAF-B"
     );
-    // Concretely: body `<s` — WAF-A blocks (model rejects), WAF-B passes.
+    // Concretely: body `<s`: WAF-A blocks (model rejects), WAF-B passes.
     let ws = vec![0usize, 1usize]; // `<`, `s`
     assert!(!learned.accepts(&alpha.concretize(&ws)));
     assert!(waf_passes("<t", &alpha, &ws));
 }
 
-/// E1/5 — triple-learner differential. Three independent inference
+/// E1/5, triple-learner differential. Three independent inference
 /// strategies (L* incremental table, KV discrimination tree, passive
 /// fixed-suite) must recover the EXACT same language as the WAF, for a
 /// battery of ground-truth rulesets. A bug in any one strategy is
@@ -187,7 +187,7 @@ fn lstar_kv_and_passive_learners_all_agree_with_the_waf() {
         // claim. `WMethodEq{extra_states:k}` only guarantees fault
         // discovery when (true_states − hyp_states) ≤ k; for `<s/s`
         // the very first hypothesis has 1 state, the target has 5, and
-        // the shortest counterexample is `<s/s` itself (length 4) —
+        // the shortest counterexample is `<s/s` itself (length 4) 
         // outside W-method{2}'s ≤3 horizon, so it silently certifies
         // the trivial 1-state "accept-all" automaton. That is not a
         // passive_learn bug (passive recovers the exact 5-state DFA);
@@ -195,7 +195,7 @@ fn lstar_kv_and_passive_learners_all_agree_with_the_waf() {
         // prove the property it asserts. `BoundedExhaustiveEq` is
         // complete for every fault whose shortest witness ≤ max_len,
         // and max_len here covers the length-8 verification corpus
-        // below — so all three learners are now genuinely exact.
+        // below (so all three learners are now genuinely exact).
         let mut eq1 = BoundedExhaustiveEq {
             max_len: 8,
             max_queries: None,
@@ -235,7 +235,7 @@ fn lstar_kv_and_passive_learners_all_agree_with_the_waf() {
 }
 
 // ── E5 ratchet (learn.rs): the Alphabet accessors had NO behavioural
-// test — `cargo-mutants` proved `is_empty -> true` and
+// test: `cargo-mutants` proved `is_empty -> true` and
 // `raw_symbols -> Vec::leak(...)` survived. They are the abstraction
 // every learner reasons over, so pin them exactly. (`is_empty ->
 // false` is a documented provably-equivalent mutant: `Alphabet::new`
@@ -268,7 +268,7 @@ fn alphabet_accessors_are_exact() {
 // rounds the decompilation cost). It had no truthfulness test, so
 // `rounds += 1 → *= 1` (stuck at 0) survived in BOTH l_star and
 // kv_learn. Pin it: a target that needs refinement reports ≥1 round;
-// a trivially-learnable target reports exactly 0 (non-vacuous — proves
+// a trivially-learnable target reports exactly 0 (non-vacuous, proves
 // the counter both increments and can legitimately be 0).
 #[test]
 fn equivalence_rounds_is_truthful_provenance() {
@@ -285,7 +285,7 @@ fn equivalence_rounds_is_truthful_provenance() {
     assert!(
         la.equivalence_rounds >= 1,
         "L* needed refinement for `<s/s` but reported {} rounds \
-         (provenance is lying — rounds counter not incrementing)",
+         (provenance is lying, rounds counter not incrementing)",
         la.equivalence_rounds
     );
     let mut w2 = waf_with_pattern("<s/s");

@@ -1,4 +1,4 @@
-//! WAF Rift Proxy — HTTP forward proxy with automatic WAF evasion.
+//! WAF Rift Proxy: HTTP forward proxy with automatic WAF evasion.
 //!
 //! Point your browser or scanner at this proxy and all outbound traffic
 //! is automatically transformed to bypass WAF rules. Per-host evasion
@@ -44,7 +44,7 @@ use wafrift_proxy::upstream_policy::{
 use wafrift_strategy::HostState;
 use wafrift_strategy::strategy::{evade, evade_smart};
 use wafrift_transport::signal::{BlockClass, ResponseProfileDb};
-// §8 ARCHITECTURE: one import path for EvasionConfig — canonical home is
+// §8 ARCHITECTURE: one import path for EvasionConfig, canonical home is
 // wafrift_types, not the forwarding re-export in wafrift_strategy.
 use wafrift_types::{EvasionConfig, EvasionResult};
 
@@ -117,27 +117,27 @@ impl RequestLogger {
         // The NDJSON file is the proxy's primary audit / replay trail.
         // Silent write failures (full disk, stale handle, permission
         // change) would leave the operator believing the log is
-        // complete when it isn't — so surface every IO error through
+        // complete when it isn't, so surface every IO error through
         // the throttled warn channel rather than dropping the diagnostic.
         let throttle = WARN_THROTTLE.get();
         match serde_json::to_string(entry) {
             Ok(line) => {
                 if let Err(e) = writeln!(w, "{line}") {
                     if throttle.is_none_or(|t| t.should_warn("audit-log-write")) {
-                        warn!(error = %e, "audit log write failed — entries are being dropped");
+                        warn!(error = %e, "audit log write failed, entries are being dropped");
                     }
                     return;
                 }
                 if let Err(e) = w.flush()
                     && throttle.is_none_or(|t| t.should_warn("audit-log-flush"))
                 {
-                    warn!(error = %e, "audit log flush failed — recent entries may be in buffer only");
+                    warn!(error = %e, "audit log flush failed, recent entries may be in buffer only");
                 }
             }
             Err(e) => {
                 // `entry` is already a constructed serde_json::Value,
                 // so failure is pathological (non-string map key, etc.)
-                // — still surface it; silent drop hides upstream bugs.
+                //: still surface it; silent drop hides upstream bugs.
                 if throttle.is_none_or(|t| t.should_warn("audit-log-serialize")) {
                     warn!(error = %e, "audit log entry serialization failed");
                 }
@@ -246,7 +246,7 @@ struct Args {
 
     /// Wear a real browser's TLS `ClientHello` on every upstream forward.
     /// Closes the JA3/JA4 fingerprint gap vs Cloudflare / Akamai /
-    /// Fastly Sigsci / Imperva Bot Protection — which classify the
+    /// Fastly Sigsci / Imperva Bot Protection, which classify the
     /// inbound TLS connection as "non-browser" before they ever look
     /// at HTTP. Supported profiles: chrome131, chrome120, edge131,
     /// firefox133, safari18, `safari17_5`, okhttp5; aliases `chrome`,
@@ -271,7 +271,7 @@ struct Args {
     /// Pad request bodies with N bytes of inert ASCII filler before the
     /// real payload. Cloud WAFs only inspect the first 8 KB
     /// (Cloudflare Pro / Akamai default) or 16 KB (AWS WAF default) of
-    /// a request body — pushing the malicious payload past that
+    /// a request body, pushing the malicious payload past that
     /// inspection window makes the WAF rule engine miss it entirely
     /// while the origin still parses the body correctly. Content-type
     /// aware: JSON gets a leading `_wafrift_pad` field, form-urlencoded
@@ -283,7 +283,7 @@ struct Args {
     body_padding_bytes: usize,
 
     /// Disable HTTP connection re-use. Every upstream request opens a
-    /// fresh TCP connection — the kernel picks a new ephemeral source
+    /// fresh TCP connection, the kernel picks a new ephemeral source
     /// port, defeating per-source-port rate limits and any heuristic
     /// that groups requests by 5-tuple. Costs ~one TCP+TLS handshake
     /// per request. Combine with --tls-impersonate-rotate for full
@@ -305,7 +305,7 @@ struct Args {
     /// every query parameter VALUE (names are left intact since
     /// they drive routing). This covers the canonical attack
     /// surface for SQLi-in-`?id=`, XSS-in-`?q=`, file-include in
-    /// `?file=` etc — most production attacks live in URL
+    /// `?file=` etc, most production attacks live in URL
     /// parameters, not request bodies.
     ///
     /// Off by default because mutating the URL changes upstream
@@ -334,7 +334,7 @@ struct Args {
     ///   `slash-dot-slash`  `/admin` → `/.//admin`
     ///                      Combines both forms.
     ///
-    /// Off by default — path-shape changes break upstream routing on
+    /// Off by default, path-shape changes break upstream routing on
     /// some targets. Opt in only against authorised WAF research
     /// targets. Pass 21 R62.
     #[arg(long = "mutate-path-prefix", value_name = "VARIANT", value_parser = clap::builder::PossibleValuesParser::new(["double-slash", "triple-slash", "slash-dot", "slash-dot-slash"]))]
@@ -357,7 +357,7 @@ type SharedState = Arc<Mutex<ProxyState>>;
 
 /// Process-wide stealth client. `OnceLock` because we want the upstream
 /// forward sites to dispatch through it without every function in the
-/// chain having to thread an extra parameter — initialised once at
+/// chain having to thread an extra parameter, initialised once at
 /// startup if `--tls-impersonate <profile>` was passed, never touched
 /// again. `None` (uninitialised) ⇒ all upstream forwards use the
 /// default reqwest+rustls client.
@@ -367,7 +367,7 @@ static STEALTH_CLIENT: std::sync::OnceLock<wafrift_transport::stealth::StealthCl
 /// Process-wide rotating stealth pool. When set (via
 /// `--tls-impersonate-rotate p1,p2,p3`), every upstream forward picks
 /// the next client in round-robin. Mutually exclusive with
-/// `STEALTH_CLIENT` — only one of the two is ever populated.
+/// `STEALTH_CLIENT`: only one of the two is ever populated.
 static STEALTH_POOL: std::sync::OnceLock<StealthPool> = std::sync::OnceLock::new();
 
 /// Process-wide body-padding bytes. Read at every request to decide
@@ -384,8 +384,8 @@ static MUTATE_URL_ENABLED: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
 /// Process-wide path-prefix mutation strategy. `None` (= 0xFF in the
-/// AtomicU8 sentinel) means disabled — the upstream path is forwarded
-/// unchanged. Pass 21 R62 — CVE-2025-29914 Coraza double-slash and the
+/// AtomicU8 sentinel) means disabled, the upstream path is forwarded
+/// unchanged. Pass 21 R62: CVE-2025-29914 Coraza double-slash and the
 /// three related path-prefix variants.
 static MUTATE_PATH_PREFIX: std::sync::atomic::AtomicU8 =
     std::sync::atomic::AtomicU8::new(MUTATE_PATH_PREFIX_DISABLED);
@@ -398,7 +398,7 @@ const MUTATE_PATH_PREFIX_DISABLED: u8 = 0xFF;
 /// / `_abck` / `aws-waf-token` on the response side and replays on
 /// the request side until expiry (default 30min, see
 /// [`wafrift_transport::challenge::DEFAULT_CLEARANCE_TTL`]). Always
-/// initialised — operating cost is one `HashMap` lookup per request.
+/// initialised (operating cost is one `HashMap` lookup per request).
 static CHALLENGE_STORE: std::sync::OnceLock<wafrift_transport::challenge::ChallengeStore> =
     std::sync::OnceLock::new();
 
@@ -413,7 +413,7 @@ fn challenge_store() -> &'static wafrift_transport::challenge::ChallengeStore {
 /// Process-wide TUI event channel. `Some` when `--tui` is set; the
 /// dashboard task drains it. Bounded at 10 k events so a slow TTY can't
 /// produce unbounded memory growth on a heavy-traffic proxy (was
-/// unbounded — at 10 k req/s with a stalled TUI that's 200 MB/s of
+/// unbounded, at 10 k req/s with a stalled TUI that's 200 MB/s of
 /// dropped allocations). `try_send` drops on full so the request hot
 /// path never blocks on TUI backpressure.
 static TUI_TX: std::sync::OnceLock<tokio::sync::mpsc::Sender<wafrift_proxy::tui::Event>> =
@@ -467,14 +467,14 @@ use crate::warn_throttle::WarnThrottle;
 /// guard, and then run the synchronous `save_gene_bank` (which
 /// performs an fsync + atomic rename) WITHOUT holding the lock
 /// across the disk I/O. Pre-fix every concurrent forwarded
-/// request stalled for the full fsync window — easy to provoke
+/// request stalled for the full fsync window, easy to provoke
 /// on a slow disk or NFS mount.
 #[derive(Default, Clone)]
 pub(crate) struct ProxyState {
     /// Per-host evasion state.
     pub(crate) hosts: HashMap<String, HostState>,
     /// FIFO queue tracking host insertion order. Used for deterministic
-    /// eviction when the map exceeds its cap — prevents arbitrary
+    /// eviction when the map exceeds its cap, prevents arbitrary
     /// HashMap-bucket-order removal from discarding active hosts.
     pub(crate) host_fifo: VecDeque<String>,
     /// Total requests proxied.
@@ -606,7 +606,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Err(e) => {
                 eprintln!(
-                    "(--tui) could not open log file {}: {} — disabling --tui to keep stdout logs",
+                    "(--tui) could not open log file {}: {}, disabling --tui to keep stdout logs",
                     log_path.display(),
                     e
                 );
@@ -628,7 +628,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ca = CertificateAuthority::generate()?;
         ca.write_to_dir(dir)?;
         info!(
-            "Wrote MITM CA to {} — install {} in your client, then run with --mitm --mitm-ca-dir ...",
+            "Wrote MITM CA to {}, install {} in your client, then run with --mitm --mitm-ca-dir ...",
             dir.display(),
             dir.join("wafrift-mitm-ca.pem").display()
         );
@@ -709,7 +709,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if args.mitm {
             // The proxy will accept CONNECT from any client reachable
             // on the LAN and re-sign upstream certs with the local CA
-            // — turning the MITM CA into a network-wide trust root.
+            //: turning the MITM CA into a network-wide trust root.
             // That's almost never what the operator wanted; if they
             // really meant it, they have to explicitly accept the risk
             // by running on loopback + binding through a tunnel.
@@ -744,13 +744,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //   1. `--rules-dir` (CLI override, future)
     //   2. `<binary>/rules/responses/` (next to wafrift-proxy binary)
     //   3. `./rules/responses/` (cwd, dev convenience)
-    //   4. `ResponseProfileDb::compiled_in()` — embedded copy that ships
+    //   4. `ResponseProfileDb::compiled_in()`: embedded copy that ships
     //      inside the binary, so `cargo install wafrift-proxy` is never
     //      stuck with empty profiles. (Fixes the same shape of bug
     //      wafrift-detect 0.2.0 had.)
     //
     // Profiles classify upstream responses into HardBlock/SoftBlock/
-    // RateLimit/Challenge/Pass — each getting different treatment by
+    // RateLimit/Challenge/Pass, each getting different treatment by
     // `HostState::record_signal`.
     let response_profiles = {
         let next_to_binary = std::env::current_exe()
@@ -764,7 +764,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ResponseProfileDb::load_dir(cwd_dir)
         } else {
             info!(
-                "no rules/responses/ directory found — using compiled-in profiles \
+                "no rules/responses/ directory found, using compiled-in profiles \
                  (override with a rules/responses/ dir next to the binary)"
             );
             ResponseProfileDb::compiled_in()
@@ -791,7 +791,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // (forward_wafrift_request + forward_passthrough) dispatch through
     // it instead of the default reqwest+rustls client. This closes the
     // JA3/JA4 fingerprint gap vs Cloudflare / Akamai / Sigsci /
-    // Imperva-Bot at the cost of a `boring-sys` build dep — gated on
+    // Imperva-Bot at the cost of a `boring-sys` build dep, gated on
     // the `tls-impersonate` cargo feature. See docs/TLS_PARITY.md.
     if let Some(profile_str) = &args.tls_impersonate {
         use wafrift_transport::stealth::{ImpersonateProfile, StealthClient};
@@ -817,7 +817,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
         if STEALTH_CLIENT.set(client).is_err() {
-            // Unreachable in practice — main runs once per process.
+            // Unreachable in practice (main runs once per process).
             warn!("STEALTH_CLIENT was already initialised; ignoring duplicate set");
         }
         info!(
@@ -878,18 +878,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    // URL/query mutation — applied per request, controlled by an
+    // URL/query mutation, applied per request, controlled by an
     // atomic so there's no per-request lock contention on the hot
     // path. Off by default; opt-in via --mutate-url.
     if args.mutate_url {
-        // Release pairs with the request-time Acquire load — the same pattern
+        // Release pairs with the request-time Acquire load, the same pattern
         // as MUTATE_PATH_PREFIX / INTERCEPT_MODE: a startup-set config flag must
         // be visible on the very next request without a memory-barrier surprise
         // (matters on AArch64; harmless on x86-TSO).
         MUTATE_URL_ENABLED.store(true, std::sync::atomic::Ordering::Release);
         warn!(
             "--mutate-url: every upstream URL's query parameter values will be aggressively \
-             percent-encoded. This changes routing semantics (cache keys, log entries) — \
+             percent-encoded. This changes routing semantics (cache keys, log entries). \
              ensure the upstream is robust to encoded query bytes."
         );
     }
@@ -908,7 +908,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::process::exit(2);
             }
         };
-        // Release pairs with the request-time Acquire load — same
+        // Release pairs with the request-time Acquire load, same
         // pattern as the intercept-mode atomic (R60). Operators
         // expect a config change to be visible on the very next
         // request without a memory-barrier surprise.
@@ -916,11 +916,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         warn!(
             "--mutate-path-prefix={variant}: every upstream URL's path will be reshaped \
              before forwarding (e.g. /admin → //admin for double-slash). Use only against \
-             AUTHORISED targets — this is a path-ACL bypass."
+             AUTHORISED targets (this is a path-ACL bypass)."
         );
     }
 
-    // Captchaforge bridge — installs the headless-browser solver into
+    // Captchaforge bridge, installs the headless-browser solver into
     // ChallengeStore. The bridge crate is feature-gated behind
     // `captchaforge` because it pulls chromiumoxide. Builds without
     // the feature accept the flag but exit with a clear hint so cron
@@ -947,7 +947,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Body padding — applied per request, controlled by an atomic so
+    // Body padding, applied per request, controlled by an atomic so
     // there's no per-request lock contention on the hot path.
     if args.body_padding_bytes > 0 {
         // Release pairs with the request-time Acquire load (same config-atomic
@@ -977,7 +977,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // policy check then 169.254.169.254 / 127.0.0.1 / RFC1918 at fetch
     // time.
     // **No redirect following.** A forward proxy must not follow
-    // redirects on behalf of the upstream — the downstream client
+    // redirects on behalf of the upstream, the downstream client
     // (browser, scanner) follows them itself, so its policies apply.
     // Critically, this CLOSES an SSRF bypass: an attacker controlling
     // any public origin we're allowed to reach can return `Location:
@@ -986,7 +986,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // followed up to 10 redirects, and neither `assert_forward_url_allowed`
     // (called on the original URL only) nor `BogonFilteringResolver`
     // (only intercepts DNS, never literal IPs) was reapplied on the
-    // redirect target — the AWS / Azure / GCP IMDS endpoints were one
+    // redirect target, the AWS / Azure / GCP IMDS endpoints were one
     // attacker-controlled HTTP 302 away. Surface the redirect to the
     // downstream client and let IT decide whether to follow.
     let mut client_builder = wafrift_transport::base_client_builder(
@@ -1002,7 +1002,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Force a fresh TCP connection per request. Kernel chooses a
         // new ephemeral source port each time, defeating per-source-
         // port rate limits and any 5-tuple-based reputation system.
-        // Costs ~one handshake per request — set explicitly, not the
+        // Costs ~one handshake per request, set explicitly, not the
         // default.
         client_builder = client_builder.pool_max_idle_per_host(0);
         info!(
@@ -1031,7 +1031,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             only_path = ?args.only_path,
             skip_path = ?args.skip_path,
             only_method = ?args.only_method,
-            "scope filter active — out-of-scope requests pass through unchanged"
+            "scope filter active, out-of-scope requests pass through unchanged"
         );
     }
     let rate_limiter = RateLimiter::new(args.max_rps_per_host, args.max_rps_per_host_burst);
@@ -1066,7 +1066,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if args.insecure {
         warn!(
-            "--insecure: upstream TLS certificate verification is disabled — \
+            "--insecure: upstream TLS certificate verification is disabled. \
              do NOT use on untrusted networks; an on-path attacker can MITM \
              every HTTPS connection wafrift makes"
         );
@@ -1094,7 +1094,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         //
         // Two correctness properties this loop must hold:
         // 1. **No silent stop on panic.** Pre-fix, the body wasn't
-        //    panic-guarded — a panic in `save_gene_bank` (disk full,
+        //    panic-guarded, a panic in `save_gene_bank` (disk full,
         //    serializer regression) killed the task and the proxy
         //    silently stopped persisting gene-bank state for the rest
         //    of the run. The operator saw a healthy proxy that was no
@@ -1114,7 +1114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     tick.tick().await;
                     // Snapshot under the lock, drop the guard, THEN
                     // run save_gene_bank (synchronous fsync). The
-                    // lock is held only for the clone — every
+                    // lock is held only for the clone, every
                     // concurrent forwarded request that hits
                     // shared_state can proceed during the actual
                     // disk write. Pre-fix the fsync stalled every
@@ -1145,7 +1145,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 .unwrap_or("<non-string panic payload>");
                             warn!(
                                 panic = %msg,
-                                "periodic gene bank flush panicked — task continuing; next tick will retry"
+                                "periodic gene bank flush panicked, task continuing; next tick will retry"
                             );
                         }
                     }
@@ -1160,7 +1160,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(async move {
         // Wait for a shutdown signal, then flush gene bank and exit.
         // Surface handler-setup failure instead of silently dropping the
-        // shutdown task — a setup failure must leave a log line.
+        // shutdown task (a setup failure must leave a log line).
         #[cfg(unix)]
         {
             use tokio::signal::unix::{SignalKind, signal};
@@ -1195,7 +1195,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if let Some(path) = &shutdown_path {
             // Same snapshot-then-drop pattern as the periodic
-            // flush — hold the lock only for the clone, never
+            // flush, hold the lock only for the clone, never
             // across the fsync.
             let snapshot = { shutdown_state.lock().await.clone() };
             match save_gene_bank(&snapshot, path) {
@@ -1242,14 +1242,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     eprintln!("TUI exited with error: {e}");
                 }
             });
-            // 'q' inside the TUI fires this oneshot — translate to a
+            // 'q' inside the TUI fires this oneshot, translate to a
             // graceful shutdown on the same code path SIGINT uses.
             let quit_state = shared_state.clone();
             let quit_path = gene_bank_path.clone();
             tokio::spawn(async move {
                 if quit_rx.await.is_ok() {
                     if let Some(path) = &quit_path {
-                        // Snapshot-then-drop — never fsync under the lock.
+                        // Snapshot-then-drop (never fsync under the lock).
                         let snapshot = { quit_state.lock().await.clone() };
                         if let Err(e) = save_gene_bank(&snapshot, path) {
                             warn!(path = %path.display(), error = %e, "gene bank flush from TUI quit failed");
@@ -1324,7 +1324,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // header_value_to_string, split_url_for_mutation, error_response
-// live in `crate::request_helpers` — each individually testable +
+// live in `crate::request_helpers`: each individually testable +
 // the inline tests in that module cover boundary cases (root path,
 // no path segment, relative URL, invalid UTF-8 byte, every common
 // StatusCode).
@@ -1332,7 +1332,7 @@ use crate::request_helpers::{error_response, header_value_to_string, split_url_f
 
 /// Wrap [`forward_wafrift_request`] with a retry loop. The first attempt
 /// runs the standard pipeline. If the WAF blocks (HTTP 403/406), each
-/// retry re-enters `forward_wafrift_request` — which records the previous
+/// retry re-enters `forward_wafrift_request`: which records the previous
 /// block in the host's `HostState`, automatically bumping escalation so
 /// the next pass picks heavier evasion. Returns the first non-blocked
 /// response, or the last block if all attempts fail. Behavior is
@@ -1402,10 +1402,10 @@ fn header_value(headers: &[(String, String)], name: &str) -> String {
 
 /// Detonate a response body out-of-process via the `detonate` tool to prove
 /// whether reflected JS executes. Async (tokio) so it never blocks the proxy
-/// reactor. `None` when the tool is absent / errored — classification then
+/// reactor. `None` when the tool is absent / errored, classification then
 /// degrades to reflection-only. Mirrors `wafrift-cli`'s `exec_proof` bridge;
 /// a shared `detonate-client` crate is the right home once a third consumer
-/// appears (§7 DEDUP — two call sites is not yet worth a crate).
+/// appears (§7 DEDUP (two call sites is not yet worth a crate)).
 async fn detonate_response(body: &[u8], url: &str) -> Option<finding_class::DetonationVerdict> {
     use tokio::io::AsyncWriteExt;
     let bin = std::env::var_os("WAFRIFT_DETONATE_BIN").unwrap_or_else(|| "detonate".into());
@@ -1424,7 +1424,7 @@ async fn detonate_response(body: &[u8], url: &str) -> Option<finding_class::Deto
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
         // Reap a hung/stuck detonate when this future is dropped (timeout below
-        // or request cancellation) — otherwise a wedged child would linger and,
+        // or request cancellation), otherwise a wedged child would linger and,
         // on the proxy's hot path, accumulate into a resource-exhaustion DoS.
         .kill_on_drop(true)
         .spawn()
@@ -1496,7 +1496,7 @@ async fn forward_wafrift_request(
         "forwarding request"
     );
     // Snapshot the state needed for evasion, then DROP the lock before
-    // running evade() / evade_smart() — those calls do regex-heavy
+    // running evade() / evade_smart(), those calls do regex-heavy
     // mutations that can take seconds on large request bodies, and
     // before this restructure the global ProxyState lock was held
     // across the whole computation. Result: a single 100 KB POST would
@@ -1645,7 +1645,7 @@ async fn forward_wafrift_request(
     // ── URL/query mutation (--mutate-url, off by default) ───────────
     // Applied AFTER SSRF policy validation but BEFORE upstream fetch
     // so the unmodified URL is what gets gated, while the WAF on the
-    // wire sees the mutated query bytes. Path is left intact —
+    // wire sees the mutated query bytes. Path is left intact 
     // mutating the path's last segment is reserved for the more
     // aggressive `evade_smart` URL-aware variants and is not
     // something a passive proxy should do silently.
@@ -1758,7 +1758,7 @@ async fn forward_wafrift_request(
     // When intercept-mode is on, park here until the operator
     // releases (forward unmodified) or kills (synthetic 403). 30s
     // default-allow timeout so the proxy never wedges if the
-    // operator walks away. Skipped when intercept-mode is off — the
+    // operator walks away. Skipped when intercept-mode is off, the
     // atomic load is a single non-blocking read.
     if wafrift_proxy::intercept::intercept_mode_enabled() {
         let store = wafrift_proxy::intercept::global_store();
@@ -1773,7 +1773,7 @@ async fn forward_wafrift_request(
             evasion_result.request.method.as_str(),
             path_for_intercept,
         );
-        // RAII cleanup: cancel the registration on ANY exit from this scope —
+        // RAII cleanup: cancel the registration on ANY exit from this scope 
         // crucially including async task-cancellation. If the client
         // disconnects, hyper drops this request future mid-`select!`-await;
         // NEITHER arm runs, so the explicit timeout-arm cancel cannot fire and
@@ -1815,7 +1815,7 @@ async fn forward_wafrift_request(
     // ── Managed-challenge cookie attach (#115) ──────────────────────
     // If we have a clearance cookie on file for this host, fold it
     // into the outgoing Cookie header. Stacks with any existing
-    // Cookie value the operator's browser already attached — we
+    // Cookie value the operator's browser already attached, we
     // append, not replace, so we don't kick out the user's session.
     if let Some(clearance) = challenge_store().get(&host) {
         let mut found = false;
@@ -1868,7 +1868,7 @@ async fn forward_wafrift_request(
         // Coherence: when we're impersonating a browser at the TLS
         // layer, also emit headers in that browser's canonical
         // insertion order. Without this, the WAF sees Chrome's
-        // ClientHello but Firefox-shaped header sequence — a
+        // ClientHello but Firefox-shaped header sequence, a
         // disagreement that more aggressive bot stacks (Cloudflare
         // Bot Management, Akamai BMP) flag.
         let profile_name = sc.profile().name();
@@ -1987,7 +1987,7 @@ async fn forward_wafrift_request(
     // ── Rich response classification ────────────────────────────────
     // Classify the upstream response through loaded WAF profiles
     // (rules/responses/*.toml). The signal distinguishes hard blocks,
-    // soft blocks (200+block-page), rate limits, and JS challenges —
+    // soft blocks (200+block-page), rate limits, and JS challenges 
     // each gets different treatment by record_signal below. This
     // replaces the binary is_waf_block check.
     let header_pairs: Vec<(String, String)> = response_builder
@@ -2007,7 +2007,7 @@ async fn forward_wafrift_request(
     // ── Multi-signal oracle gate (#76) ─────────────────────────────
     // The response-profiles classifier identifies known WAF fingerprints
     // (block pages loaded from rules/responses/*.toml). It is accurate for
-    // hard blocks (403/406) but cannot detect "200-cosplay" — WAFs that
+    // hard blocks (403/406) but cannot detect "200-cosplay". WAFs that
     // serve a cached error page, a soft challenge, or a JS challenge as HTTP
     // 200 to defeat binary-status rate-limiting. The ResponseOracle runs a
     // second, independent classification pass using multi-signal analysis
@@ -2022,7 +2022,7 @@ async fn forward_wafrift_request(
     // landed on a challenge page, not the real app.
     let is_block = {
         let profile_blocked = signal.classification.is_blocked();
-        // Only run the oracle on 2xx responses — for 403/406/5xx the
+        // Only run the oracle on 2xx responses, for 403/406/5xx the
         // profile classifier is authoritative. For 200-class responses
         // the oracle's body-marker and challenge detection is the only
         // signal that distinguishes "real bypass" from "soft block".
@@ -2054,7 +2054,7 @@ async fn forward_wafrift_request(
                     host = %host,
                     status = status_code,
                     oracle_verdict = ?verdict,
-                    "oracle gate: response looks like a soft block or challenge (200-cosplay) — \
+                    "oracle gate: response looks like a soft block or challenge (200-cosplay). \
                      upgrading is_block to true to prevent false bypass credit"
                 );
             }
@@ -2108,7 +2108,7 @@ async fn forward_wafrift_request(
                 warn!(
                     host = %host,
                     kind = %kind.label(),
-                    "managed challenge detected and no clearance cookie on file — clear the \
+                    "managed challenge detected and no clearance cookie on file, clear the \
                      challenge in a browser; the cookie will be captured on the next response"
                 );
             }
@@ -2170,7 +2170,7 @@ async fn forward_wafrift_request(
     }
 
     // ── Feedback loop: rich signal replaces binary block/pass ────────
-    // Key insight: a 429 (rate limit) is NOT a technique failure —
+    // Key insight: a 429 (rate limit) is NOT a technique failure 
     // the WAF is saying "slow down," not "I caught your payload."
     // Same for JS challenges. Only HardBlock and SoftBlock penalize
     // the current evasion technique. record_signal also ingests the
@@ -2210,7 +2210,7 @@ async fn forward_wafrift_request(
                 info!(
                     host = %host,
                     classification = ?signal.classification,
-                    "WAF rate limit / challenge — backing off, not changing technique"
+                    "WAF rate limit / challenge, backing off, not changing technique"
                 );
             }
         }
@@ -2233,7 +2233,7 @@ async fn forward_wafrift_request(
     response_builder =
         response_builder.header(X_WAFRIFT_BLOCKED, if is_block { "true" } else { "false" });
 
-    // Emit a TUI event so the dashboard can update — skipped silently
+    // Emit a TUI event so the dashboard can update, skipped silently
     // when --tui isn't on (TUI_TX is None). The send is non-blocking
     // and ignores backpressure: a full-channel failure must not slow
     // the proxy hot path.
@@ -2265,7 +2265,7 @@ async fn forward_wafrift_request(
         let resp_body_excerpt = buf[..buf.len().min(cap)].to_vec();
         let resp_body_total = buf.len() as u64;
 
-        // WAF identification — re-read under the lock so we get the
+        // WAF identification, re-read under the lock so we get the
         // most recent value (this function ran the identification a
         // few lines above).
         let waf_name = {
@@ -2298,7 +2298,7 @@ async fn forward_wafrift_request(
 
     // ── Finding classification (wafrift-as-a-proxy) ─────────────────────
     // As another tool (sqlmap / Burp / ffuf / manual) drives payloads
-    // through us, classify whether its input REFLECTED in the response —
+    // through us, classify whether its input REFLECTED in the response 
     // and, when a `detonate` binary is configured, whether it EXECUTES.
     // This turns wafrift-as-a-proxy into a live finding classifier for
     // whatever drives it: separating "the input came back" (scanner noise)
@@ -2315,7 +2315,7 @@ async fn forward_wafrift_request(
         );
         let resp_ct = header_value(&header_pairs, "content-type");
         // Detonate (out-of-process, async) ONLY when something reflected, a
-        // detonate binary is configured, and the response is HTML — keeping the
+        // detonate binary is configured, and the response is HTML, keeping the
         // hot path cheap; otherwise classification is reflection-only.
         let do_exec = std::env::var_os("WAFRIFT_DETONATE_BIN").is_some()
             && finding_class::is_html_like(&resp_ct)
@@ -2390,7 +2390,7 @@ async fn mitm_plaintext_request(
     let url = format!("https://{authority}{path_and_q}");
     let host = sni_host;
 
-    // Limit body collection up front — without this, an attacker
+    // Limit body collection up front, without this, an attacker
     // streaming an unbounded body would exhaust proxy memory before
     // any post-collection size check could fire.
     let limited = Limited::new(req.body_mut(), MAX_PROXY_BODY_BYTES);
@@ -2436,7 +2436,7 @@ async fn mitm_plaintext_request(
 
     let log_uri = wafrift_req.url.clone();
 
-    // Per-host rate limit applies to BOTH evade and passthrough paths —
+    // Per-host rate limit applies to BOTH evade and passthrough paths 
     // it bounds raw request volume hitting the upstream.
     rate_limiter.acquire(&host).await;
 
@@ -2536,10 +2536,10 @@ async fn mitm_https_session(
 ///
 /// The evasion lifecycle per-host is:
 ///
-/// 1. **Discovery** — try all techniques, track what bypasses vs. blocks.
-/// 2. **Rotation** — once enough data, only rotate proven winners.
-/// 3. **Drift detection** — if a winner starts failing, prune it.
-/// 4. **Re-discovery** — if all winners fail, reset and start over.
+/// 1. **Discovery**: try all techniques, track what bypasses vs. blocks.
+/// 2. **Rotation**: once enough data, only rotate proven winners.
+/// 3. **Drift detection**: if a winner starts failing, prune it.
+/// 4. **Re-discovery**: if all winners fail, reset and start over.
 #[allow(clippy::too_many_arguments)]
 async fn proxy(
     mut req: Request<Incoming>,
@@ -2566,7 +2566,7 @@ async fn proxy(
             // lookups (DNS rebinding) could land on 127.0.0.1 or RFC1918
             // even though the validation saw a public IP. Now we
             // resolve once, validate every returned address, and pass
-            // the validated SocketAddrs straight to tunnel — no second
+            // the validated SocketAddrs straight to tunnel, no second
             // DNS lookup possible.
             let resolved = match wafrift_proxy::upstream_policy::resolve_connect_target_allowed(
                 &addr, &policy,
@@ -2616,7 +2616,7 @@ async fn proxy(
                     }
                 });
             } else {
-                // Plain HTTPS tunnel — wafrift only sees encrypted bytes
+                // Plain HTTPS tunnel, wafrift only sees encrypted bytes
                 // and CANNOT apply evasion. Throttled per-host info log
                 // so the practitioner notices the gap without spamming
                 // every CONNECT (each tunnel hits this branch once).
@@ -2649,7 +2649,7 @@ async fn proxy(
         ));
     }
 
-    // Live findings endpoint — returns the current gene-bank as a
+    // Live findings endpoint, returns the current gene-bank as a
     // markdown report. Same loopback gating as /_wafrift/status. Lets
     // a practitioner `curl http://127.0.0.1:8080/_wafrift/findings.md`
     // mid-session without dropping out to a separate `wafrift report`
@@ -2672,7 +2672,7 @@ async fn proxy(
             }));
     }
 
-    // Status endpoint — returns JSON stats about the proxy (loopback bind only).
+    // Status endpoint (returns JSON stats about the proxy (loopback bind only)).
     if req.uri().path() == "/_wafrift/status" {
         if !expose_wafrift_status {
             return Ok(error_response(StatusCode::NOT_FOUND, "not found"));
@@ -2719,7 +2719,7 @@ async fn proxy(
         })
         .unwrap_or_else(|| "unknown".to_string());
 
-    // Read body — bounded by MAX_PROXY_BODY_BYTES at stream-read time
+    // Read body, bounded by MAX_PROXY_BODY_BYTES at stream-read time
     // so an unbounded streaming body can't exhaust proxy memory before
     // a post-collection size check could fire.
     let limited = Limited::new(req.body_mut(), MAX_PROXY_BODY_BYTES);
@@ -2766,7 +2766,7 @@ async fn proxy(
     let log_uri = req.uri().to_string();
 
     // ── Per-request evasion control via X-WafRift-Evade header ──────
-    // Strip the header before forwarding — it's for the proxy, not upstream.
+    // Strip the header before forwarding (it's for the proxy, not upstream).
     let evade_override = wafrift_req
         .headers
         .iter()
@@ -2860,7 +2860,7 @@ async fn proxy(
 /// (e.g. login flows, oauth callbacks, static assets) so the practitioner
 /// can browse normally with the proxy in front of Burp.
 ///
-/// SSRF policy still applies — out-of-scope is a *behavioural* opt-out,
+/// SSRF policy still applies, out-of-scope is a *behavioural* opt-out,
 /// not an authorisation bypass.
 async fn forward_passthrough(
     req: wafrift_types::Request,
@@ -3020,7 +3020,7 @@ async fn forward_passthrough(
 use crate::findings::render_live_findings;
 
 // host_addr + tunnel + MAX_TUNNEL_BYTES_PER_DIRECTION live in
-// `crate::tunnel` — the CONNECT-tunnel byte-cap + bidirectional
+// `crate::tunnel`: the CONNECT-tunnel byte-cap + bidirectional
 // copy is its own concern, tested in isolation.
 use crate::tunnel::{host_addr, tunnel};
 

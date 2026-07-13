@@ -6,11 +6,11 @@
 //! at handshake time via `Sec-WebSocket-Extensions: permessage-deflate`
 //! with four parameters that control compression state:
 //!
-//! - `server_no_context_takeover` — server must reset the LZ77
+//! - `server_no_context_takeover`: server must reset the LZ77
 //!   sliding window between messages
-//! - `client_no_context_takeover` — same, client-side
-//! - `server_max_window_bits` (8..=15) — server's compression window size
-//! - `client_max_window_bits` (8..=15) — client's compression window size
+//! - `client_no_context_takeover`: same, client-side
+//! - `server_max_window_bits` (8..=15), server's compression window size
+//! - `client_max_window_bits` (8..=15), client's compression window size
 //!
 //! When both peers DO support context takeover (the default), the
 //! LZ77 dictionary state persists across messages. That cross-message
@@ -32,19 +32,19 @@
 //! seams between WAFs that decompress for inspection and origin
 //! servers that decompress for the application:
 //!
-//! 1. **Compression bomb** — a small compressed payload that
+//! 1. **Compression bomb**: a small compressed payload that
 //!    expands to a much larger size. A WAF that decompresses
 //!    in-place for signature scanning either OOMs, stalls past the
 //!    request timeout, or hits a hardcoded ratio cap and
 //!    *abandons* inspection. Origin parsers with streaming
 //!    decompressors process the bomb without trouble.
-//! 2. **Context-takeover smuggling** — a two-message sequence
+//! 2. **Context-takeover smuggling**: a two-message sequence
 //!    where the first message seeds the LZ77 dictionary with
 //!    benign tokens and the second message back-references those
 //!    tokens via tiny LZ77 copies that, when expanded, produce a
 //!    signature-bearing payload. WAFs that scan each frame
 //!    independently never see the assembled bytes.
-//! 3. **Naked deflate stream** — a permessage-deflate payload
+//! 3. **Naked deflate stream**: a permessage-deflate payload
 //!    consisting of nothing but the empty terminator block. Some
 //!    parsers reject zero-length compressed content; others
 //!    happily ignore it. Used as a fingerprint probe.
@@ -54,7 +54,7 @@
 //! Every probe is bounded: compression-bomb expansion ratio is
 //! capped at [`MAX_BOMB_EXPANSION`] and absolute decompressed size
 //! is capped at [`MAX_BOMB_DECOMPRESSED_BYTES`]. The bomb is meant
-//! to demonstrate the divergence — not to actually DoS the target.
+//! to demonstrate the divergence (not to actually DoS the target).
 //! The caller chooses how aggressively to dial up the ratio
 //! within these bounds.
 
@@ -66,7 +66,7 @@ use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 
 /// Maximum decompressed size we'll produce for a bomb probe. Probes
 /// are evidence of divergent inspection, not actual denial-of-service
-/// payloads — capping protects authorized targets from collateral.
+/// payloads (capping protects authorized targets from collateral).
 pub const MAX_BOMB_DECOMPRESSED_BYTES: usize = 1024 * 1024;
 
 /// Maximum compression ratio (decompressed / compressed) we'll emit.
@@ -87,7 +87,7 @@ pub(crate) const BOMB_FILL_POOL: &[u8] = b"AB0X\x00 \tNZ?";
 
 /// Pick a fill byte for a compression-bomb input. RNG draws from
 /// `BOMB_FILL_POOL`. Empty pool returns `b'A'` (defensive fallback
-/// — the const has entries, but the centralized
+///: the const has entries, but the centralized
 /// [`wafrift_types::pick::pick_from`] primitive enforces this contract
 /// uniformly across every wafrift pool sampler).
 fn random_fill_byte() -> u8 {
@@ -102,10 +102,10 @@ fn random_fill_byte() -> u8 {
 /// negotiation surface.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PermessageDeflateParams {
-    /// `server_no_context_takeover` — when true, server resets the
+    /// `server_no_context_takeover`: when true, server resets the
     /// LZ77 window between messages.
     pub server_no_context_takeover: bool,
-    /// `client_no_context_takeover` — same, client-side.
+    /// `client_no_context_takeover`: same, client-side.
     pub client_no_context_takeover: bool,
     /// `server_max_window_bits` (8..=15). `None` means absent from
     /// the negotiation string.
@@ -117,7 +117,7 @@ pub struct PermessageDeflateParams {
 impl PermessageDeflateParams {
     /// Render as a `Sec-WebSocket-Extensions` header value per RFC
     /// 7692 §7.1.2.1. Window-bit params with values outside 8..=15
-    /// are silently clamped — the wire format only allows that range.
+    /// are silently clamped (the wire format only allows that range).
     #[must_use]
     pub fn to_header_value(&self) -> String {
         let mut parts: Vec<String> = vec!["permessage-deflate".to_string()];
@@ -146,7 +146,7 @@ impl PermessageDeflateParams {
 #[must_use]
 pub fn encode_permessage_deflate(data: &[u8]) -> Vec<u8> {
     let mut encoder = DeflateEncoder::new(Vec::new(), Compression::default());
-    // write_all on a Vec<u8> via DeflateEncoder cannot fail — Vec's
+    // write_all on a Vec<u8> via DeflateEncoder cannot fail. Vec's
     // Write impl is infallible, and DeflateEncoder forwards. Using
     // expect() so any future change that makes this fallible (e.g.
     // a backend swap) surfaces loudly.
@@ -163,7 +163,7 @@ pub fn encode_permessage_deflate(data: &[u8]) -> Vec<u8> {
 /// A compression-bomb probe payload.
 #[derive(Debug, Clone)]
 pub struct CompressionBomb {
-    /// Compressed bytes — the wire-format permessage-deflate body
+    /// Compressed bytes, the wire-format permessage-deflate body
     /// (RSV1 frame payload).
     pub compressed: Vec<u8>,
     /// Decompressed size in bytes. Bounded by
@@ -222,7 +222,7 @@ impl SmuggleProbe for CompressionBomb {
         // CompressionBomb doesn't carry a description String; synthesize
         // a stable one. Static lifetime via `Box::leak` would be wrong
         // here (per-instance); instead the trait wraps the constant
-        // shape — operators read `ratio` / `decompressed_size` from
+        // shape, operators read `ratio` / `decompressed_size` from
         // the struct directly for the per-instance figures.
         "WebSocket permessage-deflate compression bomb"
     }
@@ -235,15 +235,15 @@ impl SmuggleProbe for CompressionBomb {
     }
 }
 
-/// A context-takeover smuggle probe — a two-message sequence where
+/// A context-takeover smuggle probe, a two-message sequence where
 /// the second message back-references LZ77 state seeded by the first.
 #[derive(Debug, Clone)]
 pub struct ContextTakeoverSequence {
-    /// First message — primes the LZ77 dictionary with the benign
+    /// First message, primes the LZ77 dictionary with the benign
     /// `seed` bytes. Sent first; the WAF scans it and (assuming the
     /// seed is innocuous) lets it through.
     pub priming_message_compressed: Vec<u8>,
-    /// Second message — compresses bytes that back-reference the
+    /// Second message, compresses bytes that back-reference the
     /// seed via tiny LZ77 length/distance pairs. The compressed
     /// bytes are short; the decompressed bytes (only visible to the
     /// receiving inflater that has the dictionary state) form the
@@ -402,7 +402,7 @@ mod tests {
         let inflated = inflate(&bomb.compressed);
         assert_eq!(inflated.len(), 50_000);
         assert_eq!(bomb.decompressed_size, 50_000);
-        // Bomb body must be uniform (same byte repeated) — anti-rig:
+        // Bomb body must be uniform (same byte repeated), anti-rig:
         // if encoder switches to random fill bytes that defeat LZ77
         // matching, the compression ratio collapses and the probe
         // loses its bypass property. The specific fill byte is
@@ -438,7 +438,7 @@ mod tests {
         let bomb = CompressionBomb::build(100_000);
         assert!(
             bomb.ratio >= 10,
-            "compression-bomb ratio {} below minimum 10:1 — encoder regression?",
+            "compression-bomb ratio {} below minimum 10:1, encoder regression?",
             bomb.ratio
         );
     }
@@ -587,7 +587,7 @@ mod tests {
     #[test]
     fn context_takeover_canary_is_one_per_sequence() {
         // The sequence carries ONE canary (priming + smuggle share
-        // it), not two — operators correlate the pair as a single
+        // it), not two, operators correlate the pair as a single
         // logical probe.
         let s = ContextTakeoverSequence::build(b"seed", 10);
         assert_eq!(s.canary.token.len(), 16);
@@ -608,7 +608,7 @@ mod tests {
 
     #[test]
     fn encode_decode_round_trip_all_zero_bytes() {
-        // Round-trip with a uniform 0x00 input — distinct from the
+        // Round-trip with a uniform 0x00 input, distinct from the
         // hello-world fixture to catch any "short-circuit for printable
         // ASCII" regression.
         let original = vec![0u8; 256];
@@ -619,7 +619,7 @@ mod tests {
 
     #[test]
     fn encode_decode_round_trip_all_0xff_bytes() {
-        // Round-trip with a uniform 0xFF input — exercises the encoder's
+        // Round-trip with a uniform 0xFF input, exercises the encoder's
         // handling of high-byte streams.
         let original = vec![0xFF_u8; 256];
         let compressed = encode_permessage_deflate(&original);
@@ -713,7 +713,7 @@ mod tests {
 
     #[test]
     fn concurrent_bomb_construction_yields_unique_canaries() {
-        // §12 TESTING — concurrent: 50 threads each build a bomb;
+        // §12 TESTING, concurrent: 50 threads each build a bomb;
         // canaries must all be distinct.
         use std::sync::{Arc, Mutex};
         use std::thread;
@@ -760,14 +760,14 @@ mod tests {
         // so any future "cleanup" that zeros the pool is caught at build time.
         assert!(
             !BOMB_FILL_POOL.is_empty(),
-            "BOMB_FILL_POOL must not be empty — random_fill_byte() falls back to b'A' but the pool should be populated"
+            "BOMB_FILL_POOL must not be empty, random_fill_byte() falls back to b'A' but the pool should be populated"
         );
     }
 
     #[test]
     fn bomb_fill_pool_every_byte_produces_valid_deflate_round_trip() {
         // Each fill byte in the pool must compress and round-trip
-        // correctly — ensures no byte causes deflate encoding failure.
+        // correctly (ensures no byte causes deflate encoding failure).
         for &fill in BOMB_FILL_POOL {
             let bomb = CompressionBomb::build_with_fill(256, fill);
             let inflated = inflate(&bomb.compressed);
@@ -810,10 +810,10 @@ mod tests {
 
     #[test]
     fn compression_bomb_zero_size_has_zero_ratio() {
-        // Boundary: zero target_size — ratio must be 0, no panic.
+        // Boundary: zero target_size (ratio must be 0, no panic).
         let bomb = CompressionBomb::build(0);
         assert_eq!(bomb.decompressed_size, 0);
-        // ratio = 0 / max(compressed.len(), 1) = 0 — acceptable sentinel.
+        // ratio = 0 / max(compressed.len(), 1) = 0 (acceptable sentinel).
         assert_eq!(bomb.ratio, 0, "zero-size bomb must have ratio=0");
     }
 }

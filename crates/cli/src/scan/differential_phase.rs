@@ -1,11 +1,11 @@
-//! Scan's Step 2b — differential probing.
+//! Scan's Step 2b (differential probing).
 //!
 //! Fires a small set of structured probes against the target to
 //! discover what specific patterns the WAF reacts to (vs. simply
 //! 'the request was blocked'). The discovered insights bias
 //! subsequent phases: if a probe like `<script>` is blocked but
 //! `<scr<script>ipt>` is NOT, that's signal the WAF parses HTML
-//! tags before matching — useful for downstream strategy
+//! tags before matching, useful for downstream strategy
 //! selection.
 //!
 //! Returns the populated `IntelligenceLoop` ready for downstream
@@ -32,7 +32,7 @@ use super::scan_url_with_param;
 /// can no longer leak ~13 concurrent fires past the operator's ceiling
 /// (the dogfood `--variants-cap 1 --exploit-cap 0 --max-fires 5 → 85
 /// fires` bug). Because the phase only ever fires what it actually sends,
-/// `intel_loop.probes_completed()` stays an accurate denominator input —
+/// `intel_loop.probes_completed()` stays an accurate denominator input 
 /// the cap changes the COUNT of fires, never the bypass-rate accounting.
 pub(crate) async fn run(
     http: &reqwest::Client,
@@ -60,7 +60,7 @@ pub(crate) async fn run(
         println!(
             "\n{}",
             format!(
-                "[2b/7] Differential probing — {} probes...",
+                "[2b/7] Differential probing: {} probes...",
                 diff_probes.len()
             )
             .bold()
@@ -69,7 +69,7 @@ pub(crate) async fn run(
     }
     // R72 pass-21 §1 SPEED: fire all differential probes
     // concurrently. Pre-fix this loop awaited each probe serially
-    // with a `delay_ms` sleep between every one — at the default
+    // with a `delay_ms` sleep between every one, at the default
     // 50ms delay, 13 probes = 650 ms before any network latency even
     // started. The probes are mutually independent (no probe's URL
     // depends on the previous probe's response), so a `join_all` is
@@ -78,7 +78,7 @@ pub(crate) async fn run(
     // sees the same observation order as before.
     //
     // The inter-probe `delay_ms` is preserved as a global rate cap
-    // for the whole batch — applied ONCE after all probes resolve.
+    // for the whole batch (applied ONCE after all probes resolve).
     // If a future change re-introduces per-probe pacing (e.g. for
     // hostile targets that rate-limit on RPS), the pacing should
     // become an `acquire_permit().await` against a Tokio semaphore,
@@ -109,7 +109,7 @@ pub(crate) async fn run(
             print!("{}", if was_blocked { "." } else { "!" });
         }
     }
-    // Single post-batch sleep — preserves the operator's
+    // Single post-batch sleep, preserves the operator's
     // rate-cap intent without per-probe serialisation cost.
     let diff_delay = Duration::from_millis(delay_ms);
     if !diff_delay.is_zero() {
@@ -193,7 +193,7 @@ mod tests {
         let _ = intel; // intel_loop is opaque; the request-count assertion above is the real gate
     }
 
-    /// §12 / safety regression: the documented dogfood leak — `--max-fires N`
+    /// §12 / safety regression: the documented dogfood leak: `--max-fires N`
     /// smaller than the quick-probe count must NOT leak the full concurrent
     /// batch past the operator's ceiling. With max_fires=3 and one fire
     /// already spent (fires_so_far=1), the phase may fire at most 2 probes.
@@ -260,7 +260,7 @@ mod tests {
         });
         tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
         let client = reqwest::Client::builder().build().unwrap();
-        // Just verify the call completes — the IntelligenceLoop
+        // Just verify the call completes, the IntelligenceLoop
         // surface for asserting block counts isn't directly
         // exposed; the smoke is that 403+ModSecurity body
         // classifies and the run returns cleanly.

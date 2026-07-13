@@ -16,7 +16,7 @@ source = "WAFW00F:fastly + 2026-05-21 live dogfood"
   header_regex = "cache-[a-z]{3}[0-9]+-[A-Z]{3}"
   weight = 0.5
 [[waf.signature]]
-  # `Server: Artisanal bits` is Fastly's signature server banner —
+  # `Server: Artisanal bits` is Fastly's signature server banner 
   # set on every fastly.com-style cache response. Live-dogfood
   # captured on https://www.fastly.com/ on 2026-05-21.
   header_name = "server"

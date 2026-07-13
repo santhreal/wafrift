@@ -1,17 +1,17 @@
-//! # wafrift-http3-evasion — HTTP/3 + QUIC WAF evasion primitives
+//! # wafrift-http3-evasion: HTTP/3 + QUIC WAF evasion primitives
 //!
 //! HTTP/3 (RFC 9114) and its QUIC transport (RFC 9000) introduce a new attack
 //! surface that most WAFs handle poorly or not at all (2025 state of the art):
 //!
-//! - **QPACK dynamic table desync** — inject forged encoder instructions that
+//! - **QPACK dynamic table desync**: inject forged encoder instructions that
 //!   corrupt the WAF's QPACK decoder table so header fields are misread
-//! - **0-RTT replay attack** — replay application data before the TLS handshake
+//! - **0-RTT replay attack**: replay application data before the TLS handshake
 //!   completes; WAFs that enforce TLS-complete before inspecting HTTP are blind
-//! - **Connection ID rotation** — rotate QUIC Connection IDs between requests
+//! - **Connection ID rotation**: rotate QUIC Connection IDs between requests
 //!   to shard one logical session across multiple WAF connection-state buckets
-//! - **Stream priority topology** — send PRIORITY_UPDATE frames (RFC 9218)
+//! - **Stream priority topology**: send PRIORITY_UPDATE frames (RFC 9218)
 //!   in pathological orders that confuse WAF multiplexing reassemblers
-//! - **Datagram path MTU games** — fragment QUIC CRYPTO frames across UDP
+//! - **Datagram path MTU games**: fragment QUIC CRYPTO frames across UDP
 //!   packets at sizes that reassemble correctly at the server but confuse
 //!   WAF deep-packet inspection that doesn't handle fragmented QUIC
 //!
@@ -71,18 +71,18 @@ pub enum EvasionTechnique {
     QpackDesync,
     /// QUIC Connection ID rotation between requests to shard WAF state.
     CidRotation,
-    /// 0-RTT early data replay — application data sent before handshake completes.
+    /// 0-RTT early data replay (application data sent before handshake completes).
     ZeroRttReplay,
     /// HTTP/3 PRIORITY_UPDATE frame topology attacks (RFC 9218).
     StreamPriorityTopology,
     /// QUIC UDP fragmentation below WAF reassembly threshold.
     MtuFragmentation,
-    /// HTTP Capsule Protocol (RFC 9297) smuggling — payload bytes
+    /// HTTP Capsule Protocol (RFC 9297) smuggling, payload bytes
     /// ride inside capsules whose framing is opaque to HTTP-semantic
     /// WAFs but parsed by CONNECT-UDP / CONNECT-IP / WebTransport
     /// terminators on the origin side.
     CapsuleProtocolSmuggle,
-    /// QUIC unreliable datagram (RFC 9221) smuggling — payload rides
+    /// QUIC unreliable datagram (RFC 9221) smuggling, payload rides
     /// in DATAGRAM frames outside any HTTP/3 stream. WAFs that
     /// inspect HTTP/3 STREAM frames at the HTTP semantic layer don't
     /// see DATAGRAM bytes; WebTransport / CONNECT-UDP / MASQUE
@@ -106,25 +106,25 @@ impl EvasionTechnique {
     pub fn description(self) -> &'static str {
         match self {
             Self::QpackDesync => {
-                "QPACK dynamic table desync — forged encoder instructions corrupt WAF decoder"
+                "QPACK dynamic table desync, forged encoder instructions corrupt WAF decoder"
             }
             Self::CidRotation => {
-                "QUIC CID rotation — shards one session across multiple WAF state buckets"
+                "QUIC CID rotation, shards one session across multiple WAF state buckets"
             }
             Self::ZeroRttReplay => {
-                "0-RTT replay — application data before TLS handshake; WAF inspection blind spot"
+                "0-RTT replay, application data before TLS handshake; WAF inspection blind spot"
             }
             Self::StreamPriorityTopology => {
-                "HTTP/3 PRIORITY_UPDATE topology — confuses WAF multiplexing reassemblers"
+                "HTTP/3 PRIORITY_UPDATE topology, confuses WAF multiplexing reassemblers"
             }
             Self::MtuFragmentation => {
-                "QUIC MTU fragmentation — below-threshold fragment sizes evade DPI reassembly"
+                "QUIC MTU fragmentation, below-threshold fragment sizes evade DPI reassembly"
             }
             Self::CapsuleProtocolSmuggle => {
-                "HTTP Capsule Protocol (RFC 9297) — payload rides inside opaque capsules; WAF sees flat body, CONNECT-UDP/IP/WebTransport origin parses values"
+                "HTTP Capsule Protocol (RFC 9297), payload rides inside opaque capsules; WAF sees flat body, CONNECT-UDP/IP/WebTransport origin parses values"
             }
             Self::QuicDatagramSmuggle => {
-                "QUIC DATAGRAM (RFC 9221) — payload outside any HTTP/3 stream; WAF inspecting HTTP semantic misses it entirely"
+                "QUIC DATAGRAM (RFC 9221), payload outside any HTTP/3 stream; WAF inspecting HTTP semantic misses it entirely"
             }
         }
     }

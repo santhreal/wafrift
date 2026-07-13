@@ -1,4 +1,4 @@
-//! Encoding-stack lattice search — enumerate compositions of N
+//! Encoding-stack lattice search, enumerate compositions of N
 //! encoders and find the ones that defeat a target WAF rule.
 //!
 //! wafrift ships ~30 [`wafrift_encoding::Strategy`] encoders.
@@ -12,7 +12,7 @@
 //! ## Workflow
 //!
 //! 1. Caller passes a seed `payload`, target `rule_id`, and a
-//!    bound `max_depth` (default 3 — beyond which compositions
+//!    bound `max_depth` (default 3, beyond which compositions
 //!    are usually noise).
 //! 2. `LatticeSearch::enumerate_chains` produces a deterministic
 //!    sequence of `EncodingChain` candidates.
@@ -30,7 +30,7 @@
 //!
 //! The enumeration is **canonical lexicographic order** over the
 //! input strategy list. Two runs with the same input produce the
-//! same chain sequence — required so `wafrift bench` is
+//! same chain sequence, required so `wafrift bench` is
 //! reproducible.
 
 use serde::{Deserialize, Serialize};
@@ -45,7 +45,7 @@ pub struct EncodingChain {
 }
 
 impl EncodingChain {
-    /// Compose into a list of strategy identifiers — the same form
+    /// Compose into a list of strategy identifiers, the same form
     /// [`super::rule_corpus::RecordedAttempt::encoding_chain`]
     /// stores so callers don't need a re-encoder.
     #[must_use]
@@ -80,7 +80,7 @@ pub struct LatticeSearch {
     /// useful only after the depth-3 sweep has stalled.
     pub max_depth: usize,
     /// Skip chains where any two consecutive strategies are the
-    /// same — `[Url, Url]` is rarely useful (double-encode is
+    /// same: `[Url, Url]` is rarely useful (double-encode is
     /// already its own `DoubleUrlEncode` strategy). Set false for
     /// research-grade exhaustive sweeps.
     pub skip_consecutive_dupes: bool,
@@ -248,7 +248,7 @@ impl std::error::Error for ChainApplyError {}
 
 /// Convenience: build a search from the workspace's full strategy
 /// palette and enumerate up to depth 2 (the most common starting
-/// point — single encoders + pairs).
+/// point (single encoders + pairs)).
 #[must_use]
 pub fn shallow_lattice() -> LatticeSearch {
     LatticeSearch::new(wafrift_encoding::all_strategies().to_vec()).with_max_depth(2)
@@ -383,7 +383,7 @@ mod tests {
         };
         let invalid = vec![0xFF, 0xFE, 0xFD];
         let r = apply_chain(&invalid, &chain);
-        // Case-alternation requires text — fails on invalid UTF-8.
+        // Case-alternation requires text (fails on invalid UTF-8).
         assert!(matches!(
             r,
             Err(ChainApplyError::InvalidUtf8 | ChainApplyError::EncoderRejected(_))

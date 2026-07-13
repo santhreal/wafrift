@@ -1,4 +1,4 @@
-//! Truth tests for the sanitizer *model* — the membership predicate that the L*
+//! Truth tests for the sanitizer *model*, the membership predicate that the L*
 //! learner and the CEGIS gate both depend on. Each test feeds a concrete model +
 //! input and asserts the exact sanitization / executability outcome.
 
@@ -62,7 +62,7 @@ fn an_allowlist_keeps_an_allowlisted_tag() {
 
 #[test]
 fn forbid_overrides_allow_for_the_same_tag() {
-    // A tag that is both forbidden and allowlisted is dropped — forbid wins.
+    // A tag that is both forbidden and allowlisted is dropped (forbid wins).
     let m = model(&["b"], Some(&["b"]), false, &[], &[]);
     let out = m.sanitize("<b>x</b>");
     assert!(!out.contains("<b>"), "forbid must win over allow: {out:?}");
@@ -90,7 +90,7 @@ fn an_event_handler_survives_when_the_model_does_not_strip() {
 
 #[test]
 fn a_slash_separated_handler_is_also_stripped() {
-    // `<svg/onload=...>` uses '/' as the attribute separator — must still strip.
+    // `<svg/onload=...>` uses '/' as the attribute separator (must still strip).
     let m = model(&[], None, true, &[], &[]);
     assert!(!m.survives_executable("<svg/onload=alert(1)>"));
 }
@@ -126,7 +126,7 @@ fn executable_detector_rejects_plain_text() {
 
 #[test]
 fn executable_detector_rejects_a_bare_javascript_scheme_string() {
-    // A bare `javascript:` in text (no tag/handler) is inert in a markup sink —
+    // A bare `javascript:` in text (no tag/handler) is inert in a markup sink 
     // flagging it would over-report. Documented soundness choice.
     assert!(!is_executable_html(
         "the string javascript:alert(1) as text"
@@ -173,7 +173,7 @@ fn sanitize_with_compiled_matches_on_the_fly_sanitize() {
 #[test]
 fn an_uncompilable_strip_pattern_is_dropped_not_panicked() {
     // A JS-only construct that Rust's regex rejects must be silently dropped
-    // (the model keeps more input — the sound direction), never panic.
+    // (the model keeps more input (the sound direction), never panic).
     let m = model(&[], None, false, &[], &["(?<=lookbehind)x"]);
     let compiled = m.compiled_strip_patterns();
     assert!(

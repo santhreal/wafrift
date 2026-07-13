@@ -84,7 +84,7 @@ async fn mutate_url_pipeline_must_percent_encode_query_values() {
     // The mutator decodes `+` as form-encoded space (RFC 1866) before
     // applying the percent-encode strategy, so `1'+OR+'1` becomes
     // `1' OR '1` and then `1%27%20OR%20%271`. The apostrophes (the
-    // actual SQLi vector) MUST still be encoded — that's the bypass.
+    // actual SQLi vector) MUST still be encoded (that's the bypass).
     assert!(
         request.query.contains("%27"),
         "apostrophe must be percent-encoded; got: {}",

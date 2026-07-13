@@ -34,7 +34,7 @@ use std::collections::BTreeSet;
 /// Template engine definition loaded from TOML.
 #[derive(Debug, Clone, Deserialize)]
 struct Engine {
-    /// Engine name (e.g., "jinja2", "twig") — used by `supported_engines()`.
+    /// Engine name (e.g., "jinja2", "twig") (used by `supported_engines()`).
     name: String,
     /// Detection delimiters (e.g., ["{{", "}}"])
     delimiters: Vec<String>,
@@ -132,7 +132,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
     // expression (`__globals__…popen('id')`, `T(java.lang.Runtime)`,
     // `freemarker…Execute`). Dumping the canned `{{7*7}}` engine-probe
     // library for it discards the exploit and ships a mere *detection*
-    // probe — the de-rigged bench would then claim "RCE bypassed the
+    // probe, the de-rigged bench would then claim "RCE bypassed the
     // WAF" when only `7*7` was ever sent. Re-template the operator's
     // ACTUAL expression into every engine's delimiters instead. A bare
     // `{{7*7}}` / `{{user}}` probe is NOT structured: there the canned
@@ -202,7 +202,7 @@ pub fn detect_type(payload: &str) -> bool {
     // delimiters from the global sweep entirely (Smarty/Velocity rely
     // on the structured checks further down: `{$`, `{php}`, `#set`,
     // `$!`, etc.) and accept a multi-char delimiter as a positive
-    // match — those are 2+ characters and unique enough to a template
+    // match, those are 2+ characters and unique enough to a template
     // engine that a benign substring rarely contains them.
     for engine in &rules.engine {
         for delimiter in &engine.delimiters {
@@ -239,8 +239,8 @@ pub fn detect_type(payload: &str) -> bool {
     {
         return true;
     }
-    // (Note: `${` is freemarker — already caught above as a multi-char
-    // delimiter — so we deliberately don't list it here. Adding it
+    // (Note: `${` is freemarker, already caught above as a multi-char
+    // delimiter, so we deliberately don't list it here. Adding it
     // would re-introduce the shell-variable FP `$ ls /tmp/$user/`.)
 
     // Thymeleaf namespace prefix
@@ -302,7 +302,7 @@ pub fn get_engine_payloads(engine_name: &str) -> Vec<String> {
 
 /// True when the payload's value is a *concrete RCE / data-exfil*
 /// expression, not a bare engine-detection probe. `{{7*7}}` / `${7*7}`
-/// / `{{user}}` are demonstrators — the canned engine library is their
+/// / `{{user}}` are demonstrators, the canned engine library is their
 /// correct equivalent. `{{cycler.__init__.__globals__.os.popen('id')}}`
 /// is an exploit: replacing it with `{{7*7}}` throws it away.
 pub(crate) fn is_structured_ssti(payload: &str) -> bool {

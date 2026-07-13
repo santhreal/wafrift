@@ -23,7 +23,7 @@ futures-util.workspace = true
 wafrift-types = { workspace = true }
 ctlog = { workspace = true }
 toml = { workspace = true }
-# Needed by discovery::param_miner::probe_one — percent-encode wordlist
+# Needed by discovery::param_miner::probe_one, percent-encode wordlist
 # entries so `&`/`=`/`#`/whitespace in a candidate never split into
 # unintended params or fragments (F96).
 urlencoding = { workspace = true }

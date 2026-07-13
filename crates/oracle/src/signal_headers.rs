@@ -2,14 +2,14 @@
 //!
 //! Many WAFs leak their presence through response headers. Detecting
 //! these headers provides two benefits:
-//! 1. **WAF identification** — knowing which WAF we face lets us
+//! 1. **WAF identification**: knowing which WAF we face lets us
 //!    select targeted bypass strategies.
-//! 2. **Block signal** — some headers only appear on blocked requests,
+//! 2. **Block signal**: some headers only appear on blocked requests,
 //!    providing a strong classification signal even with 200 status.
 //!
 //! `WAF_HEADERS` and `BLOCK_HEADER_NAMES` come from
 //! `crates/oracle/rules/markers/{waf_headers,block_headers}.toml` via
-//! `build.rs` — adding a header is a one-line PR with no Rust knowledge.
+//! `build.rs`: adding a header is a one-line PR with no Rust knowledge.
 
 use wafrift_types::Signal;
 

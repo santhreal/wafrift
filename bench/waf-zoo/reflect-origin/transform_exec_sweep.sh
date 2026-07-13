@@ -14,7 +14,7 @@ COMPOSE="$HERE/docker-compose.yml"
 BASE="http://127.0.0.1:18106"
 PARANOIAS="${PARANOIAS:-1 2 4}"
 TRANSFORMS="${TRANSFORMS:-b64 b64url hex hex0x b32 rot13 zb64 b58 b64x2}"
-# Render contexts the decoded value can land in — an app that decodes a value
+# Render contexts the decoded value can land in, an app that decodes a value
 # may drop it into body, a quoted attribute, a JS string, or a javascript: URI.
 # Each unlocks a different vector class (body innerHTML vs attribute-breakout vs
 # JS-string-breakout), so sweeping them is what turns one transform into many

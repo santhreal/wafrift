@@ -3,7 +3,7 @@
 # Community-contributed. Each profile maps a specific WAF's response
 # characteristics to strategy recommendations. The proxy uses these
 # to make intelligent decisions about which evasion techniques to
-# prioritize after the FIRST block — instead of blind escalation.
+# prioritize after the FIRST block (instead of blind escalation).
 #
 # How to contribute a new profile:
 #   1. Copy this file and name it after the WAF (e.g. cloudflare.toml)
@@ -48,7 +48,7 @@ avoid = [
 # When the WAF returns 429 specifically, it means rate limiting not rule block
 rate_limit_status = [429]
 # Notes for the practitioner (shown in reports)
-notes = "Cloudflare inspects decoded payload once. Double-encoding bypasses the single-pass decode. Unicode homoglyphs bypass character-class checks. 503+challenge-platform means JS challenge, not a rule block — back off."
+notes = "Cloudflare inspects decoded payload once. Double-encoding bypasses the single-pass decode. Unicode homoglyphs bypass character-class checks. 503+challenge-platform means JS challenge, not a rule block (back off)."
 
 [[response_profile]]
 name = "ModSecurity CRS"

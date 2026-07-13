@@ -1,4 +1,4 @@
-# E5 — cargo-mutants configuration for wafrift-wafmodel.
+# E5: cargo-mutants configuration for wafrift-wafmodel.
 #
 # Mutation testing is the ground truth that the suite is not
 # decoration: a test that would still pass if a function returned
@@ -14,7 +14,7 @@
 # real learners and proptests; CI scales the proptest case count down
 # via WAFMODEL_PROPTEST_CASES so each mutant's run stays bounded.
 
-# Glob bases are the WORKSPACE root, not the package — keep them
+# Glob bases are the WORKSPACE root, not the package, keep them
 # fully-qualified or cargo-mutants silently filters everything out.
 # No `examine_globs`: the default already examines exactly this
 # package's source; we only carve out the no-logic re-export shim.
@@ -23,7 +23,7 @@
 # WAFMODEL_PROPTEST_CASES=24) finishes in a few seconds, so 25s is far
 # above any honest run yet kills a hang fast. The earlier 180s minimum
 # × ~30 timeout-mutants on the (much slower) CI runner blew the job's
-# wall-clock budget (killed at exit 143) — that was a CI-runtime
+# wall-clock budget (killed at exit 143), that was a CI-runtime
 # defect, not a survivor. CI also passes `--timeout`/`--jobs`
 # explicitly and caps the job with `timeout-minutes`.
 timeout_multiplier = 3.0
@@ -35,9 +35,9 @@ additional_cargo_test_args = ["--no-fail-fast"]
 # These are NOT silent survivors: each is excluded WITH a written
 # justification, and only after an exhaustive differential failed to
 # distinguish it (so a test that "killed" it would be asserting an
-# implementation detail, not the contract — an anti-rig violation).
+# implementation detail, not the contract (an anti-rig violation)).
 #
-# `mine.rs:*:34  replace != with ==  in kmp_sfa`  (line WILDCARDED — see
+# `mine.rs:*:34  replace != with ==  in kmp_sfa`  (line WILDCARDED, see
 #                                                  exclude_re note below)
 #   `kmp_sfa` only promises the *membership* language "contains
 #   needle". `kmp_next` (NOT mutated; its own `!=` is at col 26, killable)
@@ -45,7 +45,7 @@ additional_cargo_test_args = ["--no-fail-fast"]
 #   ONLY after m sequential exact matches. A KMP failure function that
 #   under-estimates (which `!=`→`==` produces) makes the matcher do
 #   redundant restarts but can never skip a real occurrence nor manufacture
-#   a false one — the accepted language is invariant (the all-zeros failure
+#   a false one, the accepted language is invariant (the all-zeros failure
 #   function is exactly naive search, still correct). Confirmed empirically
 #   by
 #   `attack_grammar_kmp_equals_naive_substring_for_self_overlapping_needles`
@@ -60,9 +60,9 @@ additional_cargo_test_args = ["--no-fail-fast"]
 #   bit 0, disjoint from 0xC0's bits 6–7; `b & 0x3F` occupies bits 0–5,
 #   disjoint from 0x80's bit 7. On bit-disjoint operands `|` and `^` are
 #   mathematically IDENTICAL, so the mutant emits the same bytes for every
-#   input — unkillable by ANY byte-output test ⇒ provably equivalent ⇒
-#   excluded. (The killable overlong_encode mutants — the `&& -> ||` scope
-#   guard at col 22 and the `>> -> <<` shift at col 32 — ARE caught by the
+#   input: unkillable by ANY byte-output test ⇒ provably equivalent ⇒
+#   excluded. (The killable overlong_encode mutants, the `&& -> ||` scope
+#   guard at col 22 and the `>> -> <<` shift at col 32. ARE caught by the
 #   `solve_contract` test `overlong_utf8_sink_preimage_is_canonical_two_byte_form`,
 #   which drives overlong_encode through the PUBLIC `preimage_for` API and pins
 #   the exact bytes for every ASCII byte + the pass-through of every non-ASCII
@@ -73,7 +73,7 @@ additional_cargo_test_args = ["--no-fail-fast"]
 # `sfa.rs:206:9  replace Sfa::is_empty -> bool with false`
 #   `is_empty` is `self.accept.is_empty()`. `Sfa::new` rejects an
 #   empty automaton, so for EVERY constructible `Sfa` the true value
-#   is already `false` — the mutant is behaviourally identical. The
+#   is already `false`: the mutant is behaviourally identical. The
 #   meaningful direction, `-> true`, IS killed (the soundness-primitive
 #   test asserts `!sfa.is_empty()`). `-> false` is unkillable because
 #   no input can distinguish it ⇒ provably equivalent ⇒ excluded, not
@@ -88,26 +88,26 @@ additional_cargo_test_args = ["--no-fail-fast"]
 # ── L* internal-heuristic mutants that are EQUIVALENT w.r.t. the
 # learned-LANGUAGE contract (item 40). l_star is paired with a
 # *complete* equivalence oracle (BoundedExhaustiveEq) and all-suffixes
-# counterexample handling — that loop, NOT the internal
+# counterexample handling, that loop, NOT the internal
 # closedness/consistency heuristics, is what guarantees convergence to
 # the exact minimal DFA (each CE round strictly increases Myhill–Nerode
 # resolution until exact). Perturbing the consistency check only costs
 # extra rounds; the recovered language is unchanged. A test that
 # "killed" these would have to assert internal observation-table state
-# or query *efficiency* — i.e. test the implementation, not the
-# contract — which is an anti-rig violation. Confirmed empirically:
+# or query *efficiency*, i.e. test the implementation, not the
+# contract: which is an anti-rig violation. Confirmed empirically:
 # they survive the 10k triple-learner differential
 # (`random_learner_differential`) AND exact-recovery, by definition of
-# equivalent. (520's budget-gate comparisons are NOT here — they are a
+# equivalent. (520's budget-gate comparisons are NOT here, they are a
 # real scope item, killed by `error_coverage`'s l_star_budgeted small-
-# budget test; 543/734 `rounds` are NOT here — a real provenance gap,
+# budget test; 543/734 `rounds` are NOT here, a real provenance gap,
 # now pinned by `equivalence_rounds_is_truthful_provenance`.)
-#   474:29 `(i+1)`→`(i)`  — adds a state-vs-itself consistency check
+#   474:29 `(i+1)`→`(i)`: adds a state-vs-itself consistency check
 #                           that is vacuously satisfied (si=sj ⇒
 #                           wia=wja ⇒ a1=a2, never a fix).
-#   496:35 `!=`→`==`      — inverts the consistency detector; the
+#   496:35 `!=`→`==`: inverts the consistency detector; the
 #                           complete EQ oracle still drives convergence.
-#   507:20 delete `!`     — the dedupe guard on adding a distinguishing
+#   507:20 delete `!`: the dedupe guard on adding a distinguishing
 #                           suffix; all-suffixes CE still resolves it.
 exclude_re = [
     # Lines WILDCARDED (`\d+`) deliberately: the kmp_sfa entry drifted 34->56
@@ -139,32 +139,32 @@ exclude_re = [
 # independent bit facts make these unkillable by ANY byte-output test:
 #  1. `& 0xff` PROVABLY discards bits 8..=15, so any perturbation of
 #     the `a<<12` (89:35 `<<`, 89:42 `|`) or `b<<8` (89:58 `<<`,
-#     89:64 `|`) terms cannot change the emitted byte — the bits they
+#     89:64 `|`) terms cannot change the emitted byte, the bits they
 #     touch are thrown away before output.
 #  2. each `nibble << k` lands in a 4-bit field DISJOINT from the next
 #     (a:12-15, b:8-11, c:4-7, d:0-3; and `(h<<4)|l` for %XX), so on
 #     bit-disjoint operands `|`, `^` and `+` are mathematically
-#     IDENTICAL — 89:86 and 101:35 `| -> ^` change nothing.
+#     IDENTICAL: 89:86 and 101:35 `| -> ^` change nothing.
 # Distinguishing them would require asserting the internal pre-narrow
-# `cp`, i.e. testing the implementation, not the contract — anti-rig.
+# `cp`, i.e. testing the implementation, not the contract (anti-rig).
 # (The c<<4 / d terms and the literal-fallthrough/bounds DO affect the
 # byte and ARE killed by the exhaustive %XX + %uXXXX + edge oracle;
 # the genuine `< -> <=` OOB-boundary mutants 79:22 / 145:21 are NOT
-# here — they are killed by the `%uABC` / `&#12` end-of-input edges.)
+# here: they are killed by the `%uABC` / `&#12` end-of-input edges.)
 # `learn.rs:520:35  replace > with >=` (the F3 budget gate
 # `cache.len() > budget`). Its sibling `> -> ==` IS killed (by
-# `error_coverage`'s small-budget l_star_budgeted run — it changes
+# `error_coverage`'s small-budget l_star_budgeted run, it changes
 # observable behaviour). `> -> >=` is a pure off-by-one AT the cap
 # boundary: it differs ONLY when `cache.len() == budget` exactly at an
 # internal gate evaluation. Every black-box property of the
-# BudgetExhausted contract is invariant — the model returned when not
+# BudgetExhausted contract is invariant, the model returned when not
 # exhausted, the fact BudgetExhausted fires when the budget is over-run,
 # the carried `queries` count (= cache size either way), and that an
 # unbounded `u64::MAX` budget never trips (cache can't reach u64::MAX
 # for either operator). The documented contract is "the learner
 # exhausted its membership-query budget"; both `>` (over-run) and `>=`
-# (reached) are faithful readings — a single-query threshold shift is
+# (reached) are faithful readings, a single-query threshold shift is
 # not a promised guarantee. Distinguishing them requires asserting the
 # internal cache-size-at-gate trajectory, i.e. testing the
-# implementation, not the contract — an anti-rig violation. Provably
+# implementation, not the contract, an anti-rig violation. Provably
 # equivalent ⇒ excluded with justification (item 40), not chased.

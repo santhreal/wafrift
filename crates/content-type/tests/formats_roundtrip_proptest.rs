@@ -5,12 +5,12 @@
 //! these codecs are how wafrift smuggles an injection payload past a WAF that
 //! inspects raw bytes while the origin decodes the body. If the round-trip
 //! drops, truncates, or mangles even one byte, the WAF sees inert bytes but the
-//! ORIGIN reconstructs the WRONG payload — the exploit silently mis-fires. The
+//! ORIGIN reconstructs the WRONG payload, the exploit silently mis-fires. The
 //! per-codec unit tests only exercise a handful of hand-picked literals, none of
 //! which straddle a length-class boundary:
 //!   - messagepack switches encoding at 31 / 255 / 65535 (fixstr / str8 / str16
 //!     / str32), each with its own length-byte width and `idx += N` decoder
-//!     accounting — exactly where an off-by-one lives. The file's own header
+//!     accounting, exactly where an off-by-one lives. The file's own header
 //!     records a prior `(len as u16)` silent-truncation bug here.
 //!   - protobuf length-prefixes with a varint that rolls over at 128 / 16384 /…
 //!   - grpc-web frames with a big-endian u32 length.
@@ -26,7 +26,7 @@ proptest! {
     #![proptest_config(ProptestConfig { cases: 1024, ..ProptestConfig::default() })]
 
     /// protobuf: round-trips any UTF-8 string. `s: String` is always valid
-    /// UTF-8 so the decoder's lossy conversion is a no-op — equality is exact.
+    /// UTF-8 so the decoder's lossy conversion is a no-op (equality is exact).
     #[test]
     fn protobuf_round_trips_any_string(s in ".*") {
         prop_assert_eq!(protobuf::deserialize(&protobuf::serialize(&s)), s);

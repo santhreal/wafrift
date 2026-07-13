@@ -1,4 +1,4 @@
-//! Composition + preimage solver — the part that turns "encoding
+//! Composition + preimage solver, the part that turns "encoding
 //! tricks" from hand-written rules into *emergent solutions*.
 //!
 //! A working bypass of the whole pipeline is any input `x` with:
@@ -147,7 +147,7 @@ fn in_scope(b: u8, s: Scope) -> bool {
     }
 }
 
-/// Percent-encode `input`. Uses a precomputed lookup table — zero `format!`
+/// Percent-encode `input`. Uses a precomputed lookup table, zero `format!`
 /// calls, no per-byte heap allocation.
 fn pct_encode(input: &[u8], scope: Scope) -> Vec<u8> {
     let mut out = Vec::with_capacity(input.len() * 3);
@@ -161,7 +161,7 @@ fn pct_encode(input: &[u8], scope: Scope) -> Vec<u8> {
     out
 }
 
-/// JSON-escape `input` as `\uXXXX`. Uses a precomputed lookup table —
+/// JSON-escape `input` as `\uXXXX`. Uses a precomputed lookup table 
 /// zero `format!` calls, no per-byte heap allocation.
 fn json_escape(input: &[u8], scope: Scope) -> Vec<u8> {
     let mut out = Vec::with_capacity(input.len() * 6);
@@ -175,7 +175,7 @@ fn json_escape(input: &[u8], scope: Scope) -> Vec<u8> {
     out
 }
 
-/// HTML-entity-encode `input` as `&#xN;`. Uses a precomputed lookup table —
+/// HTML-entity-encode `input` as `&#xN;`. Uses a precomputed lookup table 
 /// zero `format!` calls, no per-byte heap allocation.
 fn html_entity_encode(input: &[u8], scope: Scope) -> Vec<u8> {
     let mut out = Vec::with_capacity(input.len() * 6);
@@ -191,7 +191,7 @@ fn html_entity_encode(input: &[u8], scope: Scope) -> Vec<u8> {
 
 /// Homoglyph-encode `input`: replace each in-scope ASCII character with a
 /// single codepoint that the origin normalizer `first` folds back to it. This
-/// is the structural inverse of a text-normalizing sink — the exact dual of
+/// is the structural inverse of a text-normalizing sink, the exact dual of
 /// [`pct_encode`] for a URL-decoding sink. Characters that are non-ASCII,
 /// out-of-scope, or have no preimage pass through, so
 /// `origin_normalize(homoglyph_encode(x)) == x` by construction (and the
@@ -217,7 +217,7 @@ fn homoglyph_encode(input: &[u8], scope: Scope, first: fn(char) -> Option<char>)
     }
 }
 
-/// Inject a NUL after each in-scope byte — the structural inverse of an origin
+/// Inject a NUL after each in-scope byte, the structural inverse of an origin
 /// that strips NULs. `strip_nulls(null_inject(x)) == x` for any NUL-free `x`
 /// (attacks are NUL-free), since stripping removes exactly the injected NULs.
 fn null_inject(input: &[u8], scope: Scope) -> Vec<u8> {
@@ -232,7 +232,7 @@ fn null_inject(input: &[u8], scope: Scope) -> Vec<u8> {
 }
 
 /// Overlong-UTF-8-encode each in-scope ASCII byte as its non-canonical 2-byte
-/// form — the structural inverse of an origin that overlong-decodes.
+/// form (the structural inverse of an origin that overlong-decodes).
 /// `overlong_decode(overlong_encode(b)) == b` for `b <= 0x7F`. Non-ASCII bytes
 /// have no 2-byte overlong form, so they pass through unchanged.
 fn overlong_encode(input: &[u8], scope: Scope) -> Vec<u8> {
@@ -291,7 +291,7 @@ fn structural_preimage(attack: &[u8], sink: &Pipeline, scope: Scope) -> Vec<u8> 
 
 /// The structural preimage of `attack` under `sink` (encode every
 /// dangerous byte, or every byte). `sink.apply(result)` reconstructs
-/// `attack` by construction — public so the equiv bridge can mint
+/// `attack` by construction, public so the equiv bridge can mint
 /// pipeline-conditioned members without re-deriving the inversion.
 #[must_use]
 pub fn preimage_for(attack: &[u8], sink: &Pipeline, encode_all: bool) -> Vec<u8> {
@@ -312,7 +312,7 @@ pub struct Solution {
     /// The input bytes to send (the solved preimage).
     pub input: Vec<u8>,
     /// Human label of the encoding the solver derived (not chosen from
-    /// a list — describes the structural preimage it computed).
+    /// a list (describes the structural preimage it computed)).
     pub encoding: String,
     /// Whether the *raw* attack is blocked by this WAF. Always `true` for a
     /// returned `Solution`: [`solve_bypass`] never yields one when the raw
@@ -330,7 +330,7 @@ pub struct Solution {
 ///
 /// CEGIS: candidates are ordered minimal-first (encode only dangerous
 /// bytes) then escalated (encode everything); each is *verified*
-/// against the real oracle and the real sink. `None` ⇒ no bypass —
+/// against the real oracle and the real sink. `None` ⇒ no bypass 
 /// either the raw attack is **not blocked** (nothing to bypass; the
 /// never-policed case) or it is blocked but no structural preimage
 /// passes this pipeline (e.g. an identity sink). Both are reported
@@ -345,7 +345,7 @@ where
     B: Fn(&[u8]) -> Request,
 {
     // The raw attack is the control: confirm the WAF actually blocks it.
-    // If it does NOT, the attack already reaches the sink unmodified — there
+    // If it does NOT, the attack already reaches the sink unmodified, there
     // is nothing to bypass, and any candidate that "passes" merely reproduces
     // that fact. Returning a Solution here is the vacuous / never-policed
     // false-positive class (#7). Fail closed: report no bypass and let the
@@ -364,7 +364,7 @@ where
         if !reconstructs {
             continue;
         }
-        // The WAF must pass the candidate while the raw attack did not — a
+        // The WAF must pass the candidate while the raw attack did not, a
         // genuine bypass (raw_blocked is true here by the guard above).
         let passes = matches!(oracle.classify(&build(&cand))?, Outcome::Pass);
         if passes {

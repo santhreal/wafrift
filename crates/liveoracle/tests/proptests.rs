@@ -1,4 +1,4 @@
-//! Property tests for the calibrated live oracle — thousands of generated cases
+//! Property tests for the calibrated live oracle, thousands of generated cases
 //! per property, asserting the *contract* (not the shape) of every classifier.
 //!
 //! The verdict classifier is differentially checked against an independent
@@ -57,7 +57,7 @@ proptest! {
         );
     }
 
-    /// 429/502/503/504 are ALWAYS transient — never a false block — whatever the
+    /// 429/502/503/504 are ALWAYS transient, never a false block, whatever the
     /// body or signature set says. This is the rate-limit reliability guarantee.
     #[test]
     fn prop_gateway_statuses_are_always_transient(
@@ -70,7 +70,7 @@ proptest! {
     }
 
     /// A signature embedded anywhere within the scan window of a 2xx body forces
-    /// Blocked — the 200-block-page guarantee.
+    /// Blocked (the 200-block-page guarantee).
     #[test]
     fn prop_signature_in_window_forces_blocked(
         status in 200u16..300,
@@ -89,7 +89,7 @@ proptest! {
         );
     }
 
-    /// A signature that appears ONLY past the scan window is not seen — the scan
+    /// A signature that appears ONLY past the scan window is not seen, the scan
     /// is bounded, so a huge benign 2xx body stays Allowed.
     #[test]
     fn prop_signature_past_window_is_not_seen(
@@ -210,7 +210,7 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(2000))]
 
     /// A reflecting (non-blocking) target is NEVER calibrated as blocking when
-    /// reflection is the only signal — the false-bypass-killer guarantee.
+    /// reflection is the only signal (the false-bypass-killer guarantee).
     #[test]
     fn prop_reflection_alone_never_calibrates_a_block(
         ctrl in "[a-z]{4,10}",
@@ -221,7 +221,7 @@ proptest! {
             body: benign_words.into_bytes(),
             control: b"benign_marker".to_vec(),
         };
-        // The only malicious control reflects its payload — must be skipped.
+        // The only malicious control reflects its payload (must be skipped).
         let cal = calibrate(benign, vec![reflected(200, &ctrl)]);
         prop_assert!(cal.is_none(), "reflection alone must not yield a block calibration");
     }

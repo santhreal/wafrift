@@ -1,4 +1,4 @@
-//! wafrift-encoding — Payload encoding strategies and header obfuscation.
+//! wafrift-encoding: Payload encoding strategies and header obfuscation.
 //!
 //! See [`cookie_smuggle`] for RFC 6265-vs-6265bis Cookie-header
 //! parser-differential probes (prefix bypass, duplicate-name pairs,
@@ -22,7 +22,7 @@
 //! assert!(url_encoded.contains("%20"));    // space
 //! assert!(url_encoded.contains("%3D"));    // equals
 //!
-//! // Same payload, double-encoded — bypasses single-decode WAFs.
+//! // Same payload, double-encoded (bypasses single-decode WAFs).
 //! let double = encode(payload, Strategy::DoubleUrlEncode).unwrap();
 //! assert!(double.contains("%2527"));
 //! ```
@@ -80,7 +80,7 @@ pub mod contextual;
 /// builders cap header values with `String::truncate(N)` and split values at
 /// computed byte offsets; their inputs (operator `--credential`, payload
 /// seeds) pass through sanitisers that strip only CR/LF/NUL, so multibyte
-/// UTF-8 survives and a raw byte index can land mid-codepoint — where
+/// UTF-8 survives and a raw byte index can land mid-codepoint, where
 /// `String::truncate` / `&s[..idx]` PANIC. Routing every such site through
 /// this one helper keeps them boundary-safe and prevents the three copies
 /// (was: `header::char_boundary_near`, `cookie_smuggle`'s local copy, and the
@@ -111,7 +111,7 @@ mod floor_char_boundary_tests {
         assert_eq!(floor_char_boundary("abcd", 2), 2);
         // Empty string clamps to 0.
         assert_eq!(floor_char_boundary("", 5), 0);
-        // 4-byte char (🦀) — every interior index snaps to the start.
+        // 4-byte char (🦀) (every interior index snaps to the start).
         assert_eq!(floor_char_boundary("🦀", 1), 0);
         assert_eq!(floor_char_boundary("🦀", 3), 0);
         assert_eq!(floor_char_boundary("🦀", 4), 4);

@@ -1,10 +1,10 @@
-//! `wafrift sanitizer-decompile` — decompile a client-side HTML sanitizer.
+//! `wafrift sanitizer-decompile`: decompile a client-side HTML sanitizer.
 //!
 //! The DOM-XSS counterpart to `wafrift fingerprint`/`audit`: where those
 //! decompile a server WAF, this recovers the **client sanitizer** from a shipped
 //! JS source map (or raw JS), extracts its allow/deny model, and L*/SFA-mines the
 //! XSS vectors that survive it. Every reported bypass is re-verified against the
-//! extracted model and flagged for live scald DOM confirmation — proposed by the
+//! extracted model and flagged for live scald DOM confirmation, proposed by the
 //! model, never asserted as executed here.
 
 use std::process::ExitCode;
@@ -26,7 +26,7 @@ pub(crate) struct SanitizerDecompileArgs {
     /// exclusive with `--js`.
     #[arg(long, conflicts_with = "js")]
     pub source_map: Option<String>,
-    /// Path to a raw JavaScript file (already-readable source — e.g. an
+    /// Path to a raw JavaScript file (already-readable source, e.g. an
     /// un-minified bundle). Mutually exclusive with `--source-map`.
     #[arg(long)]
     pub js: Option<String>,
@@ -145,14 +145,14 @@ fn report_json(result: &MineResult) -> serde_json::Value {
         "bypasses": result.bypasses,
         "mxss_candidates": mxss_candidates(&result.model),
         "note": "each bypass survives the extracted model; confirm DOM execution in a real \
-                 browser (scald) — not asserted as executed here. mxss_candidates are reachable \
-                 mutation-XSS trigger pairs the in-model check cannot prove — confirm in a live DOM.",
+                 browser (scald), not asserted as executed here. mxss_candidates are reachable \
+                 mutation-XSS trigger pairs the in-model check cannot prove, confirm in a live DOM.",
     })
 }
 
 fn print_human(result: &MineResult) {
     let m = &result.model;
-    println!("wafrift sanitizer-decompile — client sanitizer X-ray");
+    println!("wafrift sanitizer-decompile, client sanitizer X-ray");
     println!("detected sanitizer : {}", m.kind.label());
     if let Some(allow) = &m.allowed_tags {
         println!("allowed tags       : [{}]", allow.join(", "));
@@ -192,7 +192,7 @@ fn print_human(result: &MineResult) {
     let mxss = mxss_candidates(&result.model);
     if !mxss.is_empty() {
         println!(
-            "\n{} mutation-XSS candidate(s) — reachable trigger pairs the in-model check cannot \
+            "\n{} mutation-XSS candidate(s), reachable trigger pairs the in-model check cannot \
              prove; confirm in a live DOM (scald):",
             mxss.len()
         );

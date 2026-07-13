@@ -1,4 +1,4 @@
-//! WAF classification by architectural backing — governs which evasion
+//! WAF classification by architectural backing, governs which evasion
 //! sub-engines are activated for a given target.
 //!
 //! The distinction that matters for evasion is *how the WAF makes its
@@ -10,7 +10,7 @@
 //!   scoring; the `ensemble_dilution` module handles these.
 //!
 //! - **ML-backed WAFs** (AWS Bot Control, Cloudflare Bot Management,
-//!   Akamai Bot Manager, Datadome) run a learned classifier — there is no
+//!   Akamai Bot Manager, Datadome) run a learned classifier, there is no
 //!   rule to learn, only a decision boundary. The `mlwaf::evade_ml`
 //!   decision-based boundary attack handles these.
 //!
@@ -31,26 +31,26 @@ pub enum WafClass {
     // ── Rule-based (anomaly-scoring) ──────────────────────────────────
     /// ModSecurity CRS or Coraza with anomaly scoring.
     PlainModSec,
-    /// Cloudflare Managed Rules (CF WAF) — multi-group anomaly scoring.
+    /// Cloudflare Managed Rules (CF WAF) (multi-group anomaly scoring).
     /// Ensemble dilution is applicable.
     CloudflareManagedRules,
-    /// AWS Core Rule Set — multi-group anomaly scoring.
+    /// AWS Core Rule Set (multi-group anomaly scoring).
     /// Ensemble dilution is applicable.
     AwsCoreRuleSet,
     /// Generic OWASP CRS-based WAF (unknown vendor but CRS-shaped).
     GenericCrs,
 
     // ── ML-backed (classifier) ────────────────────────────────────────
-    /// AWS Bot Control — ML-classifier WAF from AWS.
+    /// AWS Bot Control: ML-classifier WAF from AWS.
     /// `mlwaf::evade_ml` is the primary attack engine.
     AwsBotControl,
-    /// Cloudflare Bot Management — ML-classifier WAF from Cloudflare.
+    /// Cloudflare Bot Management: ML-classifier WAF from Cloudflare.
     /// `mlwaf::evade_ml` is the primary attack engine.
     CloudflareBotMgmt,
-    /// Akamai Bot Manager — ML-classifier WAF from Akamai.
+    /// Akamai Bot Manager: ML-classifier WAF from Akamai.
     /// `mlwaf::evade_ml` is the primary attack engine.
     AkamaiBotManager,
-    /// Datadome — ML-classifier bot-protection service.
+    /// Datadome: ML-classifier bot-protection service.
     Datadome,
 
     // ── Unknown / unclassified ────────────────────────────────────────
@@ -89,7 +89,7 @@ impl WafClass {
     #[must_use]
     pub fn from_waf_name(name: &str) -> Self {
         let lower = name.to_ascii_lowercase();
-        // ML-backed checks first — more specific.
+        // ML-backed checks first (more specific).
         if lower.contains("bot control") || lower.contains("botcontrol") {
             return Self::AwsBotControl;
         }

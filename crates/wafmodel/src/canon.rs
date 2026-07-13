@@ -1,7 +1,7 @@
 //! Canonicalize a [`wafrift_types::Request`] into the ordered set of
 //! byte-segments a CRS-class WAF actually inspects.
 //!
-//! ModSecurity / Coraza CRS does not match against "the request" — it
+//! ModSecurity / Coraza CRS does not match against "the request", it
 //! matches against *variables*: `REQUEST_URI`, `ARGS` / `ARGS_NAMES`,
 //! `REQUEST_HEADERS`, `REQUEST_COOKIES`, `REQUEST_BODY`. Each is a
 //! distinct inspection channel with its own rule coverage (this is the
@@ -10,7 +10,7 @@
 //!
 //! This module extracts the **raw on-the-wire bytes per channel**. It
 //! deliberately does *not* apply CRS transformations
-//! (`t:urlDecodeUni`, `t:htmlEntityDecode`, …) — that decoding layer is
+//! (`t:urlDecodeUni`, `t:htmlEntityDecode`, …), that decoding layer is
 //! the job of the pipeline transducers (P2), and keeping the raw view
 //! separate is exactly what lets the composition solver discover
 //! WAF↔origin normalization mismatches. Extraction here is total and
@@ -38,7 +38,7 @@ pub enum Channel {
     /// A cookie value (`REQUEST_COOKIES`).
     CookieValue,
     /// The raw request body when it is not form-decodable
-    /// (`REQUEST_BODY` — JSON / multipart / opaque). Structured
+    /// (`REQUEST_BODY`: JSON / multipart / opaque). Structured
     /// sub-extraction is a transducer concern (P2), not canonicalization.
     Body,
 }
@@ -72,7 +72,7 @@ impl CanonView {
             .collect()
     }
 
-    /// Total attacker-controlled bytes across all channels — used by
+    /// Total attacker-controlled bytes across all channels, used by
     /// the learner's alphabet sizing and by perf gates.
     #[must_use]
     pub fn total_bytes(&self) -> usize {
@@ -82,7 +82,7 @@ impl CanonView {
 
 /// Split a `name=value&name2=value2` string into raw `(name, value)`
 /// pairs without decoding. A bare `name` (no `=`) yields an empty
-/// value; a leading `=` yields an empty name — both are real shapes a
+/// value; a leading `=` yields an empty name, both are real shapes a
 /// WAF must classify, so neither is silently dropped.
 fn split_form(raw: &[u8]) -> Vec<(Vec<u8>, Vec<u8>)> {
     if raw.is_empty() {
@@ -97,7 +97,7 @@ fn split_form(raw: &[u8]) -> Vec<(Vec<u8>, Vec<u8>)> {
 }
 
 /// Parse a `Cookie:` header value into raw `(name, value)` pairs.
-/// `a=1; b=2` — split on `;`, trim one optional leading space (RFC
+/// `a=1; b=2`: split on `;`, trim one optional leading space (RFC
 /// 6265 `cookie-string` uses `"; "` as the separator), then split the
 /// first `=`.
 fn split_cookies(raw: &str) -> Vec<(Vec<u8>, Vec<u8>)> {
@@ -120,7 +120,7 @@ fn split_cookies(raw: &str) -> Vec<(Vec<u8>, Vec<u8>)> {
 ///
 /// Lossless and total: path, every query arg name+value, every header
 /// name+value (cookies broken out of the `Cookie` header into
-/// cookie-name/cookie-value channels), and the body — form-urlencoded
+/// cookie-name/cookie-value channels), and the body, form-urlencoded
 /// bodies are broken into arg pairs (CRS does this via
 /// `REQUEST_BODY_PROCESSOR=URLENCODED`), everything else is one opaque
 /// `Body` segment.
@@ -194,7 +194,7 @@ pub fn canonicalize(req: &Request) -> CanonView {
         // parameters case-sensitive). Pre-fix used a case-sensitive
         // `starts_with` and a request with
         // `Content-Type: Application/X-WWW-Form-URLencoded` got
-        // canonicalized as opaque Body — but CRS / Coraza / ModSec
+        // canonicalized as opaque Body, but CRS / Coraza / ModSec
         // DO normalize the type and would treat that same request
         // as URL-encoded form. The SFA learner then sees a different
         // inspection channel than the live WAF and any bypass it
@@ -242,7 +242,7 @@ mod tests {
 
     // F131 regression: Content-Type is case-insensitive per RFC 7231.
     // The pre-fix `starts_with("application/x-www-form-urlencoded")`
-    // was case-sensitive — requests with mixed-case content type were
+    // was case-sensitive, requests with mixed-case content type were
     // canonicalized as opaque Body even though every CRS-class WAF
     // (ModSecurity, Coraza) would have treated them as form-decoded
     // ARGS. Any SFA learned against the mismatched view is unsound.
@@ -275,7 +275,7 @@ mod tests {
             vec!["a", "b"],
             "mixed-case content type must still parse as form per RFC 7231 §3.1.1.1"
         );
-        // And the Body channel must be empty — we did NOT also dump
+        // And the Body channel must be empty, we did NOT also dump
         // the bytes there.
         assert!(view.channel(Channel::Body).is_empty());
     }
@@ -308,7 +308,7 @@ mod tests {
     #[test]
     fn form_body_with_unrelated_subtype_does_not_split() {
         // application/x-www-form-urlencoded-NOT-REALLY shouldn't
-        // pass — the eq_ignore_ascii_case is on the whole token, not
+        // pass, the eq_ignore_ascii_case is on the whole token, not
         // a starts_with.
         let r = req_with_content_type("application/x-www-form-urlencoded-extra", b"a=1");
         let view = canonicalize(&r);

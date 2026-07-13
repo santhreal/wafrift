@@ -6,12 +6,12 @@ evasions = ["CaseAlternation", "UnicodeEncode", "SqlCommentInsertion"]
 source = "frontier-2026:aikido-zen-docs"
 
 # Aikido Zen (aikido.dev/zen) is Aikido's open-source runtime app
-# security agent — auto-instrumented WAF + RASP for Node, Python,
+# security agent, auto-instrumented WAF + RASP for Node, Python,
 # Django, Express, NestJS, Laravel, Ruby on Rails. When Zen blocks an
 # attack, the response is gated through Zen's middleware which sets a
 # specific X-Aikido header set and serves a small JSON body identifying
 # the blocked attack class. Detection rests on the Zen-injected headers
-# (load-bearing across all supported runtimes — they're inserted before
+# (load-bearing across all supported runtimes, they're inserted before
 # the framework can override them) plus the body literal.
 
 [[waf.signature]]

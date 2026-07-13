@@ -25,7 +25,7 @@ pub fn header_value_to_string(name: &str, value: &hyper::header::HeaderValue) ->
 /// for the `--mutate-url` hook so the URL-mutator only sees the
 /// path-and-query portion (it never touches scheme or authority).
 ///
-/// Returns `None` for URLs without `://` (relative, malformed) —
+/// Returns `None` for URLs without `://` (relative, malformed) 
 /// the caller leaves the URL alone in that case rather than risking
 /// a mutation that breaks routing.
 #[must_use]
@@ -51,7 +51,7 @@ pub fn error_response(status: StatusCode, message: &str) -> Response<Full<Bytes>
         .status(status)
         .body(Full::new(Bytes::from(message.to_string())))
         .unwrap_or_else(|_| {
-            // Infallible in practice — status and body are always valid.
+            // Infallible in practice (status and body are always valid).
             // But if it somehow fails, return a minimal 500.
             let mut resp = Response::new(Full::new(Bytes::from("internal error")));
             *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
@@ -75,7 +75,7 @@ mod tests {
     fn header_value_to_string_invalid_utf8_falls_back_to_lossy() {
         // 0xFF is invalid in UTF-8; HeaderValue allows it (HTTP
         // headers are bytes, not text). The wrapper must NOT panic
-        // — it falls back to lossy decode and continues.
+        //: it falls back to lossy decode and continues.
         let v = HeaderValue::from_bytes(&[b'O', b'K', 0xFF]).expect("bytes ok in HeaderValue");
         let s = header_value_to_string("x-bad", &v);
         // Lossy decode preserves the ASCII prefix and replaces the
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn split_url_relative_url_returns_none() {
-        // Relative URLs (no scheme://) must NOT be split — the
+        // Relative URLs (no scheme://) must NOT be split, the
         // mutator only operates on absolute URLs.
         assert_eq!(split_url_for_mutation("/api/v1/x"), None);
         assert_eq!(split_url_for_mutation(""), None);
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn split_url_query_string_without_path_returns_none() {
         // A URL like `https://host?query` has no `/` in the authority
-        // portion — there is nothing to split the path at.
+        // portion (there is nothing to split the path at).
         assert_eq!(split_url_for_mutation("https://host?query"), None);
     }
 

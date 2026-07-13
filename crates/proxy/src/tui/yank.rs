@@ -2,7 +2,7 @@
 //! operator's clipboard (best-effort) plus a `/tmp` file (always).
 //!
 //! The TUI runs inside the alt-screen so direct copy/paste isn't
-//! available — the operator presses `y` on a selected request and
+//! available, the operator presses `y` on a selected request and
 //! gets a portable curl command on disk and (when X11/Wayland is up)
 //! on the system clipboard.
 
@@ -12,7 +12,7 @@ use super::state::RequestRecord;
 
 /// Write `bytes` to `path` ONLY if the path does not already exist.
 /// Uses `OpenOptions::create_new(true)` which maps to
-/// `O_CREAT | O_EXCL` on POSIX — open fails with `AlreadyExists`
+/// `O_CREAT | O_EXCL` on POSIX, open fails with `AlreadyExists`
 /// if the path exists, INCLUDING when it points at a symlink.
 /// This is the defence against the predictable-tmp-path symlink
 /// attack: an attacker pre-creating
@@ -30,7 +30,7 @@ fn write_new_only(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     Ok(())
 }
 
-/// Outcome of a yank attempt — drives the toast banner.
+/// Outcome of a yank attempt (drives the toast banner).
 #[derive(Debug, Clone)]
 pub struct YankReport {
     pub path: PathBuf,
@@ -39,7 +39,7 @@ pub struct YankReport {
     pub bytes: usize,
 }
 
-/// Outcome of a replay attempt — drives the toast banner. Reports
+/// Outcome of a replay attempt, drives the toast banner. Reports
 /// both the on-disk reproducer and (when auto-exec is enabled) the
 /// upstream HTTP status / body byte-count.
 #[derive(Debug, Clone)]
@@ -48,7 +48,7 @@ pub struct ReplayReport {
     pub bytes: usize,
     /// `Some(status)` when `WAFRIFT_REPLAY_AUTOEXEC=1` was set and the
     /// shell-out completed (regardless of the upstream HTTP code).
-    /// `None` when auto-exec was disabled — the operator is expected
+    /// `None` when auto-exec was disabled, the operator is expected
     /// to run the curl command themselves.
     pub upstream_status: Option<i32>,
     /// First few bytes of the upstream response body, when auto-exec
@@ -73,7 +73,7 @@ const HEADER_SKIP: &[&str] = &[
 /// Render `rec` as a multi-line `curl` command.
 ///
 /// Scheme is inferred from `tls_profile` (Some → https) with https as
-/// the default fallback — production targets are rarely plain HTTP.
+/// the default fallback (production targets are rarely plain HTTP).
 /// Body is emitted via `--data-binary` with single-quote escaping;
 /// non-UTF-8 bodies are emitted as a `--data-binary @PATH` reference
 /// to a sibling `.body` file (path is single-quote-escaped so the
@@ -94,7 +94,7 @@ pub fn render_curl(rec: &RequestRecord, body_sidecar: Option<&PathBuf>) -> Strin
     if rec.method != "GET" {
         // Method must be single-quote-escaped: a server could craft a
         // response that sets the method in the record to something
-        // containing `$(...)` or backticks — if the rendered file is
+        // containing `$(...)` or backticks, if the rendered file is
         // later passed to `sh`/`bash`, unquoted method tokens would be
         // interpreted as shell metacharacters.
         out.push_str(" -X '");
@@ -165,7 +165,7 @@ pub fn yank_to_disk_and_clipboard(rec: &RequestRecord, seq: u64) -> std::io::Res
     // created symlink at the predictable path and clobber the
     // symlink's target (e.g. /etc/cron.d/wafrift-cron). O_CREAT |
     // O_EXCL refuses to open if the path already exists as anything
-    // — including a symlink — so the attacker's pre-creation makes
+    //: including a symlink, so the attacker's pre-creation makes
     // the yank fail loudly instead of writing to the wrong file.
     write_new_only(&curl_path, curl.as_bytes())?;
     if let Some(p) = &body_path {
@@ -259,7 +259,7 @@ fn build_curl_argv(rec: &RequestRecord, body_path: Option<&PathBuf>) -> Vec<std:
 /// path: any value in the `RequestRecord` (hostname, header value, body)
 /// that escaped the single-quote wrapping would be evaluated as shell
 /// code by `bash`. The fix replaces `bash <file>` with
-/// `Command::new("curl").args(build_curl_argv(rec))` — each argument is
+/// `Command::new("curl").args(build_curl_argv(rec))`: each argument is
 /// a discrete `OsStr`, so no shell metacharacter interpretation is
 /// possible regardless of what the captured request contained.
 ///
@@ -268,7 +268,7 @@ fn build_curl_argv(rec: &RequestRecord, body_path: Option<&PathBuf>) -> Vec<std:
 /// shell.
 ///
 /// Auto-exec is gated by an env var, not a CLI flag, because it
-/// performs an outbound network request — operators must opt in
+/// performs an outbound network request, operators must opt in
 /// explicitly per shell session. Without it, this function is
 /// equivalent to a yank with a different filename prefix and no
 /// clipboard set.
@@ -310,7 +310,7 @@ pub(crate) fn replay_to_disk_with_autoexec(
     }
 
     let (upstream_status, upstream_body_excerpt) = if autoexec {
-        // Invoke `curl` directly — NOT via a shell — so no shell
+        // Invoke `curl` directly: NOT via a shell, so no shell
         // metacharacter in any RequestRecord field (host, header
         // name/value, body) can execute as code. Each argv element is
         // a discrete OsStr handed straight to execve(2); the OS kernel
@@ -419,7 +419,7 @@ mod tests {
     #[test]
     fn curl_emits_data_binary_with_escaping() {
         let s = render_curl(&rec_full(), None);
-        // body contains a `'` character — needs escape
+        // body contains a `'` character, needs escape
         assert!(s.contains(r"--data-binary 'q='\''"));
     }
 
@@ -429,7 +429,7 @@ mod tests {
         r.method = "GET".into();
         r.req_body_excerpt.clear();
         let s = render_curl(&r, None);
-        assert!(s.starts_with("curl \\\n"), "no -X for GET — got {s:?}");
+        assert!(s.starts_with("curl \\\n"), "no -X for GET, got {s:?}");
     }
 
     #[test]
@@ -455,7 +455,7 @@ mod tests {
 
     #[test]
     fn replay_writes_curl_file_with_replay_prefix() {
-        // autoexec passed explicitly (false) — no env mutation, so this
+        // autoexec passed explicitly (false), no env mutation, so this
         // is deterministic under parallel `cargo test` and needs no
         // `unsafe`. Drives the no-exec branch.
         let r = rec_full();
@@ -487,7 +487,7 @@ mod tests {
     fn replay_autoexec_branch_runs_without_panic_against_loopback() {
         // Exercises the previously-untested autoexec=true branch. The
         // record targets a closed loopback port, so `curl` (if present)
-        // fails fast with connection-refused — no real outbound traffic
+        // fails fast with connection-refused, no real outbound traffic
         // and no dependency on a reachable host. If `curl` is absent the
         // spawn errors and the branch yields `None`. Either way the call
         // must succeed (file written) and never panic.
@@ -500,7 +500,7 @@ mod tests {
             "replay file written even on the exec path"
         );
         // status is Some(curl-exit) when curl ran, None when curl was
-        // missing — both valid; pin only that the excerpt never exceeds
+        // missing, both valid; pin only that the excerpt never exceeds
         // the 256-byte truncation cap.
         assert!(
             report.upstream_body_excerpt.len() <= 256,
@@ -561,7 +561,7 @@ mod tests {
         );
         // And critically: the value is a discrete OsString element, NOT
         // concatenated with `-H` or any quoting wrapper (those are shell's
-        // job — since we skip the shell, no quoting is needed or applied).
+        // job (since we skip the shell, no quoting is needed or applied)).
         let h_idx = argv
             .iter()
             .position(|a| a.to_string_lossy() == "-H")

@@ -20,7 +20,7 @@ pub fn tournament_select<'a>(population: &'a [Chromosome], rng: &mut impl Rng) -
 /// Tournament selection with explicit tournament size.
 ///
 /// # Panics
-/// Panics with a clear contract message if `population` is empty —
+/// Panics with a clear contract message if `population` is empty 
 /// silently returning a "default" Chromosome would mask the caller's
 /// state-machine bug. Callers that may have an empty population
 /// should guard before invoking this helper.
@@ -32,7 +32,7 @@ pub fn tournament_select_with_size<'a>(
 ) -> &'a Chromosome {
     assert!(
         !population.is_empty(),
-        "tournament_select_with_size called with empty population — caller bug"
+        "tournament_select_with_size called with empty population, caller bug"
     );
     let size = tournament_size.min(population.len());
     let mut best = pick_ref_from_rng(population, rng).unwrap_or(&population[0]);
@@ -53,7 +53,7 @@ pub fn tournament_select_with_size<'a>(
 pub fn roulette_select<'a>(population: &'a [Chromosome], rng: &mut impl Rng) -> &'a Chromosome {
     assert!(
         !population.is_empty(),
-        "roulette_select called with empty population — caller bug"
+        "roulette_select called with empty population, caller bug"
     );
     if population.len() == 1 {
         return &population[0];

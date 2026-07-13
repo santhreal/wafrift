@@ -2,22 +2,22 @@
 //!
 //! Three sub-modules carve up the responsibilities cleanly:
 //!
-//! * [`types`] — the public shape of a DNS probe (`DnsProbe`,
+//! * [`types`], the public shape of a DNS probe (`DnsProbe`,
 //!   `CnameHop`, `AsnInfo`, `DnsProbeError`) plus the constants
 //!   that bound a single probe (`RESOLVER_TIMEOUT`,
 //!   `MAX_CNAME_CHAIN_DEPTH`).
-//! * [`probe`] — the async resolver path that actually walks a
+//! * [`probe`], the async resolver path that actually walks a
 //!   host's CNAME chain, follows it with a PTR lookup, then hits
 //!   cymru.com's TXT service for the BGP-origin ASN.  Behind the
 //!   `dns-cname` cargo feature so detection callers that don't
 //!   need a tokio runtime can disable it.
-//! * [`rules`] — the `CnameRuleEngine` that turns
+//! * [`rules`], the `CnameRuleEngine` that turns
 //!   `rules/detect/cname/*.toml` into compiled regexes and scores
 //!   probes against them, returning the same `DetectedWaf` shape
 //!   the HTTP-layer engine uses.
 //!
 //! HTTP-level detection (`waf_detect`) fails when an origin strips
-//! every CDN / WAF marker header — Stripe and Dropbox both serve a
+//! every CDN / WAF marker header. Stripe and Dropbox both serve a
 //! bare `Server: nginx` or `Server: envoy` with no other clue.  The
 //! DNS layer (CNAME chain → PTR → ASN) lives below anything the
 //! application tier controls; this module catches what HTTP can't.
@@ -45,7 +45,7 @@ pub use types::{
     AsnInfo, CnameHop, DnsProbe, DnsProbeError, MAX_CNAME_CHAIN_DEPTH, RESOLVER_TIMEOUT,
 };
 
-// Used by the `crate::lib` re-export module — keeps the top-level
+// Used by the `crate::lib` re-export module, keeps the top-level
 // `wafrift_detect::probe_cname_chain` alias working across the
 // modularisation.
 #[doc(hidden)]

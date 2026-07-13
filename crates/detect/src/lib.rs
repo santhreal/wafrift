@@ -1,4 +1,4 @@
-//! wafrift-detect — WAF detection across four independent fingerprint axes.
+//! wafrift-detect: WAF detection across four independent fingerprint axes.
 //!
 //! Identifies WAFs / CDNs / origin infrastructure from:
 //! - HTTP response headers + body (160+ vendor rules loaded from TOML)

@@ -53,7 +53,7 @@ impl PayloadClass {
 
     /// Classify a raw payload string heuristically.
     ///
-    /// The classifier is intentionally lightweight — it looks for the
+    /// The classifier is intentionally lightweight, it looks for the
     /// strongest textual signal in the payload rather than doing full
     /// parse-tree analysis.  The categories match the wafrift bench corpus
     /// class identifiers so coverage reports are directly comparable.
@@ -141,7 +141,7 @@ impl RuleId {
     #[must_use]
     pub fn new(raw: &str) -> Self {
         let s = raw.trim().to_ascii_lowercase();
-        // Strip "rule_" / "rule-" prefix if present — it adds no information
+        // Strip "rule_" / "rule-" prefix if present, it adds no information
         // for grid binning (every entry is a rule) and bloats cell keys.
         let s = s
             .strip_prefix("rule_")
@@ -172,8 +172,8 @@ impl Default for RuleId {
 ///
 /// Two complementary indices are maintained:
 ///
-/// * `by_rule`  — `rule_id → set of distinct payloads that triggered it`
-/// * `by_class` — `payload_class → set of rule_ids it has reached`
+/// * `by_rule`: `rule_id → set of distinct payloads that triggered it`
+/// * `by_class`: `payload_class → set of rule_ids it has reached`
 ///
 /// Both are updated atomically on every [`record`][RuleCoverage::record]
 /// call so the coverage report is always consistent.
@@ -195,7 +195,7 @@ impl RuleCoverage {
     /// Record one `(payload, rule_id)` observation.
     ///
     /// `rule_id = None` means the request was not blocked (or the block
-    /// reason couldn't be extracted) — the payload class is still indexed
+    /// reason couldn't be extracted), the payload class is still indexed
     /// in `by_class` under a synthetic sentinel so "no rule triggered"
     /// coverage is visible in the report.
     pub fn record(&mut self, payload: &str, rule_id: Option<&str>) {
@@ -227,7 +227,7 @@ impl RuleCoverage {
     pub fn coverage_report(&self) -> String {
         let mut lines = Vec::with_capacity(self.by_rule.len() + 4);
         lines.push(format!(
-            "# wafrift rule-coverage report — {} distinct rules triggered",
+            "# wafrift rule-coverage report: {} distinct rules triggered",
             self.by_rule.len()
         ));
         lines.push(format!(
@@ -241,7 +241,7 @@ impl RuleCoverage {
         lines.push("# per-class summary".to_string());
         for (cls, rules) in &self.by_class {
             lines.push(format!(
-                "#   {}: {} rule(s) — {}",
+                "#   {}: {} rule(s): {}",
                 cls.as_str(),
                 rules.len(),
                 rules
@@ -300,9 +300,9 @@ impl RuleCoverage {
 /// observation.
 ///
 /// The descriptor is `(PayloadClass, Option<RuleId>)`:
-///  - `Some(RuleId)` — the payload was blocked by a specific rule; the grid
+///  - `Some(RuleId)`: the payload was blocked by a specific rule; the grid
 ///    cell is `(class × rule_id)`.
-///  - `None` — the payload was not blocked (or the rule_id could not be
+///  - `None`: the payload was not blocked (or the rule_id could not be
 ///    extracted); the grid cell collapses to class-only, matching the
 ///    pre-coverage behavior.
 ///
@@ -347,7 +347,7 @@ mod tests {
         assert!(cov.by_class.contains_key(&cls));
     }
 
-    // ── 3. Mixed classes — distinct cells ─────────────────────────────────────
+    // ── 3. Mixed classes, distinct cells ─────────────────────────────────────
 
     #[test]
     fn mixed_classes_produce_distinct_cells() {
@@ -363,7 +363,7 @@ mod tests {
         assert!(cov.by_class.contains_key(&PayloadClass::new("path")));
     }
 
-    // ── 4. Descriptor stability — same input → same descriptor ────────────────
+    // ── 4. Descriptor stability, same input → same descriptor ────────────────
 
     #[test]
     fn descriptor_is_stable_for_same_input() {
@@ -416,7 +416,7 @@ mod tests {
     #[test]
     fn rule_id_without_rule_prefix_preserved() {
         let r = RuleId::new("sql_942100");
-        // Should NOT strip "sql_" — only "rule_" is stripped.
+        // Should NOT strip "sql_" (only "rule_" is stripped).
         assert_eq!(r.as_str(), "sql_942100");
     }
 

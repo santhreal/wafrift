@@ -4,14 +4,14 @@
 # a candidate that simply *reaches the app* is NOT proof of an evasion: if the
 # WAF never policed that sink for that attack class at all, an UN-EVADED attack
 # would reach it just the same (CumulusFire returns 200 for `;id` because no
-# rule matches it — no evasion occurred). To tell a real evasion from a
+# rule matches it, no evasion occurred). To tell a real evasion from a
 # never-policed sink, harvest fires the class's un-evaded probe below into the
 # SAME delivery shape and credits the candidate only if that probe was BLOCKED
 # (proving the WAF polices the sink, so the evaded variant getting through is a
 # genuine bypass). See `equiv_engine::differential_confirmed`.
 #
 # Each probe is a representative, deliberately-NON-evaded attack of its class
-# that a competently-configured WAF should block. They are genuinely live —
+# that a competently-configured WAF should block. They are genuinely live 
 # only fire them against an authorized target (the same authorization gate
 # harvest already enforces). Extend coverage by adding rows here; never hardcode
 # class probes in Rust.

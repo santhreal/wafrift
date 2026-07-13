@@ -1,10 +1,10 @@
 //! URL parsing primitives shared across the workspace.
 //!
 //! Pre-extract, four crates each had their own `extract_host` /
-//! `host_from_url` / `extract_host_from_url` — diverging on:
+//! `host_from_url` / `extract_host_from_url`: diverging on:
 //! - scheme-optional handling (some required `http(s)://`, others
 //!   tolerated bare `example.com:443`)
-//! - userinfo handling (`user@host` form — only cors_diff stripped)
+//! - userinfo handling (`user@host` form, only cors_diff stripped)
 //! - IPv6 brackets (transport stripped; detect_cmd kept; others
 //!   ignored the case entirely → silently mis-parsed `[::1]:443`)
 //! - port stripping
@@ -14,7 +14,7 @@
 //! four. Callers wrap the `Option<String>` in their own error type.
 //!
 //! `extract_host_from_header` (in `wafrift_proxy`) handles a
-//! DIFFERENT input — bare Host header values, no scheme — and stays
+//! DIFFERENT input, bare Host header values, no scheme, and stays
 //! separate by design.
 
 /// Extract the host (no scheme, port, userinfo, path, query, or
@@ -31,7 +31,7 @@
 /// - Trailing whitespace and empty inputs return `None`.
 ///
 /// This helper does NOT validate that the host is a syntactically
-/// correct DNS name or IP literal — that is the caller's call, since
+/// correct DNS name or IP literal, that is the caller's call, since
 /// the policy depends on context (DNS lookup vs. cert SAN match vs.
 /// allowlist comparison).
 #[must_use]
@@ -42,7 +42,7 @@ pub fn host_from_url(url: &str) -> Option<String> {
     }
     let after_scheme = url.split_once("://").map_or(url, |(_, rest)| rest);
     // Isolate the authority FIRST: it ends at the first `/`, `?`, or `#`
-    // (RFC 3986 §3.2). This must happen BEFORE userinfo stripping — an `@`
+    // (RFC 3986 §3.2). This must happen BEFORE userinfo stripping, an `@`
     // in the PATH (`https://target/@decoy.com`) would otherwise be mistaken
     // for the userinfo separator, and the path's trailing token returned as
     // the host. That confusion is an SSRF allowlist bypass: a host-allowlist
@@ -66,7 +66,7 @@ pub fn host_from_url(url: &str) -> Option<String> {
     //   https://evil.com\r\nX-Injected: yes/path
     // produces the host string "evil.com\r\nx-injected: yes" which
     // downstream code drops verbatim into a `Host:` header or a
-    // CONNECT line — splitting the request line and injecting an
+    // CONNECT line, splitting the request line and injecting an
     // arbitrary new header. Reject any host containing bytes outside
     // the RFC 3986 host charset (we accept letters, digits, `.`, `-`,
     // `:`, plus IPv6 internal chars). Anything with a control byte
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn malformed_ipv6_returns_none() {
-        // Missing closing bracket — no parseable end position.
+        // Missing closing bracket (no parseable end position).
         assert_eq!(host_from_url("[::1"), None);
         assert_eq!(host_from_url("https://["), None);
     }
@@ -234,7 +234,7 @@ mod tests {
     // ── SSRF allowlist bypass: `@` in the PATH must not be read as userinfo ──
     //
     // Pre-fix, userinfo was stripped via rsplit('@') on the whole post-scheme
-    // string — so `https://target/@decoy.com` returned `decoy.com` (the path
+    // string, so `https://target/@decoy.com` returned `decoy.com` (the path
     // tail) instead of `target`. A host-allowlist check would admit `decoy.com`
     // while reqwest sent the request to `target`. The authority must be
     // isolated (split on `/?#`) BEFORE userinfo stripping.

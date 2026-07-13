@@ -10,11 +10,11 @@
 //!
 //! - `cli::bank` used `BTreeMap`, the other four used `HashMap`.
 //! - `cli::replay`'s `PersistedHostState` had only `proven_winners`
-//!   — it was missing `blocklisted` and `waf_name`, so replay was
+//!, it was missing `blocklisted` and `waf_name`, so replay was
 //!   reading the file through a narrowed window (the bytes for those
 //!   fields existed but replay couldn't see them).
 //! - `cli::replay`'s `PersistedGeneBank` was missing the `schema`
-//!   field entirely — a schema bump would silently deserialize as
+//!   field entirely, a schema bump would silently deserialize as
 //!   `Default` (= 0) only in replay.
 //!
 //! A schema bump in the proxy would have triggered exactly this
@@ -22,7 +22,7 @@
 //! bump, the file looks correct on save but corrupt on the next
 //! load through the lagging consumer.
 //!
-//! R77 pass-21 §7 DEDUP + §10 COHERENCE — anchor the canonical
+//! R77 pass-21 §7 DEDUP + §10 COHERENCE, anchor the canonical
 //! shape here so adding a field in the future is a single edit and
 //! every consumer picks it up at compile-time.
 //!
@@ -68,10 +68,10 @@ pub struct PersistedHostState {
 /// Top-level shape of `~/.wafrift/gene-bank.json`.
 ///
 /// `schema` is bumped when an incompatible change is made to the
-/// on-disk layout — consumers read the field and either auto-migrate
+/// on-disk layout, consumers read the field and either auto-migrate
 /// or refuse to load. Pre-R77 the `cli::replay` consumer omitted
 /// the field, which silently deserialised as `0` regardless of what
-/// was actually on disk — defeating the whole point of a schema
+/// was actually on disk, defeating the whole point of a schema
 /// version.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct PersistedGeneBank {
@@ -118,7 +118,7 @@ mod tests {
         // deserialise through replay's narrow struct silently dropping
         // them. The canonical struct + `#[serde(default)]` means a
         // future field-removal accident doesn't propagate as silent
-        // data loss — pin that contract here.
+        // data loss (pin that contract here).
         let json = r#"{"hosts": {"a.example": {"proven_winners": ["t1"]}}}"#;
         let bank: PersistedGeneBank = serde_json::from_str(json).expect("parse minimal");
         assert_eq!(bank.schema, 0, "missing schema defaults to 0");

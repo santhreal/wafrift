@@ -2,7 +2,7 @@
 #
 # Each list is a starting set the engine cycles through when expanding
 # an XSS seed payload into variants. Append to the relevant array to
-# teach the mutator a new shape — the engine handles list size growth
+# teach the mutator a new shape, the engine handles list size growth
 # without code changes.
 
 # ── Alternative ways to execute JavaScript ──

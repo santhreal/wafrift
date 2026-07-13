@@ -1,4 +1,4 @@
-//! `RawRequest` — captures one HTTP request shape (method + URL +
+//! `RawRequest`: captures one HTTP request shape (method + URL +
 //! headers + body) so the rest of the CLI can:
 //!
 //! 1. **Parse** a Burp-saved raw HTTP request file (the bytes you get
@@ -20,7 +20,7 @@
 //!
 //! The scan loop substitutes each candidate payload into `§§` (in URL,
 //! header values, or body) and fires the resulting request. Every
-//! bypass surfaces with its `to_curl` reproducer — paste into a
+//! bypass surfaces with its `to_curl` reproducer, paste into a
 //! terminal, get the same response.
 //!
 //! ## Burp request file shape
@@ -40,12 +40,12 @@
 //! Either CRLF or LF line endings ride through (Burp emits CRLF;
 //! hand-edited files often use LF). The first blank line separates
 //! headers from body. Shell-escaping for curl reproducers routes
-//! through [`crate::helpers::shell_single_quote`] — single source of
+//! through [`crate::helpers::shell_single_quote`], single source of
 //! truth.
 
 use crate::helpers::shell_single_quote;
 
-/// One HTTP request shape — what an operator would copy out of Burp
+/// One HTTP request shape, what an operator would copy out of Burp
 /// or browser dev-tools. Round-trips to a `curl -i` invocation via
 /// [`RawRequest::to_curl`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,13 +54,13 @@ pub(crate) struct RawRequest {
     /// the `-X <METHOD>` flag for anything other than `GET` (curl
     /// defaults to GET, no flag needed).
     pub method: String,
-    /// Absolute target URL — scheme + authority + path + query.
+    /// Absolute target URL (scheme + authority + path + query).
     pub url: String,
     /// Header field list in insertion order. Order is preserved
     /// because some WAF parsers and a handful of pentest scenarios
     /// (header smuggling, dup-header dispatch) DO care about it.
     pub headers: Vec<(String, String)>,
-    /// Raw body bytes — empty for GET-style requests without a body.
+    /// Raw body bytes (empty for GET-style requests without a body).
     pub body: Vec<u8>,
 }
 
@@ -72,7 +72,7 @@ pub(crate) const INJECTION_MARKER: &str = "§§";
 /// Parse a Burp-style raw HTTP request file with a caller-supplied
 /// URL scheme (typically `http` or `https`). The default scheme for
 /// the CLI is owned by `ScanArgs::raw_request_scheme` (clap default
-/// `"http"`), not by this module — one source of truth.
+/// `"http"`), not by this module (one source of truth).
 ///
 /// # Errors
 ///
@@ -111,7 +111,7 @@ pub(crate) fn parse_raw_http_request_with_scheme(
         .next()
         .ok_or_else(|| "request line missing path".to_string())?
         .to_string();
-    // Trailing "HTTP/1.1" is ignored — reqwest negotiates the version
+    // Trailing "HTTP/1.1" is ignored, reqwest negotiates the version
     // it wants regardless of what the file claims.
 
     let mut headers: Vec<(String, String)> = Vec::new();
@@ -129,7 +129,7 @@ pub(crate) fn parse_raw_http_request_with_scheme(
         headers.push((name, value));
     }
 
-    let host = host.ok_or_else(|| "missing Host header — cannot reconstruct URL".to_string())?;
+    let host = host.ok_or_else(|| "missing Host header, cannot reconstruct URL".to_string())?;
     let url = reconstruct_url(scheme, &host, &path_and_query);
 
     Ok(RawRequest {
@@ -142,7 +142,7 @@ pub(crate) fn parse_raw_http_request_with_scheme(
 
 /// Locate the first blank-line separator. Returns `(headers_end,
 /// body_start)`. Prefers CRLF CRLF (the wire format Burp emits) over
-/// LF LF (a hand-edited file) — returning the earlier match keeps a
+/// LF LF (a hand-edited file), returning the earlier match keeps a
 /// CRLF-headered file with a stray LF inside the body from splitting
 /// in the wrong place.
 fn find_header_body_split(bytes: &[u8]) -> Option<(usize, usize)> {
@@ -190,7 +190,7 @@ impl RawRequest {
     /// Substitute every occurrence of [`INJECTION_MARKER`] (`§§`)
     /// in the URL, headers, and body with `payload`. Body substitution
     /// happens at the byte level so non-UTF-8 marker positions still
-    /// resolve. Returns a NEW [`RawRequest`] — the original is not
+    /// resolve. Returns a NEW [`RawRequest`], the original is not
     /// mutated, so a single template can be reused across many
     /// variants.
     pub fn with_payload(&self, payload: &str) -> Self {
@@ -211,7 +211,7 @@ impl RawRequest {
 
     /// True iff at least one [`INJECTION_MARKER`] (`§§`) appears in
     /// the URL, any header value, or the body. The `-r` flag rejects
-    /// templates without a marker — otherwise every variant fires
+    /// templates without a marker, otherwise every variant fires
     /// the same un-mutated request, which is almost certainly an
     /// operator mistake.
     pub fn has_injection_marker(&self) -> bool {
@@ -230,7 +230,7 @@ impl RawRequest {
 
     /// Emit a copy-pasteable `curl -i` invocation that reproduces
     /// this request exactly. Shell-escaping for every interpolated
-    /// value routes through [`shell_single_quote`] — one source of
+    /// value routes through [`shell_single_quote`], one source of
     /// truth.
     ///
     /// Header handling: `Content-Length` is dropped because curl
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn adversarial_1mb_single_line_does_not_panic() {
-        // 1 MB single line — no CRLF separating headers from body.
+        // 1 MB single line (no CRLF separating headers from body).
         // Parser must produce Err, not panic.
         let line = "GET ".to_string() + &"A".repeat(1_024 * 1024) + " HTTP/1.1";
         let result = parse_raw_http_request(&line);
@@ -676,7 +676,7 @@ mod tests {
         let raw =
             format!("POST /fuzz HTTP/1.1\r\nHost: x\r\nContent-Type: text/plain\r\n\r\n{markers}");
         let r = parse_raw_http_request(&raw).expect("parse with 100K markers");
-        // Substitute a 1-byte payload — output is 100 K chars.
+        // Substitute a 1-byte payload (output is 100 K chars).
         let out = r.with_payload("X");
         assert_eq!(out.body, b"X".repeat(100_000).to_vec());
         // has_injection_marker must find the original markers before sub.
@@ -707,7 +707,7 @@ mod tests {
     fn adversarial_port_zero_in_host_header_does_not_panic() {
         // port 0 is syntactically valid in a Host header even if it's
         // useless operationally.  The parser must not crash trying to
-        // connect (it doesn't connect — it just builds a URL).
+        // connect (it doesn't connect (it just builds a URL)).
         let raw = "GET /p HTTP/1.1\r\nHost: 127.0.0.1:0\r\n\r\n";
         let r = parse_raw_http_request(raw).expect("port 0 must parse");
         assert!(r.url.contains(":0"), "port 0 preserved in URL: {}", r.url);
@@ -715,16 +715,16 @@ mod tests {
 
     #[test]
     fn adversarial_malformed_crlf_header_errors_not_panics() {
-        // A lone CR without LF in the header section — some parsers
+        // A lone CR without LF in the header section, some parsers
         // crash or loop on this.  Must return Err with a clear message.
         // The first \r without \n means the request line runs on
         // forever from the parser's point of view.  The key property
         // is: no panic, the error message is non-empty.
         let raw = "GET /a HTTP/1.1\rHost: x\r\n\r\n";
         // This either parses (treating \r as part of the token) or
-        // errors — both are acceptable.  Panic is not.
+        // errors (both are acceptable.  Panic is not).
         match parse_raw_http_request(raw) {
-            Ok(_) => { /* parser was lenient — acceptable */ }
+            Ok(_) => { /* parser was lenient, acceptable */ }
             Err(msg) => {
                 assert!(!msg.is_empty(), "Err must carry a message");
             }
@@ -741,7 +741,7 @@ mod tests {
 
     #[test]
     fn adversarial_header_with_very_long_value_does_not_panic() {
-        // A header value of 256 KB — common in JWT-heavy APIs.
+        // A header value of 256 KB (common in JWT-heavy APIs).
         let long_val = "A".repeat(256 * 1024);
         let raw = format!("GET / HTTP/1.1\r\nHost: x\r\nAuthorization: Bearer {long_val}\r\n\r\n");
         let r = parse_raw_http_request(&raw).expect("long header value must parse");

@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift corpus stats`.
 //!
-//! `corpus stats` is fully offline — it reads a corpus JSON file and
+//! `corpus stats` is fully offline, it reads a corpus JSON file and
 //! an edge-POP coverage JSON file. R45 hardened the missing-file path
 //! to a hard error (anti-rig: silently loading defaults masked CI
 //! regressions); tests that exercise the JSON output use real empty
@@ -28,7 +28,7 @@ fn nonexistent_path(suffix: &str) -> String {
 
 /// Write an empty (default-shaped) corpus JSON to a unique temp path
 /// and return its absolute path. The CLI's corpus loader accepts this
-/// as a valid empty corpus — exercises the JSON-output code paths
+/// as a valid empty corpus, exercises the JSON-output code paths
 /// without rigging the R45 missing-file check.
 fn valid_empty_corpus_path(suffix: &str) -> String {
     let mut p = std::env::temp_dir();
@@ -57,7 +57,7 @@ fn corpus_help_documents_stats_subcommand() {
     );
 }
 
-// Surface reduction: corpus is dev/QA tooling hidden from the user-facing menu (LAW 2 —
+// Surface reduction: corpus is dev/QA tooling hidden from the user-facing menu (LAW 2 
 // the command still runs, just not advertised at the top level).
 #[test]
 fn corpus_hidden_from_menu_but_still_runs() {
@@ -69,7 +69,7 @@ fn corpus_hidden_from_menu_but_still_runs() {
         "corpus must be hidden from top-level help (dev/QA tooling): {stdout}"
     );
 
-    // Must still be invokable — LAW 2 backwards compat.
+    // Must still be invokable: LAW 2 backwards compat.
     let (sub_code, sub_stdout, _) = wafrift(&["corpus", "--help"]);
     assert_eq!(
         sub_code, 0,
@@ -126,7 +126,7 @@ fn corpus_stats_explicit_nonexistent_coverage_exits_1_anti_rig() {
     );
 }
 
-/// Empty corpus + coverage files are valid input — exit 0.
+/// Empty corpus + coverage files are valid input (exit 0).
 #[test]
 fn corpus_stats_exits_0_with_empty_files() {
     let corpus = valid_empty_corpus_path("exit0");

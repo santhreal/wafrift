@@ -5,37 +5,37 @@ use wafrift_transport::challenge::{ChallengeKind, extract_clearance_cookie};
 
 fn assert_cf_pair_only(raw: &str, expected_pair: &str) {
     let got = extract_clearance_cookie(&[raw])
-        .unwrap_or_else(|| panic!("Fix: must capture clearance from Set-Cookie — input: {raw:?}"));
+        .unwrap_or_else(|| panic!("Fix: must capture clearance from Set-Cookie, input: {raw:?}"));
     assert_eq!(got.0, expected_pair, "Fix: replay string must be pair only");
     assert_eq!(got.1, ChallengeKind::CloudflareManaged);
     assert!(
         !got.0.contains("path"),
-        "Fix: Path attribute must not appear in Cookie header — got {:?}",
+        "Fix: Path attribute must not appear in Cookie header, got {:?}",
         got.0
     );
     assert!(
         !got.0.contains("domain"),
-        "Fix: Domain attribute must not appear — got {:?}",
+        "Fix: Domain attribute must not appear, got {:?}",
         got.0
     );
     assert!(
         !got.0.contains("secure"),
-        "Fix: Secure flag must not appear — got {:?}",
+        "Fix: Secure flag must not appear, got {:?}",
         got.0
     );
     assert!(
         !got.0.contains("httponly"),
-        "Fix: HttpOnly flag must not appear — got {:?}",
+        "Fix: HttpOnly flag must not appear, got {:?}",
         got.0
     );
     assert!(
         !got.0.contains("expires"),
-        "Fix: Expires must not appear — got {:?}",
+        "Fix: Expires must not appear, got {:?}",
         got.0
     );
     assert!(
         !got.0.contains("max-age"),
-        "Fix: Max-Age must not appear — got {:?}",
+        "Fix: Max-Age must not appear, got {:?}",
         got.0
     );
 }
@@ -106,7 +106,7 @@ fn aws_waf_token_strips_attributes() {
 
 #[test]
 fn negative_twin_attribute_like_text_in_value_position_not_confused_with_flags() {
-    // Value is intentionally weird but safe — still must not pull "; foo=bar" from attributes.
+    // Value is intentionally weird but safe (still must not pull "; foo=bar" from attributes).
     let raw = "cf_clearance=safe_value_42; Path=/; Domain=test.local";
     let got = extract_clearance_cookie(&[raw]).unwrap();
     assert_eq!(got.0, "cf_clearance=safe_value_42");

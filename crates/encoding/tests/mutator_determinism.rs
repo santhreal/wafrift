@@ -41,7 +41,7 @@ fn encode_pure_strategies_twice_are_byte_identical() {
 #[test]
 fn encode_random_case_is_deterministic_post_fix() {
     // Post-fix (commit 14fd8fb): RandomCase is now FNV-1a seeded, not
-    // rand::random — identical inputs produce byte-identical outputs so
+    // rand::random, identical inputs produce byte-identical outputs so
     // bench replays that discovered a bypass are reproducible.
     let payload = "AbCdEfGhIjKlMnOpQrStUvWxYz";
     let a = encode(payload.as_bytes(), S::RandomCase).unwrap();
@@ -54,7 +54,7 @@ fn encode_random_case_is_deterministic_post_fix() {
     let c = encode(b"AbCdEfGhIjKlMnOpQrStUvWxY".as_ref(), S::RandomCase).unwrap();
     assert_ne!(
         a, c,
-        "RandomCase must vary with input — not a fixed-case encoder"
+        "RandomCase must vary with input, not a fixed-case encoder"
     );
 }
 
@@ -102,7 +102,7 @@ fn mutate_url_deterministic_for_fixed_path() {
 #[test]
 fn tamper_named_strategies_all_deterministic() {
     // Post-fix (commit 14fd8fb): random_case is now FNV-1a seeded and
-    // deterministic. All tampers are now deterministic — no exclusions.
+    // deterministic. All tampers are now deterministic (no exclusions).
     let p = common::unicode_stress();
     for name in all_tamper_names() {
         let a = tamper(name, p.as_str(), Some("sql")).unwrap();
@@ -113,7 +113,7 @@ fn tamper_named_strategies_all_deterministic() {
 
 #[test]
 fn tamper_random_case_deterministic_and_varies_with_input() {
-    // Post-fix: random_case is deterministic — same input produces the same
+    // Post-fix: random_case is deterministic, same input produces the same
     // mixed-case output every run. Different inputs produce different output.
     let a = tamper("random_case", "PayloadText", Some("sql")).unwrap();
     let b = tamper("random_case", "PayloadText", Some("sql")).unwrap();
@@ -125,7 +125,7 @@ fn tamper_random_case_deterministic_and_varies_with_input() {
     let c = tamper("random_case", "PayloadTexu", Some("sql")).unwrap();
     assert_ne!(
         a, c,
-        "random_case must vary with input — not a fixed-case encoder"
+        "random_case must vary with input, not a fixed-case encoder"
     );
 }
 

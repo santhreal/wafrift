@@ -20,35 +20,35 @@ use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 /// Which Host-header parser-differential variant to emit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HostSmuggleTechnique {
-    /// Two `Host:` headers — `Host: benign.com\r\nHost: <target>`.
+    /// Two `Host:` headers: `Host: benign.com\r\nHost: <target>`.
     /// RFC 7230 says reject; many WAFs only check the first while
     /// the origin uses the last.
     DuplicateHostHeaderLastWins,
-    /// `Host: <target>:443` — explicit port. Origins normalize the
+    /// `Host: <target>:443`: explicit port. Origins normalize the
     /// default port away (443 over TLS, 80 over plain); WAFs that
     /// match on literal `<target>` miss `<target>:443`.
     HostWithDefaultPort,
-    /// `Host: user@<target>` — userinfo prefix. RFC 3986 forbids
+    /// `Host: user@<target>`: userinfo prefix. RFC 3986 forbids
     /// userinfo in Host; lenient parsers strip it and route to
     /// `<target>`, strict parsers reject.
     HostWithUserinfo,
-    /// `Host: <target>.` — trailing dot (FQDN root). DNS resolves
+    /// `Host: <target>.`: trailing dot (FQDN root). DNS resolves
     /// identically; literal-string WAF rules miss the trailing
     /// dot.
     HostWithTrailingDot,
-    /// `Host: <TARGET-WITH-CASE-MIX>` — randomized case. RFC 3986
+    /// `Host: <TARGET-WITH-CASE-MIX>`: randomized case. RFC 3986
     /// says host is case-insensitive; case-sensitive WAF rules
     /// miss.
     HostWithCaseMix,
-    /// `Host: <prefix>_<target>` — underscore-prefixed subdomain.
+    /// `Host: <prefix>_<target>`: underscore-prefixed subdomain.
     /// RFC 3986 forbids `_` in hostnames; some parsers accept it
     /// for backward compat (Windows hostnames, internal services).
     HostWithUnderscoreSubdomain,
-    /// `Host: <target with fullwidth dot>` — U+FF0E replaces ASCII
+    /// `Host: <target with fullwidth dot>`: U+FF0E replaces ASCII
     /// `.`. Backends NFKC-normalize and resolve to `<target>`; WAFs
     /// see a different UTF-8 byte sequence.
     HostWithFullwidthDot,
-    /// `Host: <target>\t<wafrift>` — TAB byte inside the value.
+    /// `Host: <target>\t<wafrift>`: TAB byte inside the value.
     /// HTTP whitespace rules allow leading/trailing OWS but not
     /// embedded; lenient parsers strip, others reject.
     HostWithEmbeddedTab,
@@ -75,24 +75,24 @@ impl HostSmuggleTechnique {
     pub fn description(&self) -> &'static str {
         match self {
             Self::DuplicateHostHeaderLastWins => {
-                "Duplicate Host header — first-vs-last resolution differential"
+                "Duplicate Host header, first-vs-last resolution differential"
             }
             Self::HostWithDefaultPort => {
-                "Host with explicit default port — literal-match WAF rule bypass"
+                "Host with explicit default port, literal-match WAF rule bypass"
             }
             Self::HostWithUserinfo => {
-                "Host with userinfo prefix — RFC 3986 strip-vs-reject differential"
+                "Host with userinfo prefix: RFC 3986 strip-vs-reject differential"
             }
             Self::HostWithTrailingDot => {
-                "Trailing-dot FQDN — DNS-equivalent, byte-different differential"
+                "Trailing-dot FQDN: DNS-equivalent, byte-different differential"
             }
-            Self::HostWithCaseMix => "Mixed-case host — case-sensitivity differential",
+            Self::HostWithCaseMix => "Mixed-case host, case-sensitivity differential",
             Self::HostWithUnderscoreSubdomain => {
-                "Underscore in subdomain — RFC 3986 forbidden, accepted by lenient parsers"
+                "Underscore in subdomain: RFC 3986 forbidden, accepted by lenient parsers"
             }
-            Self::HostWithFullwidthDot => "U+FF0E fullwidth dot — NFKC normalization differential",
+            Self::HostWithFullwidthDot => "U+FF0E fullwidth dot. NFKC normalization differential",
             Self::HostWithEmbeddedTab => {
-                "Embedded TAB in host value — strip-vs-reject differential"
+                "Embedded TAB in host value, strip-vs-reject differential"
             }
         }
     }
@@ -193,7 +193,7 @@ impl SmuggleProbe for HostSmuggleProbe {
 }
 
 /// Every Host-header smuggle variant against the given target.
-/// Returns 8 probes — one per [`HostSmuggleTechnique`] variant.
+/// Returns 8 probes (one per [`HostSmuggleTechnique`] variant).
 #[must_use]
 pub fn all_variants(target: &str) -> Vec<HostSmuggleProbe> {
     use HostSmuggleTechnique::*;

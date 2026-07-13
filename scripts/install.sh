@@ -5,7 +5,7 @@
 # and later vanished (cargo clean / tmpfs), leaving a dangling symlink
 # and a "command not found" with no hint. This script installs a real
 # COPY (not a symlink into target/) to a stable prefix and then VERIFIES
-# the installed binaries actually execute — so a broken install fails
+# the installed binaries actually execute, so a broken install fails
 # loudly here instead of in the field.
 set -euo pipefail
 
@@ -24,7 +24,7 @@ install_one() {
     echo "ERROR: built binary missing: ${src}" >&2
     exit 1
   fi
-  # Copy, never symlink into target/ — that is exactly what rotted last
+  # Copy, never symlink into target/, that is exactly what rotted last
   # time. A copy survives `cargo clean`.
   install -m 0755 "${src}" "${dst}"
   # Verify the installed copy runs and is the version we just built.
@@ -40,7 +40,7 @@ install_one wafrift-proxy
 
 case ":${PATH}:" in
   *":${PREFIX}:"*) ;;
-  *) echo "NOTE: ${PREFIX} is not on \$PATH — add: export PATH=\"${PREFIX}:\$PATH\"" ;;
+  *) echo "NOTE: ${PREFIX} is not on \$PATH, add: export PATH=\"${PREFIX}:\$PATH\"" ;;
 esac
 
 echo "done. 'wafrift --version' and 'wafrift-proxy --version' verified."

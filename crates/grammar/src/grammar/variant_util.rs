@@ -6,7 +6,7 @@
 //! (`mongo`/`elastic`/`redis`/`cassandra`) did neither, so their `mutate`
 //! could echo the unmutated input back as a "variant" (e.g. the array-bypass
 //! `payload.replace("$eq","$nin")` is a no-op when the payload has no `$eq`)
-//! and emit duplicates — inflating variant counts and, worse, letting a
+//! and emit duplicates, inflating variant counts and, worse, letting a
 //! benign but loosely-detected `{…}` JSON body surface as a fake attack
 //! mutation. This is the one canonical place that enforces the "a mutation
 //! must mutate" contract for those modules so the rule can't drift apart four

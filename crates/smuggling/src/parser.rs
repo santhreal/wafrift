@@ -138,7 +138,7 @@ impl ChunkedParser {
 /// them in a set, then computes `|intersection| / |union|`. Returns 1.0
 /// when both slices are identical and 0.0 when they share no shingles.
 /// For very short bodies (fewer than `n` bytes) the whole slice is used
-/// as a single shingle — so two empty bodies return 1.0 and an empty vs
+/// as a single shingle, so two empty bodies return 1.0 and an empty vs
 /// non-empty pair returns 0.0.
 ///
 /// No external dependency: uses `std::collections::HashSet` on `[u8; 3]`
@@ -167,7 +167,7 @@ fn shingle_jaccard(a: &[u8], b: &[u8], n: usize) -> f64 {
     let union = sa.union(&sb).count();
 
     if union == 0 {
-        1.0 // both empty — identical
+        1.0 // both empty: identical
     } else {
         intersection as f64 / union as f64
     }
@@ -218,7 +218,7 @@ impl ResponseDiff {
 /// Both maps use `Vec<String>` values so that duplicate header names
 /// (e.g. multiple `Set-Cookie` lines) are preserved. Previously both
 /// maps used `String` and silently dropped all but the last occurrence
-/// of any repeated header — making fingerprinting blind to duplicate-
+/// of any repeated header, making fingerprinting blind to duplicate-
 /// header injection attacks.
 #[derive(Debug, Clone, Default)]
 pub struct HeaderFingerprint {
@@ -251,7 +251,7 @@ impl HeaderFingerprint {
     /// Return the first value for a header name (lowercased lookup).
     ///
     /// Convenience helper for callers that only care about the first
-    /// occurrence of a header — e.g. `Content-Type`, which browsers and
+    /// occurrence of a header, e.g. `Content-Type`, which browsers and
     /// RFC-compliant servers treat as first-wins.
     #[must_use]
     pub fn first<'a>(map: &'a HashMap<String, Vec<String>>, key: &str) -> Option<&'a String> {
@@ -361,7 +361,7 @@ mod tests {
 
     #[test]
     fn header_fingerprint_preserves_duplicate_headers() {
-        // Two Set-Cookie lines must both survive — previously the second
+        // Two Set-Cookie lines must both survive, previously the second
         // overwrote the first, making duplicate-header injection invisible.
         let fp = HeaderFingerprint::from_headers(&[
             ("Set-Cookie".into(), "session=abc".into()),
@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn chunked_parser_invalid_terminator() {
-        // 5\r\nHELLO followed by \x00\x00 instead of \r\n — must error.
+        // 5\r\nHELLO followed by \x00\x00 instead of \r\n (must error).
         let data = b"5\r\nHELLO\x00\x000\r\n\r\n";
         let parser = ChunkedParser::default();
         assert!(matches!(
@@ -386,7 +386,7 @@ mod tests {
 
     #[test]
     fn similarity_partial_overlap() {
-        // "hello world" vs "hello there" — some 3-byte shingles overlap
+        // "hello world" vs "hello there", some 3-byte shingles overlap
         // ("hel", "ell", "llo", "lo ") but not all.
         // Exact Jaccard: intersection={hel,ell,llo,lo }=4, union=14 → 4/14 ≈ 0.286.
         // Must be strictly between 0.0 and 1.0 and non-trivially above zero.
@@ -432,7 +432,7 @@ mod tests {
 
     #[test]
     fn chunked_parser_crlf_terminator_accepted() {
-        // Exactly \r\n after chunk data — the RFC-compliant form.
+        // Exactly \r\n after chunk data (the RFC-compliant form).
         let data = b"3\r\nabc\r\n0\r\n\r\n";
         let parser = ChunkedParser::default();
         assert_eq!(parser.parse(data).unwrap(), b"abc");
@@ -440,7 +440,7 @@ mod tests {
 
     #[test]
     fn chunked_parser_lf_only_terminator_rejected() {
-        // \n\n instead of \r\n — RFC non-compliant; must error.
+        // \n\n instead of \r\n. RFC non-compliant; must error.
         let data = b"3\r\nabc\n\n0\r\n\r\n";
         let parser = ChunkedParser::default();
         assert!(matches!(
@@ -451,7 +451,7 @@ mod tests {
 
     #[test]
     fn chunked_parser_null_null_terminator_rejected() {
-        // \x00\x00 instead of \r\n — must be InvalidChunkTerminator.
+        // \x00\x00 instead of \r\n (must be InvalidChunkTerminator).
         let data = b"3\r\nabc\x00\x000\r\n\r\n";
         let parser = ChunkedParser::default();
         assert!(matches!(
@@ -555,7 +555,7 @@ mod tests {
 
     #[test]
     fn similarity_prefix_match_above_zero() {
-        // Shared first 20 bytes of a 22-byte string — Jaccard must be > 0.0
+        // Shared first 20 bytes of a 22-byte string. Jaccard must be > 0.0
         // (there is substantial overlap), even if < 0.5 (two bytes differ).
         let a = HttpResponse {
             version: 1,

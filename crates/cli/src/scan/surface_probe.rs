@@ -1,4 +1,4 @@
-//! HTML surface harvest + engagement preflight — find injection points the WAF
+//! HTML surface harvest + engagement preflight, find injection points the WAF
 //! actually inspects instead of burning budget on decorative query params.
 //!
 //! When the operator scans `https://target/?q=payload` but the real sinks live
@@ -40,7 +40,7 @@ impl SurfacePreflight {
 }
 
 // NOTE (§11 UTILIZATION / §7 DEDUP): the aggregate `SurfaceProbeReport`
-// + `PrimarySurfaceSummary` types were removed — they had zero consumers.
+// + `PrimarySurfaceSummary` types were removed (they had zero consumers).
 // Scan emits surface results through the live `SurfacePreflightJson` path
 // (`escalated_to_json` in scan::mod), so the aggregate was never-wired
 // redundant scaffolding, not a shipped output shape.
@@ -68,11 +68,11 @@ pub(crate) fn engagement_score(level: WafEngagementLevel) -> u8 {
     }
 }
 
-/// Extract form fields and common API paths from HTML (regex — no DOM dep).
+/// Extract form fields and common API paths from HTML (regex (no DOM dep)).
 ///
 /// Regexes are compiled ONCE via `LazyLock` (regex compilation is far
 /// costlier than matching). Pre-fix this function called `Regex::new`
-/// six times on every invocation — and `harvest_from_html` runs per
+/// six times on every invocation, and `harvest_from_html` runs per
 /// crawled page during a recon sweep, so a link-rich target paid the
 /// compile cost N times over. The standalone-input pattern was also a
 /// byte-identical duplicate of the in-form input pattern; both now share
@@ -91,7 +91,7 @@ pub(crate) fn harvest_from_html(base_url: &str, html: &str) -> Vec<SurfaceCandid
         regex::Regex::new(r#"(?i)\bmethod\s*=\s*["']?get["']?"#).expect("form method regex")
     });
     // Shared by the in-form scan AND the standalone-input (SPA partial)
-    // scan — the two patterns were identical, so one static serves both.
+    // scan (the two patterns were identical, so one static serves both).
     static INPUT_NAME_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
         regex::Regex::new(r#"(?i)<input\b[^>]*\bname\s*=\s*["']([^"']+)["']"#).expect("input regex")
     });
@@ -422,7 +422,7 @@ pub(crate) fn build_recommendations(
     let mut r = Vec::new();
     if escalated {
         r.push(
-            "Scan auto-escalated to a higher-signal injection surface — see escalated_to."
+            "Scan auto-escalated to a higher-signal injection surface (see escalated_to)."
                 .to_string(),
         );
         return r;
@@ -430,7 +430,7 @@ pub(crate) fn build_recommendations(
     match primary_level {
         WafEngagementLevel::Active | WafEngagementLevel::Selective => {
             r.push(
-                "Primary injection point shows WAF engagement — evasion results are meaningful."
+                "Primary injection point shows WAF engagement (evasion results are meaningful)."
                     .to_string(),
             );
         }
@@ -443,20 +443,20 @@ pub(crate) fn build_recommendations(
         }
         WafEngagementLevel::ParamLiveNoWaf => {
             r.push(
-                "Parameter affects the response but nothing was blocked — retest on API POST \
+                "Parameter affects the response but nothing was blocked, retest on API POST \
                  bodies or authenticated form fields."
                     .to_string(),
             );
         }
         WafEngagementLevel::Unknown => {
-            r.push("Could not assess WAF engagement — fix connectivity and re-run.".to_string());
+            r.push("Could not assess WAF engagement, fix connectivity and re-run.".to_string());
         }
     }
     if let Some(best) = alts.first()
         && best.counts_meaningful_bypass()
     {
         r.push(format!(
-            "Best alternative surface: {} param={} ({}, score={}) — rerun with --auto-escalate",
+            "Best alternative surface: {} param={} ({}, score={}), rerun with --auto-escalate",
             best.candidate.url,
             best.candidate.param,
             best.report.level.as_str(),

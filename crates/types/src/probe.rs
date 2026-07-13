@@ -1,4 +1,4 @@
-//! Workspace-wide `SmuggleProbe` trait — uniform interface for the
+//! Workspace-wide `SmuggleProbe` trait, uniform interface for the
 //! seven (and growing) probe families wafrift emits.
 //!
 //! Each smuggle module (`content-type::multipart_smuggle`,
@@ -34,7 +34,7 @@ use crate::request::Request;
 /// What kind of wire artifact a smuggle probe produces.
 ///
 /// JSON layout uses the `tag = "kind", content = "value"`
-/// internally-tagged adjacent representation per serde docs — it
+/// internally-tagged adjacent representation per serde docs, it
 /// works uniformly across tuple variants (which the simple
 /// `tag = "kind"` form cannot serialize when the payload is a
 /// sequence). Example wire shapes:
@@ -50,7 +50,7 @@ pub enum SmuggleArtifact {
     /// One or more `(header_name, header_value)` pairs to attach to
     /// the outgoing HTTP request. Used by header-injection probes
     /// (Cookie, Authorization, Range). Duplicate names are allowed
-    /// — that's the whole point of the duplicate-header variants.
+    ///: that's the whole point of the duplicate-header variants.
     Headers(Vec<(String, String)>),
     /// A complete HTTP request body paired with the
     /// `Content-Type` header value the caller should send.
@@ -110,7 +110,7 @@ pub trait SmuggleProbe {
     fn artifact(&self) -> SmuggleArtifact;
 }
 
-/// The merged wire artifact produced by `compose_artifacts` — one
+/// The merged wire artifact produced by `compose_artifacts`: one
 /// header set, one optional body, one optional frame stream, plus a
 /// list of the technique tags that were merged together. Operators
 /// chain multiple smuggle techniques into a single outgoing request
@@ -120,13 +120,13 @@ pub trait SmuggleProbe {
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ComposedArtifact {
     /// Every header line, in input-probe order. Duplicates allowed
-    /// — that's intentional for variants like
+    ///: that's intentional for variants like
     /// `auth.duplicate-header-first-wins-benign` whose whole point
     /// is the duplication.
     pub headers: Vec<(String, String)>,
     /// `Content-Type` value + body bytes from the (at most one)
     /// `BodyWithContentType` artifact in the input. If two probes
-    /// each contribute a body, the **last** one wins — the operator
+    /// each contribute a body, the **last** one wins, the operator
     /// should normally compose at most one body-shaping probe per
     /// request.
     pub body: Option<(String, Vec<u8>)>,
@@ -140,7 +140,7 @@ pub struct ComposedArtifact {
     pub techniques: Vec<String>,
     /// Per-probe canary tokens of the merged probes, in input order
     /// (1:1 with `techniques`). Preserved so OOB callback
-    /// correlation still works post-composition — a chain of N
+    /// correlation still works post-composition, a chain of N
     /// probes can be reverse-mapped to its N canaries from a single
     /// inbound callback. `#[serde(default)]` keeps old JSON
     /// (without the field) deserializable.
@@ -153,7 +153,7 @@ impl ComposedArtifact {
     /// extend its headers with the composed header pairs, replace
     /// its body+Content-Type if the composition has a body, and
     /// return any frame streams separately (the caller decides
-    /// where to inject them — they don't live inside the HTTP
+    /// where to inject them, they don't live inside the HTTP
     /// request struct).
     ///
     /// Returns the leftover frame stream so the caller doesn't lose
@@ -181,7 +181,7 @@ impl ComposedArtifact {
 ///
 /// - `Headers` pairs extend the composed `headers`.
 /// - `BodyWithContentType` overwrites the composed `body` (last
-///   writer wins — composing two bodies is operator error and
+///   writer wins, composing two bodies is operator error and
 ///   collapses to the last one rather than panicking).
 /// - `Frames` extend the composed `frames` in input order.
 ///
@@ -212,7 +212,7 @@ pub fn compose_artifacts(probes: &[&dyn SmuggleProbe]) -> ComposedArtifact {
 /// Output size is `∏ |family_i|`. For N=2 this matches
 /// [`compose_cross_product`] (which is now a thin wrapper around
 /// this primitive). For N=3+ this is the generalised triple /
-/// quadruple chain. Cap input sizes carefully — 4 families of 10
+/// quadruple chain. Cap input sizes carefully: 4 families of 10
 /// probes each emits 10,000 composed artifacts.
 ///
 /// Returns an empty Vec when `families` is empty or any
@@ -234,7 +234,7 @@ pub fn compose_n_product(families: &[&[Box<dyn SmuggleProbe>]]) -> Vec<ComposedA
             .collect();
         out.push(compose_artifacts(&refs));
 
-        // Advance the multi-radix counter — increment the rightmost
+        // Advance the multi-radix counter, increment the rightmost
         // family's index, carry on overflow into the family to the
         // left. Returns the accumulated artifacts when the leftmost
         // family overflows.
@@ -254,7 +254,7 @@ pub fn compose_n_product(families: &[&[Box<dyn SmuggleProbe>]]) -> Vec<ComposedA
 }
 
 /// Build the cartesian product of two probe Vecs as composed
-/// artifacts — convenience wrapper around [`compose_n_product`]
+/// artifacts, convenience wrapper around [`compose_n_product`]
 /// preserved for backwards compatibility (and ergonomics for the
 /// common 2-family case).
 ///
@@ -557,7 +557,7 @@ mod tests {
             json.contains("\"kind\":\"body_with_content_type\""),
             "json: {json}"
         );
-        // BodyWithContentType is a struct variant — its fields go
+        // BodyWithContentType is a struct variant, its fields go
         // inside `value`.
         assert!(json.contains("\"value\""), "json: {json}");
         assert!(json.contains("\"content_type\""), "json: {json}");
@@ -630,7 +630,7 @@ mod tests {
     #[test]
     fn composed_canaries_field_omitted_from_json_when_empty() {
         // Anti-rig: skip_serializing_if = "Vec::is_empty" must keep
-        // old-shape JSON consumers working — an empty canaries field
+        // old-shape JSON consumers working, an empty canaries field
         // does NOT appear in the serialized form.
         let empty = ComposedArtifact::default();
         let json = serde_json::to_string(&empty).expect("serialize");
@@ -707,7 +707,7 @@ mod tests {
     #[test]
     fn compose_n_product_any_empty_family_yields_empty_output() {
         // Cartesian product with a 0-element factor is the empty
-        // set — pin this so a regression doesn't silently emit
+        // set, pin this so a regression doesn't silently emit
         // duplicates from the non-empty factor.
         let h1 = header_probe("Cookie", "x", "cookie.a");
         let nonempty: Vec<Box<dyn SmuggleProbe>> = vec![Box::new(h1)];
@@ -720,7 +720,7 @@ mod tests {
     #[test]
     fn compose_n_product_single_family_emits_one_per_probe() {
         // N=1 collapses to "one composed artifact per input probe"
-        // — useful as a degenerate case that surfaces the
+        //: useful as a degenerate case that surfaces the
         // composed-shape wrapper without merging anything.
         let h1 = header_probe("Cookie", "x", "cookie.a");
         let h2 = header_probe("Cookie", "y", "cookie.b");
@@ -751,7 +751,7 @@ mod tests {
         assert_eq!(cross.len(), nway.len());
         // Both share the same probe Boxes (we borrow into both
         // calls), so every emitted ComposedArtifact must match
-        // byte-for-byte — techniques, headers, body, frames,
+        // byte-for-byte, techniques, headers, body, frames,
         // canaries. Anti-rig against a regression that diverges
         // the wrapper from the primitive.
         for (a, b) in cross.iter().zip(nway.iter()) {
@@ -771,7 +771,7 @@ mod tests {
     #[test]
     fn apply_to_request_returns_frame_stream_for_non_http_transports() {
         // Frame artifacts (capsule, WS compression, QUIC datagram)
-        // can't ride inside the Request struct — they live at a
+        // can't ride inside the Request struct, they live at a
         // lower transport layer. apply_to_request hands them back
         // to the caller untouched.
         let f = frames_probe(vec![vec![0xFF, 0xAB], vec![0x42]], "frame.x");

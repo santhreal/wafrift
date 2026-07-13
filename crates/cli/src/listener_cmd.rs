@@ -1,15 +1,15 @@
-//! `wafrift listener` — out-of-band callback receiver for blind /
+//! `wafrift listener`: out-of-band callback receiver for blind /
 //! stored vulnerability oracles.
 //!
 //! Some classes of vulnerability never echo a verdict on the *same*
 //! response that triggered them:
 //!
-//! - **Blind SQLi (time-based)** — the difference is latency, not body.
-//! - **Stored XSS** — the script executes when a *different* user
+//! - **Blind SQLi (time-based)**: the difference is latency, not body.
+//! - **Stored XSS**: the script executes when a *different* user
 //!   loads the page, hours later.
-//! - **Blind SSRF** — the server-side fetch hits a host we control;
+//! - **Blind SSRF**: the server-side fetch hits a host we control;
 //!   the original response is just a generic 200/500.
-//! - **Out-of-band command injection** — `nslookup attacker.example`
+//! - **Out-of-band command injection**: `nslookup attacker.example`
 //!   reaches our DNS, not the HTTP response.
 //!
 //! For each of these the oracle is an **external side-channel**: a
@@ -39,14 +39,14 @@
 //!   body_prefix)` and never executes anything. Body capped at
 //!   8 KiB (a callback that ships an exfil >8K is a different
 //!   problem).
-//! - **No HTTPS by default.** The listener runs HTTP — operators
+//! - **No HTTPS by default.** The listener runs HTTP, operators
 //!   front it with their own TLS-terminating reverse proxy or
 //!   Cloudflare tunnel when they need encryption. Shipping a self-
 //!   signed cert that no target will trust is worse than no TLS at
 //!   all.
 //! - **Bind to 127.0.0.1 by default.** Public-facing listeners are
 //!   an authorisation footgun. The operator has to type `--bind
-//!   0.0.0.0:PORT` to expose the listener — that explicit step is
+//!   0.0.0.0:PORT` to expose the listener, that explicit step is
 //!   the consent gate.
 //! - **Token-to-request correlation is the caller's problem.** This
 //!   module gives you the token, the embed point is up to the
@@ -68,7 +68,7 @@ use tokio::sync::RwLock;
 #[derive(Args, Debug)]
 pub(crate) struct ListenerArgs {
     /// Address to bind the callback receiver to. Defaults to
-    /// loopback — public exposure (`0.0.0.0:PORT`) is an explicit
+    /// loopback, public exposure (`0.0.0.0:PORT`) is an explicit
     /// opt-in so an operator does not accidentally stand up a
     /// world-readable side-channel.
     #[arg(long, default_value = "127.0.0.1:9000")]
@@ -76,7 +76,7 @@ pub(crate) struct ListenerArgs {
 
     /// Number of tokens to pre-mint on startup (printed to stdout
     /// so the operator can copy them into payloads). Each token
-    /// is independent — a callback on any of them is logged.
+    /// is independent (a callback on any of them is logged).
     #[arg(long, default_value_t = 4)]
     pub tokens: u32,
 
@@ -88,7 +88,7 @@ pub(crate) struct ListenerArgs {
 
     /// Cap on the body bytes recorded per callback. Anything beyond
     /// is truncated (with a `truncated_bytes` counter in the JSON).
-    /// 8 KiB by default — generous for the typical "ping" payload,
+    /// 8 KiB by default, generous for the typical "ping" payload,
     /// hostile for exfil-style abuse.
     #[arg(long, default_value_t = 8 * 1024)]
     pub max_body_bytes: usize,
@@ -105,7 +105,7 @@ pub(crate) struct ListenerArgs {
     pub server_ip: String,
 }
 
-/// One observed inbound HTTP request — the smallest unit of evidence
+/// One observed inbound HTTP request, the smallest unit of evidence
 /// for an OOB callback. Serialised verbatim into NDJSON when
 /// `--format json` is selected.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -123,7 +123,7 @@ pub(crate) struct Callback {
     /// Token extracted from the path / query string if it matches one
     /// of the pre-minted tokens, else `None`. The token-match logic
     /// is conservative: only an exact substring match against the
-    /// registered token set counts — it never tries to fuzzy-match
+    /// registered token set counts, it never tries to fuzzy-match
     /// or normalise URL-encoded forms.
     pub matched_token: Option<String>,
     /// Inbound request headers (lowercased keys for stable diffing).
@@ -145,7 +145,7 @@ pub(crate) struct Callback {
 /// OLDEST callback gets dropped (FIFO eviction) so the listener
 /// can run for an unbounded duration without RAM growth. 100k
 /// callbacks is roughly 100 MiB at the typical ~1 KiB payload
-/// shape — generous for an authentic pentest run, but bounded so
+/// shape, generous for an authentic pentest run, but bounded so
 /// a flood doesn't ramp into a DoS.
 pub(crate) const MAX_CALLBACK_LOG: usize = 100_000;
 
@@ -154,8 +154,8 @@ pub(crate) struct Registry {
     tokens: RwLock<HashMap<String, ()>>,
     // VecDeque (not Vec) so the FIFO eviction at the MAX_CALLBACK_LOG
     // cap is O(1) via pop_front() instead of O(n) via Vec::remove(0).
-    // Critical under the exact DoS scenario the cap defends against —
-    // token-replay flood — where holding the write-guard for an O(n)
+    // Critical under the exact DoS scenario the cap defends against 
+    // token-replay flood, where holding the write-guard for an O(n)
     // shift of up to 100 000 entries would starve every concurrent
     // /_wafrift/check poll from the scan engine. Per perf-hunt N02.
     callbacks: RwLock<std::collections::VecDeque<Callback>>,
@@ -183,13 +183,13 @@ impl Registry {
     /// Register an already-generated token. Test-only: production
     /// callers always go through [`Registry::mint`] for randomness.
     /// Gated so the production binary surface does not advertise an
-    /// API with no production consumer (LAW 1 — no dead public API).
+    /// API with no production consumer (LAW 1 (no dead public API)).
     #[cfg(test)]
     pub async fn register(&self, token: impl Into<String>) {
         self.tokens.write().await.insert(token.into(), ());
     }
 
-    /// Snapshot of currently registered tokens — test-only mirror of
+    /// Snapshot of currently registered tokens, test-only mirror of
     /// the value [`Registry::mint`] already returns. Gated #[cfg(test)]
     /// for the same reason as [`Registry::register`].
     #[cfg(test)]
@@ -202,13 +202,13 @@ impl Registry {
     /// scan-side oracle's poll, "has this token been received yet?"
     pub async fn callbacks(&self) -> Vec<Callback> {
         // Materialize the VecDeque snapshot into a Vec so callers keep
-        // their existing API — the internal storage type changed for
+        // their existing API, the internal storage type changed for
         // O(1) eviction but the wire/IPC contract is unchanged.
         self.callbacks.read().await.iter().cloned().collect()
     }
 
     /// Count of callbacks that matched a registered token. Test-only
-    /// summary — production callers iterate [`Registry::callbacks`]
+    /// summary, production callers iterate [`Registry::callbacks`]
     /// directly. Gated #[cfg(test)] for the same reason as
     /// [`Registry::register`].
     #[cfg(test)]
@@ -223,7 +223,7 @@ impl Registry {
 
     /// Look for the first registered token that appears as a
     /// substring of `s`. Returns the matched token, not the location.
-    /// Conservative: no URL-decoding, no case folding — the caller
+    /// Conservative: no URL-decoding, no case folding, the caller
     /// chose the token alphabet (base32) so it survives unmolested
     /// through every reasonable transport.
     pub async fn match_token_in(&self, s: &str) -> Option<String> {
@@ -237,13 +237,13 @@ impl Registry {
     ///
     /// Cap: the log holds at most [`MAX_CALLBACK_LOG`] entries. When
     /// the cap is hit, the OLDEST callback is dropped. The cap is a
-    /// DoS defence — an attacker that learns ONE valid token (e.g.
+    /// DoS defence (an attacker that learns ONE valid token (e.g).
     /// by observing a real callback) could otherwise flood the
     /// listener with requests carrying that token and balloon RAM.
     async fn push(&self, cb: Callback) {
         let mut cbs = self.callbacks.write().await;
         if cbs.len() >= MAX_CALLBACK_LOG {
-            // O(1) FIFO eviction — see VecDeque rationale on the field.
+            // O(1) FIFO eviction (see VecDeque rationale on the field).
             cbs.pop_front();
         }
         cbs.push_back(cb);
@@ -251,10 +251,10 @@ impl Registry {
 }
 
 // `generate_token` + `base32_encode` live in `crate::callback_token`
-// — shared with `crate::scan` so the receiver (listener) and the
+//: shared with `crate::scan` so the receiver (listener) and the
 // sender (scan's payload substitution) use one source of truth for
 // the token format. Re-export at the local path (pub(crate) so the
-// inner-crate visibility matches the source — outer pub use here
+// inner-crate visibility matches the source, outer pub use here
 // would widen visibility beyond what callback_token::generate_token
 // intends) so existing listener-only call sites keep compiling.
 pub(crate) use crate::callback_token::generate_token;
@@ -381,11 +381,11 @@ fn render_callback(cb: &Callback, format: &str) {
 }
 
 /// Read one HTTP request off the socket and translate to a Callback.
-/// Handles malformed requests by returning Err — the connection is
+/// Handles malformed requests by returning Err, the connection is
 /// closed and the listener loop moves on.
 ///
 /// Returns `Ok(None)` when the request was handled as a MANAGEMENT
-/// API hit (the path begins with `/_wafrift/`) — those are answered
+/// API hit (the path begins with `/_wafrift/`), those are answered
 /// inline with their own JSON response and intentionally NOT
 /// recorded in the registry's callbacks log (otherwise the operator
 /// polling the API would pollute their own evidence stream).
@@ -440,7 +440,7 @@ async fn handle_conn(
     // F101: pre-fix every `Content-Length:` header overwrote the
     // value, so a hostile client sending `Content-Length: 100\r\n
     // Content-Length: 0` set the listener to read 0 body bytes and
-    // interpret the real body as the NEXT request — log-injection
+    // interpret the real body as the NEXT request, log-injection
     // attack on the callback registry via classic request smuggling.
     // Take the FIRST value; ignore subsequent duplicates (RFC 7230
     // §3.3.2 forbids them outright).
@@ -457,7 +457,7 @@ async fn handle_conn(
                 // vector. A hostile client sending `Content-Length: abc`
                 // would silently set content_length=0; the listener would
                 // then read zero body bytes and treat the actual body as
-                // the next request's headers — classic CL desync. Reject
+                // the next request's headers, classic CL desync. Reject
                 // malformed CL with an actionable error so the connection
                 // is closed before any framing damage.
                 content_length = v_trim
@@ -470,7 +470,7 @@ async fn handle_conn(
     }
 
     // Body = (bytes already in buf past the header terminator) + the rest.
-    // `header_terminator_len` is 4 for \r\n\r\n, 2 for \n\n — computed
+    // `header_terminator_len` is 4 for \r\n\r\n, 2 for \n\n, computed
     // alongside `header_end` so non-CRLF clients don't lose body bytes.
     let body_start = header_end + header_terminator_len;
     let already_have = total_read.saturating_sub(body_start);
@@ -546,7 +546,7 @@ async fn handle_conn(
         .unwrap_or(0);
 
     // Token match: the token may appear in the path, in a header
-    // value, or in the body — search all three. We do not URL-decode
+    // value, or in the body, search all three. We do not URL-decode
     // because the token alphabet is base32 (alphanumeric only) which
     // is already URL-safe; if a target encodes the token anyway it
     // means the URL-decoded path string is what matters, which is
@@ -580,7 +580,7 @@ async fn handle_conn(
 
 /// Locate the end-of-headers double-CRLF (or bare-LF tolerated form).
 /// Returns `Some((offset, terminator_len))` so the caller knows where
-/// the body starts — `body_start = offset + terminator_len`. The
+/// the body starts: `body_start = offset + terminator_len`. The
 /// terminator_len is 4 for the canonical `\r\n\r\n` and 2 for the
 /// `\n\n` form some scripted clients (curl with `--data-raw`,
 /// hand-rolled Python `urllib`) emit. Returning a fixed `4` for the
@@ -602,7 +602,7 @@ mod tests {
 
     // Token-generation tests (alphabet, length, no-collision) and
     // base32_encode round-trip tests live in
-    // `crate::callback_token::tests` — the functions themselves moved
+    // `crate::callback_token::tests`: the functions themselves moved
     // out of listener_cmd to be shared with scan's payload
     // substitution. Duplicating them here would just guarantee one
     // pair drifts.
@@ -629,7 +629,7 @@ mod tests {
     async fn registry_match_token_in_finds_substring() {
         let r = Registry::new();
         r.register("ABCDEFGHIJKLMNOPQRSTUVWXY2").await;
-        // Exact, prefix, suffix, embedded — all must match.
+        // Exact, prefix, suffix, embedded (all must match).
         assert_eq!(
             r.match_token_in("ABCDEFGHIJKLMNOPQRSTUVWXY2")
                 .await
@@ -650,7 +650,7 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn registry_match_token_in_is_case_sensitive() {
         // Tokens are base32 upper-case; a lowercase substring should
-        // NOT match (caller's contract — we never normalise on lookup).
+        // NOT match (caller's contract (we never normalise on lookup)).
         let r = Registry::new();
         r.register("ABCDEFGHIJKLMNOPQRSTUVWXY2").await;
         assert_eq!(r.match_token_in("abcdefghijklmnopqrstuvwxy2").await, None);
@@ -713,7 +713,7 @@ mod tests {
         // VecDeque back to Vec would silently work for correctness
         // but turn the eviction O(n). Test that pushing 3× the cap
         // (twice the eviction budget) completes within a generous
-        // wall-clock budget — the test would time out if some future
+        // wall-clock budget, the test would time out if some future
         // patch made every push do an O(n) shift again.
         //
         // Conservative budget: 3s for ~300k push+evict operations.
@@ -744,7 +744,7 @@ mod tests {
         );
         assert!(
             elapsed.as_secs() < 30,
-            "eviction storm took {elapsed:?} — suspect O(n) eviction regression"
+            "eviction storm took {elapsed:?}, suspect O(n) eviction regression"
         );
     }
 
@@ -753,7 +753,7 @@ mod tests {
         // Floor: a refactor that accidentally set MAX_CALLBACK_LOG=10
         // would drop legitimate callbacks during real engagements
         // (which routinely produce hundreds of callbacks). Lock the
-        // floor at 1k — well above what any honest run needs to
+        // floor at 1k, well above what any honest run needs to
         // start dropping at.
         assert!(MAX_CALLBACK_LOG >= 1_000);
     }
@@ -765,7 +765,7 @@ mod tests {
         // `GET / HTTP/1.1` is 14 bytes, so `\r\n\r\n` starts at
         // position 14. `\n\n` starts at position 14 in the lf-only
         // form too (request line is still 14 bytes). The second
-        // return field is the terminator byte length — 4 for CRLF,
+        // return field is the terminator byte length: 4 for CRLF,
         // 2 for bare LF; the caller adds this to `pos` to find the
         // body start.
         assert_eq!(find_double_crlf(b"GET / HTTP/1.1\r\n\r\n"), Some((14, 4)));
@@ -792,7 +792,7 @@ mod tests {
         buf.extend_from_slice(b"BODYDATA");
         let (pos, terminator_len) = find_double_crlf(&buf).expect("must find");
         assert_eq!(terminator_len, 2);
-        // Body must start exactly at pos + 2 — verify the first
+        // Body must start exactly at pos + 2, verify the first
         // body byte is the 'B' of BODYDATA, not '0' / 'D' (which
         // the old off-by-two would have dropped to).
         assert_eq!(buf[pos + terminator_len], b'B');
@@ -831,7 +831,7 @@ mod tests {
         // load the spawned task may need more than a few milliseconds
         // to be scheduled for the first time.
         tokio::time::sleep(Duration::from_millis(50)).await;
-        // Connect with a retry loop — Windows TCP loopback under heavy
+        // Connect with a retry loop. Windows TCP loopback under heavy
         // parallel test load occasionally returns OS error 10060 (timed
         // out) even though the listener is bound. We retry up to 10× with
         // 200 ms backoff; total budget ≤ 2 s, well within the integration-
@@ -904,7 +904,7 @@ mod tests {
     async fn end_to_end_body_above_cap_is_truncated_with_counter() {
         let registry = Arc::new(Registry::new());
         let token = registry.mint(1).await.into_iter().next().unwrap();
-        // Body is 16 KiB — cap is 8 KiB → 8 KiB truncated.
+        // Body is 16 KiB (cap is 8 KiB → 8 KiB truncated).
         let body = format!("{token}{}", "x".repeat(16 * 1024 - token.len()));
         let req = format!(
             "POST /p HTTP/1.1\r\nHost: x\r\nContent-Length: {}\r\n\r\n{body}",
@@ -938,7 +938,7 @@ mod tests {
     async fn end_to_end_malformed_request_does_not_crash_the_listener() {
         // A client that sends garbage MUST NOT take the listener
         // down with it. We don't drive_one_callback here because
-        // handle_conn returns Err on bad input — exercise it
+        // handle_conn returns Err on bad input, exercise it
         // directly to assert the Err path is clean.
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
@@ -957,7 +957,7 @@ mod tests {
         });
         tokio::time::sleep(Duration::from_millis(20)).await;
         let mut client = tokio::net::TcpStream::connect(addr).await.unwrap();
-        // Garbage with no \r\n\r\n terminator — the listener should
+        // Garbage with no \r\n\r\n terminator, the listener should
         // time out reading headers and return Err cleanly.
         client.write_all(b"this is not http").await.unwrap();
         let _ = client.shutdown().await;
@@ -986,7 +986,7 @@ mod tests {
         });
         tokio::time::sleep(Duration::from_millis(20)).await;
         // Connect with the same retry pattern drive_one_callback
-        // uses — Windows TCP under parallel test load occasionally
+        // uses: Windows TCP under parallel test load occasionally
         // returns OS error 10060 (timed out) on the first attempt
         // despite the listener being bound.
         let mut client = None;
@@ -1185,7 +1185,7 @@ mod tests {
     /// Same as `drive_one_callback` but returns the raw `Result` from
     /// `handle_conn` instead of unwrapping. Used for adversarial tests
     /// where the connection is expected to be rejected (e.g. malformed
-    /// Content-Length) — we want to assert the listener doesn't panic or
+    /// Content-Length), we want to assert the listener doesn't panic or
     /// hang, not that it records a callback.
     async fn drive_one_conn_result(
         registry: Arc<Registry>,
@@ -1230,7 +1230,7 @@ mod tests {
         // fix changed the fallback-to-zero behaviour to a hard reject (to
         // close CL desync attacks); so `handle_conn` now returns Err for a
         // malformed CL. The contract here is that the listener terminates
-        // cleanly — no panic, no hang — not that it records a callback.
+        // cleanly (no panic, no hang (not that it records a callback)).
         let registry = Arc::new(Registry::new());
         let token = registry.mint(1).await.into_iter().next().unwrap();
         let req = format!("GET /{token} HTTP/1.1\r\nHost: x\r\nContent-Length: -7\r\n\r\n");
@@ -1252,7 +1252,7 @@ mod tests {
         // Adversarial: Content-Length: 9999999999 (10 GiB) with
         // zero actual body bytes. The listener's Vec::with_capacity
         // is clamped to `min(content_length, max_body)`, so this
-        // must NOT OOM us — and the connection EOFs immediately so
+        // must NOT OOM us, and the connection EOFs immediately so
         // we just see an empty body.
         let registry = Arc::new(Registry::new());
         let token = registry.mint(1).await.into_iter().next().unwrap();
@@ -1306,7 +1306,7 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn registry_callbacks_log_is_in_arrival_order() {
         // Sanity: pushing three callbacks in order keeps them in
-        // that order in `callbacks()` — needed so timeline
+        // that order in `callbacks()`: needed so timeline
         // reconstructions are correct.
         let r = Registry::new();
         for i in 0_u64..3 {

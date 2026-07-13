@@ -1,11 +1,11 @@
 //! Shared OOB callback-token primitives. Both `wafrift listener` (the
 //! receiver) and `wafrift scan` (the sender that embeds the token in
-//! a payload and waits for the callback) consume this module — a
+//! a payload and waits for the callback) consume this module, a
 //! single source of truth for the token format means the receiver
 //! and sender can never drift.
 //!
 //! Tokens are 128-bit, base32-encoded (RFC 4648 alphabet, no
-//! padding) — URL-safe by construction so the operator can drop a
+//! padding). URL-safe by construction so the operator can drop a
 //! token into any URL path / query / header / body without further
 //! encoding.
 
@@ -13,7 +13,7 @@ use rand::RngCore;
 use rand::rngs::OsRng;
 
 /// 128-bit randomness, encoded to base32 (26 ASCII chars).
-/// Collision probability for N tokens is N² / 2^129 — same security
+/// Collision probability for N tokens is N² / 2^129, same security
 /// floor as UUIDv4.
 #[must_use]
 pub(crate) fn generate_token() -> String {
@@ -54,7 +54,7 @@ fn base32_encode(bytes: &[u8]) -> String {
 
 /// Embed a fresh callback URL in `payload` everywhere it contains
 /// the `{{CALLBACK}}` placeholder. The base URL is appended with
-/// `/<token>` and the substitution is performed verbatim — no URL
+/// `/<token>` and the substitution is performed verbatim, no URL
 /// encoding because the base32 alphabet (`A-Z2-7`) is already
 /// URL-safe.
 ///
@@ -63,7 +63,7 @@ fn base32_encode(bytes: &[u8]) -> String {
 /// instead of generating a token nothing references).
 ///
 /// All placeholder occurrences in a single payload share the SAME
-/// token — that lets a payload include the callback in multiple
+/// token, that lets a payload include the callback in multiple
 /// positions (e.g. SSRF in a Location-header + a body-side echo
 /// channel) and still correlate to one observation.
 #[must_use]
@@ -81,7 +81,7 @@ pub(crate) fn substitute(payload: &str, callback_base_url: &str) -> Option<Subst
     })
 }
 
-/// Result of a callback substitution — the new payload, the token
+/// Result of a callback substitution, the new payload, the token
 /// that was inserted, and the full callback URL the operator can
 /// search for in the listener log.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn substitute_all_occurrences_share_one_token() {
         // A payload with multiple `{{CALLBACK}}` placeholders gets
-        // ONE token, substituted everywhere — so a single recorded
+        // ONE token, substituted everywhere, so a single recorded
         // callback correlates to the variant uniquely.
         let s = substitute(
             "<img src='{{CALLBACK}}/a'><script>fetch('{{CALLBACK}}/b')</script>",
@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn substitute_payload_with_special_chars_keeps_them_intact() {
         // Anti-rig: the substitution must NOT mangle other bytes in
-        // the payload — only the `{{CALLBACK}}` literal is touched.
+        // the payload (only the `{{CALLBACK}}` literal is touched).
         let payload = "<svg/onload=fetch('{{CALLBACK}}')>// 'quote' && cat";
         let s = substitute(payload, "http://x:9000").expect("substituted");
         assert!(s.payload.contains("<svg/onload="));

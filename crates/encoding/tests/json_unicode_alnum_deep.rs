@@ -65,7 +65,7 @@ fn single_punctuation_chars_pass_through() {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Multibyte UTF-8 — non-ASCII chars must NOT be encoded
+// Multibyte UTF-8, non-ASCII chars must NOT be encoded
 // ────────────────────────────────────────────────────────────────
 
 #[test]
@@ -96,7 +96,7 @@ fn emoji_passes_through() {
 
 #[test]
 fn zero_width_chars_pass_through() {
-    // U+200B ZERO WIDTH SPACE — not alphanumeric.
+    // U+200B ZERO WIDTH SPACE (not alphanumeric).
     assert_eq!(run("\u{200B}"), "\u{200B}");
     assert_eq!(run("\u{FEFF}"), "\u{FEFF}"); // BOM
 }
@@ -186,7 +186,7 @@ fn idempotent_propagated_through_ten_passes() {
 
 #[test]
 fn partial_escape_too_short() {
-    // `\u123` (3 hex) — not a valid \uXXXX, skip-pass must NOT fire.
+    // `\u123` (3 hex) (not a valid \uXXXX, skip-pass must NOT fire).
     // Outcome: `\` bare, `u`+`1`+`2`+`3` each encoded individually.
     let out = run("\\u123");
     assert!(!out.contains("\\u123"));
@@ -196,7 +196,7 @@ fn partial_escape_too_short() {
 
 #[test]
 fn partial_escape_too_few_chars_after_backslash() {
-    // `\u00` (2 hex) — not a valid \uXXXX.
+    // `\u00` (2 hex) (not a valid \uXXXX).
     let out = run("\\u00");
     assert!(!out.contains("\\u00") || out != "\\u00");
 }
@@ -208,14 +208,14 @@ fn lone_backslash_passes_through() {
 
 #[test]
 fn backslash_then_non_u_passes_backslash_through() {
-    // `\n` literal (backslash + n) — `\` is bare, `n` is alnum-encoded.
+    // `\n` literal (backslash + n): `\` is bare, `n` is alnum-encoded.
     let out = run("\\n");
     assert_eq!(out, "\\\\u006E");
 }
 
 #[test]
 fn backslash_followed_by_non_hex_after_u() {
-    // `\uABCG` — G is not hex. Skip-pass must not fire; `\` bare,
+    // `\uABCG`: G is not hex. Skip-pass must not fire; `\` bare,
     // `u`, `A`, `B`, `C`, `G` each encoded.
     let out = run("\\uABCG");
     assert!(!out.contains("\\uABCG"));
@@ -229,7 +229,7 @@ fn multiple_consecutive_escapes() {
 
 #[test]
 fn escape_then_alnum_then_escape() {
-    // `AXB` — first escape skip-passed, `X` encoded, second
+    // `AXB`: first escape skip-passed, `X` encoded, second
     // escape skip-passed.
     assert_eq!(run("\\u0041X\\u0042"), "\\u0041\\u0058\\u0042");
 }
@@ -247,7 +247,7 @@ fn double_backslash_followed_by_valid_escape() {
 
 #[test]
 fn unterminated_escape_at_end_of_string() {
-    // `\u00` at very end — too few chars for a valid escape.
+    // `\u00` at very end (too few chars for a valid escape).
     let out = run("X\\u00");
     assert!(out.starts_with("\\u0058")); // X encoded
 }
@@ -330,7 +330,7 @@ fn xxe_external_entity() {
 #[test]
 fn ssrf_internal_url() {
     let out = run("http://169.254.169.254/latest/meta-data/");
-    // `http`, `latest`, `meta`, `data`, AND the digits all encoded —
+    // `http`, `latest`, `meta`, `data`, AND the digits all encoded 
     // every alphanumeric in the metadata-IP URL disappears from the
     // wire bytes. Only the structural delimiters (`:`, `/`, `.`, `-`)
     // remain bare.

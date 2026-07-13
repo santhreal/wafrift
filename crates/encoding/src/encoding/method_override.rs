@@ -1,13 +1,13 @@
 //! HTTP method-override confusion library.
 //!
-//! Web frameworks accept "method override" hints — extra ways for a
+//! Web frameworks accept "method override" hints, extra ways for a
 //! client behind a form (which only emits GET / POST) to request a
 //! PUT / DELETE / PATCH / etc. The hint comes in via four channels:
 //!
 //! 1. **`X-HTTP-Method-Override` header** (Rails, Express, Django,
 //!    Symfony, Spring, ASP.NET). Some frameworks also accept
 //!    `X-HTTP-Method`, `X-Method-Override`.
-//! 2. **`_method` form field** (Rails, Laravel — emitted by Rails
+//! 2. **`_method` form field** (Rails, Laravel, emitted by Rails
 //!    `<%= form_with method: :delete %>` helpers).
 //! 3. **`_method` query parameter** (Rails fallback when the request
 //!    is a POST without a form-encoded body).
@@ -83,7 +83,7 @@ pub fn override_header_case_mix(method: &str) -> String {
     format!("X-HTTP-Method-Override: {mixed}")
 }
 
-/// Whitespace-padded variant — WAF may strip leading whitespace
+/// Whitespace-padded variant: WAF may strip leading whitespace
 /// before logging but framework re-parses the value.
 #[must_use]
 pub fn override_header_padded(method: &str) -> String {
@@ -91,7 +91,7 @@ pub fn override_header_padded(method: &str) -> String {
 }
 
 /// Duplicate-header smuggle. Two header lines with different
-/// method values — front-end and back-end disagree on which wins.
+/// method values (front-end and back-end disagree on which wins).
 #[must_use]
 pub fn override_header_duplicate(method_a: &str, method_b: &str) -> String {
     format!("X-HTTP-Method-Override: {method_a}\r\nX-HTTP-Method-Override: {method_b}")
@@ -111,7 +111,7 @@ pub fn query_method(method: &str) -> String {
     format!("?_method={method}")
 }
 
-/// Multipart `_method` field — sends as multipart/form-data so the
+/// Multipart `_method` field, sends as multipart/form-data so the
 /// WAF that only inspects form-urlencoded misses it.
 #[must_use]
 pub fn multipart_method(method: &str, boundary: &str) -> String {
@@ -304,7 +304,7 @@ mod tests {
     #[test]
     fn handles_unicode_method() {
         // RFC 7230 method tokens are tchar (ASCII only), but the
-        // library doesn't enforce — frameworks vary.
+        // library doesn't enforce (frameworks vary).
         let h = override_header("DÉLÊTE");
         assert!(h.contains("DÉLÊTE"));
     }
@@ -350,9 +350,9 @@ mod tests {
 
     #[test]
     fn multipart_handles_special_chars_in_method() {
-        // We don't sanitize the method — operator's responsibility.
+        // We don't sanitize the method (operator's responsibility).
         let m = multipart_method("DELETE\r\nX-Inject: yes", "B");
-        // The injection is in the value — caller must escape at
+        // The injection is in the value, caller must escape at
         // their layer. Test just confirms no panic.
         assert!(m.contains("name=\"_method\""));
     }

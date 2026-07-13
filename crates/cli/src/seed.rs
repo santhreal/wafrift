@@ -1,4 +1,4 @@
-//! `wafrift seed` — pre-load a gene-bank with known-working techniques.
+//! `wafrift seed`: pre-load a gene-bank with known-working techniques.
 //!
 //! When a practitioner already knows what beats the target's WAF (e.g.
 //! from a prior engagement, a CTF writeup, or shared team knowledge),
@@ -27,7 +27,7 @@ pub(crate) struct SeedArgs {
     /// Run `wafrift techniques list` for the canonical list.
     ///
     /// `required = true` so `--help` renders the `[required]` marker and
-    /// clap rejects a missing value at parse time — previously the help
+    /// clap rejects a missing value at parse time, previously the help
     /// text implied it was optional and the failure only surfaced as a
     /// hand-rolled runtime `error:` after argument parsing succeeded.
     #[arg(long, num_args = 1.., value_delimiter = ',', required = true)]
@@ -75,7 +75,7 @@ pub(crate) fn run_seed(args: SeedArgs) -> ExitCode {
     // because the bogus key never matched a real runtime technique
     // ID. Validate now that every seeded value LOOKS like a known
     // technique-ID shape (one of the prefixes the strategy/encoding
-    // engines actually produce). This is conservative — we accept
+    // engines actually produce). This is conservative, we accept
     // anything matching the shape and reject the obvious typos. A
     // strict canonical-list check is infeasible because some
     // technique IDs (`equiv-cegis:learn:<channel>|<rule>`) are
@@ -101,7 +101,7 @@ pub(crate) fn run_seed(args: SeedArgs) -> ExitCode {
     }
     if !bad.is_empty() {
         eprintln!(
-            "error: unrecognised technique ID(s): {} — known prefixes are {}. \
+            "error: unrecognised technique ID(s): {}, known prefixes are {}. \
              Run `wafrift techniques list` for the canonical list. Pass \
              `--allow-unknown-techniques` to override (e.g. for hand-rolled \
              plugin IDs).",
@@ -114,7 +114,7 @@ pub(crate) fn run_seed(args: SeedArgs) -> ExitCode {
         if !args.allow_unknown_techniques {
             return ExitCode::from(2);
         }
-        eprintln!("warn: --allow-unknown-techniques set — proceeding with unrecognised IDs");
+        eprintln!("warn: --allow-unknown-techniques set, proceeding with unrecognised IDs");
     }
 
     match (&args.waf, &args.host) {
@@ -131,7 +131,7 @@ pub(crate) fn run_seed(args: SeedArgs) -> ExitCode {
         ),
         (None, None) => {
             eprintln!(
-                "error: pick a destination — `--waf <name>` (per-WAF GeneBank) or \
+                "error: pick a destination: `--waf <name>` (per-WAF GeneBank) or \
                  `--host <hostname>` (proxy gene-bank)"
             );
             ExitCode::from(1)
@@ -142,7 +142,7 @@ pub(crate) fn run_seed(args: SeedArgs) -> ExitCode {
 fn seed_waf(waf_name: &str, techniques: &[String], dry_run: bool) -> ExitCode {
     if dry_run {
         // Dry-run output goes to STDOUT (it IS the data the operator
-        // asked for via --dry-run) — not stderr. Pre-fix (per perf-hunt
+        // asked for via --dry-run), not stderr. Pre-fix (per perf-hunt
         // N06) both the dry-run preview and the post-write confirmation
         // went to stderr, so a CI job piping `2>/dev/null` would lose
         // the dry-run preview entirely. The post-write confirmation
@@ -164,7 +164,7 @@ fn seed_waf(waf_name: &str, techniques: &[String], dry_run: bool) -> ExitCode {
     };
     // merge_session takes (technique_name, successes, attempts). We
     // synthesise (1, 1) to record one successful run with the seeded
-    // technique — that's enough to bring it above the min_attempts
+    // technique, that's enough to bring it above the min_attempts
     // threshold and into the seed_winners() set.
     let stats: Vec<(String, u32, u32)> =
         techniques.iter().map(|t| (t.clone(), 1u32, 1u32)).collect();
@@ -192,7 +192,7 @@ fn seed_host(
     let path = match custom_path {
         Some(p) => p.to_path_buf(),
         None => match std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")) {
-            // F110: pre-fix consulted `$HOME` only — on Windows that's
+            // F110: pre-fix consulted `$HOME` only, on Windows that's
             // typically unset and the operator got "$HOME unset" with
             // no hint that `--proxy-bank` was the unblock path. Fall
             // back to `%USERPROFILE%` (matches gene_bank_io.rs F98 /
@@ -266,7 +266,7 @@ fn seed_host(
         }
     };
     // Atomic, durable write via wafrift_types::loaders::write_atomic
-    // — shared with strategy::gene_bank::write_genome and
+    //: shared with strategy::gene_bank::write_genome and
     // proxy::gene_bank_io. The helper does the full tmp + fsync +
     // rename + parent-fsync dance with a multi-writer-safe tmp suffix.
     if let Err(e) = wafrift_types::loaders::write_atomic(&path, json.as_bytes()) {
@@ -399,7 +399,7 @@ mod tests {
     #[test]
     fn seed_host_with_no_techniques_creates_empty_host_entry() {
         // Edge case: operator passes an empty technique list.
-        // We should still write the host entry — defensive default.
+        // We should still write the host entry (defensive default).
         let dir = std::env::temp_dir().join(format!(
             "wafrift-seed-test-empty-{}-{}",
             std::process::id(),
@@ -442,7 +442,7 @@ mod tests {
     #[test]
     fn seed_host_rejects_malformed_existing_bank() {
         // If the gene-bank file at the target path is corrupted JSON,
-        // seed_host must fail loudly — silently overwriting could
+        // seed_host must fail loudly, silently overwriting could
         // destroy real bypass history.
         let dir = std::env::temp_dir().join(format!(
             "wafrift-seed-mal-{}-{}",
@@ -527,7 +527,7 @@ mod tests {
 
     #[test]
     fn seed_host_idempotent_against_identical_repeat_seed() {
-        // Run the same seed twice — the bank must look the same as
+        // Run the same seed twice, the bank must look the same as
         // after one run (dedupe). Anti-rig against a refactor that
         // appended without dedup-checking.
         let dir = std::env::temp_dir().join(format!(
@@ -544,7 +544,7 @@ mod tests {
         let bank: PersistedGeneBank =
             serde_json::from_str(&std::fs::read_to_string(&bank_path).unwrap()).unwrap();
         let entry = bank.hosts.get("h").unwrap();
-        // No duplication — same list as after a single seed.
+        // No duplication (same list as after a single seed).
         assert_eq!(entry.proven_winners.len(), 2);
         let _ = std::fs::remove_dir_all(&dir);
     }

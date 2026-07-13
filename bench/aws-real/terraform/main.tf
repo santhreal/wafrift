@@ -1,4 +1,4 @@
-# wafrift bench/aws-real — Terraform main.
+# wafrift bench/aws-real: Terraform main.
 #
 # NOT APPLIED YET. This is a complete stub for when AWS creds land.
 # Designed to teardown cleanly (no orphaned ENIs / EIPs / log groups).
@@ -26,14 +26,14 @@ variable "region" {
 }
 
 variable "name_prefix" {
-  description = "Prefix on every resource — keeps the bench distinguishable from prod"
+  description = "Prefix on every resource, keeps the bench distinguishable from prod"
   type        = string
   default     = "wafrift-bench"
 }
 
 # ── Network ────────────────────────────────────────────────────────
 # Use the default VPC so we don't create / destroy network plumbing
-# every bench run — cheaper and faster.
+# every bench run (cheaper and faster).
 data "aws_vpc" "default" {
   default = true
 }
@@ -201,7 +201,7 @@ resource "aws_ecs_service" "juice" {
   depends_on = [aws_lb_listener.http]
 }
 
-# ── WAFv2 WebACL — the actual test subject ─────────────────────────
+# ── WAFv2 WebACL, the actual test subject ─────────────────────────
 resource "aws_wafv2_web_acl" "this" {
   name        = var.name_prefix
   description = "wafrift bench: managed rule groups against ALB"
@@ -277,7 +277,7 @@ resource "aws_wafv2_web_acl_association" "alb" {
 # ── Outputs ────────────────────────────────────────────────────────
 output "alb_dns_name" {
   value       = aws_lb.this.dns_name
-  description = "Aim wafrift at this hostname (HTTP only — no TLS cert yet)."
+  description = "Aim wafrift at this hostname (HTTP only (no TLS cert yet))."
 }
 
 output "web_acl_id" {

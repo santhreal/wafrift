@@ -500,8 +500,8 @@ fn encode_layered_all_strategies() {
     // percent-encoding plus unicode \uXXXX). With ~22 strategies the
     // pipeline saturates the 8 MiB cap even from a single letter.
     // Both outcomes are valid evidence the pipeline is wired correctly:
-    //   - `Ok(transformed)` — every strategy fired and the result fits.
-    //   - `Err(LayeredOutputTooLarge { actual > original })` — the
+    //   - `Ok(transformed)`: every strategy fired and the result fits.
+    //   - `Err(LayeredOutputTooLarge { actual > original })`: the
     //     pipeline expanded the input far enough to trip the anti-DoS
     //     cap, which itself proves the strategies are being applied.
     // What's NOT valid: `Ok(unchanged)` (silent pass-through) or any
@@ -577,7 +577,7 @@ fn layered_combinations_valid_pairs() {
     // WhitespaceInsertion, the alphabetic chars hit case-alternation
     // and url-encode strategies, `--` hits sql-comment, `<` hits HTML
     // entity, the digit hits unicode-encode. A no-op pair here is a
-    // genuine silent pipeline break — not just a content mismatch.
+    // genuine silent pipeline break (not just a content mismatch).
     let input = "' UNION SELECT * FROM \"users\" WHERE office=1 --\n<x>";
     for combo in combos {
         let (s1, s2) = (combo[0], combo[1]);

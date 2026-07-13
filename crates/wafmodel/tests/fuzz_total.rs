@@ -1,4 +1,4 @@
-//! E4 — fuzzing as a CI-resident contract. Every parser/decoder
+//! E4, fuzzing as a CI-resident contract. Every parser/decoder
 //! surface must be **total** on arbitrary bytes: never panic, never
 //! hang, never OOM, never accept an invalid automaton. cargo-fuzz
 //! targets (fuzz/) drive these same entry points for 24h soak; this
@@ -26,7 +26,7 @@ proptest! {
 
     /// CRS transform pipeline: total on any bytes, any chain order,
     /// and length-bounded (a transform may not blow input up
-    /// unboundedly — DoS guard).
+    /// unboundedly: DoS guard).
     #[test]
     fn normalize_chain_is_total(
         input in proptest::collection::vec(any::<u8>(), 0..256),
@@ -60,7 +60,7 @@ proptest! {
             Stage::HtmlEntityDecode,
             Stage::JsonUnescape,
             // Byte-level origin decoders: NUL-strip removes bytes, overlong
-            // folds 2 → 1, base64 folds 4 → 3, hex folds 2 → 1 — all
+            // folds 2 → 1, base64 folds 4 → 3, hex folds 2 → 1, all
             // non-amplifying.
             Stage::StripNulls,
             Stage::OverlongUtf8Decode,
@@ -76,8 +76,8 @@ proptest! {
     /// The origin text-normalizer stages (NFKC / best-fit) are total on
     /// arbitrary bytes and expand by at most a bounded constant factor, so they
     /// are not a decompression-bomb DoS vector. NFKC is *not* a non-amplifying
-    /// decoder — a single codepoint can compatibility-decompose to several
-    /// (e.g. `½` → `1⁄2`) — so it is excluded from the loop above and bounded
+    /// decoder, a single codepoint can compatibility-decompose to several
+    /// (e.g. `½` → `1⁄2`), so it is excluded from the loop above and bounded
     /// here instead. Unicode caps NFKC expansion at a small constant; the 24×
     /// bound is generous slack while still rejecting unbounded blow-up.
     #[test]
@@ -148,7 +148,7 @@ proptest! {
                 // never panic. (Total is the assertion: we reach here.)
                 let _ = m.sfa();
             }
-            Err(_) => { /* clean rejection — fine */ }
+            Err(_) => { /* clean rejection, fine */ }
         }
     }
 }

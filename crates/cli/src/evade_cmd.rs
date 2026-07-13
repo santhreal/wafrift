@@ -1,8 +1,8 @@
-//! `wafrift evade` — offline payload mutation + encoding.
+//! `wafrift evade`: offline payload mutation + encoding.
 //!
 //! Three input modes (mutually exclusive at the clap layer): `--payload`,
 //! `--payload-b64`, `--stdin`. The base64 + stdin forms exist
-//! specifically for binary-safe payloads — `argv` truncates at the
+//! specifically for binary-safe payloads: `argv` truncates at the
 //! first NUL byte before our process sees it, so a control-byte
 //! payload via `--payload $'\x00\x01\x02'` arrives empty. The
 //! `resolve_payload` function names this explicitly in its error
@@ -16,7 +16,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use wafrift_grammar::grammar;
 
-/// Payload from stdin caps at 16 MiB — large enough for any
+/// Payload from stdin caps at 16 MiB, large enough for any
 /// real-world attack payload (megabyte multipart uploads, big binary
 /// blobs) but small enough to catch `cat /dev/zero | wafrift evade`
 /// accidents and process-replacement attacks where stdin is wired to
@@ -68,9 +68,9 @@ pub(crate) struct EvadeArgs {
     pub stdin: bool,
 
     /// Output format: `text` (default, colored summary), `json` (a
-    /// SINGLE top-level object — consistent with every other
+    /// SINGLE top-level object, consistent with every other
     /// command, parseable as `jq .variants[]`), or `jsonl` (one JSON
-    /// object per line — the legacy stream form, useful for piping
+    /// object per line, the legacy stream form, useful for piping
     /// large variant counts into a downstream consumer that reads
     /// line-by-line).  The legacy `--quiet` flag aliases to `json`
     /// (wrapped object); pre-2026-05 scripts that expected NDJSON
@@ -81,7 +81,7 @@ pub(crate) struct EvadeArgs {
     /// Evasion intensity. Approximate variant counts on an XSS
     /// payload to set expectations: light ~12, medium ~58, heavy
     /// ~1500. Heavy may emit 100x the variants of light and a
-    /// proportionally larger JSON blob — choose based on the
+    /// proportionally larger JSON blob, choose based on the
     /// rate-limit budget of the downstream `wafrift scan` if you
     /// plan to feed these variants into a live target.
     #[arg(long, value_enum, default_value_t = Level::Medium)]
@@ -104,7 +104,7 @@ pub(crate) struct EvadeArgs {
     #[arg(long, num_args = 1.., value_delimiter = ',')]
     pub exclude: Vec<String>,
 
-    /// Where the payload will be INJECTED — the HTTP channel, not the
+    /// Where the payload will be INJECTED, the HTTP channel, not the
     /// attack class. Allowed values: `header`, `body`, `query-param`,
     /// `cookie`. Attack class (xss / sql / cmdi / ssrf etc.) is inferred
     /// from the payload itself by the grammar engine; do not pass it
@@ -135,7 +135,7 @@ pub(crate) struct EvadeArgs {
 pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
     // `--quiet` and `--format json` BOTH select machine-readable
     // output.  Either spelling now produces the wrapped form
-    // (single top-level object with a `variants` array) — that's
+    // (single top-level object with a `variants` array), that's
     // the workspace-wide JSON-shape contract every other command
     // already honours.  The legacy NDJSON form is reachable via
     // the explicit `--format jsonl` (added 2026-05 by dogfood pass
@@ -182,7 +182,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
     // Mutation engine generates O(payload_size × variants) bytes;
     // 64 KiB random input still produced 17 GB RSS in dogfooding
     // (the per-byte permutation explosion is super-linear). Real
-    // attack payloads are kilobytes at most — XSS one-liners
+    // attack payloads are kilobytes at most. XSS one-liners
     // (~256 bytes), SQL tautologies (~64 bytes), command-injection
     // chains (~1 KiB). 16 KiB is generous for any legitimate
     // payload AND keeps RSS under 1 GB in the worst case observed.
@@ -231,7 +231,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
     // operator selected one or more `tamper/...` paths via `--only`
     // (or `tamper` as a bare family).  This closes the long-standing
     // wiring gap where the tamper registry existed but no `evade`
-    // surface invoked it — leaving the new frontier 2026 tampers
+    // surface invoked it, leaving the new frontier 2026 tampers
     // (zero_width_inject, postgres_dollar_quote, etc.) effectively
     // unreachable from the offline mutator.  Tampers in the default
     // (no `--only`) flow are deliberately left to `wafrift scan` so
@@ -247,7 +247,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
         let tamper_registry = wafrift_encoding::tamper::TamperRegistry::with_defaults();
         // Tamper context resolution: prefer the operator-supplied
         // `--target-context` when set (body / header / query / etc.)
-        // — that's what carrier-aware tampers like ct_starvation
+        //: that's what carrier-aware tampers like ct_starvation
         // need. Fall back to the payload-class label (sql / xss /
         // etc.) when no target context was provided, preserving
         // the historical default for tampers that key on payload
@@ -257,7 +257,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
         // because the context passed in was always the payload-
         // class string ("SQL Injection" / "Unknown") which
         // ct_starvation's body/form/json/multipart match never
-        // hits — every variant was Idempotent-skipped.
+        // hits (every variant was Idempotent-skipped).
         let context_str: Option<&str> = match args.target_context {
             Some(tc) => Some(tc.label()),
             None => {
@@ -276,7 +276,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
                 continue;
             };
             let mutated = strat.tamper(&payload, context_str);
-            // Record the tamper outcome in the explain trace —
+            // Record the tamper outcome in the explain trace 
             // operator running `--explain` must see whether a
             // selected tamper actually fired or was a no-op /
             // duplicate on this specific payload.
@@ -307,7 +307,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
     }
 
     if variants.is_empty() {
-        // Empty variant set is a LEGITIMATE outcome — operator
+        // Empty variant set is a LEGITIMATE outcome, operator
         // selected a tamper that doesn't apply to this payload
         // shape (e.g. `--only tamper/postgres_dollar_quote` on a
         // payload with no `'`).  Exit 0 with an empty array so
@@ -316,7 +316,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
         if quiet {
             let mut body = json!({
                 "variants": serde_json::Value::Array(Vec::new()),
-                "note": "no variants generated — selected techniques produced no transform on this payload",
+                "note": "no variants generated, selected techniques produced no transform on this payload",
                 "payload_type": payload_type_label(payload_type),
             });
             if let Some(t) = trace.as_ref() {
@@ -338,7 +338,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
             );
             if let Some(ctx) = args.target_context {
                 eprintln!(
-                    "  Target context: {} — strategies whose output is unusable here were skipped.",
+                    "  Target context: {}, strategies whose output is unusable here were skipped.",
                     ctx.label()
                 );
             }
@@ -351,7 +351,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
                 t.print_text();
             }
         }
-        // Exit 0 — no variants is a legitimate outcome, not an error.
+        // Exit 0 (no variants is a legitimate outcome, not an error).
         return ExitCode::SUCCESS;
     }
 
@@ -361,7 +361,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
     //                          Streaming-friendly for large runs.
     //   --format json        → SINGLE top-level object with a
     //                          `variants` array.  Consistent with
-    //                          every other wafrift command — `jq
+    //                          every other wafrift command: `jq
     //                          .variants[]` works.  Default for
     //                          the `--quiet` legacy alias.
     //   --quiet              → alias for `--format json` (wrapped).
@@ -393,7 +393,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
                 .collect();
             // schema_version + wafrift_version for downstream parsers
             // (per perf-hunt F28). Schema version bumps when a field
-            // is removed or renamed — pure additive changes leave it
+            // is removed or renamed, pure additive changes leave it
             // unchanged. Pinned at 1 today; integration tests assert
             // these keys exist so a regression that drops them lights
             // up at PR time.
@@ -403,7 +403,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
             // produced structurally identical JSON envelopes;
             // dedup / triage / audit tooling collapsed them.
             // generated_at_unix_ms is additive (no schema bump
-            // needed — schema_version bumps only on remove/rename).
+            // needed (schema_version bumps only on remove/rename)).
             let generated_at_unix_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_millis() as u64)
@@ -492,7 +492,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
             // Escape non-printable ASCII control bytes so tampers
             // like `bell_separator` (BEL 0x07), `null_byte` (NUL),
             // and the zero-width Unicode injectors don't render as
-            // invisible characters in the operator's terminal —
+            // invisible characters in the operator's terminal 
             // the terminal silently swallows BEL / NUL / NULL and
             // the operator can't tell the tamper fired.  This is
             // the "byte-level visibility" requirement called out
@@ -507,7 +507,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
         // Top-N tail summary: when the variant set is large enough
         // to fill more than one terminal screen (>= 8 variants),
         // surface the top 5 by confidence + the technique frequency
-        // breakdown. This is a UX dogfood gap — operators reading
+        // breakdown. This is a UX dogfood gap, operators reading
         // a 30-variant emit want to know "which 5 should I try
         // first?" without re-scrolling the whole list. Suppressed
         // for short emits where the body is already a glanceable
@@ -603,7 +603,7 @@ fn top_n_summary_text(variants: &[crate::helpers::Variant]) -> String {
 /// and so could never accept a binary payload) and `--payload-b64`
 /// carries arbitrary bytes past the shell's NUL-terminated argv. Both
 /// are lossily decoded to UTF-8 because the mutation/encoding engine
-/// is text — control bytes (`\x00`–`\x1f`) survive losslessly; only
+/// is text, control bytes (`\x00`–`\x1f`) survive losslessly; only
 /// genuinely invalid UTF-8 sequences become U+FFFD.
 fn resolve_payload(args: &EvadeArgs) -> Result<String, String> {
     use base64::Engine as _;
@@ -617,7 +617,7 @@ fn resolve_payload(args: &EvadeArgs) -> Result<String, String> {
         // base64 inflates 3 bytes → 4 chars, so a `--payload-b64` of
         // ~22 KiB is the largest input that can decode to within the
         // 16 KiB payload cap. Reject earlier inputs BEFORE the
-        // allocator materialises the decoded buffer — a 1 GiB base64
+        // allocator materialises the decoded buffer, a 1 GiB base64
         // arg used to fully decode to ~750 MiB before the post-decode
         // check at the top of `run_evade` rejected it. Slack of +64
         // covers padding chars and stray whitespace inside the string.
@@ -649,7 +649,7 @@ fn resolve_payload(args: &EvadeArgs) -> Result<String, String> {
         let mut buf = crate::safe_body::read_bounded_stdin_bytes(EVADE_STDIN_PAYLOAD_MAX_BYTES)
             .map_err(|e| format!("failed to read payload from stdin: {e}"))?;
         // PowerShell silently prepends a UTF-8 BOM (`\xEF\xBB\xBF`)
-        // to piped output by default — `Write-Output "x" | wafrift
+        // to piped output by default. `Write-Output "x" | wafrift
         // evade --stdin` arrives as `\u{FEFF}x`, which then carries
         // through every tamper output as an invisible prefix. Strip
         // the BOM unconditionally so PowerShell + cmd + bash + zsh
@@ -679,13 +679,13 @@ fn resolve_payload(args: &EvadeArgs) -> Result<String, String> {
         // value is a shell binary literal: `--payload $'\x00\x01\x02'`.
         // execve(2) passes argv as NUL-terminated C strings, so the
         // kernel truncates the argument at the first NUL *before* the
-        // process ever sees it — wafrift receives "", not the bytes.
+        // process ever sees it (wafrift receives "", not the bytes).
         // No amount of in-process parsing can recover them; the only
         // fix is an out-of-band channel. Say so, with the exact
         // commands.
         return Err("--payload is empty. If you passed binary/NUL bytes (e.g. \
              $'\\x00\\x01\\x02'), the shell truncated the argument at the \
-             first NUL byte before wafrift could see it — argv cannot \
+             first NUL byte before wafrift could see it, argv cannot \
              carry NULs. Use a binary-safe channel instead:\n  \
              printf '\\x00\\x01\\x02' | wafrift evade --stdin ...\n  \
              wafrift evade --payload-b64 \"$(printf '\\x00\\x01\\x02' | base64)\" ..."
@@ -841,7 +841,7 @@ mod tests {
         args.payload_b64 = Some(encoded);
         let got = resolve_payload(&args).unwrap();
         // String::from_utf8_lossy preserves valid UTF-8 bytes,
-        // including NUL — the NUL must round-trip.
+        // including NUL (the NUL must round-trip).
         assert!(got.contains('\0'));
         assert!(got.starts_with('a'));
         assert!(got.ends_with('c'));
@@ -849,7 +849,7 @@ mod tests {
 
     #[test]
     fn resolve_payload_b64_with_leading_trailing_whitespace_trims() {
-        // Multi-line paste — operators often have a stray
+        // Multi-line paste, operators often have a stray
         // newline at the end. The trim() in resolve_payload
         // handles that.
         let mut args = args_with_payload("");
@@ -888,7 +888,7 @@ mod tests {
 
     // ── Tamper wiring (added 2026-05) ──────────────────────
     //
-    // These exercise the policy that tampers are opt-in for evade —
+    // These exercise the policy that tampers are opt-in for evade 
     // default flows produce zero tamper variants, an explicit
     // `--only tamper/...` selector produces one variant per matched
     // tamper (deduped against the original + existing variants).
@@ -944,7 +944,7 @@ mod tests {
     #[test]
     fn tamper_family_selector_enables_all_tampers() {
         // `tamper` as a bare family selects every registered tamper
-        // — at least 10 of them will produce a non-identity variant
+        //: at least 10 of them will produce a non-identity variant
         // on an SQL payload.
         let hits = count_tamper_variants_for(&["tamper"], "' OR 1=1--");
         assert!(
@@ -993,7 +993,7 @@ mod tests {
 
     #[test]
     fn tamper_comma_separated_csv_form_is_recognised() {
-        // `--only "tamper/a,tamper/b"` — split on comma.
+        // `--only "tamper/a,tamper/b"`: split on comma.
         let hits = count_tamper_variants_for(
             &["tamper/zero_width_inject,tamper/bracket_confusable"],
             "<x>OR</x>",
@@ -1040,19 +1040,19 @@ mod tests {
     #[test]
     fn visualize_preserves_tab_newline_carriage_return() {
         // Multi-line payloads (XSS HTML templates) must stay
-        // readable — the whitespace trio passes through.
+        // readable (the whitespace trio passes through).
         assert_eq!(visualize_invisible_bytes("a\tb\nc\rd"), "a\tb\nc\rd");
     }
 
     #[test]
     fn visualize_escapes_delete_byte() {
-        // 0x7F DEL — not printable, must be escaped.
+        // 0x7F DEL (not printable, must be escaped).
         assert_eq!(visualize_invisible_bytes("a\u{007F}b"), "a\\x7Fb");
     }
 
     #[test]
     fn visualize_passes_high_unicode_printable_chars() {
-        // Fullwidth bracket (U+FF1C) from bracket_confusable —
+        // Fullwidth bracket (U+FF1C) from bracket_confusable 
         // visually distinct, leave verbatim.
         assert_eq!(visualize_invisible_bytes("a\u{FF1C}b"), "a\u{FF1C}b");
     }
@@ -1082,7 +1082,7 @@ mod tests {
 
     #[test]
     fn tamper_unknown_leaf_fails_filter_parse() {
-        // Unknown selectors error out at the filter layer — must
+        // Unknown selectors error out at the filter layer, must
         // not silently match nothing.
         let r = TechniqueFilter::parse(&["tamper/no_such_tamper".to_string()], &[]);
         assert!(r.is_err());

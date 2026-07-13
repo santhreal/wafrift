@@ -177,7 +177,7 @@ pub fn escape_for_context(
             // RFC 6265 §4.1.1 cookie-octet excludes space, ",", '"', `\\`
             // in addition to ; = CTLs. Pre-fix the missing chars caused
             // Chrome / Firefox / curl to truncate the cookie at the
-            // offending byte — making bypass probes silently lie about
+            // offending byte, making bypass probes silently lie about
             // the value that actually reached the server.
             .replace(';', "%3B")
             .replace('=', "%3D")
@@ -278,10 +278,10 @@ pub fn validate_in_context(
             // F137: pre-fix the `&` branch did `chars.by_ref().take(6).collect()`
             // which UNCONDITIONALLY consumed the next 6 chars regardless of
             // whether an entity matched. Those 6 chars were never validated,
-            // so a payload like `&lt;<script>` slipped past — the validator
+            // so a payload like `&lt;<script>` slipped past, the validator
             // saw `&`, ate `lt;<sc` to "check" for a known entity, recognised
             // `lt;`, and then never inspected the `<` it had already swallowed.
-            // Switch to a lookahead via `chars.clone()` (cheap — `Chars` is a
+            // Switch to a lookahead via `chars.clone()` (cheap. `Chars` is a
             // slice cursor) and advance only as far as a matched entity.
             let mut chars = payload.chars();
             const ENTITIES: &[&str] = &["quot;", "apos;", "amp;", "lt;", "gt;"];
@@ -356,7 +356,7 @@ pub fn validate_in_context(
                 return Err(ContextualEncodeError::ContextIncompatible {
                     strategy: "validate".into(),
                     context,
-                    reason: "HTML attribute contains unescaped `<` — would close the attribute"
+                    reason: "HTML attribute contains unescaped `<`: would close the attribute"
                         .into(),
                 });
             }
@@ -364,14 +364,14 @@ pub fn validate_in_context(
                 return Err(ContextualEncodeError::ContextIncompatible {
                     strategy: "validate".into(),
                     context,
-                    reason: "HTML attribute contains unescaped `\"` — attribute breakout".into(),
+                    reason: "HTML attribute contains unescaped `\"`: attribute breakout".into(),
                 });
             }
             if payload.contains('\'') {
                 return Err(ContextualEncodeError::ContextIncompatible {
                     strategy: "validate".into(),
                     context,
-                    reason: "HTML attribute contains unescaped `'` — single-quoted attr breakout"
+                    reason: "HTML attribute contains unescaped `'`: single-quoted attr breakout"
                         .into(),
                 });
             }
@@ -382,7 +382,7 @@ pub fn validate_in_context(
                 return Err(ContextualEncodeError::ContextIncompatible {
                     strategy: "validate".into(),
                     context,
-                    reason: "HTML text contains unescaped `<` — would start a tag".into(),
+                    reason: "HTML text contains unescaped `<`: would start a tag".into(),
                 });
             }
             reject_unescaped_ampersand(payload, context)?;
@@ -413,7 +413,7 @@ pub fn validate_in_context(
 /// Returns Err if `payload` contains an `&` that is NOT the start of a
 /// well-formed entity reference (`&name;`, `&#nnn;`, or `&#xHHH;`).
 ///
-/// This is the cheap cousin of an HTML5 entity validator — it doesn't
+/// This is the cheap cousin of an HTML5 entity validator, it doesn't
 /// know which named entities are real (`&copy;` vs `&xyz;`), but it
 /// does enforce the lexical shape so a stray `&` cannot ride through
 /// `validate_in_context` for HTML/XML contexts.
@@ -429,7 +429,7 @@ fn reject_unescaped_ampersand(
             continue;
         }
         // Walk forward to find the terminating `;` within a bounded
-        // window — real entities are short (max ~12 chars including
+        // window, real entities are short (max ~12 chars including
         // the `;`). If we don't find one, the `&` is unescaped.
         let mut j = i + 1;
         let max = (i + 12).min(bytes.len());
@@ -591,7 +591,7 @@ mod tests {
         // F137 regression: pre-fix `&lt;<script>` passed validation
         // because the validator consumed 6 chars after every `&` to
         // peek at the entity name. After matching `lt;` it had already
-        // eaten the next 2 chars (`<s`) and never validated them — so
+        // eaten the next 2 chars (`<s`) and never validated them, so
         // the unescaped `<` rode straight through. Post-fix the
         // validator clones the cursor for lookahead and advances only
         // by the matched entity length, so the trailing `<` is caught.
@@ -605,7 +605,7 @@ mod tests {
 
     #[test]
     fn xml_attribute_validator_catches_quote_after_short_entity() {
-        // Same F137 hazard, different exploit: `&amp;"` — after `&amp;`
+        // Same F137 hazard, different exploit: `&amp;"`: after `&amp;`
         // (4 chars), the pre-fix code consumed 2 chars beyond (the `"`
         // and one more), bypassing the unescaped-quote check.
         let err = validate_in_context("&amp;\"breakout", InjectionContext::XmlAttribute)
@@ -791,7 +791,7 @@ mod tests {
 
     #[test]
     fn xml_attribute_single_quote_payloads_all_rejected() {
-        // 10 distinct single-quote-bearing payloads — each must either error
+        // 10 distinct single-quote-bearing payloads, each must either error
         // OR produce output that passes validate_in_context (escape succeeded).
         // The fix was to escape ' as &apos; so validate accepts it.
         let payloads = [
@@ -822,7 +822,7 @@ mod tests {
                     );
                 }
                 Err(_) => {
-                    // Rejecting is also valid — as long as the bare payload doesn't
+                    // Rejecting is also valid, as long as the bare payload doesn't
                     // silently pass validation.
                     let _ = validate_in_context(payload, InjectionContext::XmlAttribute);
                     // We just require no panic. The point is the input can't bypass.
@@ -924,7 +924,9 @@ mod tests {
 
     #[test]
     fn json_string_escape_u2028_and_u2029() {
-        // U+2028 and U+2029 must be escaped to  /  to prevent
+        // U+2028 and U+2029 must be escaped to 
+/
+ to prevent
         // line-terminator injection in JSONP/eval contexts.
         let payload = "\u{2028}hello\u{2029}world";
         let escaped = escape_for_context(payload, InjectionContext::JsonString).unwrap();

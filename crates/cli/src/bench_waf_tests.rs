@@ -21,7 +21,7 @@ fn request_reached_app_rejects_non_executed_requests() {
         );
     }
     // The app actually saw and processed it (200/redirect/app-error,
-    // and 500 — a SQL error page is positive injection evidence).
+    // and 500 (a SQL error page is positive injection evidence)).
     for s in [200u16, 201, 204, 301, 302, 304, 401, 404, 405, 422, 500] {
         assert!(
             request_reached_app(s),
@@ -48,13 +48,13 @@ fn verified_bypass_requires_all_three_gates() {
     // 2. WAF blocked → never.
     assert!(!verified_bypass("sql", ok, ok, true, 200), "WAF-blocked");
     // 3. Not blocked but 400 (evasion broke the request, attack
-    //    never executed) — the residual rig. Must not count.
+    //    never executed) (the residual rig. Must not count).
     assert!(
         !verified_bypass("sql", ok, ok, false, 400),
         "400 malformed is NOT a bypass"
     );
     // 4. Not blocked, reached app, but payload is not a valid
-    //    attack — the ORIGINAL oracle rig. Must not count.
+    //    attack (the ORIGINAL oracle rig. Must not count).
     assert!(
         !verified_bypass("sql", ok, junk, false, 200),
         "non-attack that slipped past is NOT a bypass"
@@ -96,7 +96,7 @@ fn class_probes_sql_has_keywords_and_baseline() {
             .any(|p| matches!(p.tests, ProbeTarget::Baseline)),
         "every class probe set must include a baseline so unblock=baseline-passes is recorded"
     );
-    // Negative — sql probe set must NOT contain xss or cmd probes.
+    // Negative (sql probe set must NOT contain xss or cmd probes).
     assert!(
         !probes.iter().any(|p| matches!(
             p.tests,
@@ -148,7 +148,7 @@ fn all_strategies_constant_includes_every_dispatched_arm() {
     ] {
         assert!(
             ALL_STRATEGIES.contains(required),
-            "ALL_STRATEGIES is missing {required:?} — `--strategies all` would skip it"
+            "ALL_STRATEGIES is missing {required:?}: `--strategies all` would skip it"
         );
     }
 }
@@ -328,7 +328,7 @@ fn delivery_shapes_build_correct_requests() {
     );
     // parts = decoy count; total = decoys + 1 (the FULL payload),
     // and the payload must be the LAST occurrence (last-wins
-    // backend binds the whole attack — never a split fragment).
+    // backend binds the whole attack (never a split fragment)).
     assert_eq!(
         hpp.url.matches("q=").count(),
         3,
@@ -430,7 +430,7 @@ fn validate_corpus_passes_clean_set() {
 #[test]
 fn class_probes_unknown_class_yields_only_baseline() {
     // Classes with no rule-fingerprint family (xxe / log4shell / ssrf)
-    // should fall through to baseline-only — never zero, so the
+    // should fall through to baseline-only, never zero, so the
     // strategy doesn't divide-by-zero downstream.
     let probes = class_probes("log4shell");
     assert!(
@@ -462,7 +462,7 @@ fn truncate_multibyte_does_not_panic_at_codepoint_boundary() {
     // Regression: the previous impl sliced `&s[..n.saturating_sub(1)]`
     // which panicked when the byte index landed mid-codepoint.
     // "café" is 5 bytes (é = 2 bytes); truncate to 5 used to
-    // slice 4 bytes — splitting é. Must NOT panic.
+    // slice 4 bytes (splitting é. Must NOT panic).
     let got = truncate("café-payload", 5);
     // Result is the largest char-boundary prefix ≤ 4 bytes
     // plus ellipsis.
@@ -523,7 +523,7 @@ fn class_to_payload_type_maps_every_known_class() {
 
 #[test]
 fn class_to_payload_type_unknown_class_falls_back_to_unknown() {
-    // xxe / cve_pocs still have no grammar mutator — they fall back to
+    // xxe / cve_pocs still have no grammar mutator, they fall back to
     // Unknown (encoding-only mutations). log4shell now has a real JNDI
     // mutator (PayloadType::Jndi) and must NOT fall through here.
     for class in ["xxe", "cve_pocs", "totally-bogus"] {
@@ -738,7 +738,7 @@ mod round18_bounded_input_tests {
         );
         assert!(
             !src.contains(banned),
-            "raw unbounded fs read of corpus path reintroduced — OOM regression"
+            "raw unbounded fs read of corpus path reintroduced. OOM regression"
         );
     }
 
@@ -746,7 +746,7 @@ mod round18_bounded_input_tests {
     fn corpus_cap_is_sane() {
         assert!(
             BENCH_CORPUS_FILE_MAX_BYTES >= 8 * 1024 * 1024,
-            "BENCH_CORPUS_FILE_MAX_BYTES tightened below 8 MiB — could reject legitimate corpora"
+            "BENCH_CORPUS_FILE_MAX_BYTES tightened below 8 MiB, could reject legitimate corpora"
         );
     }
 
@@ -861,7 +861,7 @@ fn evade(bypass_rate: f64, variants_total: usize) -> EvadeResult {
 }
 
 // ── honest bypass-vs-exploit gate (detonate_bypass_body) ──
-// The execution oracle must NOT claim execution for a non-HTML reflection —
+// The execution oracle must NOT claim execution for a non-HTML reflection 
 // this is exactly why bench reported 0 against the httpbin (JSON) backend: a
 // payload that BYPASSES the WAF but is echoed as JSON cannot execute. These
 // tests pin that distinction without needing the detonate subprocess (the
@@ -870,7 +870,7 @@ fn evade(bypass_rate: f64, variants_total: usize) -> EvadeResult {
 #[test]
 fn detonate_bypass_body_false_for_json_backend_like_httpbin() {
     // httpbin's /post echoes the payload inside a JSON document. Even a live
-    // `<svg onload=alert(1)>` here cannot execute — content-type gates it out.
+    // `<svg onload=alert(1)>` here cannot execute (content-type gates it out).
     let headers = vec![("Content-Type".to_string(), "application/json".to_string())];
     let body = br#"{"form":{"q":"<svg onload=alert(1)>"}}"#;
     assert!(
@@ -900,7 +900,7 @@ fn detonate_bypass_body_false_for_plain_text_and_missing_ctype() {
 fn detonate_bypass_body_html_ctype_is_case_insensitive_and_charset_tolerant() {
     // The HTML gate must accept real-world content-type spellings so a genuine
     // reflective HTML origin is detonated (the detonation itself degrades to
-    // false without the tool, which is fine — we assert the gate, not the run).
+    // false without the tool, which is fine (we assert the gate, not the run)).
     let body = b"<p>inert</p>";
     // These are inert bodies, so the result is false either way; the point is
     // the gate doesn't reject HTML on header-spelling grounds before detonating.
@@ -998,7 +998,7 @@ fn case_quality_not_measured_when_variants_total_zero() {
 /// add the test FOR that variant first.
 #[test]
 fn case_quality_enum_pinned_to_five_variants() {
-    // Exhaustive match — adding a variant fails to compile here.
+    // Exhaustive match (adding a variant fails to compile here).
     for q in [
         CaseQuality::BaselineFailed,
         CaseQuality::TrivialBlock,
@@ -1006,7 +1006,7 @@ fn case_quality_enum_pinned_to_five_variants() {
         CaseQuality::Signal,
         CaseQuality::NotMeasured,
     ] {
-        // Exhaustive — Rust requires every variant covered.
+        // Exhaustive: Rust requires every variant covered.
         match q {
             CaseQuality::BaselineFailed
             | CaseQuality::TrivialBlock
@@ -1056,7 +1056,7 @@ fn case_quality_score_is_always_in_unit_interval() {
     }
 }
 
-/// LAW 12: signal fraction is the load-bearing metric — fraction of
+/// LAW 12: signal fraction is the load-bearing metric, fraction of
 /// the corpus that actually discriminates the WAF. Pin the math
 /// (count of Signal / total cases) so a silent re-tuning of "what
 /// counts as signal" can't inflate the headline.

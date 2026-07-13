@@ -1,27 +1,27 @@
-//! Per-rule WAF-bypass corpus — persistent {rule_id → bucket} store.
+//! Per-rule WAF-bypass corpus (persistent {rule_id → bucket} store).
 //!
 //! `super::coverage_feedback` tracks rule_id observations in process
 //! memory for the current bench run. This module persists the
 //! richer corpus across runs:
 //!
 //! - The **payload bytes** that triggered each rule (not just the
-//!   descriptor — actual reproducible bytes).
+//!   descriptor (actual reproducible bytes)).
 //! - The **encoding/grammar/smuggling chain** that produced the payload
 //!   so the operator can rebuild any variant by name.
-//! - The **bypass set** per rule — payloads that the WAF passed
+//! - The **bypass set** per rule, payloads that the WAF passed
 //!   (the only payloads with bounty value).
 //! - **Submission status** tracking the bounty lifecycle (Queued →
 //!   Submitted → Accepted / Duplicate / Rejected) so `wafrift harvest`
-//!   skips already-handled bypasses. wafrift never auto-files — filing is
+//!   skips already-handled bypasses. wafrift never auto-files, filing is
 //!   a deliberate, one-at-a-time `wafrift submit` step.
 //! - **Drift timestamps** so `super::dilution` / `super::coverage_feedback`
 //!   can re-fire bypasses around CF Auto-Tune retrain windows.
 //!
 //! ## Why a separate module
 //!
-//! `coverage_feedback` is in the MAP-Elites hot path — every probe
+//! `coverage_feedback` is in the MAP-Elites hot path, every probe
 //! response updates it. We do NOT want disk I/O in that loop. The
-//! corpus is the **persistence layer** — written at round boundaries
+//! corpus is the **persistence layer**: written at round boundaries
 //! (every N probes, or on shutdown). The in-memory `RuleCoverage`
 //! observes; the on-disk `RuleBypassCorpus` accumulates.
 //!
@@ -43,7 +43,7 @@
 //!
 //! Mid-hunt, multiple async workers may want to write the corpus.
 //! `RuleBypassCorpus::save_atomic` writes to a tempfile in the
-//! same directory then renames — POSIX rename is atomic on the same
+//! same directory then renames: POSIX rename is atomic on the same
 //! filesystem. Callers serialize their writes with a `Mutex` at the
 //! orchestrator level; the file itself is not a synchronization
 //! primitive.
@@ -63,9 +63,9 @@ pub const CORPUS_SCHEMA_VERSION: u32 = 1;
 ///
 /// Distinguished from [`RecordedBypass`] in two ways:
 ///
-/// 1. **Verdict** — a `RecordedAttempt` was blocked. A `RecordedBypass`
+/// 1. **Verdict**: a `RecordedAttempt` was blocked. A `RecordedBypass`
 ///    was passed.
-/// 2. **Submission lifecycle** — only bypasses have submission status
+/// 2. **Submission lifecycle**: only bypasses have submission status
 ///    fields; blocks are tracked for "we've seen this fail before,
 ///    don't retry until drift."
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -79,14 +79,14 @@ pub struct RecordedAttempt {
     /// Ordered list of technique identifiers applied to produce this
     /// payload. Operator can rebuild the variant by replaying the chain.
     pub encoding_chain: Vec<String>,
-    /// Hash of the response body — collapses near-identical "Sorry,
+    /// Hash of the response body, collapses near-identical "Sorry,
     /// you have been blocked" pages so the corpus stays compact.
     pub response_hash: u64,
     /// Epoch seconds at observation.
     pub observed_at_secs: u64,
 }
 
-/// A confirmed WAF bypass — the WAF passed this payload through to
+/// A confirmed WAF bypass, the WAF passed this payload through to
 /// origin (verified by the oracle).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecordedBypass {
@@ -99,15 +99,15 @@ pub struct RecordedBypass {
     /// Lifecycle status of the bounty submission.
     #[serde(default)]
     pub submission: SubmissionStatus,
-    /// Serialized delivery shape that produced this bypass — the EXACT
+    /// Serialized delivery shape that produced this bypass, the EXACT
     /// `(method, path, headers, body)` envelope the winning probe used,
     /// JSON-encoded (`wafrift_grammar::grammar::equiv::DeliveryShape`).
     /// `wafrift harvest` deserializes it to re-fire the *same* request
-    /// instead of guessing across standard shapes — the difference
+    /// instead of guessing across standard shapes, the difference
     /// between a recorded number and a reproducible, submittable bypass.
     ///
     /// Stored as an opaque `String` (not the typed shape) so this crate
-    /// stays decoupled from the grammar crate — the same deliberate
+    /// stays decoupled from the grammar crate, the same deliberate
     /// decoupling as [`Self::encoding_chain`]. Empty for bypasses
     /// recorded before delivery capture, or by strategies with no
     /// equivalence shape; harvest falls back to standard shapes then.
@@ -122,7 +122,7 @@ pub enum SubmissionStatus {
     /// Just discovered; awaiting the dry-run grace window.
     #[default]
     Queued,
-    /// Held until `release_at_secs` epoch — first 24h of any new
+    /// Held until `release_at_secs` epoch, first 24h of any new
     /// bypass goes here so we don't fire submissions at 3am.
     DryRunHold { release_at_secs: u64 },
     /// Sent to HackerOne, awaiting triage. `report_id` is the H1
@@ -143,7 +143,7 @@ pub struct RuleBucket {
     /// a bucket extracted from the map stays self-describing.
     pub rule_id: RuleId,
     /// Optional human-readable rule name when the WAF exposes one
-    /// (e.g. CRS rule "942100 — SQL Injection Attack: Detected").
+    /// (e.g. CRS rule "942100: SQL Injection Attack: Detected").
     #[serde(default)]
     pub description: Option<String>,
     /// Payloads that triggered this rule.
@@ -152,7 +152,7 @@ pub struct RuleBucket {
     /// Payloads that bypassed this rule (passed through to origin).
     #[serde(default)]
     pub bypassed: Vec<RecordedBypass>,
-    /// Epoch seconds of last detected ruleset drift — when CF
+    /// Epoch seconds of last detected ruleset drift, when CF
     /// Auto-Tune retrains, this updates and previously-blocked
     /// payloads become retry-eligible.
     #[serde(default)]
@@ -165,11 +165,11 @@ pub struct RuleBucket {
 /// hunt orchestrator + read by the bench reporter.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleBypassCorpus {
-    /// Schema version — load_or_default uses this to migrate older
+    /// Schema version, load_or_default uses this to migrate older
     /// formats. Always [`CORPUS_SCHEMA_VERSION`] on save.
     #[serde(default)]
     pub schema_version: u32,
-    /// Target fingerprint — `<vendor>:<ruleset>:<host>`. Two
+    /// Target fingerprint: `<vendor>:<ruleset>:<host>`. Two
     /// fingerprints share no buckets; protect against cross-target
     /// pollution.
     pub target_fingerprint: String,
@@ -198,7 +198,7 @@ impl RuleBypassCorpus {
     /// Maximum corpus size we will read into memory. The corpus is
     /// operator-private, self-authored state (NOT an untrusted download),
     /// so the decompression-bomb threat model behind `safe_io` does not
-    /// apply — this ceiling only bounds memory on a pathologically huge
+    /// apply, this ceiling only bounds memory on a pathologically huge
     /// file and sits far above any real corpus. A file larger than this
     /// is *preserved* (moved aside), never silently dropped. (§15 / §1)
     const CORPUS_READ_CEILING_BYTES: usize = 1024 * 1024 * 1024; // 1 GiB
@@ -217,7 +217,7 @@ impl RuleBypassCorpus {
     ///   preserve-aside-then-fresh path.
     /// - **Parses, but bloated** → recompacted in memory (per-bucket caps
     ///   re-applied) and returned intact; the next save reclaims the bloat.
-    ///   No bypass is ever lost — bypasses are capped generously, far
+    ///   No bypass is ever lost, bypasses are capped generously, far
     ///   above any real hunt.
     ///
     /// This is the fix for the recurring "corpus disappeared" data loss:
@@ -227,7 +227,7 @@ impl RuleBypassCorpus {
     /// empty corpus the next save destroys.
     ///
     /// `target_fingerprint` is used only when the file is absent/empty or
-    /// had to be preserved-and-rebuilt — when the file IS valid its
+    /// had to be preserved-and-rebuilt, when the file IS valid its
     /// embedded fingerprint wins (callers should verify the fingerprint
     /// matches what they expect via [`Self::target_fingerprint`]).
     pub fn load_or_default(path: &Path, target_fingerprint: impl Into<String>) -> Self {
@@ -244,7 +244,7 @@ impl RuleBypassCorpus {
                 return Self::new(target_fingerprint);
             }
         };
-        // An empty / whitespace-only file is equivalent to absent — a
+        // An empty / whitespace-only file is equivalent to absent, a
         // fresh start, with no noisy preserve-aside.
         if raw.trim().is_empty() {
             return Self::new(target_fingerprint);
@@ -268,7 +268,7 @@ impl RuleBypassCorpus {
             Err(e) => {
                 // The file exists and is non-empty but won't parse. DO
                 // NOT return an empty corpus the next save would write
-                // over the original — preserve the bytes aside first.
+                // over the original (preserve the bytes aside first).
                 preserve_unreadable_corpus(path, &format!("parse failed: {e}"));
                 Self::new(target_fingerprint)
             }
@@ -278,12 +278,12 @@ impl RuleBypassCorpus {
     /// Save atomically via tempfile + rename. Returns an error only on
     /// I/O failure; the rename itself is atomic on the same filesystem
     /// so a concurrent reader either sees the prior snapshot or this
-    /// one — never a torn write.
+    /// one (never a torn write).
     pub fn save_atomic(&self, path: &Path) -> std::io::Result<()> {
         // Rolling backup: before replacing an existing non-empty corpus,
-        // snapshot it to `<path>.bak`. One bad save — a logic regression,
+        // snapshot it to `<path>.bak`. One bad save, a logic regression,
         // a parse-fail-induced empty reload that slipped past the loader's
-        // preserve guard, a schema drift — is then always one step
+        // preserve guard, a schema drift, is then always one step
         // recoverable. The corpus is irreplaceable bounty data. (§15/§1)
         backup_before_overwrite(path);
         let mut snap = self.clone();
@@ -316,7 +316,7 @@ impl RuleBypassCorpus {
     /// bounds three real costs a 62 MB CumulusFire corpus surfaced via dogfood
     /// (§15 / §1): corpus growth toward `RULE_CORPUS_MAX_BYTES` (past which the
     /// whole corpus is lost on the next `load_or_default`), `save_atomic` write
-    /// size, and the O(n) dedup scan below — which would otherwise make the hot
+    /// size, and the O(n) dedup scan below, which would otherwise make the hot
     /// record path O(n²) over a long hunt.
     const MAX_BLOCKED_PER_BUCKET: usize = 512;
 
@@ -324,7 +324,7 @@ impl RuleBypassCorpus {
     /// harvest material so the cap is generous (8× the blocked cap), but it is
     /// still finite: an adversarial response-varying WAF can grow `bypassed`
     /// without bound, eventually pushing the corpus past `RULE_CORPUS_MAX_BYTES`
-    /// — at which point `load_or_default` silently discards the WHOLE corpus
+    ///: at which point `load_or_default` silently discards the WHOLE corpus
     /// (total data-loss). This cap bounds growth far below that cliff while
     /// preserving virtually all real harvest material encountered in practice.
     /// `load_or_default` truncates over-cap buckets on load to heal corpora
@@ -436,7 +436,7 @@ impl RuleBypassCorpus {
     /// hot record path (which dedups by `(response_hash, payload)`) stays
     /// unchanged: the recorder calls this once, immediately after the
     /// write, with the shape the winning probe used. A blank `delivery`
-    /// is never written — only a non-empty shape overwrites.
+    /// is never written (only a non-empty shape overwrites).
     pub fn set_delivery(&mut self, rule_id: &str, payload: &str, delivery: String) -> bool {
         if delivery.is_empty() {
             return false;
@@ -451,7 +451,7 @@ impl RuleBypassCorpus {
     }
 
     /// Rules with fewer than `min_attempts` recorded blocks AND zero
-    /// bypasses. The hunt orchestrator targets these first — they're
+    /// bypasses. The hunt orchestrator targets these first, they're
     /// the unexplored cells of the (rule_id × class) grid.
     #[must_use]
     pub fn unexplored_rules(&self, min_attempts: usize) -> Vec<String> {
@@ -498,7 +498,7 @@ impl RuleBypassCorpus {
     }
 
     /// Bypasses still in `Queued` status whose dry-run hold has
-    /// expired — these are ready for submission to HackerOne.
+    /// expired (these are ready for submission to HackerOne).
     ///
     /// `default_dry_run_secs` is applied to bypasses still in
     /// `Queued` state whose `observed_at_secs + default_dry_run_secs`
@@ -546,7 +546,7 @@ impl RuleBypassCorpus {
         self.buckets.len()
     }
 
-    /// Summary suitable for the bench reporter — totals + per-class
+    /// Summary suitable for the bench reporter, totals + per-class
     /// breakdown for quick "what did we learn" gut-check.
     #[must_use]
     pub fn summary(&self) -> CoverageSummary {
@@ -593,7 +593,7 @@ pub struct CoverageSummary {
     pub per_class: BTreeMap<String, ClassStats>,
 }
 
-/// Default disk location for the corpus — `~/.wafrift/corpus/<fingerprint>.json`.
+/// Default disk location for the corpus: `~/.wafrift/corpus/<fingerprint>.json`.
 /// Falls back to a `wafrift-bench/results/corpus/` directory under CWD when
 /// the home directory can't be resolved.
 #[must_use]
@@ -608,7 +608,7 @@ pub fn default_corpus_path(target_fingerprint: &str) -> PathBuf {
     PathBuf::from("wafrift-bench/results/corpus").join(format!("{safe}.json"))
 }
 
-/// Sanitize a fingerprint string for use as a filename — strips
+/// Sanitize a fingerprint string for use as a filename, strips
 /// path separators and other shell-hostile bytes.
 ///
 /// Allows only `[A-Za-z0-9_-]`; every other character (including `.`)
@@ -640,16 +640,16 @@ fn current_epoch_secs() -> u64 {
 ///
 /// This is the load-side half of the corpus-durability guarantee: an
 /// oversize / corrupt / unparseable corpus is *preserved*, never silently
-/// discarded. Best-effort — if the file can't be moved aside we still
+/// discarded. Best-effort, if the file can't be moved aside we still
 /// warn (and the save-side [`backup_before_overwrite`] guard provides a
 /// second line of defence by copying the file to `<path>.bak` before any
 /// overwrite). Never panics; the caller still receives a fresh corpus.
 fn preserve_unreadable_corpus(path: &Path, reason: &str) {
     // Unique sidecar name (epoch + pid + nanos) so two corruption events within
-    // the same wall-clock second can't collide — a second-granularity name
+    // the same wall-clock second can't collide, a second-granularity name
     // would let the second `rename` replace the first sidecar and lose the
     // earlier corrupt bytes. Mirrors the unique-tmp-name policy `write_atomic`
-    // uses. (§15 / §1 — never lose recoverable data.)
+    // uses. (§15 / §1, never lose recoverable data.)
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
@@ -664,16 +664,16 @@ fn preserve_unreadable_corpus(path: &Path, reason: &str) {
     let aside = PathBuf::from(aside);
     match std::fs::rename(path, &aside) {
         Ok(()) => eprintln!(
-            "wafrift: WARNING — corpus at {} could not be loaded ({reason}). \
+            "wafrift: WARNING, corpus at {} could not be loaded ({reason}). \
              Your data was PRESERVED at {} and a fresh corpus was started. \
              Rename it back once the cause is addressed.",
             path.display(),
             aside.display(),
         ),
         Err(e) => eprintln!(
-            "wafrift: ERROR — corpus at {} could not be loaded ({reason}) AND \
+            "wafrift: ERROR, corpus at {} could not be loaded ({reason}) AND \
              could not be moved aside ({e}). Back this file up MANUALLY before \
-             the next run — a save may otherwise overwrite it.",
+             the next run, a save may otherwise overwrite it.",
             path.display(),
         ),
     }
@@ -695,7 +695,7 @@ fn backup_before_overwrite(path: &Path) {
 }
 
 fn dirs_home() -> Option<PathBuf> {
-    // We don't take a hard dep on `dirs` here — read $HOME or
+    // We don't take a hard dep on `dirs` here, read $HOME or
     // %USERPROFILE% directly. Keeps the crate's dep surface tight.
     if let Ok(h) = std::env::var("HOME")
         && !h.is_empty()
@@ -777,7 +777,7 @@ mod tests {
         let mut c = RuleBypassCorpus::new("t");
         let over = RuleBypassCorpus::MAX_BLOCKED_PER_BUCKET + 200;
         for i in 0..over {
-            // Distinct payload + hash so dedup never collapses them — only the
+            // Distinct payload + hash so dedup never collapses them, only the
             // cap should bound the count.
             c.record_block("r", &format!("p{i}"), cls("sql"), vec![], i as u64);
         }
@@ -786,7 +786,7 @@ mod tests {
             RuleBypassCorpus::MAX_BLOCKED_PER_BUCKET,
             "blocked must be capped per bucket"
         );
-        // Bypasses have a generous cap (4096). Push well under it — all persist.
+        // Bypasses have a generous cap (4096). Push well under it (all persist).
         let n_bypass = RuleBypassCorpus::MAX_BLOCKED_PER_BUCKET + 50;
         for i in 0..n_bypass {
             c.record_bypass(
@@ -812,7 +812,7 @@ mod tests {
         let mut c = RuleBypassCorpus::new("t");
         let over = RuleBypassCorpus::MAX_BYPASSED_PER_BUCKET + 500;
         for i in 0..over {
-            // Distinct payload + hash so dedup never collapses — only the cap limits.
+            // Distinct payload + hash so dedup never collapses (only the cap limits).
             c.record_bypass("r", &format!("b{i}"), cls("sql"), vec![], i as u64);
         }
         assert_eq!(
@@ -826,7 +826,7 @@ mod tests {
     fn load_or_default_heals_pre_cap_oversized_blocked() {
         use std::env::temp_dir;
         // A corpus written BEFORE the cap (or hand-edited) may hold >cap
-        // blocked entries — e.g. the 62 MB CumulusFire corpus. Loading must
+        // blocked entries, e.g. the 62 MB CumulusFire corpus. Loading must
         // truncate each bucket to the cap so the next save reclaims the bloat,
         // while bypasses (harvest material) survive untouched. (§15/§1)
         let mut c = RuleBypassCorpus::new("heal-test");
@@ -869,7 +869,7 @@ mod tests {
         // hold more bypasses than the cap. load_or_default must truncate each
         // bucket's `bypassed` vec to MAX_BYPASSED_PER_BUCKET on load so the
         // next save reclaims the bloat and stays below the 128 MiB cliff.
-        // (§15/§1 — mirrors the blocked-heal test above)
+        // (§15/§1, mirrors the blocked-heal test above)
         let mut c = RuleBypassCorpus::new("bypass-heal-test");
         let over = RuleBypassCorpus::MAX_BYPASSED_PER_BUCKET + 200;
         // Construct an over-cap bypassed vec directly (bypassing record_bypass's
@@ -1017,7 +1017,7 @@ mod tests {
     fn delivery_defaults_empty_for_corpus_without_the_field() {
         // Pre-delivery-capture corpus files have no `delivery` key. Prove
         // serde default keeps them loadable (LAW 2 backwards-compat) by
-        // STRIPPING the key from a real serialization — robust against the
+        // STRIPPING the key from a real serialization, robust against the
         // exact RuleId / PayloadClass JSON shape.
         let mut c = RuleBypassCorpus::new("t");
         c.record_bypass("R1", "old", cls("sql"), vec![], 1);
@@ -1066,7 +1066,7 @@ mod tests {
     fn rules_due_for_retry_skips_rules_with_no_blocks() {
         let mut c = RuleBypassCorpus::new("t");
         c.mark_drift("R1");
-        // No blocks recorded — nothing to re-try.
+        // No blocks recorded (nothing to re-try).
         assert!(c.rules_due_for_retry(60).is_empty());
     }
 
@@ -1176,7 +1176,7 @@ mod tests {
 
     #[test]
     fn load_empty_file_returns_default_without_preserving() {
-        // An empty file is equivalent to "no corpus yet" — a clean fresh
+        // An empty file is equivalent to "no corpus yet", a clean fresh
         // start, and crucially NO noisy `.corrupt-*` sidecar.
         let dir = tempdir().expect("tempdir");
         let path = dir.path().join("empty.json");
@@ -1224,7 +1224,7 @@ mod tests {
     #[test]
     fn corrupt_then_save_does_not_destroy_preserved_bypasses() {
         // End-to-end: a corpus file goes corrupt, the recorder reloads
-        // (gets a fresh corpus) and saves an empty one — the real bypasses
+        // (gets a fresh corpus) and saves an empty one, the real bypasses
         // must still be on disk in the preserved sidecar. This is the
         // exact "corpus disappeared" sequence, now non-destructive.
         let dir = tempdir().expect("tempdir");
@@ -1247,7 +1247,7 @@ mod tests {
         assert_eq!(fresh.total_bypasses(), 0);
         fresh.save_atomic(&path).expect("save fresh");
 
-        // The corrupt bytes were preserved in a sidecar — not destroyed.
+        // The corrupt bytes were preserved in a sidecar (not destroyed).
         let aside: Vec<_> = std::fs::read_dir(dir.path())
             .unwrap()
             .filter_map(Result::ok)
@@ -1387,7 +1387,7 @@ mod tests {
 
     #[test]
     fn determinism_serialization_btree_order() {
-        // BTreeMap iteration is deterministic — serializing the same
+        // BTreeMap iteration is deterministic, serializing the same
         // corpus twice must produce identical bytes.
         let mut c = RuleBypassCorpus::new("t");
         for i in (0..50).rev() {
@@ -1408,7 +1408,7 @@ mod tests {
     fn description_field_persists() {
         let mut c = RuleBypassCorpus::new("t");
         c.record_block("942100", "p", cls("sql"), vec![], 1);
-        c.bucket_mut("942100").description = Some("SQL injection — OWASP CRS 942100".into());
+        c.bucket_mut("942100").description = Some("SQL injection. OWASP CRS 942100".into());
         let dir = tempdir().expect("tempdir");
         let path = dir.path().join("c.json");
         c.save_atomic(&path).expect("save");
@@ -1417,7 +1417,7 @@ mod tests {
             .buckets
             .get("942100")
             .and_then(|b| b.description.as_deref());
-        assert_eq!(desc, Some("SQL injection — OWASP CRS 942100"));
+        assert_eq!(desc, Some("SQL injection. OWASP CRS 942100"));
     }
 
     #[test]
@@ -1496,7 +1496,7 @@ mod tests {
     //       `<path>.corrupt-<epoch>` with BYTE-IDENTICAL content, then fresh
     //   save_atomic over non-empty prior -> snapshot prior to `<path>.bak`
     //
-    // Every assertion checks real bytes / contents — never just !is_empty().
+    // Every assertion checks real bytes / contents (never just !is_empty()).
     // ====================================================================
 
     /// Collect every `<base>.corrupt-*` sidecar in `dir`.
@@ -1551,7 +1551,7 @@ mod tests {
         // corpus is still recoverable material).
         let dir = tempdir().expect("tempdir");
         let path = dir.path().join("nonutf8.json");
-        // Lone continuation + invalid lead bytes — definitively not UTF-8.
+        // Lone continuation + invalid lead bytes (definitively not UTF-8).
         let original: &[u8] = &[0x7B, 0xFF, 0xFE, 0x80, 0xC0, 0x22, 0x6B, 0x65, 0x79];
         std::fs::write(&path, original).expect("write");
         assert_preserved_fresh(dir.path(), &path, "nonutf8.json", original, "fb");
@@ -1615,7 +1615,7 @@ mod tests {
         // overwrite it). NOTE: the sidecar name carries only epoch-SECOND
         // granularity, so two corruptions within the same wall-clock second
         // map to the same sidecar name and the second rename replaces the
-        // first — i.e. at second resolution at least the most-recent corrupt
+        // first, i.e. at second resolution at least the most-recent corrupt
         // bytes are always recoverable. We assert that guaranteed property
         // (the latest corruption's exact bytes survive) plus the move-aside
         // and fresh-corpus invariants that hold on every event.
@@ -1665,7 +1665,7 @@ mod tests {
             corrupt_sidecars(dir.path(), "ws.json").is_empty(),
             "whitespace-only file must NOT spawn a preserve sidecar"
         );
-        // The whitespace file itself is treated as absent — left in place, not
+        // The whitespace file itself is treated as absent, left in place, not
         // moved aside (only unreadable/unparseable files are preserved-aside).
         assert!(path.exists(), "whitespace file is not moved aside");
     }
@@ -1727,7 +1727,7 @@ mod tests {
 
     #[test]
     fn bak_skipped_when_no_prior_file() {
-        // First-ever save (no prior file) must NOT create a .bak — there is
+        // First-ever save (no prior file) must NOT create a .bak, there is
         // nothing to protect.
         let dir = tempdir().expect("tempdir");
         let path = dir.path().join("c.json");
@@ -1742,7 +1742,7 @@ mod tests {
 
     #[test]
     fn bak_skipped_when_prior_file_empty() {
-        // An empty prior file has nothing worth protecting — backup is skipped.
+        // An empty prior file has nothing worth protecting (backup is skipped).
         let dir = tempdir().expect("tempdir");
         let path = dir.path().join("c.json");
         std::fs::write(&path, b"").expect("seed empty");
@@ -1996,7 +1996,7 @@ mod tests {
 
     #[test]
     fn old_corpus_loads_with_default_delivery_for_every_bypass() {
-        // Multiple bypasses, none with a `delivery` key — all must default
+        // Multiple bypasses, none with a `delivery` key, all must default
         // to "" and remain fully intact otherwise.
         let dir = tempdir().expect("tempdir");
         let path = dir.path().join("old.json");
@@ -2316,7 +2316,7 @@ mod tests {
     #[test]
     fn valid_oversize_under_ceiling_is_preserved_not_dropped() {
         // A large-but-valid corpus (well under the 1 GiB ceiling) must load
-        // intact — never preserved-aside. Build a multi-MB valid file.
+        // intact (never preserved-aside. Build a multi-MB valid file).
         let dir = tempdir().expect("tempdir");
         let path = dir.path().join("c.json");
         let mut c = RuleBypassCorpus::new("t");

@@ -1,6 +1,6 @@
 //! Dogfood proof: the NFKC-preimage homoglyph engine defeats **real OWASP-CRS
 //! 941 (XSS) detection regexes**, while an NFKC-normalizing origin reconstructs
-//! the exact attack — which the *same* CRS rule would then block.
+//! the exact attack (which the *same* CRS rule would then block).
 //!
 //! This is the honest "beats a production WAF" claim: a signature/regex WAF
 //! (CRS, ModSecurity, most cloud WAF managed rulesets) matches literal ASCII
@@ -36,10 +36,10 @@ fn nfkc_homoglyphs_defeat_crs941_yet_origin_recovers_attack() {
     ];
 
     for attack in attacks {
-        // 1. The CRS ruleset blocks the plain attack — the WAF is real.
+        // 1. The CRS ruleset blocks the plain attack (the WAF is real).
         assert!(
             crs_blocks(&crs, attack),
-            "CRS-941 subset failed to block the plain attack {attack:?} — fix the test fixture, not the engine"
+            "CRS-941 subset failed to block the plain attack {attack:?}, fix the test fixture, not the engine"
         );
 
         let vs = variants(attack, 32);
@@ -51,7 +51,7 @@ fn nfkc_homoglyphs_defeat_crs941_yet_origin_recovers_attack() {
         });
 
         // 3. …and the NFKC-normalizing origin reconstructs the EXACT attack,
-        //    which the SAME CRS rule now blocks — proving the bypassed value
+        //    which the SAME CRS rule now blocks, proving the bypassed value
         //    genuinely IS the attack, not an inert lookalike.
         let origin_view = normalize(bypass);
         assert_eq!(
@@ -76,7 +76,7 @@ fn every_variant_that_bypasses_still_folds_to_the_attack() {
                 assert_eq!(
                     normalize(&v),
                     attack,
-                    "a CRS-bypassing variant {v:?} did NOT fold to the attack — unsound"
+                    "a CRS-bypassing variant {v:?} did NOT fold to the attack, unsound"
                 );
             }
         }

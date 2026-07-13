@@ -9,7 +9,7 @@
 //!
 //! # Examples
 //!
-//! Defaults are tuned for cloud WAF challenge pages — 60s overall
+//! Defaults are tuned for cloud WAF challenge pages: 60s overall
 //! solve budget, headless Firefox:
 //!
 //! ```ignore
@@ -26,7 +26,7 @@
 //! assert_eq!(cfg.solve_timeout_ms, 60_000);
 //! assert!(cfg.headless);
 //!
-//! // Some Cloudflare managed challenges fingerprint headless mode —
+//! // Some Cloudflare managed challenges fingerprint headless mode 
 //! // flip the flag for those targets.
 //! let visible = BridgeConfig { headless: false, ..BridgeConfig::default() };
 //! assert!(!visible.headless);
@@ -63,7 +63,7 @@ pub struct BridgeConfig {
     /// and the bridge falls back to the operator-prompt path.
     pub solve_timeout_ms: u64,
     /// Whether to launch Firefox in headless mode. Some CF
-    /// challenges fingerprint headless detection — set to false on
+    /// challenges fingerprint headless detection, set to false on
     /// targets that block it.
     pub headless: bool,
     /// Whether to launch with sandbox disabled. No-op for Firefox
@@ -121,7 +121,7 @@ pub async fn solve_in_browser(
 ) -> Result<Option<BridgeOutcome>> {
     let started = std::time::Instant::now();
     // `solve_timeout_ms` is the per-solve OVERALL budget (see BridgeConfig)
-    // — it must bound launch + solve together, not just the solve phase.
+    //: it must bound launch + solve together, not just the solve phase.
     let overall = std::time::Duration::from_millis(cfg.solve_timeout_ms);
 
     let launch_cfg = bridge_launch_options(cfg);
@@ -129,11 +129,11 @@ pub async fn solve_in_browser(
         && !std::path::Path::new(path).exists()
     {
         return Err(anyhow!(
-            "firefox executable not found at {path} — install Firefox or set the FIREFOX_PATH environment variable"
+            "firefox executable not found at {path}, install Firefox or set the FIREFOX_PATH environment variable"
         ));
     }
     // `launch_firefox` drives a third-party BiDi stack (rustenium) that can
-    // *panic* — not just error — when no usable Firefox/BiDi session exists
+    // *panic*, not just error, when no usable Firefox/BiDi session exists
     // (e.g. a headless CI box with no browser, where executable_path resolved
     // to None). A Result-returning solver must never abort the caller on a
     // missing browser, so catch the panic and surface it as an error.
@@ -142,7 +142,7 @@ pub async fn solve_in_browser(
     // usable browser the BiDi launch probe retries for several seconds
     // (~7s observed on a browserless CI runner) before giving up. Leaving
     // the launch outside the timeout let the whole call run well past
-    // `solve_timeout_ms` — an unhonoured budget. Bound it here so launch can
+    // `solve_timeout_ms`: an unhonoured budget. Bound it here so launch can
     // never outlive the operator's overall budget (Law: timeouts honoured).
     let launched = tokio::time::timeout(
         overall,
@@ -152,7 +152,7 @@ pub async fn solve_in_browser(
     let page = match launched {
         Err(_) => {
             return Err(anyhow!(
-                "solve_in_browser exceeded {}ms budget during browser launch — \
+                "solve_in_browser exceeded {}ms budget during browser launch. \
                  increase BridgeConfig.solve_timeout_ms, or install Firefox / set \
                  FIREFOX_PATH if the browser launch is failing",
                 cfg.solve_timeout_ms
@@ -160,13 +160,13 @@ pub async fn solve_in_browser(
         }
         Ok(Err(_panic)) => {
             return Err(anyhow!(
-                "launch firefox panicked (no usable Firefox/BiDi session) — \
+                "launch firefox panicked (no usable Firefox/BiDi session). \
                  install Firefox and put it on PATH, or set FIREFOX_PATH"
             ));
         }
         Ok(Ok(Err(e))) => {
             return Err(anyhow!(
-                "launch firefox failed: {e} — verify Firefox is installed and on PATH, or set FIREFOX_PATH"
+                "launch firefox failed: {e}, verify Firefox is installed and on PATH, or set FIREFOX_PATH"
             ));
         }
         Ok(Ok(Ok(page))) => page,
@@ -240,7 +240,7 @@ pub async fn solve_in_browser(
             // serde_json_escape helper so they land in the evaluated JS
             // as proper JSON string literals. Pre-fix target_url used
             // a manual `replace('\\'', "\\\\'")` that handled single quotes
-            // only — a target_url containing `"`, `\\`, or control
+            // only, a target_url containing `"`, `\\`, or control
             // characters could break out of the JS literal and execute
             // arbitrary code in the Firefox page context. Most relevant
             // when the challenge response 302s to an attacker-controlled
@@ -270,14 +270,14 @@ pub async fn solve_in_browser(
         // Phase 1 fix: run the solver chain even when no visible
         // captcha is detected. Cloudflare Turnstile invisible mode
         // and managed challenges often have no detectable widget
-        // — the token/cookie populates via JS in the background.
+        //: the token/cookie populates via JS in the background.
         // WaitForTokenSolver (first in chain) handles this passive
         // case. Previously the bridge returned None here, never
         // giving the chain a chance to harvest the cookie.
         let _result = chain.solve(&page, &info).await;
 
         // Whether the solver returns success or not, poll for
-        // clearance cookies — challenge JS often sets them after a
+        // clearance cookies, challenge JS often sets them after a
         // delay, and a single-shot check misses the common case.
         // Poll every 500 ms for up to 10 s (or whatever budget
         // remains from the overall solve_timeout_ms).
@@ -323,7 +323,7 @@ pub async fn solve_in_browser(
         Ok(Ok(r)) => Ok(r),
         Ok(Err(e)) => Err(e),
         Err(_) => Err(anyhow!(
-            "solve_in_browser exceeded {}ms budget — increase BridgeConfig.solve_timeout_ms if the target is slow",
+            "solve_in_browser exceeded {}ms budget, increase BridgeConfig.solve_timeout_ms if the target is slow",
             cfg.solve_timeout_ms
         )),
     }
@@ -331,7 +331,7 @@ pub async fn solve_in_browser(
 
 fn serde_json_escape(s: &str) -> String {
     // Wrapping in serde_json gives us a properly-quoted JS string
-    // literal — handles backslashes, quotes, control bytes.
+    // literal (handles backslashes, quotes, control bytes).
     serde_json::to_string(s).unwrap_or_else(|_| "\"\"".into())
 }
 
@@ -410,7 +410,7 @@ pub enum InstallOutcome {
 /// subsequent caller receives [`InstallOutcome::AlreadyInstalled`].
 /// Thread-safe via `OnceCell`.
 pub async fn install_global_solver() -> Result<InstallOutcome> {
-    // SOLVER_INSTALLED uses OnceLock — exactly one thread wins `set`.
+    // SOLVER_INSTALLED uses OnceLock (exactly one thread wins `set`).
     let outcome = if SOLVER_INSTALLED.set(()).is_ok() {
         let cfg = current_config().await;
         tracing::info!(
@@ -462,7 +462,7 @@ mod tests {
 
     #[tokio::test]
     async fn install_global_solver_does_not_fail() {
-        // Smoke test — the function only logs, but signature lets
+        // Smoke test, the function only logs, but signature lets
         // callers assume Result.
         install_global_solver().await.unwrap();
     }
@@ -480,7 +480,7 @@ mod tests {
             navigate_first: false,
         };
         let _ = solve_in_browser("<html></html>", "https://example.com/", &cfg).await;
-        // No assertion on outcome — Firefox availability varies in
+        // No assertion on outcome: Firefox availability varies in
         // CI. The point is the function returns within ~the budget.
     }
 
@@ -494,7 +494,7 @@ mod tests {
         let c = BridgeConfig::default();
         assert!(
             !c.no_sandbox,
-            "no_sandbox MUST default to false — true = full OS privilege for challenge JS"
+            "no_sandbox MUST default to false, true = full OS privilege for challenge JS"
         );
     }
 
@@ -641,7 +641,7 @@ mod tests {
 
     #[test]
     fn serde_json_escape_single_quote_unchanged() {
-        // Single quotes are valid JSON string content — must not be escaped.
+        // Single quotes are valid JSON string content (must not be escaped).
         let s = serde_json_escape("it's fine");
         // The word must appear intact.
         assert!(
@@ -653,7 +653,7 @@ mod tests {
     #[test]
     fn serde_json_escape_unicode_passthrough() {
         let s = serde_json_escape("日本語");
-        // Valid Unicode — serde_json either passes through or escapes; both are fine.
+        // Valid Unicode (serde_json either passes through or escapes; both are fine).
         // Must be valid JSON when stripped of outer quotes.
         assert!(s.starts_with('"') && s.ends_with('"'));
         let inner: &str = &s[1..s.len() - 1];
@@ -665,7 +665,7 @@ mod tests {
 
     #[test]
     fn serde_json_escape_control_chars_escaped() {
-        // U+001F (unit separator) is a control char — must be escaped.
+        // U+001F (unit separator) is a control char (must be escaped).
         let s = serde_json_escape("\x1F");
         assert!(s.starts_with('"') && s.ends_with('"'));
         // The raw byte 0x1F must not appear unescaped.
@@ -712,7 +712,7 @@ mod tests {
             .map(|_| {
                 task::spawn(async {
                     let c = current_config().await;
-                    // Just reading — no assertion on specific value, just
+                    // Just reading, no assertion on specific value, just
                     // that it returns without deadlock.
                     assert!(c.solve_timeout_ms > 0);
                 })

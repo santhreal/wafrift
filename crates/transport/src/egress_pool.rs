@@ -2,7 +2,7 @@
 //!
 //! Cloudflare / AWS WAF / Akamai bot-detection profiles source IPs:
 //! a bench that fires 1000 probes from one IP burns the persona within
-//! minutes — every subsequent probe gets a JS challenge or CAPTCHA, not
+//! minutes, every subsequent probe gets a JS challenge or CAPTCHA, not
 //! the actual WAF verdict. This module rotates egress through a pool of
 //! clean egress addresses so no single IP accumulates enough signal for
 //! the reputation engine to act on.
@@ -11,14 +11,14 @@
 //!
 //! Three backend strategies implement [`EgressRouter`]:
 //!
-//! - `TailscaleEgress` — round-robins through Tailscale exit-nodes the
+//! - `TailscaleEgress`: round-robins through Tailscale exit-nodes the
 //!   operator configures. Constructs a SOCKS5 proxy URL pointing at the
 //!   Tailscale SOCKS listener (`127.0.0.1:1055` by default) and sets the
 //!   `Tailscale-Exit-Node` request header to select the node.
-//! - `SocksPool` — operator supplies one or more SOCKS5 URLs
+//! - `SocksPool`: operator supplies one or more SOCKS5 URLs
 //!   (`socks5://user:pass@host:port`). Rotates round-robin or by
 //!   least-recently-blocked.
-//! - `HttpProxyPool` — operator supplies one or more HTTP proxy URLs.
+//! - `HttpProxyPool`: operator supplies one or more HTTP proxy URLs.
 //!   Same rotation logic.
 //!
 //! # Per-target blacklisting
@@ -33,7 +33,7 @@
 //! # Deterministic replay
 //!
 //! Pass `seed: Some(n)` to [`EgressPool::builder`] and the rotation
-//! order becomes deterministic — the selection sequence is reproducible
+//! order becomes deterministic, the selection sequence is reproducible
 //! across runs, which is useful for regression tests.
 //!
 //! # Example
@@ -71,7 +71,7 @@ use thiserror::Error;
 pub enum EgressError {
     /// The pool was constructed with an empty list of egress entries.
     #[error(
-        "egress pool is empty — supply at least one --socks5, --http-proxy, or --tailscale-exit-node"
+        "egress pool is empty, supply at least one --socks5, --http-proxy, or --tailscale-exit-node"
     )]
     EmptyPool,
     /// Every entry in the pool is currently in its cooldown window for
@@ -98,7 +98,7 @@ pub enum EgressError {
 /// Returns the original string on success so callers can use it directly
 /// with [`reqwest::Proxy`] without re-boxing.
 pub fn parse_socks5_url(raw: &str) -> Result<String, EgressError> {
-    // Validate through proxywire's canonical strict parser — the single source
+    // Validate through proxywire's canonical strict parser, the single source
     // of truth for proxy-URL syntax + the scheme allow-list (rejects bad
     // schemes, embedded paths/queries, missing host/port). Then confirm the
     // SOCKS5 family. The original credential-bearing string is returned so
@@ -200,7 +200,7 @@ impl TargetCooldown {
     /// unboundedly. Without saturation, an entry that is already cooled
     /// (condition guarded by `cooled_until.is_none()`) would increment
     /// `consecutive_challenges` on every call and eventually overflow
-    /// `u32` after ~4 billion probes — a panic in debug, UB-adjacent in
+    /// `u32` after ~4 billion probes, a panic in debug, UB-adjacent in
     /// release.
     fn record_challenge(&mut self, threshold: u32, cooldown: Duration, now: Instant) -> bool {
         self.consecutive_challenges = self.consecutive_challenges.saturating_add(1);
@@ -211,7 +211,7 @@ impl TargetCooldown {
         false
     }
 
-    /// Record a clean pass — reset the consecutive challenge counter and
+    /// Record a clean pass, reset the consecutive challenge counter and
     /// clear any expired cooldown.
     fn record_pass(&mut self, now: Instant) {
         self.consecutive_challenges = 0;
@@ -225,7 +225,7 @@ impl TargetCooldown {
 
 // ── single egress entry ────────────────────────────────────────────────────
 
-/// A single slot in the pool — one configured egress with its own
+/// A single slot in the pool, one configured egress with its own
 /// per-target cooldown map.
 #[derive(Debug)]
 pub struct EgressEntry {
@@ -265,7 +265,7 @@ impl EgressEntry {
                     tracing::error!(
                         url = url.as_str(),
                         err = %e,
-                        "SOCKS5 proxy URL failed reqwest::Proxy::all after validation — \
+                        "SOCKS5 proxy URL failed reqwest::Proxy::all after validation. \
                          routing direct (BUG: report to wafrift maintainers)"
                     );
                     builder
@@ -277,7 +277,7 @@ impl EgressEntry {
                     tracing::error!(
                         url = url.as_str(),
                         err = %e,
-                        "HTTP proxy URL failed reqwest::Proxy::all after validation — \
+                        "HTTP proxy URL failed reqwest::Proxy::all after validation. \
                          routing direct (BUG: report to wafrift maintainers)"
                     );
                     builder
@@ -291,7 +291,7 @@ impl EgressEntry {
                         tracing::error!(
                             socks_addr = socks_addr.as_str(),
                             err = %e,
-                            "Tailscale SOCKS proxy URL failed reqwest::Proxy::all — \
+                            "Tailscale SOCKS proxy URL failed reqwest::Proxy::all. \
                              routing direct (BUG: check socks_addr format)"
                         );
                         builder
@@ -566,7 +566,7 @@ impl EgressPoolBuilder {
             .collect();
         // R63 pass-21 §6: route through `wafrift_types` constants so the
         // builder fallback and the CLI default never drift. Pre-fix the
-        // numbers `3` and `300` were open-coded here AND in cli/config —
+        // numbers `3` and `300` were open-coded here AND in cli/config 
         // an operator who tuned the CLI default to e.g. 2/180 wouldn't
         // see it apply to clients built via this Builder.
         Ok(EgressPool {
@@ -635,7 +635,7 @@ mod tests {
             .expect("pool should build")
     }
 
-    // ── TEST 1 — rotation order is round-robin ────────────────────────────
+    // ── TEST 1, rotation order is round-robin ────────────────────────────
     #[test]
     fn rotation_round_robin_order() {
         let pool = seeded_socks_pool(3, 0);
@@ -658,7 +658,7 @@ mod tests {
         assert_eq!(labels[5], "socks5://127.0.0.2:1080");
     }
 
-    // ── TEST 2 — entry cools after N consecutive challenges ───────────────
+    // ── TEST 2, entry cools after N consecutive challenges ───────────────
     #[test]
     fn cooldown_after_n_consecutive_blocks() {
         let pool = EgressPool::builder()
@@ -670,7 +670,7 @@ mod tests {
             .unwrap();
 
         let entry = pool.next_for("target.com").unwrap();
-        // Two challenges — still available.
+        // Two challenges (still available).
         entry.record_challenge("target.com", 3, Duration::from_secs(300));
         entry.record_challenge("target.com", 3, Duration::from_secs(300));
         assert!(
@@ -678,7 +678,7 @@ mod tests {
             "should still be available"
         );
 
-        // Third challenge — now cooled.
+        // Third challenge (now cooled).
         entry.record_challenge("target.com", 3, Duration::from_secs(300));
         let result = pool.next_for("target.com");
         assert!(
@@ -687,7 +687,7 @@ mod tests {
         );
     }
 
-    // ── TEST 3 — fallback when entire pool is cooled ──────────────────────
+    // ── TEST 3, fallback when entire pool is cooled ──────────────────────
     #[test]
     fn fallback_entire_pool_cooled() {
         let pool = EgressPool::builder()
@@ -713,7 +713,7 @@ mod tests {
         );
     }
 
-    // ── TEST 4 — different target hosts have independent cooldowns ────────
+    // ── TEST 4, different target hosts have independent cooldowns ────────
     #[test]
     fn cooldown_is_per_target() {
         let pool = EgressPool::builder()
@@ -735,7 +735,7 @@ mod tests {
         assert!(pool.next_for("b.com").is_ok());
     }
 
-    // ── TEST 5 — deterministic order with seed ────────────────────────────
+    // ── TEST 5, deterministic order with seed ────────────────────────────
     #[test]
     fn deterministic_with_seed() {
         let pool_a = seeded_socks_pool(4, 42);
@@ -753,28 +753,28 @@ mod tests {
         );
     }
 
-    // ── TEST 6 — empty pool returns EmptyPool error ────────────────────────
+    // ── TEST 6, empty pool returns EmptyPool error ────────────────────────
     #[test]
     fn empty_pool_error() {
         let err = EgressPool::builder().build().unwrap_err();
         assert_eq!(err, EgressError::EmptyPool);
     }
 
-    // ── TEST 7 — parse valid SOCKS5 URL with auth ─────────────────────────
+    // ── TEST 7, parse valid SOCKS5 URL with auth ─────────────────────────
     #[test]
     fn parse_socks5_url_with_auth() {
         let validated = parse_socks5_url("socks5://alice:s3cr3t@10.8.0.1:1080").unwrap();
         assert!(validated.contains("10.8.0.1"));
     }
 
-    // ── TEST 8 — parse SOCKS5h variant ────────────────────────────────────
+    // ── TEST 8, parse SOCKS5h variant ────────────────────────────────────
     #[test]
     fn parse_socks5h_url() {
         let validated = parse_socks5_url("socks5h://proxy.internal:1080").unwrap();
         assert!(validated.starts_with("socks5h://"));
     }
 
-    // ── TEST 9 — invalid URL scheme rejected ──────────────────────────────
+    // ── TEST 9, invalid URL scheme rejected ──────────────────────────────
     #[test]
     fn invalid_url_scheme_rejected() {
         let err = parse_socks5_url("http://10.0.0.1:1080").unwrap_err();
@@ -784,21 +784,21 @@ mod tests {
         );
     }
 
-    // ── TEST 10 — completely invalid URL rejected ─────────────────────────
+    // ── TEST 10, completely invalid URL rejected ─────────────────────────
     #[test]
     fn completely_invalid_url_rejected() {
         let err = parse_socks5_url("not a url at all !!!").unwrap_err();
         assert!(matches!(err, EgressError::InvalidUrl { .. }));
     }
 
-    // ── TEST 11 — HTTP proxy URL parsing ──────────────────────────────────
+    // ── TEST 11: HTTP proxy URL parsing ──────────────────────────────────
     #[test]
     fn parse_http_proxy_url_ok() {
         let validated = parse_http_proxy_url("http://burp.internal:8080").unwrap();
         assert!(validated.contains(":8080"));
     }
 
-    // ── TEST 12 — cooldown skip: non-cooled entry preferred ──────────────
+    // ── TEST 12, cooldown skip: non-cooled entry preferred ──────────────
     #[test]
     fn cooled_entry_skipped_non_cooled_preferred() {
         let pool = EgressPool::builder()
@@ -821,7 +821,7 @@ mod tests {
         assert_eq!(entry.backend.label(), "socks5://127.0.0.2:1080");
     }
 
-    // ── TEST 13 — record_pass resets consecutive counter ─────────────────
+    // ── TEST 13, record_pass resets consecutive counter ─────────────────
     #[test]
     fn record_pass_resets_challenge_counter() {
         let pool = EgressPool::builder()
@@ -835,9 +835,9 @@ mod tests {
         let entry = pool.next_for("x.com").unwrap();
         entry.record_challenge("x.com", 3, Duration::from_secs(300));
         entry.record_challenge("x.com", 3, Duration::from_secs(300));
-        // Two challenges — reset before threshold.
+        // Two challenges (reset before threshold).
         entry.record_pass("x.com");
-        // Two more — still under threshold (counter reset).
+        // Two more (still under threshold (counter reset)).
         entry.record_challenge("x.com", 3, Duration::from_secs(300));
         entry.record_challenge("x.com", 3, Duration::from_secs(300));
         assert!(
@@ -846,7 +846,7 @@ mod tests {
         );
     }
 
-    // ── TEST 14 — Tailscale backend exposes exit-node header ─────────────
+    // ── TEST 14: Tailscale backend exposes exit-node header ─────────────
     #[test]
     fn tailscale_backend_header() {
         let pool = EgressPool::builder()
@@ -863,7 +863,7 @@ mod tests {
         assert_eq!(value, "mullvad-us-nyc-001");
     }
 
-    // ── TEST 15 — SOCKS backend has no Tailscale header ──────────────────
+    // ── TEST 15: SOCKS backend has no Tailscale header ──────────────────
     #[test]
     fn socks_backend_no_tailscale_header() {
         let pool = socks_pool(1);
@@ -871,7 +871,7 @@ mod tests {
         assert!(entry.tailscale_exit_node_header().is_none());
     }
 
-    // ── TEST 16 — challenge counter saturates at u32::MAX (no overflow) ───
+    // ── TEST 16, challenge counter saturates at u32::MAX (no overflow) ───
     #[test]
     fn challenge_counter_saturates_no_overflow() {
         // Regression: before the saturating_add fix, calling record_challenge
@@ -889,7 +889,7 @@ mod tests {
         let entry = pool.next_for("x.com").unwrap();
         // Cool the entry.
         entry.record_challenge("x.com", 1, Duration::from_secs(300));
-        // Fire many more challenges while cooled — must not panic on overflow.
+        // Fire many more challenges while cooled (must not panic on overflow).
         for _ in 0..1_000 {
             entry.record_challenge("x.com", 1, Duration::from_secs(300));
         }
@@ -903,7 +903,7 @@ mod tests {
         );
     }
 
-    // ── TEST 17 — challenge_threshold=0 immediately cools on first call ───
+    // ── TEST 17, challenge_threshold=0 immediately cools on first call ───
     #[test]
     fn challenge_threshold_zero_cools_immediately() {
         // threshold=0: consecutive_challenges starts at 0, saturating_add(1)
@@ -929,7 +929,7 @@ mod tests {
         );
     }
 
-    // ── TEST 18 — empty-string target is a valid key in cooldown map ─────
+    // ── TEST 18, empty-string target is a valid key in cooldown map ─────
     #[test]
     fn empty_target_host_does_not_panic() {
         let pool = socks_pool(1);
@@ -941,7 +941,7 @@ mod tests {
         entry.record_pass("");
     }
 
-    // ── TEST 19 — single-entry pool: cooldown then pass recovery ─────────
+    // ── TEST 19, single-entry pool: cooldown then pass recovery ─────────
     #[test]
     fn single_entry_recovery_after_pass() {
         // A pool with 1 entry that was cooled at threshold=2 must become
@@ -966,7 +966,7 @@ mod tests {
         );
     }
 
-    // ── TEST 20 — url with embedded auth credentials validates ok ─────────
+    // ── TEST 20, url with embedded auth credentials validates ok ─────────
     #[test]
     fn socks5_url_with_special_chars_in_password() {
         // Passwords with @ or : in them are legal when percent-encoded.

@@ -1,9 +1,9 @@
-//! `wafrift audit` / `wafrift harden` — the WAF-decompiler product
+//! `wafrift audit` / `wafrift harden`: the WAF-decompiler product
 //! surface.
 //!
 //! `audit`  : decompile a CRS-class ruleset and report the holes an
 //!            attacker can drive through it (raw / cased / decode-
-//!            mismatch encodings) — the "WAF X-ray".
+//!            mismatch encodings) (the "WAF X-ray").
 //! `harden` : synthesize the minimal CRS-grade rules that close those
 //!            holes, prove zero new false positives on a benign
 //!            sample, and exit non-zero unless closure is proven (so
@@ -84,7 +84,7 @@ pub(crate) struct FingerprintArgs {
     /// normalization pipeline is fingerprinted (e.g.
     /// `--attack '<script>alert(1)</script>'`). The same URL is probed as a
     /// live block/pass oracle (2xx = pass, anything else = block) and the
-    /// solver re-verifies every candidate against it — so a mis-detected or
+    /// solver re-verifies every candidate against it, so a mis-detected or
     /// mis-ordered stage can only fail to produce a bypass, never fabricate
     /// one.
     #[arg(long)]
@@ -94,7 +94,7 @@ pub(crate) struct FingerprintArgs {
     /// benign twin, to learn WHICH tokens the WAF actually policies (vs. which
     /// reach the sink in plaintext). Then, for each policed token, probe which
     /// encodings (url / double-url / html-entity / NFKC / best-fit / base64 /
-    /// hex) the WAF fails to decode before matching — the candidate "decode-gap"
+    /// hex) the WAF fails to decode before matching, the candidate "decode-gap"
     /// bypass encodings (an origin that applies the transform reconstructs the
     /// attack). Costs two live requests per token plus one per decode probe.
     #[arg(long)]
@@ -110,14 +110,14 @@ pub(crate) struct FingerprintArgs {
     /// whole battery. When set below the battery size, probes are ordered by
     /// descending expected **information gain** (Beta-Bernoulli entropy from
     /// `--filter-history`) so the budget is spent on the tokens whose policing is
-    /// least certain — not re-confirming tokens a prior run already pinned. Costs
+    /// least certain, not re-confirming tokens a prior run already pinned. Costs
     /// two live requests per kept probe (plus the decode-gap probes on the policed
     /// subset).
     #[arg(long, default_value_t = 0)]
     pub filter_budget: usize,
     /// JSON history file warm-starting the `--filter-budget` info-gain ordering.
     /// Each token's prior block/pass outcomes are loaded before scheduling and the
-    /// new run's outcomes are merged back and saved — so repeated assessments of a
+    /// new run's outcomes are merged back and saved, so repeated assessments of a
     /// target converge the budget onto its genuinely-uncertain tokens. Absent file
     /// = cold start (deterministic battery order). Same `History` schema as
     /// `bench-waf --history-file`.
@@ -133,7 +133,7 @@ pub(crate) struct FingerprintArgs {
     #[arg(long)]
     pub insecure: bool,
     /// Explicit authorization note required for non-RFC1918 / non-loopback
-    /// targets — this command sends live requests to `--url`.
+    /// targets (this command sends live requests to `--url`).
     #[arg(long)]
     pub permission: Option<String>,
     /// Output format. `human` (default) prints the operator report; `json`
@@ -208,13 +208,13 @@ pub(crate) struct AttackClass {
     pub tokens: Vec<String>,
 }
 
-/// The embedded Tier-B attack-class data — the single source of `audit` /
+/// The embedded Tier-B attack-class data, the single source of `audit` /
 /// `harden`'s canonical attacks and detection tokens is this file, not a
 /// hardcoded `vec!`. Extend coverage by adding a `[[class]]` block to it.
 const ATTACK_CLASSES_TOML: &str = include_str!("../rules/classes/attack_classes.toml");
 
 /// Parse a Tier-B attack-class set from TOML. **Fails closed**: an empty set, or
-/// any class missing its attacks or its tokens, is rejected — a class whose
+/// any class missing its attacks or its tokens, is rejected, a class whose
 /// tokens don't detect its attacks would make the `harden` proof vacuous, so bad
 /// data is a hard error here, never a silently weakened self-test.
 fn attack_classes_from_toml(src: &str) -> Result<Vec<AttackClass>, String> {
@@ -291,17 +291,17 @@ fn candidates(attack: &str) -> Vec<(String, String)> {
 
 /// Normalization-mismatch preimage labels whose reconstruction requires an
 /// *origin* transform that the CRS transform set (`UrlDecodeUni`,
-/// `HtmlEntityDecode`, `Lowercase`) cannot perform — so a synthesized CRS rule
+/// `HtmlEntityDecode`, `Lowercase`) cannot perform, so a synthesized CRS rule
 /// provably cannot block them, and including them in a "closure proven" test
 /// would produce a false negative (proven=false for correct behaviour):
 ///
-/// * `norm_mismatch_json_unescape` — ModSecurity/Coraza have no JSON string
+/// * `norm_mismatch_json_unescape`: ModSecurity/Coraza have no JSON string
 ///   unescape transform, so a `\uXXXX` payload cannot be matched.
-/// * `norm_mismatch_nfkc` / `norm_mismatch_bestfit` — CRS has no Unicode
+/// * `norm_mismatch_nfkc` / `norm_mismatch_bestfit`: CRS has no Unicode
 ///   NFKC-normalization or best-fit charset-coercion transform, so a homoglyph
 ///   / curly-quote payload is never folded to the ASCII token a rule keys on.
 ///   (Closing these holes genuinely requires the WAF to add a normalization
-///   stage it does not ship — a real defensive gap, not a rule-synthesis bug.)
+///   stage it does not ship, a real defensive gap, not a rule-synthesis bug.)
 const CRS_UNENFORCEABLE_SINKS: &[&str] = &[
     "norm_mismatch_json_unescape",
     "norm_mismatch_nfkc",
@@ -323,7 +323,7 @@ pub(crate) fn run_audit(args: AuditArgs) -> ExitCode {
 }
 
 /// Same as [`run_audit`] but returns a plain `u8` so tests can
-/// assert exact exit codes — `std::process::ExitCode` is opaque and
+/// assert exact exit codes: `std::process::ExitCode` is opaque and
 /// has no public conversion back to its inner byte.
 fn run_audit_inner(args: AuditArgs) -> u8 {
     let mut waf = match load_ruleset(&args.ruleset) {
@@ -336,7 +336,7 @@ fn run_audit_inner(args: AuditArgs) -> u8 {
 
     let json_mode = args.format == "json";
     if !json_mode {
-        println!("wafrift audit — WAF decompilation report");
+        println!("wafrift audit: WAF decompilation report");
         println!("ruleset fingerprint : {}", waf.fingerprint());
         println!("rules loaded        : {}", waf.rule_count());
         println!("inbound threshold   : {}\n", waf.threshold());
@@ -412,7 +412,7 @@ pub(crate) fn run_harden(args: HardenArgs) -> ExitCode {
 }
 
 /// Same as [`run_harden`] but returns a plain `u8` so tests can
-/// assert exact exit codes — `std::process::ExitCode` is opaque and
+/// assert exact exit codes: `std::process::ExitCode` is opaque and
 /// has no public conversion back to its inner byte.
 fn run_harden_inner(args: HardenArgs) -> u8 {
     let waf = match load_ruleset(&args.ruleset) {
@@ -442,7 +442,7 @@ fn run_harden_inner(args: HardenArgs) -> u8 {
     for c in class_data(&args.class) {
         let (class, attacks, tokens) = (c.name, c.attacks, c.tokens);
         // Holes before (over the CRS-decodable candidate set: raw, case-
-        // flipped, URL-encoded, HTML-entity encoded — but NOT json_unescape
+        // flipped, URL-encoded, HTML-entity encoded, but NOT json_unescape
         // which requires a transform CRS/ModSecurity does not provide).
         let mut pre = waf.with_rules_added(vec![]);
         let holes_before: usize = attacks
@@ -453,7 +453,7 @@ fn run_harden_inner(args: HardenArgs) -> u8 {
 
         // Two CRS-normalized rules per token: one single-decode (closes
         // raw/case/single-encode holes) and one DOUBLE-urldecode (closes
-        // the double-encode normalization-mismatch — a single-decode
+        // the double-encode normalization-mismatch, a single-decode
         // rule provably cannot, since CRS urlDecodeUni is one pass).
         let tf_double = vec![
             Transform::UrlDecodeUni,
@@ -557,7 +557,7 @@ fn run_harden_inner(args: HardenArgs) -> u8 {
         });
         println!("{}", serde_json::to_string(&report).unwrap_or_default());
     } else {
-        println!("wafrift harden — synthesized closing rules\n");
+        println!("wafrift harden, synthesized closing rules\n");
         for r in &results {
             println!("== class: {} ==", r.class);
             println!("  holes before : {}", r.holes_before);
@@ -570,11 +570,11 @@ fn run_harden_inner(args: HardenArgs) -> u8 {
             if r.holes_after > 0 {
                 // Honest, structural disclosure (NOT a silent limitation):
                 // CRS has no JSON body transform, so a JSON-unescape
-                // normalization-mismatch is unclosable by ANY CRS rule —
+                // normalization-mismatch is unclosable by ANY CRS rule 
                 // it requires a JSON request-body processor at the WAF.
                 println!(
                     "  residual     : {} hole(s) a CRS rule cannot close \
-                     (e.g. JSON-unescape mismatch — needs REQUEST_BODY_PROCESSOR=JSON \
+                     (e.g. JSON-unescape mismatch, needs REQUEST_BODY_PROCESSOR=JSON \
                      at the WAF, not a signature).",
                     r.holes_after
                 );
@@ -584,7 +584,7 @@ fn run_harden_inner(args: HardenArgs) -> u8 {
                 // Derive the transform list from the rule's *actual* transform
                 // chain, not a hardcoded string. Pre-fix: every rule (including
                 // the double-UrlDecodeUni variants) was printed with the
-                // single-decode list — the TOML a defender copies would apply
+                // single-decode list, the TOML a defender copies would apply
                 // the wrong normalization and leave the double-encode holes
                 // open even after deploying the "closing" rule.
                 let tf_toml: Vec<String> = rule
@@ -606,7 +606,7 @@ fn run_harden_inner(args: HardenArgs) -> u8 {
         if all_proven {
             println!("All audited classes closed with zero benign false positives.");
         } else {
-            eprintln!("closure NOT proven for at least one class — not safe to claim fixed");
+            eprintln!("closure NOT proven for at least one class, not safe to claim fixed");
         }
     }
 
@@ -641,7 +641,7 @@ fn stage_label(s: &Stage) -> String {
 /// Delivery model: the probe is percent-encoded for the URL, so the target's
 /// framework performs exactly one baseline query-string URL-decode before the
 /// value reaches the application. Detected stages are therefore the
-/// normalization the origin applies *on top of* that baseline — and
+/// normalization the origin applies *on top of* that baseline, and
 /// `solve_bypass`'s candidates are delivered the same way (payload bytes
 /// percent-encoded into the same parameter), so the fingerprint and the bypass
 /// it drives stay coherent.
@@ -652,7 +652,7 @@ fn build_http_reflector(
     insecure: bool,
 ) -> Result<impl ReflectionOracle, String> {
     let client = wafrift_transport::base_client_builder(
-        10, // 10 s probe timeout — matches the model-evade oracle.
+        10, // 10 s probe timeout (matches the model-evade oracle).
         insecure,
         Some("wafrift/fingerprint (authorized security research)"),
     )
@@ -700,7 +700,7 @@ pub(crate) fn run_fingerprint(args: FingerprintArgs) -> ExitCode {
 /// Same as [`run_fingerprint`] but returns a plain `u8` so tests can assert
 /// exact exit codes.
 fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
-    // Live requests go out — gate on the same authorization check model-evade
+    // Live requests go out, gate on the same authorization check model-evade
     // uses (loopback / RFC1918 always allowed; public hosts need a reason).
     if let Err(e) = crate::model_evade_cmd::check_permission(&args.url, &args.permission) {
         eprintln!("error: {e}");
@@ -716,7 +716,7 @@ fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
 
     // Optional differential filter characterization. Independent of reflection
     // (it asks "what does the WAF block", not "what does it echo"), so it is
-    // computed up front and reported on every exit path — including the
+    // computed up front and reported on every exit path, including the
     // no-reflection one, where knowing the block surface is still actionable.
     let filter_profile = if args.characterize_filter {
         match run_filter_characterization(&rt, &args) {
@@ -771,7 +771,7 @@ fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
             );
         } else {
             eprintln!(
-                "error: no reflection observed at parameter `{}` — the target did not echo any \
+                "error: no reflection observed at parameter `{}`: the target did not echo any \
                  probe back. Is `--param` the parameter whose value is reflected?",
                 args.param
             );
@@ -784,7 +784,7 @@ fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
     if scan.marker_collision {
         eprintln!(
             "warn: the fingerprint marker already appears in the target's baseline response \
-             (ambient content collision) — byte/whole-value stage detection is suppressed to \
+             (ambient content collision), byte/whole-value stage detection is suppressed to \
              avoid false positives; results may be incomplete."
         );
     }
@@ -798,7 +798,7 @@ fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
     if let Some(attack) = &args.attack {
         if detected.is_empty() {
             bypass_human = Some(
-                "no origin normalization detected — no homoglyph/encoding bypass class applies \
+                "no origin normalization detected, no homoglyph/encoding bypass class applies \
                  (the solver would only be able to report the raw attack, which the WAF already \
                  sees)."
                     .to_string(),
@@ -812,7 +812,7 @@ fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
             match build_solved_bypass(&rt, &args, attack, &detected) {
                 Ok(BypassOutcome::NotPoliced) => {
                     bypass_human = Some(format!(
-                        "not policed — the WAF does not block `{attack}` as delivered to `{}`, so \
+                        "not policed, the WAF does not block `{attack}` as delivered to `{}`, so \
                          it already reaches the sink; no bypass is needed (and none is fabricated).",
                         args.param,
                     ));
@@ -827,7 +827,7 @@ fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
                     sink_view,
                 }) => {
                     bypass_human = Some(format!(
-                        "verified bypass found — deliver `{}={}` (payload base64: {})",
+                        "verified bypass found, deliver `{}={}` (payload base64: {})",
                         args.param,
                         urlencoding::encode_binary(&base64_decode_lossy(&payload_b64)),
                         payload_b64,
@@ -843,7 +843,7 @@ fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
                 Ok(BypassOutcome::Unbypassable) => {
                     bypass_human = Some(
                         "the raw attack is blocked, but no structural preimage of the detected \
-                         pipeline passed the live WAF — the WAF holds (reported honestly as no \
+                         pipeline passed the live WAF, the WAF holds (reported honestly as no \
                          bypass rather than a fabricated one)."
                             .to_string(),
                     );
@@ -873,7 +873,7 @@ fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
         });
         println!("{}", serde_json::to_string(&report).unwrap_or_default());
     } else {
-        println!("wafrift fingerprint — live origin-normalization decompilation");
+        println!("wafrift fingerprint, live origin-normalization decompilation");
         println!("target : {}", args.url);
         println!("param  : {}\n", args.param);
         if stage_names.is_empty() {
@@ -933,7 +933,7 @@ fn run_filter_characterization(
     // Live-query minimization: warm-start a per-token block/pass posterior from
     // --filter-history, order the battery by descending expected information
     // gain, and trim to --filter-budget. A tight budget against a rate-limited
-    // target is then spent on the tokens whose policing is least certain — never
+    // target is then spent on the tokens whose policing is least certain, never
     // re-confirming what a prior run already pinned. Cold start (no history) is
     // deterministic battery order; the scheduler never introduces RNG.
     let history_path = args.filter_history.as_ref().map(std::path::PathBuf::from);
@@ -963,7 +963,7 @@ fn run_filter_characterization(
     }
 
     // First: which tokens are policed at all. Then, for the (usually few)
-    // policed tokens, which encodings the WAF fails to decode before matching —
+    // policed tokens, which encodings the WAF fails to decode before matching 
     // the candidate bypass surface. `&carrier` is reused across both probes.
     let profile = characterize(&mut oracle, &battery, &carrier).map_err(|e| e.to_string())?;
     let gaps = probe_decode_gaps(&mut oracle, &profile, &carrier).map_err(|e| e.to_string())?;
@@ -972,7 +972,7 @@ fn run_filter_characterization(
     // is better-informed; persist when the operator supplied a history file.
     observe_findings_into_history(&mut history, &profile);
     if let Some(p) = &history_path {
-        // Warn, don't die: the profile is already computed and worth returning —
+        // Warn, don't die: the profile is already computed and worth returning 
         // a write hiccup must not discard a run that already spent live queries.
         if let Err(e) = crate::info_gain_sched::save_history(p, &history) {
             eprintln!("warn: filter history write to {} failed: {e}", p.display());
@@ -984,7 +984,7 @@ fn run_filter_characterization(
 
 /// Fold a [`FilterProfile`]'s findings into an info-gain `History`: a policed or
 /// carrier-gated token is a *block* observation, an unpoliced token a *pass*.
-/// [`Verdict::Inconclusive`] is never fed in — oracle noise must not move the
+/// [`Verdict::Inconclusive`] is never fed in, oracle noise must not move the
 /// posterior (the same anti-rig discipline `characterize` itself applies).
 fn observe_findings_into_history(
     history: &mut crate::info_gain_sched::History,
@@ -1045,11 +1045,11 @@ fn print_filter_profile_human(pg: &(FilterProfile, Vec<DecodeGap>)) {
     }
     if !gaps.is_empty() {
         println!(
-            "  WAF decode-gaps (candidate bypass encodings — origin must apply the transform):"
+            "  WAF decode-gaps (candidate bypass encodings, origin must apply the transform):"
         );
         for g in gaps {
             println!(
-                "    {} via {} — try `{}`",
+                "    {} via {}, try `{}`",
                 g.token,
                 g.stage,
                 String::from_utf8_lossy(&g.encoded_preimage)
@@ -1058,7 +1058,7 @@ fn print_filter_profile_human(pg: &(FilterProfile, Vec<DecodeGap>)) {
     }
     if p.transport_errors > 0 {
         println!(
-            "  note: {} probe(s) inconclusive (transport errors) — not counted as pass or block",
+            "  note: {} probe(s) inconclusive (transport errors), not counted as pass or block",
             p.transport_errors
         );
     }
@@ -1076,9 +1076,9 @@ fn base64_decode_lossy(s: &str) -> Vec<u8> {
 
 /// The three sound outcomes of a targeted solve against a live target, kept
 /// distinct so the operator never confuses "nothing to bypass" with "couldn't
-/// bypass it" — the #7 false-positive class.
+/// bypass it" (the #7 false-positive class).
 enum BypassOutcome {
-    /// The raw attack already passes the WAF as delivered — there is nothing to
+    /// The raw attack already passes the WAF as delivered, there is nothing to
     /// bypass (the never-policed case). NOT a bypass.
     NotPoliced,
     /// A live-verified bypass: deliver `payload_b64` and the origin's detected
@@ -1088,7 +1088,7 @@ enum BypassOutcome {
         sink_view: Vec<u8>,
     },
     /// The raw attack is blocked, but no structural preimage of the detected
-    /// pipeline passed the live WAF — the WAF holds. Honest non-result.
+    /// pipeline passed the live WAF (the WAF holds. Honest non-result).
     Unbypassable,
 }
 
@@ -1096,7 +1096,7 @@ enum BypassOutcome {
 /// sound outcomes. A control probe first establishes whether the raw attack is
 /// actually policed: if not, the result is [`BypassOutcome::NotPoliced`] and no
 /// search runs (a "bypass" would be vacuous). Only a raw-blocked attack with a
-/// live-passing preimage is reported as [`BypassOutcome::Bypassed`] — the WAF
+/// live-passing preimage is reported as [`BypassOutcome::Bypassed`], the WAF
 /// oracle is the same live target, so `solve_bypass`'s CEGIS gate confirms each
 /// candidate actually passes before it is reported.
 fn build_solved_bypass(
@@ -1117,7 +1117,7 @@ fn build_solved_bypass(
     let build = move |b: &[u8]| Request::post(&url, b.to_vec());
 
     // Control probe: is the raw attack actually blocked? If it already passes,
-    // there is nothing to bypass — report NotPoliced and never fabricate one.
+    // there is nothing to bypass (report NotPoliced and never fabricate one).
     let raw_blocked = matches!(
         waf.classify(&build(attack.as_bytes()))
             .map_err(|e| e.to_string())?,
@@ -1198,7 +1198,7 @@ mod tests {
     #[test]
     fn observe_accumulates_across_runs_for_a_drifting_token() {
         // A token blocked on run 1 and passed on run 2 (WAF config drift) must
-        // accumulate to θ≈0.5 — exactly the high-info-gain token a budget run
+        // accumulate to θ≈0.5, exactly the high-info-gain token a budget run
         // should keep probing.
         let mut h = crate::info_gain_sched::History::new();
         observe_findings_into_history(
@@ -1273,7 +1273,7 @@ mod tests {
     #[test]
     fn audit_json_output_is_valid_json_schema() {
         // Capture stdout by running the logic directly through class_data +
-        // classify_pass — we can't easily redirect stdout in a unit test,
+        // classify_pass, we can't easily redirect stdout in a unit test,
         // so instead we test the JSON blob that run_audit would build.
         // Construct it the same way run_audit does.
         use wafrift_wafmodel::default_crs_ruleset;
@@ -1368,7 +1368,7 @@ mod tests {
     fn harden_json_format_flag_accepted_and_sane() {
         // Call run_harden in JSON mode. We can't easily capture stdout in a
         // unit test (println! goes directly to the fd), so we replicate the
-        // logic here — this mirrors the contract test in harden_contract.rs.
+        // logic here (this mirrors the contract test in harden_contract.rs).
         use wafrift_wafmodel::default_crs_ruleset;
         let waf = SimRegexWaf::from_toml(default_crs_ruleset()).unwrap();
         let tf = vec![
@@ -1437,7 +1437,7 @@ mod tests {
         assert!(v.get("all_proven").unwrap().as_bool().unwrap());
         assert!(v.get("classes").unwrap().is_array());
         // Each added_rule must have a "transforms" array, not a hardcoded
-        // string — this is the core invariant the pre-fix violated.
+        // string (this is the core invariant the pre-fix violated).
         let first_class = &v["classes"][0];
         let first_rule = &first_class["added_rules"][0];
         assert!(
@@ -1558,7 +1558,7 @@ mod tests {
     #[test]
     fn attack_classes_loader_rejects_a_class_missing_tokens_or_attacks() {
         // A class whose tokens don't detect its attacks would make harden's proof
-        // vacuous — the loader must reject an empty side rather than weaken it.
+        // vacuous (the loader must reject an empty side rather than weaken it).
         let no_tokens = "[[class]]\nname = \"xss\"\nattacks = [\"<script>\"]\ntokens = []\n";
         assert!(
             attack_classes_from_toml(no_tokens).is_err(),
@@ -1588,7 +1588,7 @@ mod tests {
     fn xss_tokens_actually_detect_xss_attacks() {
         // The load-bearing semantic invariant the harden proof rests on: every
         // shipped class's tokens must be substrings present (case-insensitively)
-        // across its attack set — otherwise a synthesized rule keys on a token no
+        // across its attack set, otherwise a synthesized rule keys on a token no
         // attack contains, and the "holes closed" proof is meaningless.
         for c in attack_classes_from_toml(ATTACK_CLASSES_TOML).unwrap() {
             for tok in &c.tokens {
@@ -1717,7 +1717,7 @@ score = 5
         let banned = concat!("std::fs::", "read_to_", "string(p).map_err");
         assert!(
             !src.contains(banned),
-            "raw unbounded fs read of ruleset path reintroduced — OOM regression"
+            "raw unbounded fs read of ruleset path reintroduced. OOM regression"
         );
     }
 
@@ -1725,7 +1725,7 @@ score = 5
     fn ruleset_cap_is_sane() {
         assert!(
             super::RULESET_FILE_MAX_BYTES >= 4 * 1024 * 1024,
-            "RULESET_FILE_MAX_BYTES tightened below 4 MiB — could reject legitimate rulesets"
+            "RULESET_FILE_MAX_BYTES tightened below 4 MiB, could reject legitimate rulesets"
         );
     }
 
@@ -1764,7 +1764,7 @@ score = 5
     // normalization, reached over a real reqwest client, and
     // `detect_origin_normalization` must recover exactly that stage (positive)
     // while an identity origin yields nothing (anti-fabrication twin). This
-    // proves the live wiring — not a `FakeOrigin` double — end to end.
+    // proves the live wiring (not a `FakeOrigin` double (end to end)).
     mod fingerprint_live {
         use super::*;
         use std::net::SocketAddr;
@@ -1894,7 +1894,7 @@ score = 5
         fn live_reflector_against_base64_origin_detects_base64() {
             // Positive: an origin that base64-decodes the parameter (after the
             // framework's baseline url-decode) must be fingerprinted as exactly
-            // Base64Decode — over real TCP, not a FakeOrigin double.
+            // Base64Decode (over real TCP, not a FakeOrigin double).
             use base64::Engine;
             let srv_rt = tokio::runtime::Runtime::new().unwrap();
             let addr = spawn_echo_origin(

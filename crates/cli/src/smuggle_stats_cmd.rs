@@ -1,4 +1,4 @@
-//! `wafrift smuggle-stats` — operator-facing probe-budget snapshot.
+//! `wafrift smuggle-stats`: operator-facing probe-budget snapshot.
 //!
 //! Counts every probe wafrift can emit across the 9 smuggle
 //! families, broken down by family and artifact kind, and reports
@@ -57,7 +57,7 @@ pub struct SmuggleStatsArgs {
     #[arg(long)]
     pub pretty: bool,
 
-    /// Optional family prefix to drill down on — when set, stats
+    /// Optional family prefix to drill down on, when set, stats
     /// are computed only over probes whose technique starts with
     /// this prefix. Empty (default) = all families.
     #[arg(long, default_value = "")]

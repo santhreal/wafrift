@@ -2,7 +2,7 @@
 //! (`HeaderValue` / `Cookie`, added 2026-05-18) over the *public*
 //! surface scald consumes (`xss_delivered` + `DeliveryShape::
 //! to_request`). These channels carry the EXACT payload bytes (no
-//! encoding — the backend XSS sink must see literal `<script>`), so
+//! encoding, the backend XSS sink must see literal `<script>`), so
 //! the only way they could be unsound is by the payload forging
 //! transport structure (header injection / request smuggling). Every
 //! assertion below names that concrete invariant; none would pass if
@@ -96,7 +96,7 @@ fn smuggling_payloads_cannot_forge_structure() {
 // PROPERTY (4000 cases): for ARBITRARY payloads, every member the
 // XSS generator yields for a raw channel is transport-legal, still
 // executes the original script, and renders with NO control byte on
-// the wire — and the output stays bounded (no amplification DoS).
+// the wire (and the output stays bounded (no amplification DoS)).
 proptest! {
     #![proptest_config(ProptestConfig { cases: 4000, max_shrink_iters: 256, ..ProptestConfig::default() })]
 
@@ -129,7 +129,7 @@ proptest! {
 }
 
 /// DETERMINISM across threads: `xss_delivered` (and therefore the new
-/// channel selection) must be a pure function of its inputs — a
+/// channel selection) must be a pure function of its inputs, a
 /// `HashSet`-iteration-order dependency would make scald's bypass set
 /// flaky between runs. Two threads get different `RandomState` seeds;
 /// identical output proves purity.
@@ -156,8 +156,8 @@ fn raw_channel_selection_is_thread_pure() {
     }
 }
 
-/// SCALD-SHAPED E2E: mirror exactly what `scald::waf_delivery` does —
-/// iterate the delivered class, build the live request — and assert
+/// SCALD-SHAPED E2E: mirror exactly what `scald::waf_delivery` does 
+/// iterate the delivered class, build the live request, and assert
 /// the raw channels appear and each is a sound, smuggle-free carrier
 /// of the instrumented marker payload.
 #[test]

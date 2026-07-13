@@ -1,4 +1,4 @@
-//! URL / query-string payload mutation — opt-in attack surface for
+//! URL / query-string payload mutation, opt-in attack surface for
 //! the proxy `--mutate-url` flag and the strategy engine's URL-aware
 //! evade variants.
 //!
@@ -9,9 +9,9 @@
 //! uncovered. This module fills that gap when the operator opts in.
 //!
 //! Scope:
-//! - mutates query parameter VALUES (not names — those drive routing)
+//! - mutates query parameter VALUES (not names, those drive routing)
 //! - optionally mutates the path's last segment (rest is routing)
-//! - never touches the host / scheme / port — those are pre-routing
+//! - never touches the host / scheme / port, those are pre-routing
 //! - returns the URL unchanged when no `?` is present and path
 //!   mutation is disabled
 //!
@@ -26,16 +26,16 @@
 /// HPP exploits the gap between which value a WAF parses (almost
 /// always the first occurrence of a duplicate key) and which value the
 /// backend parses (PHP/Express/Django/Rails typically take the LAST;
-/// arrays — `param[]=` — preserve all). A safe-looking pair on the
+/// arrays: `param[]=`: preserve all). A safe-looking pair on the
 /// WAF-visible side carries the WAF inspection while the backend
 /// reads the attack payload from a duplicate.
 ///
-/// Pre-R74 the [`UrlStrategy::Hpp`] variant was a documented stub —
+/// Pre-R74 the [`UrlStrategy::Hpp`] variant was a documented stub 
 /// `apply_bytes` only sees one value, so it had no way to add a second
 /// pair. The architectural fix lives here, operating on the
 /// `(name, value)` pair list directly.
 ///
-/// Pass 21 R74 — closes pass-20 F4 / Innovation-audit F1 (LAW 1 stub).
+/// Pass 21 R74 (closes pass-20 F4 / Innovation-audit F1 (LAW 1 stub)).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HppStrategy {
     /// `param=attack` → `param=safe&param=attack`. WAFs that take the
@@ -45,7 +45,7 @@ pub enum HppStrategy {
         /// The "safe" value the WAF will inspect.
         decoy: String,
     },
-    /// `param=attack` → `param=attack&param=safe`. Inverse — backends
+    /// `param=attack` → `param=attack&param=safe`. Inverse, backends
     /// that take FIRST see the attack while WAFs that scan ALL pairs
     /// dilute their attention with a benign trailer.
     DuplicateLast {
@@ -76,7 +76,7 @@ impl HppStrategy {
 /// Returns a new pair list. Empty input returns empty output. Names
 /// that contain `&`, `=`, or `#` are passed through unchanged (the
 /// caller is responsible for not handing us pre-encoded structure
-/// bytes — feeding `"a&b"` as a name would have ambiguous semantics
+/// bytes, feeding `"a&b"` as a name would have ambiguous semantics
 /// the moment we re-serialize via `&`-joining).
 ///
 /// `pub` so the proxy / scan paths can dispatch this independently of
@@ -89,7 +89,7 @@ pub fn query_pollute_pairs(
     let mut out: Vec<(String, String)> = Vec::with_capacity(pairs.len() * 2);
     for (name, value) in pairs {
         // Defensive: a name containing structural delimiters would
-        // round-trip ambiguously. Pass through without polluting —
+        // round-trip ambiguously. Pass through without polluting 
         // honest no-op rather than producing malformed wire bytes.
         if name.contains(['&', '=', '#']) {
             out.push((name.clone(), value.clone()));
@@ -106,7 +106,7 @@ pub fn query_pollute_pairs(
             }
             HppStrategy::ArrBracket => {
                 // `param` → `param[]`. If the name already ends in
-                // `[]`, leave it alone — appending another `[]` would
+                // `[]`, leave it alone, appending another `[]` would
                 // produce `param[][]` which is a different framework
                 // contract (Rails nested-array vs flat-array).
                 let new_name = if name.ends_with("[]") {
@@ -127,7 +127,7 @@ pub struct UrlMutateConfig {
     /// Mutate the query string. Default true.
     pub mutate_query_values: bool,
     /// Mutate the path's last segment (everything after the last `/`).
-    /// Default false — disabled because changing path semantics is
+    /// Default false, disabled because changing path semantics is
     /// likely to break routing on most targets.
     pub mutate_last_path_segment: bool,
     /// Strategy to apply per value.
@@ -154,17 +154,17 @@ pub const MAX_DOUBLE_ENCODE_INPUT: usize = 1024 * 1024;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UrlStrategy {
     /// Percent-encode every byte that isn't alphanumeric. Most signatures
-    /// match decoded payloads but verify by raw-byte regex — this
+    /// match decoded payloads but verify by raw-byte regex, this
     /// breaks both checks at once.
     PercentEncodeAggressive,
     /// Double-percent-encode (`%` → `%25`, then percent-encode again).
     /// Bypasses URL-decode-then-match WAFs that decode exactly once.
     DoublePercentEncode,
-    /// Mix in `+` for spaces, `0x2F` for `/`, etc. — non-canonical
+    /// Mix in `+` for spaces, `0x2F` for `/`, etc., non-canonical
     /// encodings that some upstream parsers normalise but signatures
     /// don't.
     NonCanonicalSpaces,
-    /// **DEPRECATED — use [`query_pollute_pairs`] with
+    /// **DEPRECATED, use [`query_pollute_pairs`] with
     /// [`HppStrategy::ArrBracket`] instead.**
     ///
     /// This `UrlStrategy::Hpp` value-level variant is a stub: a single
@@ -174,7 +174,7 @@ pub enum UrlStrategy {
     /// gene-bank doesn't get poisoned with a fake "winning HPP"
     /// entry. The real implementation moved to `query_pollute_pairs`
     /// in pass 21 R74; new callers must use that. Retained as `pub`
-    /// for LAW 2 backwards-compat — existing rule files that name
+    /// for LAW 2 backwards-compat, existing rule files that name
     /// `url:hpp` keep parsing but emit the honest `_unimplemented`
     /// label so the operator sees nothing was actually polluted.
     Hpp,
@@ -182,7 +182,7 @@ pub enum UrlStrategy {
 
 impl UrlStrategy {
     /// Apply the strategy to a single decoded value, returning the
-    /// mutated raw form (already URL-safe — caller does not re-encode).
+    /// mutated raw form (already URL-safe (caller does not re-encode)).
     #[must_use]
     pub fn apply(self, value: &str) -> String {
         self.apply_bytes(value.as_bytes())
@@ -205,7 +205,7 @@ impl UrlStrategy {
     /// label that honestly describes what was done. For most strategies
     /// this is just `Self::label()`, but `DoublePercentEncode` silently
     /// downgrades to single-percent encoding above `MAX_DOUBLE_ENCODE_INPUT`
-    /// (to avoid 9× output blowup) — pre-fix the technique log still
+    /// (to avoid 9× output blowup), pre-fix the technique log still
     /// reported `url:double_percent` even though only one pass ran,
     /// poisoning every WAF-decay statistic. Now the downgrade is
     /// surfaced via `url:double_percent_downgraded` so callers (and
@@ -245,7 +245,7 @@ impl UrlStrategy {
                 // HPP was applied. See the Hpp variant docstring for
                 // the architectural fix path.
                 if std::str::from_utf8(value).is_err() {
-                    // Lossy convert with a warn — a non-UTF-8 value
+                    // Lossy convert with a warn, a non-UTF-8 value
                     // would have been silently U+FFFD'd before.
                     tracing::warn!(
                         bytes = value.len(),
@@ -277,14 +277,14 @@ impl UrlStrategy {
 ///
 /// Inputs are accepted in either form:
 ///   `/path/segment?a=1&b=2`
-///   `/path/segment`            (no query — query mutation is a no-op)
-///   `?a=1`                     (no path — path mutation is a no-op)
+///   `/path/segment`            (no query, query mutation is a no-op)
+///   `?a=1`                     (no path, path mutation is a no-op)
 ///   `/path?a=1#frag`           (fragment preserved verbatim)
 ///
 /// Never panics, never returns empty for non-empty input.
 #[must_use]
 pub fn mutate_url(path_and_query: &str, cfg: &UrlMutateConfig) -> (String, Vec<&'static str>) {
-    // Reject full URLs (with scheme://host/...) at the boundary —
+    // Reject full URLs (with scheme://host/...) at the boundary 
     // mutate_url's contract is "path-and-query only". Pre-fix a full
     // URL got split on '?' such that the scheme + host leaked into
     // the "path" and got mutated, e.g. `https://example.com/p?q=1`
@@ -357,7 +357,7 @@ pub fn mutate_url(path_and_query: &str, cfg: &UrlMutateConfig) -> (String, Vec<&
 
 fn mutate_last_segment(path: &str, strategy: UrlStrategy) -> Option<String> {
     // Treat both literal '/' and percent-encoded slash (%2F or %2f)
-    // as segment boundaries — otherwise an attacker who pre-encodes
+    // as segment boundaries, otherwise an attacker who pre-encodes
     // a slash inside what looks like the last segment (e.g.
     // /a/b%2Fc) would have the WHOLE tail (b%2Fc) mutated, when the
     // logical last segment is `c`.
@@ -385,16 +385,16 @@ fn mutate_last_segment(path: &str, strategy: UrlStrategy) -> Option<String> {
 /// `value`. Pairs without `=` (bare flags) are passed through.
 ///
 /// Empty pairs (consecutive `&&` separators) are PRESERVED rather
-/// than collapsed — some upstream frameworks (e.g. PHP, Rails 5+)
+/// than collapsed, some upstream frameworks (e.g. PHP, Rails 5+)
 /// treat them as distinct empty parameters, so collapsing changes
 /// the parsed parameter count.
 ///
 /// `+` in a query value is interpreted as space per RFC 1866 form
-/// encoding before the strategy is applied — otherwise `q=1+1`
+/// encoding before the strategy is applied, otherwise `q=1+1`
 /// would be mutated as if `+` were a literal plus sign.
 /// Returns `(mutated_query, Some(honest_label))` if any pair was
 /// mutated, or `(unchanged_query, None)` if not. The label tracks
-/// per-input downgrades — e.g. `DoublePercentEncode` on an oversize
+/// per-input downgrades, e.g. `DoublePercentEncode` on an oversize
 /// input returns `"url:double_percent_downgraded"` instead of the
 /// nominal `"url:double_percent"`. Audit (2026-05-10).
 fn mutate_query_string(query: &str, strategy: UrlStrategy) -> (String, Option<&'static str>) {
@@ -418,7 +418,7 @@ fn mutate_query_string(query: &str, strategy: UrlStrategy) -> (String, Option<&'
             if is_mutation || is_honest_noop {
                 // If different inputs in the same query produce
                 // different labels (one downgraded, others not),
-                // PREFER the downgraded one — operators care most
+                // PREFER the downgraded one, operators care most
                 // about the worst case.
                 if last_label.is_none_or(|l| !l.contains("downgraded")) {
                     last_label = Some(label);
@@ -434,7 +434,7 @@ fn mutate_query_string(query: &str, strategy: UrlStrategy) -> (String, Option<&'
 
 /// Aggressive percent-encoding of raw bytes: every byte that is not
 /// `[A-Za-z0-9]` is encoded. Drops the URL safe-list (`-._~`)
-/// intentionally — those are the bytes signatures most often fail to
+/// intentionally, those are the bytes signatures most often fail to
 /// canonicalise. Used by the byte-pipeline paths so non-UTF-8 input
 /// bytes (which a real `%FF%FE`-style WAF-bypass payload contains)
 /// survive end-to-end instead of being silently rewritten to U+FFFD.
@@ -459,7 +459,7 @@ fn non_canonical_spaces(s: &str) -> String {
     // `%`, `#`, `+`, `?`, `\0`, control chars, etc. After percent-decode
     // had already turned `%26c%3Devil` into the literal bytes `&c=evil`,
     // this re-emitted them verbatim and the server then split the value
-    // on `&` and `=` into THREE pairs — HTTP parameter injection. The
+    // on `&` and `=` into THREE pairs. HTTP parameter injection. The
     // audit caught this as CRITICAL.
     //
     // Fix: percent-encode every byte that would be parsed as URL/form
@@ -477,7 +477,7 @@ fn non_canonical_spaces(s: &str) -> String {
             '"' => out.push_str("%22"),
             '(' => out.push_str("%28"),
             ')' => out.push_str("%29"),
-            // Structural URL / form delimiters — must always be encoded
+            // Structural URL / form delimiters, must always be encoded
             // so they cannot escape the value into a sibling pair.
             '&' => out.push_str("%26"),
             '=' => out.push_str("%3D"),
@@ -662,7 +662,7 @@ mod tests {
     #[test]
     fn does_not_panic_on_invalid_percent_escape() {
         let c = UrlMutateConfig::default();
-        // %ZZ is invalid — must be treated as literal `%ZZ`
+        // %ZZ is invalid, must be treated as literal `%ZZ`
         let _ = mutate_url("/p?q=%ZZbad", &c);
     }
 
@@ -711,7 +711,7 @@ mod tests {
 
     #[test]
     fn hpp_strategy_is_honest_no_op() {
-        // The Hpp variant is architecturally stubbed — it operates on
+        // The Hpp variant is architecturally stubbed, it operates on
         // values but real HPP needs query-pair-level mutation. Verify
         // the honest no-op: value passes through unchanged and the
         // technique log reports `url:hpp_unimplemented`.
@@ -784,7 +784,7 @@ mod tests {
     #[test]
     fn hpp_arr_bracket_does_not_double_bracket_existing_array_param() {
         // Anti-rig: if the name already ends in `[]`, applying
-        // ArrBracket twice would produce `param[][]` — a different
+        // ArrBracket twice would produce `param[][]`: a different
         // framework contract (Rails nested-array). Pin the no-op
         // behaviour so a future refactor doesn't accidentally
         // re-bracket.

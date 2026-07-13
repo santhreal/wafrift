@@ -33,7 +33,7 @@ source = "WAFW00F:cloudfront + wafrift:edge-headers"
   header_regex = "(?i)cloudfront"
   weight = 0.5
 # Presence of the Amazon CloudFront PoP / request-id headers is, on its
-# own, conclusive — the value is opaque so we match "any non-empty".
+# own, conclusive (the value is opaque so we match "any non-empty").
 [[waf.signature]]
   header_name = "x-amz-cf-pop"
   header_regex = "."

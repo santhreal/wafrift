@@ -1,5 +1,5 @@
 schema = 1
-# Event-handler-based XSS — known attack surface for HTML5 events.
+# Event-handler-based XSS: known attack surface for HTML5 events.
 
 [[case]]
 id = "img_onerror"

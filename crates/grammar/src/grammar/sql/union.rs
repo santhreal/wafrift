@@ -3,7 +3,7 @@
 //! Provides comprehensive UNION injection variants including keyword
 //! obfuscation, column-count bruteforcing, and WAF-specific evasion
 //! techniques. The key insight: WAFs typically regex for `UNION\s+SELECT`
-//! — splitting that pattern across comments, newlines, or encoding
+//!, splitting that pattern across comments, newlines, or encoding
 //! boundaries defeats the regex without changing SQL semantics.
 
 use crate::grammar::sql::common::SqlMutation;
@@ -17,7 +17,7 @@ pub(crate) const UNION_ALTERNATIVES: &[&str] = &[
     "UNION SELECT",
     "UNION ALL SELECT",
     "UNION DISTINCT SELECT",
-    // Whitespace evasion — tabs, newlines, carriage returns
+    // Whitespace evasion, tabs, newlines, carriage returns
     "UNION%0ASELECT",
     "UNION%09SELECT",
     "UNION%0D%0ASELECT",

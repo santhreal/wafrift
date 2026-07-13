@@ -6,7 +6,7 @@
 # confirmed executions per PL.
 #
 # Distinct from transform_exec_sweep (the app-transform/encoding axis): here
-# nothing is encoded — the payload is split into inert fragments delivered as
+# nothing is encoded, the payload is split into inert fragments delivered as
 # repeated params, and an HPP-joining app reassembles live markup. Disposable
 # host only (axiomexec).
 set -u

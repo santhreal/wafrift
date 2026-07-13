@@ -31,7 +31,7 @@ fn cmdi_does_not_oom_on_large_payload() {
 
 #[test]
 fn cmdi_still_detects_real_injection_after_fix() {
-    // Negative twin — the byte-level rewrite must not regress real
+    // Negative twin, the byte-level rewrite must not regress real
     // injection detection.
     let oracle = CmdiOracle;
     assert!(
@@ -78,7 +78,7 @@ fn ssrf_does_not_false_positive_on_digit_zero_in_path() {
         ),
         "digit '0' inside a public URL must NOT trigger SSRF"
     );
-    // Avoid using "/api" / "/v1" / "/admin" etc. in the URL — those
+    // Avoid using "/api" / "/v1" / "/admin" etc. in the URL, those
     // are real internal_path indicators and would correctly trigger
     // SSRF independent of the digit-zero issue.
     assert!(
@@ -92,7 +92,7 @@ fn ssrf_does_not_false_positive_on_digit_zero_in_path() {
 
 #[test]
 fn ssrf_still_detects_zero_shorthand_loopback() {
-    // Negative twin — the legitimate "0" → "0.0.0.0" shorthand
+    // Negative twin, the legitimate "0" → "0.0.0.0" shorthand
     // (a real SSRF vector when the resolver allows it) must still
     // be caught when '0' is the actual host token.
     let oracle = SsrfOracle;
@@ -108,7 +108,7 @@ fn ssrf_still_detects_zero_shorthand_loopback() {
 
 #[test]
 fn ssrf_still_detects_other_loopback_shorthands() {
-    // Defence-in-depth — make sure the fix didn't accidentally
+    // Defence-in-depth, make sure the fix didn't accidentally
     // disable the other indicator hosts.
     let oracle = SsrfOracle;
     assert!(

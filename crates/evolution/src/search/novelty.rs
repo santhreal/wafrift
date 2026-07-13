@@ -188,7 +188,7 @@ impl SearchAlgorithm for NoveltySearch {
         Ok(())
     }
 
-    /// Population + archive — both are live state the algorithm draws
+    /// Population + archive, both are live state the algorithm draws
     /// candidates from. Diversity over the union is the meaningful
     /// signal for adaptive mutation pressure.
     fn population_snapshot(&self) -> Vec<Chromosome> {

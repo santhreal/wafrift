@@ -1,11 +1,11 @@
-# Differential WAF probes — payloads sent to a target to determine which
+# Differential WAF probes, payloads sent to a target to determine which
 # constructs the WAF blocks vs allows. Aggregated into a fingerprint that
 # informs strategy choice.
 #
 # # SAFETY / authorization contract
 #
 # These payloads are NOT inert. They contain genuinely exploitable strings
-# (`alert(1)`, `eval('x')`, `1=1`, `/etc/passwd`, `;`, `|`, `||`) — that is
+# (`alert(1)`, `eval('x')`, `1=1`, `/etc/passwd`, `;`, `|`, `||`), that is
 # the point: a WAF that doesn't block them is the signal we're measuring.
 # If the WAF fails to block AND the upstream application is vulnerable, the
 # probe IS the attack. Inert markers (e.g. `wafrift_probe_xyz`) don't trigger
@@ -17,7 +17,7 @@
 #
 # # Adding probes
 #
-# Each scalar list (sql_keywords, command_names, etc.) is a flat array — append
+# Each scalar list (sql_keywords, command_names, etc.) is a flat array, append
 # a string and rebuild. Table arrays ([[xss_tag]] / [[xss_function]]) carry a
 # per-entry expected_blocked flag because some payloads are universally allowed.
 #
@@ -59,7 +59,7 @@ command_separators = [";", "|", "||", "&&", "`", "$("]
 command_names = ["cat", "ls", "id", "whoami", "wget", "curl", "ping", "nc"]
 command_paths = ["/etc/passwd", "/etc/shadow", "/proc/self/environ", "/bin/sh"]
 
-# ── Table-array sections (MUST be at the end — see note above) ──
+# ── Table-array sections (MUST be at the end, see note above) ──
 
 # XSS tags carry per-entry expected_blocked because some tags (svg, img, etc.)
 # are commonly allowed in user content even by strict WAFs.
@@ -123,7 +123,7 @@ name = "style"
 payload = "<style>"
 expected_blocked = false
 
-# JS execution functions — `alert` and `eval` are universally blocked;
+# JS execution functions: `alert` and `eval` are universally blocked;
 # others depend on the WAF's behavioural ruleset.
 [[xss_function]]
 name = "alert"

@@ -35,10 +35,10 @@ pub fn mutate(payload: &str) -> Vec<String> {
     };
 
     // ── Priority 0: wildcard-only LDAP variants (naxsi bypass) ────────
-    // naxsi blocks any `)(` filter-break sequence — the canonical
+    // naxsi blocks any `)(` filter-break sequence, the canonical
     // LDAP injection shape. But pure wildcard probes pass cleanly.
     // These exploit applications that build queries like
-    // `(&(uid=$user)(userPassword=$pass))` — passing `*` for both
+    // `(&(uid=$user)(userPassword=$pass))`: passing `*` for both
     // returns the first user. Live-confirmed against wafrift-bench
     // naxsi:
     //   *           → 200 ✓

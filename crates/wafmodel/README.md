@@ -7,14 +7,14 @@ the app?* `wafrift-wafmodel` turns that oracle into a **symbolic finite
 automaton** via active automaton learning, spending the minimum number of
 live queries. Once you have the model:
 
-- **Mine** bypasses offline — intersect the learned pass-language with an
+- **Mine** bypasses offline, intersect the learned pass-language with an
   attack grammar at memory speed, no further live traffic.
-- **Solve** the full pipeline — compose the WAF view with the
+- **Solve** the full pipeline, compose the WAF view with the
   normalization transducers (URL/HTML/JSON/multipart) and solve for
   inputs that survive every stage. Normalization-mismatch bypasses
   (double-decode and friends) fall out of the solver; they are not
   hand-coded.
-- **Dominate both sides** — the same model drives constrained
+- **Dominate both sides**, the same model drives constrained
   adversarial evasion against ML-WAFs, and provable
   hole-closure (`model ∩ attack-grammar = ∅`) for defenders.
 

@@ -1,7 +1,7 @@
 //! End-to-end dogfood of the shipped `wafrift tcp-overlap` binary.
 //!
 //! Drives the compiled binary's planning + both output formats. Sends nothing
-//! (the planner is pure), so no mock server is needed — but every emitted plan is
+//! (the planner is pure), so no mock server is needed, but every emitted plan is
 //! self-verified by the crate, so a green result is a genuine reassembly split.
 
 mod common;

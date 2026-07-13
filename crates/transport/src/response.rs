@@ -93,13 +93,13 @@ pub fn scan_body_lowercase(body: &[u8], limit: usize) -> String {
 #[must_use]
 pub fn is_waf_block_status(status: u16) -> bool {
     // Audit (2026-05-10): removed 429 (rate-limit) and 451 (legal takedown).
-    // Rate-limit is NOT a technique failure — the engine must back off, not
+    // Rate-limit is NOT a technique failure, the engine must back off, not
     // escalate evasion. 451 is "Unavailable For Legal Reasons" (GDPR geo-block,
-    // DMCA) — retrying with different payloads is pointless and wastes requests.
+    // DMCA) (retrying with different payloads is pointless and wastes requests).
     matches!(status, 403 | 406 | 503)
 }
 
-/// Check if a response looks like a WAF block — **strict, post-request** classifier.
+/// Check if a response looks like a WAF block: **strict, post-request** classifier.
 ///
 /// Used by the transport retry loop to decide "did THIS request get blocked,
 /// should I rotate technique?". This is the **FN-cheap** end of the spectrum:
@@ -108,14 +108,14 @@ pub fn is_waf_block_status(status: u16) -> bool {
 /// (no bare vendor names; 200 OK blog posts mentioning Cloudflare must NOT
 /// trigger).
 ///
-/// **Do not unify** with the other two classifiers — they answer different
+/// **Do not unify** with the other two classifiers, they answer different
 /// questions with different cost asymmetries (see below). Past consolidation
 /// attempts regressed evasion behaviour. The three diverge by design.
 ///
 /// See also:
-/// - `wafrift_detect::waf_detect::is_blocked_response` — broad WAF-ish
+/// - `wafrift_detect::waf_detect::is_blocked_response`: broad WAF-ish
 ///   detection for the learning phase (FN-balanced; TOML-driven indicators).
-/// - [`wafrift_types::calibration::analyze_calibration`] — calibration probe
+/// - [`wafrift_types::calibration::analyze_calibration`], calibration probe
 ///   classification (FN-EXPENSIVE → broad, bare vendor names ARE wanted; an
 ///   FN here means scanning a real WAF with no evasion).
 #[must_use]
@@ -166,7 +166,7 @@ mod tests {
     use super::*;
 
     /// §15 anti-rig: the body getters must drain via a bounded chunk loop
-    /// enforcing the cap — never reqwest's unbounded auto-decompressing
+    /// enforcing the cap, never reqwest's unbounded auto-decompressing
     /// whole-body read. A future "simplification" back to the raw form is
     /// a decompression-bomb regression and must fail here. (Checks tokens
     /// unique to the bounded impl so the assertion can't self-satisfy.)
@@ -329,7 +329,7 @@ mod tests {
     // TEST 23-30: Edge cases and body detection
     #[test]
     fn mixed_case_indicators() {
-        // Vendor-name-only indicators removed — must require block-page text.
+        // Vendor-name-only indicators removed (must require block-page text).
         assert!(
             !is_waf_block(200, b"CLOUDFLARE PROTECTION"),
             "benign page mentioning Cloudflare must NOT be a block"
@@ -340,7 +340,7 @@ mod tests {
 
     #[test]
     fn detect_access_denied_in_context() {
-        // Uses "access denied" — an explicit block-page marker retained
+        // Uses "access denied", an explicit block-page marker retained
         // after the 2026-05-10 audit that removed high-FP terms like
         // "security check" and "firewall".
         assert!(is_waf_block(
@@ -370,7 +370,7 @@ mod tests {
 
     #[test]
     fn partial_word_matches() {
-        // Uses "blocked by" — an explicit block-page marker retained
+        // Uses "blocked by", an explicit block-page marker retained
         // after the 2026-05-10 audit that removed high-FP "firewall".
         assert!(is_waf_block(200, b"Request blocked by security policy"));
     }
@@ -420,7 +420,7 @@ mod tests {
     #[test]
     fn api_rate_limit_429_must_not_trigger_evasion() {
         // A legitimate API returning 429 should NOT cause the evasion
-        // engine to switch techniques — it should back off.
+        // engine to switch techniques (it should back off).
         assert!(
             !is_waf_block(429, b"Rate limit exceeded. Retry after 60s."),
             "429 must NOT be treated as a WAF block"

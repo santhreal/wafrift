@@ -1,4 +1,4 @@
-//! `wafrift body-diff` — WAF / origin parser-disagreement scanner
+//! `wafrift body-diff`: WAF / origin parser-disagreement scanner
 //! for REQUEST BODIES.
 //!
 //! ## The innovation
@@ -13,24 +13,24 @@
 //! Examples of WAF↔origin body-parser disagreements:
 //!
 //! - **JSON duplicate-key precedence.** `{"q":"safe","q":"attack"}`
-//!   — RFC 8259 §4 declares dup-key behaviour undefined. Most
+//!: RFC 8259 §4 declares dup-key behaviour undefined. Most
 //!   parsers (Jackson, GSON, Python `json`, Node `JSON.parse`)
 //!   take the LAST value. But some WAFs short-circuit at the FIRST
 //!   key sighting and never see the attack value. WAF safe, origin
 //!   attacked.
 //! - **JSON5 / JSONC comment tolerance.** `{"q":"attack" /*safe*/}`
-//!   — strict JSON parsers reject; the WAF that does strict JSON
+//!, strict JSON parsers reject; the WAF that does strict JSON
 //!   parsing and walks the AST sees nothing; an origin that uses a
 //!   JSON5/JSONC parser (or just regex-strips comments before
 //!   strict parse) sees the attack.
 //! - **Charset smuggling.** `Content-Type: application/json;
-//!   charset=utf-7` — origins that honour `charset=utf-7` decode
+//!   charset=utf-7`, origins that honour `charset=utf-7` decode
 //!   first; payloads encoded as `+ADw-script+AD4-` materialise as
 //!   `<script>` AFTER the WAF has scanned the raw UTF-8 bytes.
-//! - **BOM-prefixed JSON.** `\xEF\xBB\xBF{"q":"attack"}` — some
+//! - **BOM-prefixed JSON.** `\xEF\xBB\xBF{"q":"attack"}`: some
 //!   strict-JSON parsers (RFC 8259 forbids leading BOM) reject the
 //!   body outright; the WAF skips parsing and lets the request
-//!   through; an origin that accepts BOM-prefixed JSON (many do —
+//!   through; an origin that accepts BOM-prefixed JSON (many do 
 //!   it's the standard "UTF-8 with BOM" file format) processes
 //!   the attack.
 //! - **Form-urlencoded HPP.** `q=safe&q=attack` in the BODY (not
@@ -54,7 +54,7 @@
 //! variant body block. The baseline is the same URL POST'd with
 //! the operator-supplied safe body (`--baseline-body`). Divergence
 //! in response status or body length is evidence the WAF and
-//! origin treated the body differently — investigate as a
+//! origin treated the body differently, investigate as a
 //! potential bypass seam.
 
 use std::process::ExitCode;
@@ -77,7 +77,7 @@ pub(crate) struct BodyDiffArgs {
     /// inspection (login, search, RPC endpoints).
     pub url: String,
 
-    /// Baseline body — sent as the reference probe with
+    /// Baseline body, sent as the reference probe with
     /// `Content-Type: application/json`. Default is a benign JSON
     /// object so the operator can immediately see the divergence
     /// vector. Customise via `--baseline-body '{"q":"safe"}'`.
@@ -85,7 +85,7 @@ pub(crate) struct BodyDiffArgs {
     #[arg(long, alias = "body", default_value = "{\"q\":\"safe\"}")]
     pub baseline_body: String,
 
-    /// Inter-request delay (ms) — honour rate limits.
+    /// Inter-request delay (ms) (honour rate limits).
     #[arg(long, default_value_t = 25)]
     pub delay_ms: u64,
 
@@ -105,7 +105,7 @@ pub(crate) struct BodyDiffArgs {
     #[arg(long, value_name = "URL")]
     pub proxy: Option<String>,
 
-    /// Operator-supplied baseline headers — applied to BOTH baseline
+    /// Operator-supplied baseline headers, applied to BOTH baseline
     /// and probes (so an auth cookie or bearer token rides through).
     #[arg(long, short = 'H', value_name = "HEADER", num_args = 0..)]
     pub header: Vec<String>,
@@ -115,7 +115,7 @@ pub(crate) struct BodyDiffArgs {
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
-    /// Quiet mode — suppress per-probe progress (still emits
+    /// Quiet mode, suppress per-probe progress (still emits
     /// final summary / JSON).
     #[arg(long, default_value_t = false)]
     pub quiet: bool,
@@ -153,7 +153,7 @@ pub(crate) struct BodyDiffResult {
     pub severity: &'static str,
 }
 
-/// Generate the body-disagreement variant set. Pure function — no
+/// Generate the body-disagreement variant set. Pure function, no
 /// I/O, deterministic. The `attack_token` is interpolated into
 /// every variant body so the operator can grep the response /
 /// reflection for it.
@@ -164,7 +164,7 @@ pub(crate) fn generate_body_variants(attack_token: &str) -> Vec<BodyDisagreement
     // ── 1. JSON dup-key precedence ────────────────────────────
     out.push(BodyDisagreement {
         kind: "json-dup-key-last-wins",
-        description: "JSON with duplicate `q` keys — RFC 8259 §4 leaves order undefined; \
+        description: "JSON with duplicate `q` keys. RFC 8259 §4 leaves order undefined; \
              most parsers (Jackson, GSON, Python json, Node) take the LAST value; \
              some WAFs short-circuit at first sighting and never see the attack",
         content_type: "application/json".into(),
@@ -172,7 +172,7 @@ pub(crate) fn generate_body_variants(attack_token: &str) -> Vec<BodyDisagreement
     });
     out.push(BodyDisagreement {
         kind: "json-dup-key-first-wins",
-        description: "Same dup-key idea, swapped order — covers the FIRST-WINS dispatch parser",
+        description: "Same dup-key idea, swapped order, covers the FIRST-WINS dispatch parser",
         content_type: "application/json".into(),
         body: format!(r#"{{"q":"{attack_token}","q":"safe"}}"#).into_bytes(),
     });
@@ -182,7 +182,7 @@ pub(crate) fn generate_body_variants(attack_token: &str) -> Vec<BodyDisagreement
     bom_body.extend(format!(r#"{{"q":"{attack_token}"}}"#).as_bytes());
     out.push(BodyDisagreement {
         kind: "json-bom-prefix",
-        description: "UTF-8 BOM prefix before `{` — RFC 8259 forbids; strict parsers reject \
+        description: "UTF-8 BOM prefix before `{`: RFC 8259 forbids; strict parsers reject \
              (WAF treats body as malformed → no parse → pass), lenient parsers \
              (text editors, JSON5) accept",
         content_type: "application/json".into(),
@@ -202,7 +202,7 @@ pub(crate) fn generate_body_variants(attack_token: &str) -> Vec<BodyDisagreement
     // ── 4. Form-urlencoded HPP in body ────────────────────────
     out.push(BodyDisagreement {
         kind: "form-hpp-body",
-        description: "Form body with two `q` parameters — PHP keeps the last, ASP.NET \
+        description: "Form body with two `q` parameters. PHP keeps the last, ASP.NET \
              concatenates with comma, Java keeps the first; WAFs that scan only \
              the first key miss the attack",
         content_type: "application/x-www-form-urlencoded".into(),
@@ -317,7 +317,7 @@ pub(crate) async fn run_body_diff(mut args: BodyDiffArgs) -> ExitCode {
         // META §14: all 8 parser-diff commands use this identical semaphore
         // acquire pattern. The `expect` is infallible (local semaphore, never
         // closed). If this ever fires in production it means the semaphore was
-        // moved into an async block that outlives the arc — that's the structural
+        // moved into an async block that outlives the arc, that's the structural
         // bug, not the expect. Search "semaphore is never closed" to find all 8.
         let permit = sem
             .clone()
@@ -459,7 +459,7 @@ fn emit_output(
     for r in results.iter().filter(|r| r.severity != "none") {
         let badge = crate::parser_diff_common::severity_badge(r.severity);
         println!();
-        println!("  [{badge}] {} — {}", r.kind.bold(), r.description);
+        println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         crate::parser_diff_common::print_baseline_probe_arrow(
             r.baseline_status,
             r.baseline_body_len,
@@ -568,7 +568,7 @@ mod tests {
     }
 
     // body_delta_pct / severity_of / status_class are tested in
-    // their canonical home — crate::parser_diff_common. Probe-shape
+    // their canonical home, crate::parser_diff_common. Probe-shape
     // tests live here.
 
     // ── render_curl ───────────────────────────────────────────
@@ -610,7 +610,7 @@ mod tests {
                     // contains the literal attack token.
                     let leaked = req.contains("WAFRIFT_ATTACK_TOKEN");
                     let body: String = if leaked {
-                        "<html>parsed attack token — origin saw it (long body)</html>".into()
+                        "<html>parsed attack token, origin saw it (long body)</html>".into()
                     } else {
                         "<html>baseline body</html>".into()
                     };

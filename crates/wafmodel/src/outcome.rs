@@ -5,7 +5,7 @@
 //! (blocked / allowed / rate-limited / challenge / server-error /
 //! partial). Automaton learning is a *binary* classification problem:
 //! the request either reaches the application or it does not. This is
-//! the deliberate, lossy projection — kept distinct from `Verdict` on
+//! the deliberate, lossy projection, kept distinct from `Verdict` on
 //! purpose (it is not a duplicate of it; it is the learning-relevant
 //! quotient).
 
@@ -25,7 +25,7 @@ impl Outcome {
     /// Project a full [`Verdict`] onto the learning-relevant binary.
     ///
     /// Block, challenge, and rate-limit all mean "the attack payload
-    /// did not reach the sink" — they are `Block`. Only an outright
+    /// did not reach the sink", they are `Block`. Only an outright
     /// allow is `Pass`. `ServerError`/`Partial` are treated as `Block`:
     /// a request that does not produce a normal application response
     /// did not deliver the attack, and counting it as `Pass` would
