@@ -51,7 +51,7 @@ that:
 
 1. **Authorisation is yours alone.** You will only run wafrift against
    systems you own, operate, or have explicit written authorisation to
-   test — bug-bounty scope, signed penetration-test agreement, CTF
+   test: bug-bounty scope, signed penetration-test agreement, CTF
    competition rules, or lab infrastructure under your control. You
    are responsible for verifying that authorisation before each engagement.
 2. **Legal responsibility transfers to the operator.** The Santh

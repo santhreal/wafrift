@@ -25,7 +25,7 @@ use wiremock::{Mock, MockServer, Request, Respond, ResponseTemplate};
 // ── Mock WAF implementations ───────────────────────────────────────────────
 
 /// A WAF responder that blocks known SQLi/XSS substrings and passes everything else.
-/// This simulates a real WAF with CASE-SENSITIVE matching — case-flipped variants bypass.
+/// This simulates a real WAF with CASE-SENSITIVE matching (case-flipped variants bypass).
 struct SqliXssBlocker;
 
 impl Respond for SqliXssBlocker {
@@ -55,7 +55,7 @@ impl Respond for SqliXssBlocker {
     }
 }
 
-/// A WAF responder that blocks EVERYTHING — simulates a deny-all WAF.
+/// A WAF responder that blocks EVERYTHING (simulates a deny-all WAF).
 struct BlockAllResponder;
 
 impl Respond for BlockAllResponder {
@@ -64,7 +64,7 @@ impl Respond for BlockAllResponder {
     }
 }
 
-/// A WAF responder that passes EVERYTHING — simulates no WAF.
+/// A WAF responder that passes EVERYTHING (simulates no WAF).
 struct PassAllResponder;
 
 impl Respond for PassAllResponder {
@@ -97,7 +97,7 @@ fn run_model_evade(mock_url: &str, extra_args: &[&str]) -> (String, String, i32)
     )
 }
 
-/// Parse the stdout as JSON — panics with the raw output if parsing fails.
+/// Parse the stdout as JSON (panics with the raw output if parsing fails).
 fn parse_json(stdout: &str, context: &str) -> serde_json::Value {
     serde_json::from_str(stdout.trim())
         .unwrap_or_else(|e| panic!("{context}: JSON parse failed: {e}\nRaw stdout:\n{stdout}"))
@@ -131,7 +131,7 @@ async fn model_evade_help_shows_all_flags() {
         "--insecure must be documented"
     );
     assert!(stdout.contains("--format"), "--format must be documented");
-    // Egress flags must appear in help (CLAUDE.md §10 COHERENCE — docs↔code
+    // Egress flags must appear in help (CLAUDE.md §10 COHERENCE, docs↔code
     // must agree; flags that exist in code must be discoverable via --help).
     assert!(stdout.contains("--socks5"), "--socks5 must be documented");
     assert!(
@@ -184,7 +184,7 @@ async fn model_evade_exits_zero_sqli_blocker_mock() {
 
 #[tokio::test]
 async fn model_evade_all_block_target_returns_empty_bypasses() {
-    // A WAF that blocks EVERYTHING. No bypass is possible — the learned
+    // A WAF that blocks EVERYTHING. No bypass is possible, the learned
     // model has no accepting state → mining produces no candidates.
     let server = MockServer::start().await;
     Mock::given(method("GET"))
@@ -584,7 +584,7 @@ async fn model_evade_all_candidates_field_includes_unverified() {
     // `all_candidates` must include every mined candidate (verified or not),
     // while `bypasses` contains only verified ones.
     let server = MockServer::start().await;
-    // Use the real SQLi blocker — it blocks some candidates.
+    // Use the real SQLi blocker (it blocks some candidates).
     Mock::given(method("GET"))
         .respond_with(SqliXssBlocker)
         .mount(&server)
@@ -622,7 +622,7 @@ async fn model_evade_all_candidates_field_includes_unverified() {
 //
 // Before this fix, --socks5 / --http-proxy / --tailscale-exit-node and
 // --egress-challenge-threshold / --egress-cooldown-secs were parsed by
-// clap and stored in ModelEvadeArgs but silently discarded — build_http_oracle
+// clap and stored in ModelEvadeArgs but silently discarded, build_http_oracle
 // used a bare reqwest::Client::builder() and ignored all egress args.
 // These tests pin the wiring so the contract can't regress.
 
@@ -741,7 +741,7 @@ async fn model_evade_unreachable_socks5_proxy_changes_observable_output() {
             dead_proxy,
         ],
     );
-    // Exit 0 is still valid here — connection errors may degrade gracefully
+    // Exit 0 is still valid here, connection errors may degrade gracefully
     // into an all-block model. We just need to confirm candidates_mined
     // shows the proxy was applied (all-block → 0 mined or very few).
     // Accept either "exit non-0" or "candidates_mined == 0".
@@ -750,16 +750,16 @@ async fn model_evade_unreachable_socks5_proxy_changes_observable_output() {
         let j = parse_json(&stdout, "unreachable_proxy_test");
         let candidates_mined = j["candidates_mined"].as_u64().unwrap_or(0);
         // A pass-all direct route would mine candidates; a blocked proxy
-        // can't — if candidates_mined > 0 that proves the proxy was ignored.
+        // can't (if candidates_mined > 0 that proves the proxy was ignored).
         assert_eq!(
             candidates_mined, 0,
             "with an unreachable SOCKS5 proxy, all oracle queries fail \
              → all-block model → 0 candidates mined. \
-             Got {candidates_mined} — this means the proxy was ignored \
+             Got {candidates_mined}, this means the proxy was ignored \
              and the oracle hit the pass-all server directly."
         );
     }
-    // If code != 0, the egress error surfaced as a hard exit — also proves
+    // If code != 0, the egress error surfaced as a hard exit, also proves
     // the proxy was applied, not silently dropped.
 }
 
@@ -794,7 +794,7 @@ async fn model_evade_no_egress_flags_still_works() {
     );
 }
 
-// T-EGRESS-5: boundary — passing an empty --socks5 list (no URL after flag)
+// T-EGRESS-5: boundary, passing an empty --socks5 list (no URL after flag)
 // when clap accepts num_args = 0.. means zero egress entries. The pool is
 // not constructed (want_egress = false) and the oracle routes direct.
 // Exit 0 with the normal schema.

@@ -3,7 +3,7 @@
 //! A ratatui-driven menu that gives a first-touch operator a feel for
 //! what wafrift does and prints copy-paste shell invocations for each
 //! action when they hit Enter. Not a substitute for the headless
-//! commands — it's a discoverability layer. CI / piped invocations
+//! commands, it's a discoverability layer. CI / piped invocations
 //! exit cleanly with a usage hint instead of hanging on a non-TTY
 //! event loop.
 
@@ -15,7 +15,7 @@ use wafrift_strategy::gene_bank::GeneBank;
 
 /// Entry point. Returns `ExitCode::SUCCESS` after the user quits the
 /// menu, or `ExitCode::from(1)` if the terminal cannot be put into raw
-/// mode (rare — pre-flight TTY check catches the common case).
+/// mode (rare (pre-flight TTY check catches the common case)).
 pub(crate) fn run_interactive() -> ExitCode {
     use crossterm::{
         event::{self, Event, KeyCode, KeyEventKind},
@@ -37,7 +37,7 @@ pub(crate) fn run_interactive() -> ExitCode {
     if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
         eprintln!(
             "{}\n  {}",
-            "wafrift: no TTY detected — interactive mode is unavailable.".yellow(),
+            "wafrift: no TTY detected, interactive mode is unavailable.".yellow(),
             "Run `wafrift --help` for headless commands.".bright_black()
         );
         return ExitCode::from(1);
@@ -46,7 +46,7 @@ pub(crate) fn run_interactive() -> ExitCode {
     // Set up terminal.
     if let Err(e) = enable_raw_mode() {
         eprintln!(
-            "Failed to enable raw mode: {e} — try using a subcommand directly (`wafrift --help`)."
+            "Failed to enable raw mode: {e} (try using a subcommand directly (`wafrift --help`))."
         );
         return ExitCode::from(1);
     }
@@ -58,7 +58,7 @@ pub(crate) fn run_interactive() -> ExitCode {
         Err(e) => {
             let _ = disable_raw_mode();
             eprintln!(
-                "Failed to create terminal: {e} — try using a subcommand directly (`wafrift --help`)."
+                "Failed to create terminal: {e} (try using a subcommand directly (`wafrift --help`))."
             );
             return ExitCode::from(1);
         }
@@ -87,7 +87,7 @@ pub(crate) fn run_interactive() -> ExitCode {
         Ok(bank) => {
             let wafs = bank.list_wafs();
             if wafs.is_empty() {
-                "No learned genomes yet — scan a target to start learning".to_string()
+                "No learned genomes yet, scan a target to start learning".to_string()
             } else {
                 format!("{} WAF genomes stored: {}", wafs.len(), wafs.join(", "))
             }
@@ -155,7 +155,7 @@ pub(crate) fn run_interactive() -> ExitCode {
                 .split(chunks[1]);
 
             // Menu. Use a ▶ prefix on the selected row plus REVERSED
-            // video so the selection is visible on every terminal —
+            // video so the selection is visible on every terminal 
             // bg/fg color overrides alone don't render reliably under
             // some emulators (notably when a row's background hasn't
             // been pre-painted), so the prefix + reverse pair gives
@@ -188,7 +188,7 @@ pub(crate) fn run_interactive() -> ExitCode {
 
             // Info panel.
             let (_, desc) = menu_items[selected_menu];
-            // Per-action context block — shows real usage hints
+            // Per-action context block, shows real usage hints
             // tailored to the highlighted entry, not the same Gene
             // Bank stats glued to every panel.
             let mut info_text = vec![
@@ -312,7 +312,7 @@ pub(crate) fn run_interactive() -> ExitCode {
             );
             frame.render_widget(footer, chunks[2]);
 
-            // Help overlay — modal popup, only when show_help is set.
+            // Help overlay (modal popup, only when show_help is set).
             if show_help {
                 use ratatui::layout::Rect;
                 let area = frame.area();
@@ -342,7 +342,7 @@ pub(crate) fn run_interactive() -> ExitCode {
                         Style::default().fg(Color::DarkGray),
                     )),
                     Line::from(Span::styled(
-                        "  command — paste it into your shell to repeat.",
+                        "  command, paste it into your shell to repeat.",
                         Style::default().fg(Color::DarkGray),
                     )),
                     Line::from(""),
@@ -422,7 +422,7 @@ pub(crate) fn run_interactive() -> ExitCode {
                                     if wafs.is_empty() {
                                         println!(
                                             "  {}",
-                                            "No genomes yet — scan a target to start learning."
+                                            "No genomes yet (scan a target to start learning)."
                                                 .yellow()
                                         );
                                     } else {

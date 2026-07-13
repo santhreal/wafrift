@@ -1,8 +1,8 @@
-//! Exit-code contract tests — §12 anti-rig.
+//! Exit-code contract tests: §12 anti-rig.
 //!
 //! Every input-error path that should exit 2 (operator-supplied value wrong:
 //! missing/unreadable file, malformed content, empty required arg, unknown
-//! selector) gets its own test here. All tests are offline — no HTTP, no
+//! selector) gets its own test here. All tests are offline, no HTTP, no
 //! mock server, no disk writes to shared paths.
 //!
 //! Exit-code contract (from `main.rs`):
@@ -86,7 +86,7 @@ fn scan_corpus_missing_path_exits_2() {
     let missing = nonexistent_path();
     // --corpus with a non-existent path and a target: triggers the bench
     // delegation path in main.rs. bench-waf will fail to load the corpus
-    // (exit 1 from the bench engine for IO failure) — but the `--corpus`
+    // (exit 1 from the bench engine for IO failure), but the `--corpus`
     // MISSING-TARGET check is what we're pinning here.
     //
     // No target → input_error() → exit 2.
@@ -196,7 +196,7 @@ fn scan_invalid_payload_class_exits_2() {
 fn scan_valid_payload_class_accepted() {
     // All 10 documented values must be accepted by the parser.
     // We run with an unreachable target: we just need the parse to succeed.
-    // The scan will fail at the network layer (exit 1) — NOT at parse (exit 2).
+    // The scan will fail at the network layer (exit 1). NOT at parse (exit 2).
     for cls in &[
         "sql",
         "xss",
@@ -220,7 +220,7 @@ fn scan_valid_payload_class_accepted() {
         ]);
         // dry-run skips network; exits 0 after printing the budget.
         // On any platform where port 1 is bindable (shouldn't happen but guard anyway)
-        // exit could be 0 or 1 — what matters is it is NOT 2.
+        // exit could be 0 or 1 (what matters is it is NOT 2).
         assert_ne!(
             code, 2,
             "--payload-class={cls} is a valid value and must not exit 2; got {code}; stderr: {stderr}"
@@ -276,7 +276,7 @@ fn sarif_schema_mismatch_exits_2_not_1() {
 // Four production `unreachable!()` sites are guarded by clap argument
 // invariants (`required_unless_present*` / `conflicts_with*`). The contract
 // (CLAUDE.md "no stubs / prove unreachable") requires proving the guard fires
-// BEFORE the run_* fn — i.e. clap rejects the triggering input with exit 2 so
+// BEFORE the run_* fn, i.e. clap rejects the triggering input with exit 2 so
 // the panic can never be hit. Each test below drives the real binary with the
 // exact input that would otherwise reach the panic and asserts clap's exit 2.
 

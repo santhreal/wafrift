@@ -1,4 +1,4 @@
-//! `wafrift client-deliver` — emit the WAF-blind **client-side** delivery plan.
+//! `wafrift client-deliver`: emit the WAF-blind **client-side** delivery plan.
 //!
 //! Every other delivery wafrift emits (`exploit`, `scan`, the `equiv` server
 //! shapes) puts the payload on the wire *through* the WAF and confirms by a
@@ -20,7 +20,7 @@
 //! ([`wafrift_grammar::grammar::equiv::client_channel`]) into a concrete,
 //! copy-pasteable delivery plan: for each channel, the scald-core taint source
 //! it lands in and the exact browser action that delivers it. It **sends
-//! nothing** — execution is confirmed in a real browser by scald (or by hand).
+//! nothing** (execution is confirmed in a real browser by scald (or by hand)).
 //! The JSON form (`wafrift.client_deliver.v1`) is the contract scald consumes at
 //! the single wafrift↔scald integration boundary.
 
@@ -47,7 +47,7 @@ pub(crate) struct ClientDeliverArgs {
     /// (window.name / storage / postMessage) seed state and then load it.
     #[arg(long)]
     pub target: String,
-    /// XSS payload bytes to land in the DOM sink. Delivered VERBATIM — the
+    /// XSS payload bytes to land in the DOM sink. Delivered VERBATIM, the
     /// fragment and browser-state channels are never WAF-inspected, so no
     /// evasion encoding is applied or needed. The default exercises the
     /// `javascript:` sanitizer-prefix-bypass lane (Paddle `substring(0,11)`
@@ -72,7 +72,7 @@ pub(crate) struct ClientDeliveryEntry {
     pub channel: String,
     /// scald-core `dom.rs` taint source this channel delivers through.
     pub taint_source: String,
-    /// Always `false` — a client channel never reaches a server sink. Emitted
+    /// Always `false`: a client channel never reaches a server sink. Emitted
     /// explicitly so a consumer never routes confirmation to the server oracle.
     pub reaches_server: bool,
     /// Rules composed to produce this delivery (audit attribution).
@@ -164,7 +164,7 @@ pub(crate) fn run_client_deliver(args: ClientDeliverArgs) -> ExitCode {
 }
 
 fn print_human(report: &ClientDeliveryReport) {
-    println!("wafrift client-deliver — WAF-blind client-side delivery plan");
+    println!("wafrift client-deliver: WAF-blind client-side delivery plan");
     println!("target  : {}", report.target);
     println!("payload : {}", report.payload);
     println!(

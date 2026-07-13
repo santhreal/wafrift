@@ -1,25 +1,25 @@
 //! HTTP request-line differential encoders.
 //!
-//! Almost every byte of the request line — the first three tokens of
-//! an HTTP/1.x request — has some WAF parser that misreads it. This
+//! Almost every byte of the request line, the first three tokens of
+//! an HTTP/1.x request, has some WAF parser that misreads it. This
 //! module produces request lines that one parser accepts as the
 //! benign request the WAF expects, while a different parser further
 //! down the chain reinterprets them.
 //!
 //! - **Method tricks.** Exotic methods (WebDAV: `PROPFIND`, `LOCK`,
 //!   `MERGE`; CalDAV: `REPORT`; private: `PURGE`, `CONNECT`). Some
-//!   WAFs hard-allow `GET`/`POST`/`PUT` only — others allow anything
+//!   WAFs hard-allow `GET`/`POST`/`PUT` only, others allow anything
 //!   but apply *no* rules to "weird" methods.
 //! - **Method case + whitespace.** `GeT /foo`, `GET\t/foo`, `GET
 //!   /foo` (multiple spaces), `GET<TAB>/foo<TAB>HTTP/1.1`. RFC says
 //!   ONE space; some parsers fold runs of whitespace.
-//! - **Version tricks.** `HTTP/0.9` (response has no headers — some
+//! - **Version tricks.** `HTTP/0.9` (response has no headers, some
 //!   WAFs don't classify), `HTTP/1.99`, `HTTP/2.0` (mismatched
 //!   version vs transport), no version at all (HTTP/0.9-style).
 //! - **URI forms.** RFC 7230 §5.3 allows four request-target forms:
 //!   `origin-form` (`/path`), `absolute-form` (`http://host/path`),
-//!   `authority-form` (`host:port` — only for CONNECT), `asterisk-form`
-//!   (`*` — only for OPTIONS). Most WAFs assume origin-form; passing
+//!   `authority-form` (`host:port`: only for CONNECT), `asterisk-form`
+//!   (`*`: only for OPTIONS). Most WAFs assume origin-form; passing
 //!   absolute-form is a classic auth/path-bypass trick.
 
 /// Generate every method variant that has a known parser-discrepancy
@@ -54,7 +54,7 @@ pub fn exotic_methods() -> Vec<&'static str> {
         "MKACTIVITY",
         "BASELINE-CONTROL",
         "MERGE",
-        // Patch (RFC 5789) — older WAFs predate it
+        // Patch (RFC 5789), older WAFs predate it
         "PATCH",
         // Tracing
         "TRACE",
@@ -109,7 +109,7 @@ pub fn request_line_with_version(method: &str, path: &str, version: &str) -> Str
 /// three tokens.
 ///
 /// RFC 7230 allows exactly one SP. Real parsers accept a wide variety
-/// of separator strings — TAB, multiple SP, mixed — and the WAF may
+/// of separator strings: TAB, multiple SP, mixed, and the WAF may
 /// disagree with the origin on what counts as "the path".
 #[must_use]
 pub fn request_line_with_whitespace(
@@ -122,14 +122,14 @@ pub fn request_line_with_whitespace(
     format!("{method}{method_sep}{path}{path_sep}{version}")
 }
 
-/// Asterisk-form request target. RFC 7230 §5.3.4 — only valid for
+/// Asterisk-form request target. RFC 7230 §5.3.4, only valid for
 /// `OPTIONS *`. Some WAFs reject; some pass without rule application.
 #[must_use]
 pub fn asterisk_form_request_line(method: &str) -> String {
     format!("{method} * HTTP/1.1")
 }
 
-/// Authority-form request target (`host:port`). RFC 7230 §5.3.3 —
+/// Authority-form request target (`host:port`). RFC 7230 §5.3.3 
 /// only valid for `CONNECT`. A WAF that sees `CONNECT internal:8080`
 /// and the upstream proxy that accepts it can be tricked into
 /// tunneling to private addresses.
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn exotic_methods_minimum_count() {
         // Adding more is fine; removing a known parser-discrepancy
-        // method is not — every entry here has been observed to flip
+        // method is not, every entry here has been observed to flip
         // SOME WAF's rule set off.
         assert!(
             exotic_methods().len() >= 25,
@@ -286,7 +286,7 @@ mod tests {
     #[test]
     fn no_function_produces_crlf_in_output() {
         // Every output of this module is meant to be ONE line of a
-        // request — embedding CRLF would let a caller smuggle a
+        // request, embedding CRLF would let a caller smuggle a
         // second request line, which is a different attack class
         // (smuggling crate). Keep the boundary clean.
         let candidates = vec![

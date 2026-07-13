@@ -1,4 +1,4 @@
-//! wafrift-strategy — Evasion strategy pipeline.
+//! wafrift-strategy: Evasion strategy pipeline.
 //!
 //! The orchestrator that wires all WAF Rift modules into a coherent
 //! evasion flow: request → detect → grammar → encoding →
@@ -26,7 +26,7 @@
 //! assert!(!state.waf_confirmed);
 //! assert_eq!(state.blocks, 0);
 //!
-//! // Three confirmed blocks — strategy now knows escalation is needed.
+//! // Three confirmed blocks (strategy now knows escalation is needed).
 //! state.record_block();
 //! state.record_block();
 //! state.record_block();
@@ -69,6 +69,6 @@ pub use planner::plan_pipelines;
 pub use strategy::*;
 
 pub mod explain;
-/// Plugin bridge — integrates external TOML/WASM tampers from wafrift-plugin-api
+/// Plugin bridge, integrates external TOML/WASM tampers from wafrift-plugin-api
 /// into the evasion pipeline alongside built-in tampers.
 pub mod plugin_bridge;

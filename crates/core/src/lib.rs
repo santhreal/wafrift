@@ -1,4 +1,4 @@
-//! wafrift-core — Façade crate re-exporting all WAF Rift modules.
+//! wafrift-core: Façade crate re-exporting all WAF Rift modules.
 //!
 //! This crate is a convenience umbrella. Each module lives in its own
 //! focused crate; this crate re-exports them all under a single namespace
@@ -13,7 +13,7 @@
 //! ```
 //! use wafrift_core::{encoding, grammar};
 //!
-//! // Classify, mutate, encode — three lego-blocks, one façade.
+//! // Classify, mutate, encode (three lego-blocks, one façade).
 //! let p = "' OR 1=1 --";
 //! assert_eq!(grammar::classify(p), grammar::PayloadType::Sql);
 //!
@@ -61,12 +61,12 @@
 //! to avoid the associated heavy dependencies (wasmtime, ed25519-dalek, etc.)
 //! in consumers that don't need them. Use the sub-crates directly:
 //!
-//! - `wafrift-wafmodel` — L* WAF decompiler + offline SFA bypass mining
-//! - `wafrift-genome-registry` — ed25519 genome signing + trust-list management
-//! - `wafrift-plugin-api` — TOML + WASM external tamper SDK
-//! - `wafrift-graphql` — GraphQL-specific evasion payloads
-//! - `wafrift-grpc-evasion` — gRPC opaque-payload bypass
-//! - `wafrift-captchaforge-bridge` — headless Chromium challenge solver
+//! - `wafrift-wafmodel`: L* WAF decompiler + offline SFA bypass mining
+//! - `wafrift-genome-registry`: ed25519 genome signing + trust-list management
+//! - `wafrift-plugin-api`: TOML + WASM external tamper SDK
+//! - `wafrift-graphql`: GraphQL-specific evasion payloads
+//! - `wafrift-grpc-evasion`: gRPC opaque-payload bypass
+//! - `wafrift-captchaforge-bridge`: headless Chromium challenge solver
 
 // ── Foundation types ──
 pub use wafrift_types::*;
@@ -115,11 +115,11 @@ pub use wafrift_recon as recon;
 //
 // R75 pass-21 §8 ARCHITECTURE: pre-fix this block also re-exported
 // `CalibrationResult`, `EscalationLevel`, `EvasionConfig` via the
-// `wafrift_strategy::strategy::*` path — but those are already
+// `wafrift_strategy::strategy::*` path, but those are already
 // available at this crate's root via `pub use wafrift_types::*` on
 // line 59 (each is defined in `wafrift_types`, NOT in
 // `wafrift_strategy`). Two valid import paths for the same symbol
 // (`wafrift_core::EvasionConfig` AND `wafrift_core::strategy::
-// EvasionConfig`) caused grep-confusion during refactors — half the
+// EvasionConfig`) caused grep-confusion during refactors, half the
 // usages would be missed. One canonical path now.
 pub use wafrift_strategy::host_state::HostState;

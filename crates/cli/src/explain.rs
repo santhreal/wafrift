@@ -25,7 +25,7 @@ pub(crate) struct ExplainEntry {
     pub outcome: Outcome,
 }
 
-/// Per-tamper explain entry — tampers are a separate variant
+/// Per-tamper explain entry, tampers are a separate variant
 /// axis from the encoding `Strategy` enum, so the trace tracks
 /// them in a parallel collection.  Each entry pairs the tamper
 /// name with whether the transform produced a unique variant or
@@ -41,7 +41,7 @@ pub(crate) enum TamperOutcome {
     /// Tamper transformed the payload into a NEW variant.
     Applied,
     /// Tamper produced a byte-identical output (no transform
-    /// applicable to this payload — e.g. `postgres_dollar_quote`
+    /// applicable to this payload, e.g. `postgres_dollar_quote`
     /// on a payload without single-quoted literals).
     Idempotent,
     /// Tamper output collided with an already-produced variant
@@ -80,7 +80,7 @@ impl ExplainTrace {
         // For non-Applied outcomes, fold repeat observations of the same
         // (strategy, outcome-variant) into a single entry. Without this,
         // a strategy that produces a duplicate on every grammar
-        // mutation prints "folded" N times — the trace becomes scroll
+        // mutation prints "folded" N times, the trace becomes scroll
         // noise instead of a summary.
         let already_recorded = self.entries.iter().any(|e| {
             e.strategy == strategy
@@ -137,15 +137,15 @@ impl ExplainTrace {
                     "✓".green().bold()
                 ),
                 Outcome::AllDuplicates => println!(
-                    "  {} {path}: output identical to other variants — folded",
+                    "  {} {path}: output identical to other variants, folded",
                     "·".dimmed()
                 ),
                 Outcome::NotApplicableToContext(why) => println!(
-                    "  {} {path}: not applicable in this context — {why}",
+                    "  {} {path}: not applicable in this context. {why}",
                     "·".yellow()
                 ),
                 Outcome::EncodingError(msg) => {
-                    println!("  {} {path}: encoding failed — {msg}", "✗".red())
+                    println!("  {} {path}: encoding failed: {msg}", "✗".red())
                 }
             }
         }
@@ -160,11 +160,11 @@ impl ExplainTrace {
                         println!("  {} {path}: tamper produced a variant", "✓".green().bold())
                     }
                     TamperOutcome::Idempotent => println!(
-                        "  {} {path}: payload unchanged — tamper not applicable to this input",
+                        "  {} {path}: payload unchanged, tamper not applicable to this input",
                         "·".yellow()
                     ),
                     TamperOutcome::DuplicateOfExisting => println!(
-                        "  {} {path}: output identical to an existing variant — folded",
+                        "  {} {path}: output identical to an existing variant, folded",
                         "·".dimmed()
                     ),
                 }
@@ -194,7 +194,7 @@ impl ExplainTrace {
                 })
             })
             .collect();
-        // Tampers — same shape as encoding entries but with the
+        // Tampers, same shape as encoding entries but with the
         // `tamper/<name>` path under `technique` so a downstream
         // consumer can union the two collections without losing
         // attribution.
@@ -383,7 +383,7 @@ mod tests {
     #[test]
     fn print_text_does_not_panic_with_tampers_present() {
         // Smoke test the print path (output is to stdout, not
-        // captured here — we just verify no panic).
+        // captured here (we just verify no panic)).
         let mut t = ExplainTrace::default();
         t.record(Strategy::UrlEncode, Outcome::Applied { variant_count: 3 });
         t.record_tamper("zero_width_inject", TamperOutcome::Applied);

@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift tmin`.
 //!
-//! `tmin` is a thin alias for `wafrift distill` — it delegates entirely
+//! `tmin` is a thin alias for `wafrift distill`: it delegates entirely
 //! to the same ddmin engine. Full network+mock tests for the shared
 //! algorithm are in `distill_e2e.rs`. This suite covers:
 //!
@@ -50,11 +50,11 @@ fn distill_is_in_main_help_and_tmin_alias_still_runs() {
     let (code2, _stdout2, stderr2) = wafrift(&["tmin", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift tmin --help` must still exit 0 — stderr:\n{stderr2}"
+        "`wafrift tmin --help` must still exit 0, stderr:\n{stderr2}"
     );
 }
 
-// ── Input validation (offline — no network needed) ────────────────────────
+// ── Input validation (offline, no network needed) ────────────────────────
 
 #[test]
 fn tmin_empty_payload_exits_2() {

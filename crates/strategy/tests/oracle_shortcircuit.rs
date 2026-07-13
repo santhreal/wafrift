@@ -1,4 +1,4 @@
-//! Oracle short-circuit — when `HostState` records a previous success
+//! Oracle short-circuit, when `HostState` records a previous success
 //! (simulating an `Allowed` oracle verdict), `evade` must early-exit
 //! the escalation chain and re-apply the winning technique without
 //! running the remaining encoders.

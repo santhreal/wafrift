@@ -1,4 +1,4 @@
-//! Extra unit tests for `tui::state` — functions that had zero coverage
+//! Extra unit tests for `tui::state`: functions that had zero coverage
 //! despite being public API used by every TUI render pass.
 //!
 //! Each test names the property it pins.
@@ -175,7 +175,7 @@ mod state_coverage_tests {
     #[test]
     fn technique_keys_parses_comma_separated() {
         // PROPERTY: technique_keys must split on commas and strip
-        // whitespace — the TUI uses this for the per-technique stats.
+        // whitespace (the TUI uses this for the per-technique stats).
         let rec = RequestRecord {
             timestamp: "t".into(),
             host: "h".into(),
@@ -207,7 +207,7 @@ mod state_coverage_tests {
 
     #[test]
     fn technique_keys_empty_string_yields_no_keys() {
-        // PROPERTY: an empty techniques string must yield zero keys — the
+        // PROPERTY: an empty techniques string must yield zero keys, the
         // TUI must not count an empty key as a technique.
         let rec = RequestRecord {
             timestamp: "t".into(),
@@ -239,7 +239,7 @@ mod state_coverage_tests {
     #[test]
     fn avg_latency_ms_zero_when_no_requests() {
         // PROPERTY: avg_latency_ms must return 0 (not panic) when there
-        // are no requests — the denominator is `total`, which starts at 0.
+        // are no requests (the denominator is `total`, which starts at 0).
         let s = State::new();
         assert_eq!(s.avg_latency_ms(), 0);
     }
@@ -299,7 +299,7 @@ mod state_coverage_tests {
     #[test]
     fn top_hosts_returns_n_busiest_in_descending_order() {
         // PROPERTY: `top_hosts(n)` must return at most `n` hosts sorted
-        // by `sent` descending — the most active first.
+        // by `sent` descending (the most active first).
         let mut s = State::new();
         s.record(&req_with("busy.com", "/", 200, false, ""));
         s.record(&req_with("busy.com", "/", 200, false, ""));
@@ -325,11 +325,11 @@ mod state_coverage_tests {
     #[test]
     fn select_first_selects_first_visible_index() {
         // PROPERTY: select_first must set selected to the index of the
-        // first record that passes the active filter — not index 0
+        // first record that passes the active filter, not index 0
         // unconditionally (filters may exclude the head of the ring).
         let mut s = State::new();
-        s.record(&req_with("a.com", "/x", 403, false, "")); // block — index 0
-        s.record(&req_with("a.com", "/y", 200, true, "")); // bypass — index 1
+        s.record(&req_with("a.com", "/x", 403, false, "")); // block, index 0
+        s.record(&req_with("a.com", "/y", 200, true, "")); // bypass, index 1
         s.outcome_filter = OutcomeFilter::BypassOnly;
         s.select_first();
         // Only index 1 is visible; select_first must land on it.
@@ -364,7 +364,7 @@ mod state_coverage_tests {
     #[test]
     fn cancel_filter_edit_clears_query_and_restores_normal_mode() {
         // PROPERTY: `cancel_filter_edit` must clear the filter query AND
-        // restore Normal mode — the user is aborting the filter, not
+        // restore Normal mode, the user is aborting the filter, not
         // committing it.
         let mut s = State::new();
         s.filter_query = "admin".into();
@@ -391,7 +391,7 @@ mod state_coverage_tests {
     #[test]
     fn filter_backspace_removes_last_char() {
         // PROPERTY: `filter_backspace` must remove the last character
-        // (pop), not the first — it's the user pressing ⌫.
+        // (pop), not the first (it's the user pressing ⌫).
         let mut s = State::new();
         s.filter_query = "adm".into();
         s.filter_backspace();
@@ -431,7 +431,7 @@ mod state_coverage_tests {
         s.toast = Some(Toast {
             message: "stale".into(),
             kind: ToastKind::Info,
-            // Already expired — set to 1 second ago.
+            // Already expired (set to 1 second ago).
             expires: std::time::Instant::now() - Duration::from_secs(1),
         });
         s.tick_toast();
@@ -456,7 +456,7 @@ mod state_coverage_tests {
 
     #[test]
     fn outcome_filter_all_matches_everything() {
-        // PROPERTY: `OutcomeFilter::All.matches` must always return true —
+        // PROPERTY: `OutcomeFilter::All.matches` must always return true 
         // no filtering when the operator has not selected a specific outcome.
         let rec = RequestRecord {
             timestamp: "t".into(),

@@ -3,15 +3,15 @@
 //! Active when `wafrift-proxy --tui` is passed. Runs in a dedicated
 //! tokio task, draws via ratatui + crossterm. The module is split:
 //!
-//! - `state`              — counters, request ring, filter state, toast queue
-//! - `format`             — palette + truncation helpers
-//! - `keymap`             — keystroke dispatch (Normal + `FilterEdit` modes)
-//! - `yank`               — render selected request as `curl` + clipboard set
-//! - `render_chrome`      — header bar, tab strip, footer key-help
-//! - `render_flow`        — Flow tab: live stream + sparklines + detail pane
-//! - `render_overview`    — Overview tab: counters, percentiles, status mix
-//! - `render_hosts`       — Hosts tab: per-host bypass leaderboard
-//! - `render_techniques`  — Techniques tab: per-evasion-key leaderboard
+//! - `state`: counters, request ring, filter state, toast queue
+//! - `format`: palette + truncation helpers
+//! - `keymap`: keystroke dispatch (Normal + `FilterEdit` modes)
+//! - `yank`: render selected request as `curl` + clipboard set
+//! - `render_chrome`: header bar, tab strip, footer key-help
+//! - `render_flow`: Flow tab: live stream + sparklines + detail pane
+//! - `render_overview`: Overview tab: counters, percentiles, status mix
+//! - `render_hosts`: Hosts tab: per-host bypass leaderboard
+//! - `render_techniques`: Techniques tab: per-evasion-key leaderboard
 //!
 //! # Layout
 //!
@@ -91,7 +91,7 @@ pub async fn run(
     let mut quit = Some(quit_tx);
 
     loop {
-        // Drain a burst of events without redrawing per-event — keeps
+        // Drain a burst of events without redrawing per-event, keeps
         // the TUI responsive under heavy load.
         while let Ok(ev) = events.try_recv() {
             state.record(&ev);
@@ -126,7 +126,7 @@ pub async fn run(
     Ok(())
 }
 
-/// Top-level draw — header / tab strip / body / footer.
+/// Top-level draw (header / tab strip / body / footer).
 fn draw(f: &mut ratatui::Frame, cfg: &DashboardConfig, state: &State) {
     let area = f.area();
     let chunks = Layout::default()

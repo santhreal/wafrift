@@ -1,4 +1,4 @@
-# waf-zoo/coraza — Coraza WAF (Go reimplementation of ModSecurity)
+# waf-zoo/coraza: Coraza WAF (Go reimplementation of ModSecurity)
 
 ## What this is
 
@@ -18,7 +18,7 @@ OWASP CRS). SecRuleEngine is forced to `On` (blocking mode) in the Caddyfile.
 
 ## Port
 
-`18103` — does not conflict with any other waf-zoo or wafrift-bench/targets stack.
+`18103`: does not conflict with any other waf-zoo or wafrift-bench/targets stack.
 
 Note: `wafrift-bench/targets/coraza` uses port 18085. This stack is a separate
 zoo entry with a different image (ghcr.io vs the deprecated jptosso namespace)
@@ -26,7 +26,7 @@ and is independently managed.
 
 ## Backend
 
-`kennethreitz/httpbin` — echoes the request. 200 + echo = WAF allowed (bypass).
+`kennethreitz/httpbin`: echoes the request. 200 + echo = WAF allowed (bypass).
 403 = WAF blocked.
 
 ## How to run
@@ -35,7 +35,7 @@ and is independently managed.
 # 1. Start the stack
 docker compose -f bench/waf-zoo/coraza/docker-compose.yml up -d
 
-# 2. Smoke test — expect 200 OK
+# 2. Smoke test: expect 200 OK
 curl -si http://127.0.0.1:18103/get | head -2
 
 # 3. Verify WAF blocks a raw SQLi payload
@@ -66,6 +66,6 @@ SecAction "id:900000,phase:1,nolog,pass,t:none,setvar:tx.paranoia_level=2"
 
 ## Licensing
 
-`ghcr.io/corazawaf/coraza-caddy` — Apache 2.0 (OWASP Coraza project).
-`kennethreitz/httpbin` — ISC.
+`ghcr.io/corazawaf/coraza-caddy`: Apache 2.0 (OWASP Coraza project).
+`kennethreitz/httpbin`: ISC.
 No commercial or trial licenses required.

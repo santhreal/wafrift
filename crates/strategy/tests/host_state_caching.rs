@@ -1,4 +1,4 @@
-//! Host-state caching — `evade_smart` must reuse recon results stored in
+//! Host-state caching: `evade_smart` must reuse recon results stored in
 //! `HostState` (prioritized techniques, proven winners) on the second
 //! call to the same host.
 

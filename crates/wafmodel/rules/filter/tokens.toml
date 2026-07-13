@@ -4,7 +4,7 @@
 # SAME byte length whose internal LETTERS are altered so no rule-keyword
 # substring survives, while every NON-letter byte (punctuation / digits /
 # space) is preserved exactly. The differential (token blocked, twin passed)
-# isolates whether the WAF policies the keyword itself — not its shape.
+# isolates whether the WAF policies the keyword itself (not its shape).
 #
 # This file is DATA, not code: drop in additional [[probe]] rows to extend
 # coverage, or ship your own and pass it with `--filter-battery <PATH>`.

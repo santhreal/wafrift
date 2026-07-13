@@ -50,7 +50,7 @@ proptest! {
         // Own each level's bytes so the slice stays live across iterations.
         // Pre-fix this used `transmute::<&[u8], &[u8]>` to extend the
         // borrow lifetime of a `tmp` Vec that was overwritten on the
-        // next iteration — undefined behaviour that the transmute
+        // next iteration, undefined behaviour that the transmute
         // hid from the borrow checker.
         let mut current: Vec<u8> = body.to_vec();
         for _ in 0..depth {
@@ -60,7 +60,7 @@ proptest! {
             let next = fields[0].1.clone();
             let inner = decode_string_fields(&next).expect("inner decode");
             if inner.is_empty() {
-                // Innermost level — verify the payload matches.
+                // Innermost level (verify the payload matches).
                 prop_assert_eq!(String::from_utf8(next).unwrap_or_default(), payload.clone());
                 return Ok(());
             }
@@ -120,7 +120,7 @@ proptest! {
 proptest! {
     /// Arbitrary byte slices must NEVER panic the decoder. Either it
     /// returns a typed error or it returns a valid (compression,len,body)
-    /// tuple — but it must always return.
+    /// tuple (but it must always return).
     #[test]
     fn decode_grpc_frame_total_function(bytes in proptest::collection::vec(any::<u8>(), 0..200)) {
         let _ = decode_grpc_frame(&bytes);
@@ -168,7 +168,7 @@ fn decode_grpc_frame_with_zero_bytes_too_short() {
 
 #[test]
 fn decode_grpc_frame_max_u32_declared_len() {
-    // Frame declares u32::MAX bytes but only ships 0 — must be a
+    // Frame declares u32::MAX bytes but only ships 0, must be a
     // length mismatch error, not an integer overflow / panic.
     let mut frame = vec![0u8];
     frame.extend_from_slice(&u32::MAX.to_be_bytes());
@@ -184,7 +184,7 @@ fn decode_grpc_frame_max_u32_declared_len() {
 
 #[test]
 fn decode_varint_truncated_continuation() {
-    // 0x80 0x80 — continuation bit set, no terminator → None, no panic.
+    // 0x80 0x80 (continuation bit set, no terminator → None, no panic).
     let result = decode_varint(&[0x80, 0x80], 0);
     assert_eq!(result, None);
 }
@@ -198,7 +198,7 @@ fn decode_varint_pure_zero() {
 #[test]
 fn decode_varint_max_continuation_chain() {
     // 10 bytes of 0x80 (continuation) then 0x01 = u64::MAX-ish encoding.
-    // Spec says 10 bytes max — verify we don't loop forever.
+    // Spec says 10 bytes max (verify we don't loop forever).
     let payload: Vec<u8> = (0..15).map(|_| 0x80).chain(std::iter::once(0x01)).collect();
     let result = decode_varint(&payload, 0);
     // Either decodes (10-byte varint valid) or returns None (overflow).
@@ -226,7 +226,7 @@ fn decode_string_fields_rejects_truncated_length_delim() {
 
 #[test]
 fn decode_string_fields_rejects_unrecognized_wire_type() {
-    // Wire type 3 = group start (deprecated) — should be None.
+    // Wire type 3 = group start (deprecated) (should be None).
     let buf = vec![0x0B]; // field 1, wire 3
     assert!(decode_string_fields(&buf).is_none());
 }
@@ -292,7 +292,7 @@ fn split_emits_sequential_field_numbers() {
 
 #[test]
 fn split_emoji_payload_preserves_utf8() {
-    // 4-byte emoji codepoints — char-boundary snap must keep them whole.
+    // 4-byte emoji codepoints (char-boundary snap must keep them whole).
     let payload = "💀🦀🔥🌊🎯";
     for n in [1u8, 2, 3, 5] {
         let frame = split_attack_across_fields(payload, n);
@@ -341,7 +341,7 @@ fn nested_empty_payload_max_depth_no_panic() {
 
 #[test]
 fn split_one_byte_payload_into_max_fields() {
-    // Edge: 1 byte across 255 fields — must not panic, must produce
+    // Edge: 1 byte across 255 fields, must not panic, must produce
     // exactly 255 fields (most empty).
     let frame = split_attack_across_fields("x", 255);
     let (_, _, body) = decode_grpc_frame(&frame).unwrap();

@@ -114,7 +114,7 @@ fn adversarial_case_sensitivity_creates_different_asts() {
 /// `MySQL` dialect-specific validation.
 #[test]
 fn mysql_conditional_comments_parse() {
-    // Versioned comment wrapping a scalar — valid in a WHERE expression.
+    // Versioned comment wrapping a scalar (valid in a WHERE expression).
     let seed = "/*!50000 1 */ OR 1=1";
     assert!(parses(seed, "mysql"));
 }

@@ -27,11 +27,11 @@ pub struct EvasionPlan {
     /// Injection-context hint for contextual encoding (LAW 9 wiring).
     /// When `Some(ctx)`, `strategy::evade_adaptive` uses
     /// `wafrift_encoding::contextual::encode_in_context` instead of
-    /// the plain encoder — the encoder then escapes/normalises for
+    /// the plain encoder, the encoder then escapes/normalises for
     /// the target context (JSON string, XML CDATA, header value, ...).
     /// `None` (Default) preserves the pre-wiring behaviour: plain
     /// `encoding::encode` with no context-aware escape. Backwards
-    /// compat — callers that don't set this see no change.
+    /// compat (callers that don't set this see no change).
     pub context: Option<InjectionContext>,
     /// Rationale for each recommendation.
     pub rationale: Vec<String>,
@@ -162,7 +162,7 @@ pub fn advise(waf: Option<&DetectedWaf>, drift: Option<&FingerprintDrift>) -> Ev
     if let Some(detected) = waf {
         // N11 fix (dogfood R29 cohort): default_plan() seeds the
         // rationale with "no WAF detected, using balanced defaults"
-        // — that string is wrong the moment we know a WAF. Clear
+        //: that string is wrong the moment we know a WAF. Clear
         // it before appending the WAF-specific rationale so the
         // operator does not see both "no WAF detected" AND
         // "cloudflare: prioritizing …" in the same scan.
@@ -221,7 +221,7 @@ fn default_plan() -> EvasionPlan {
 
 /// Public helper for callers (e.g. scan, hunt) that have already
 /// detected the request's injection context from the Content-Type
-/// header — set it on the plan so contextual encoding fires in
+/// header, set it on the plan so contextual encoding fires in
 /// `evade_adaptive`. Matches LAW 9: every detected context flows
 /// into the executor; no half-wired feature.
 pub fn context_from_content_type(content_type: Option<&str>) -> Option<InjectionContext> {
@@ -336,7 +336,7 @@ mod tests {
     }
 
     /// Case-insensitive: HTTP header values are case-insensitive per
-    /// RFC 9110 §8.3 — `Application/JSON` must match the same as
+    /// RFC 9110 §8.3: `Application/JSON` must match the same as
     /// `application/json`. LAW 12 boundary test.
     #[test]
     fn context_from_content_type_is_case_insensitive() {
@@ -350,7 +350,7 @@ mod tests {
         );
     }
 
-    /// Anti-rig: an unknown content-type returns None — the caller
+    /// Anti-rig: an unknown content-type returns None, the caller
     /// then uses the plain encoder, NOT a default-guessed context.
     /// (LAW 1: never guess what we don't know.)
     #[test]
@@ -365,7 +365,7 @@ mod tests {
     }
 
     /// Vendor JSON variants (jsonapi, json-patch) all map to
-    /// JsonString — they're all JSON-shaped on the wire.
+    /// JsonString (they're all JSON-shaped on the wire).
     #[test]
     fn context_from_content_type_vendor_json_variants() {
         assert_eq!(

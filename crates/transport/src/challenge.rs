@@ -2,7 +2,7 @@
 //! Captcha, Akamai Bot Manager).
 //!
 //! Closes blocker #115. Previously the `Verdict::ChallengeRequired`
-//! verdict was DETECTED but not ACTED ON — the evade loop stalled.
+//! verdict was DETECTED but not ACTED ON (the evade loop stalled).
 //! This module provides the dispatch primitives so the proxy can:
 //!
 //! 1. Capture a `cf_clearance` (or equivalent) cookie once the operator
@@ -18,7 +18,7 @@
 //!   serves obfuscated JS that performs a math computation, sets the
 //!   cookie, and reloads. Auto-solving requires a JS engine
 //!   (boa / quickjs WASM); see [`JsSolver`] for the documented
-//!   integration point. Not implemented here — the cookie-capture
+//!   integration point. Not implemented here, the cookie-capture
 //!   solver covers ~90% of CF managed-challenge cases once any
 //!   browser session has cleared the challenge.
 //! - A captcha solver. Turnstile / hCaptcha / reCAPTCHA detection
@@ -31,7 +31,7 @@ use std::time::{Duration, Instant};
 /// Decision the dispatcher returns to the request layer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SolveAction {
-    /// A valid clearance cookie is on file — attach it and replay.
+    /// A valid clearance cookie is on file (attach it and replay).
     ReplayWithCookie {
         /// `Cookie:`-header-ready string e.g. `cf_clearance=abc; foo=bar`.
         cookie_header: String,
@@ -49,14 +49,14 @@ pub enum SolveAction {
         /// One-line operator-facing reason.
         reason: String,
     },
-    /// Detection was a false positive — proceed unmodified.
+    /// Detection was a false positive (proceed unmodified).
     Bypass,
 }
 
 /// Coarse classification of the challenge surface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChallengeKind {
-    /// Cloudflare "I'm under attack" / managed challenge — JS-only,
+    /// Cloudflare "I'm under attack" / managed challenge. JS-only,
     /// solvable via cookie replay.
     CloudflareManaged,
     /// Cloudflare Turnstile widget (interactive). Operator only.
@@ -77,7 +77,7 @@ impl ChallengeKind {
     /// Whether this kind is in scope for cookie-replay solving (vs
     /// requiring a human).
     ///
-    /// Audit (2026-05-10): added `AwsWaf` — `extract_clearance_cookie`
+    /// Audit (2026-05-10): added `AwsWaf`: `extract_clearance_cookie`
     /// already recognised `aws-waf-token` and stored it in the cookie
     /// store, but `is_cookie_solvable() == false` meant `dispatch`
     /// would always escalate to the operator instead of replaying the
@@ -158,7 +158,7 @@ struct CookieEntry {
     /// matches.
     scope_path: Option<String>,
     /// Secure attribute. When true, the cookie must only replay over
-    /// HTTPS — the get path enforces this when the caller indicates
+    /// HTTPS, the get path enforces this when the caller indicates
     /// the request scheme.
     secure: bool,
 }
@@ -199,7 +199,7 @@ fn check_request_scope(
 /// The store is the bridge between the cookie-capture path (run when
 /// an upstream response carries `Set-Cookie: cf_clearance=...`) and
 /// the request-build path (which attaches the cookie to the next
-/// request to the same host). Cheap to clone — wraps an internal
+/// request to the same host). Cheap to clone, wraps an internal
 /// `Arc<RwLock<>>`.
 #[derive(Debug, Default, Clone)]
 pub struct ChallengeStore {
@@ -224,7 +224,7 @@ struct ChallengeInner {
     /// prompts across ALL hosts.
     ///
     /// Audit (2026-05-10): tracking only the timestamp meant the cap
-    /// was first-come-first-served — one chatty host could fill the
+    /// was first-come-first-served, one chatty host could fill the
     /// 30-prompt window inside its cooldown and starve every other
     /// host. We now record the host too and additionally cap any
     /// single host at `OPERATOR_PROMPT_PER_HOST_CAP_PER_MIN` of those
@@ -234,13 +234,13 @@ struct ChallengeInner {
 
 /// Maximum operator prompts emitted per rolling 60-second window
 /// across ALL hosts. Hit when N>>1 distinct hosts flip into the
-/// challenge state simultaneously — the per-host cooldown would
+/// challenge state simultaneously, the per-host cooldown would
 /// otherwise let all N fire at once and overwhelm the operator.
 pub const OPERATOR_PROMPT_GLOBAL_CAP_PER_MIN: usize = 30;
 /// Per-host cap on the share of `GLOBAL_PROMPT_WINDOW` prompts a single
 /// host may consume. With `CAP_PER_MIN` = 30 and `PER_HOST` = 8, a chatty
 /// host taking its full quota still leaves room for ~3 other hosts to
-/// each take their full quota — fair enough that the operator can
+/// each take their full quota, fair enough that the operator can
 /// triage incoming requests across distinct sites. Audit (2026-05-10).
 pub const OPERATOR_PROMPT_PER_HOST_CAP_PER_MIN: usize = 8;
 const GLOBAL_PROMPT_WINDOW: Duration = Duration::from_secs(60);
@@ -256,14 +256,14 @@ pub const SOLVER_INFLIGHT_TTL: Duration = Duration::from_secs(60);
 pub const DEFAULT_CLEARANCE_TTL: Duration = Duration::from_secs(30 * 60);
 
 /// Don't re-prompt the operator about the same host more than once
-/// every 5 minutes — avoids noise when an automated retry burst
+/// every 5 minutes, avoids noise when an automated retry burst
 /// re-triggers the challenge.
 pub const OPERATOR_PROMPT_COOLDOWN: Duration = Duration::from_secs(5 * 60);
 
 /// Acquire a write lock, surfacing poisoning via `tracing::warn`!
 /// before recovering. Pre-fix the call sites used `unwrap_or_else(|e|
 /// e.into_inner())` which silently swallowed the panic that
-/// poisoned the lock — making real data-corruption bugs invisible.
+/// poisoned the lock (making real data-corruption bugs invisible).
 /// Now poisoning is logged with the call site so it shows up in
 /// production logs.
 fn poison_recover_write<'a, T>(
@@ -304,7 +304,7 @@ fn poison_recover_read<'a, T>(
 /// Normalize a host key so case + optional trailing port don't
 /// scatter entries across multiple slots. DNS is case-insensitive and
 /// `Example.com:443` / `example.com` resolve to the same upstream
-/// for our purposes — pre-fix they were stored under different keys
+/// for our purposes, pre-fix they were stored under different keys
 /// and `get("example.com")` would silently miss the cookie captured
 /// under `Example.com`.
 fn normalize_host(host: &str) -> String {
@@ -340,7 +340,7 @@ impl ChallengeStore {
             }
         }
         // Slow path: either missing OR expired. Take the write lock,
-        // RE-CHECK the entry — a concurrent record() between our
+        // RE-CHECK the entry, a concurrent record() between our
         // read-unlock and write-lock could have just inserted a
         // fresh value, and unconditionally returning None would
         // make the caller spawn a redundant solver or escalate to
@@ -364,7 +364,7 @@ impl ChallengeStore {
     /// Opportunistically GCs expired entries on every insert so the
     /// store self-bounds without requiring an external background
     /// task. Worst case: an attacker who churns through N hosts
-    /// before any TTL expires holds N entries — which is the same
+    /// before any TTL expires holds N entries, which is the same
     /// behaviour as a sane caller, so the bound is acceptable.
     pub fn record(
         &self,
@@ -424,7 +424,7 @@ impl ChallengeStore {
         // Read-lock fast path; if the entry is expired drop down to a
         // write-lock to evict it. Pre-fix this returned None without
         // ever upgrading, leaving dead entries in `by_host` that the
-        // FIFO cap couldn't reach — long-running proxies against high-
+        // FIFO cap couldn't reach, long-running proxies against high-
         // churn short-TTL hosts (AWS WAF Challenge) grew unbounded.
         {
             let inner = poison_recover_read(&self.inner, "ChallengeStore::get_for_request");
@@ -433,11 +433,11 @@ impl ChallengeStore {
                 Some(entry) if Instant::now() < entry.expires_at => {
                     return check_request_scope(entry, &key, request_path, is_https);
                 }
-                Some(_) => { /* expired — fall through to write lock */ }
+                Some(_) => { /* expired, fall through to write lock */ }
             }
         }
         let mut inner = poison_recover_write(&self.inner, "ChallengeStore::get_for_request");
-        // Re-check after acquiring write — another thread may have
+        // Re-check after acquiring write, another thread may have
         // already evicted, OR a fresh entry may now be present.
         match inner.by_host.get(&key) {
             Some(entry) if Instant::now() < entry.expires_at => {
@@ -476,7 +476,7 @@ impl ChallengeStore {
     }
 
     /// Returns `true` if the operator should be prompted about a
-    /// challenge for `host` — i.e. either no recent prompt has been
+    /// challenge for `host`: i.e. either no recent prompt has been
     /// emitted, or the cooldown has passed.
     ///
     /// Two-tier throttle:
@@ -484,7 +484,7 @@ impl ChallengeStore {
     ///   - global rolling-window cap of
     ///     `OPERATOR_PROMPT_GLOBAL_CAP_PER_MIN` prompts per 60 s
     ///     across ALL hosts. Hit when N>>1 distinct hosts flip into
-    ///     the challenge state simultaneously — without this, a
+    ///     the challenge state simultaneously, without this, a
     ///     1000-host storm would emit 1000 prompts at once.
     pub fn should_prompt_operator(&self, host: &str) -> bool {
         let key = normalize_host(host);
@@ -494,11 +494,11 @@ impl ChallengeStore {
         // older than 60 s before checking the cap.
         //
         // `Instant::checked_sub` returns None when `now` is less than
-        // GLOBAL_PROMPT_WINDOW after boot — the prior `if let Some`
+        // GLOBAL_PROMPT_WINDOW after boot, the prior `if let Some`
         // guard silently skipped GC for the first 60 s, so the entire
         // cap could be exhausted before a single drain fired. On
         // underflow, any existing entries are necessarily fresh (the
-        // window hasn't elapsed yet), so the loop is a no-op anyway —
+        // window hasn't elapsed yet), so the loop is a no-op anyway 
         // but we still enter it to keep behaviour uniform.
         let cutoff = now.checked_sub(GLOBAL_PROMPT_WINDOW).unwrap_or(now);
         while let Some((_, ts)) = inner.global_prompt_window.front() {
@@ -550,14 +550,14 @@ impl ChallengeStore {
         let key = normalize_host(host);
         let mut inner = poison_recover_write(&self.inner, "mark_solver_pending");
         let now = Instant::now();
-        // GC stale claims first — but log so a chronic eviction
+        // GC stale claims first, but log so a chronic eviction
         // pattern is visible in operator logs.
         inner.solver_in_flight.retain(|h, t| {
             if now >= *t + SOLVER_INFLIGHT_TTL {
                 tracing::warn!(
                     host = %h,
                     held_for_secs = (now - *t).as_secs(),
-                    "solver_in_flight slot evicted by TTL — a concurrent caller may now spawn a duplicate solver. Long-running solvers should call refresh_solver_pending() to keep the slot alive."
+                    "solver_in_flight slot evicted by TTL, a concurrent caller may now spawn a duplicate solver. Long-running solvers should call refresh_solver_pending() to keep the slot alive."
                 );
                 false
             } else {
@@ -576,7 +576,7 @@ impl ChallengeStore {
     /// evicted and a concurrent caller can claim it. Audit (2026-05-10).
     ///
     /// Returns true if the slot was refreshed (the caller still owns
-    /// it), false if the slot is already gone — in which case the
+    /// it), false if the slot is already gone, in which case the
     /// solver should treat itself as superseded and exit.
     pub fn refresh_solver_pending(&self, host: &str) -> bool {
         let key = normalize_host(host);
@@ -590,7 +590,7 @@ impl ChallengeStore {
         }
     }
 
-    /// Release the in-flight solver slot — called after the solver
+    /// Release the in-flight solver slot, called after the solver
     /// either succeeds (cookie now in store) or fails (so the next
     /// caller can retry without waiting for the TTL).
     pub fn clear_solver_pending(&self, host: &str) {
@@ -634,7 +634,7 @@ impl ChallengeStore {
         Some(e.kind)
     }
 
-    /// Number of currently-stored entries (test/diagnostic only —
+    /// Number of currently-stored entries (test/diagnostic only 
     /// not for production decisions).
     #[doc(hidden)]
     #[must_use]
@@ -659,7 +659,7 @@ pub const CLASSIFY_BODY_SCAN_CAP: usize = 64 * 1024;
 
 /// Detect the challenge kind from a response body + headers heuristic.
 ///
-/// Returns `ChallengeKind::Unknown` when nothing matches — the caller
+/// Returns `ChallengeKind::Unknown` when nothing matches, the caller
 /// then defaults to `EscalateToOperator` rather than acting on a
 /// guess.
 ///
@@ -674,7 +674,7 @@ pub const CLASSIFY_BODY_SCAN_CAP: usize = 64 * 1024;
 /// CLI flow; new callers should always use `classify_with_status`.
 #[deprecated(
     since = "0.2.9",
-    note = "use classify_with_status — passing status=0 would silently bypass the challenge-status guard and false-positive on benign 200s"
+    note = "use classify_with_status, passing status=0 would silently bypass the challenge-status guard and false-positive on benign 200s"
 )]
 #[must_use]
 pub fn classify(body: &[u8], headers: &[(String, String)]) -> ChallengeKind {
@@ -687,7 +687,7 @@ pub fn classify(body: &[u8], headers: &[(String, String)]) -> ChallengeKind {
 /// Status-aware classifier: only flags challenges on responses with
 /// challenge-shaped status codes (403, 429, 503, or any 5xx). For
 /// 200/3xx responses returns [`ChallengeKind::Unknown`] without even
-/// scanning the body — a benign page mentioning a captcha keyword
+/// scanning the body, a benign page mentioning a captcha keyword
 /// is not a challenge.
 ///
 /// `status = 0` is the back-compat sentinel: scan regardless. Anything
@@ -706,7 +706,7 @@ pub fn classify_with_status(
 
 /// Status codes where a body-keyword match plausibly means "this is
 /// a challenge response". Anything 2xx/3xx is by definition NOT a
-/// challenge — the upstream let the request through.
+/// challenge (the upstream let the request through).
 ///
 /// `401` is included because AWS WAF Challenge action and some
 /// Akamai Bot Manager configurations issue challenge tokens on
@@ -772,7 +772,7 @@ fn classify_inner(body: &[u8], headers: &[(String, String)]) -> ChallengeKind {
 /// Returns the formatted `Cookie:` value ready for replay (`name=value`)
 /// or `None` if no clearance cookie was present, OR if the cookie
 /// value contains characters that would corrupt a downstream `Cookie`
-/// header (CR, LF, NUL, semicolon — RFC 6265 cookie-octet rules).
+/// header (CR, LF, NUL, semicolon. RFC 6265 cookie-octet rules).
 /// Silently dropping a malicious cookie is preferable to forwarding
 /// HTTP-request-splitting bytes to the upstream.
 #[must_use]
@@ -807,11 +807,11 @@ pub fn extract_clearance_cookie_scoped(
         };
         if !is_safe_cookie_value(value_trim) {
             // Malicious upstream tried to inject control characters.
-            // Drop silently — never propagate splitable bytes.
+            // Drop silently (never propagate splitable bytes).
             continue;
         }
         // Parse attributes for scope. Reject ANY attribute value that
-        // contains CRLF / NUL — same defence-in-depth as the cookie
+        // contains CRLF / NUL, same defence-in-depth as the cookie
         // value itself. Unknown attributes are silently ignored.
         let mut scope = CookieScope::default();
         for attr in parts {
@@ -838,7 +838,7 @@ pub fn extract_clearance_cookie_scoped(
                     // hostname; pre-fix the parser silently accepted
                     // `Domain=evil.com:8080` (matched bare `evil.com`)
                     // and `Domain=co.uk` (would replay on EVERY
-                    // co.uk site — supercookie). The PSL check
+                    // co.uk site, supercookie). The PSL check
                     // catches the supercookie case across all 2000+
                     // public suffixes the `psl` crate ships.
                     let shape_ok = !v.is_empty()
@@ -874,7 +874,7 @@ fn is_safe_cookie_value(value: &str) -> bool {
         .any(|b| b == b'\r' || b == b'\n' || b == 0 || b == b';')
 }
 
-/// True if `domain` is a safe Cookie Domain attribute value — i.e.
+/// True if `domain` is a safe Cookie Domain attribute value (i.e).
 /// it is NOT itself a public suffix (eTLD). Pre-fix `Domain=co.uk`,
 /// `Domain=com`, `Domain=github.io`, etc. were silently accepted and
 /// would let a captured cookie replay on EVERY site under that
@@ -890,14 +890,14 @@ fn is_safe_cookie_domain(domain: &str) -> bool {
     let list = psl::List;
     // suffix() returns the eTLD portion (e.g. `co.uk` for
     // `bbc.co.uk`). When the Domain value IS the eTLD, the suffix
-    // bytes equal the input bytes — that's the supercookie case.
+    // bytes equal the input bytes (that's the supercookie case).
     match list.suffix(bytes) {
         Some(suffix) => {
             // Reject if Domain equals the eTLD exactly.
             suffix.as_bytes() != bytes
         }
         None => {
-            // Couldn't parse — be conservative and reject. Real
+            // Couldn't parse, be conservative and reject. Real
             // cookies always have a parseable hostname.
             false
         }
@@ -1020,7 +1020,7 @@ mod tests {
         // because the fast-path read happened before record().
         //
         // The race-safe contract: any time get()'s slow path runs
-        // and finds a fresh entry, return it — never blindly None.
+        // and finds a fresh entry, return it (never blindly None).
         let s = store();
         // Simulate "fresh entry exists when we reach the write lock":
         // record after the prior absence is the observable equivalent.
@@ -1165,10 +1165,10 @@ mod tests {
 
     #[test]
     fn classify_turnstile_with_real_cloudflare_site_key() {
-        // Real CF Turnstile site key (public — gets embedded in the
+        // Real CF Turnstile site key (public, gets embedded in the
         // client-side widget HTML). Verifies the classifier handles the
         // production-shape `0x4AAAAAA...` site-key format and not just a
-        // placeholder `X` — would catch regressions in the data-sitekey
+        // placeholder `X`: would catch regressions in the data-sitekey
         // attribute parser if it ever got stricter about value format.
         let body = br#"<html>
 <head><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script></head>
@@ -1194,7 +1194,7 @@ mod tests {
     fn classify_turnstile_renders_challenge_url_path_too() {
         // Some Turnstile deployments load the widget via the
         // challenges.cloudflare.com/turnstile URL even without the
-        // cf-turnstile class on a div — covers the URL-only detection
+        // cf-turnstile class on a div, covers the URL-only detection
         // branch.
         let body =
             br#"<iframe src="https://challenges.cloudflare.com/turnstile/v0/b/abc"></iframe>"#;
@@ -1231,7 +1231,7 @@ mod tests {
     #[test]
     fn classify_benign_401_basic_auth_stays_unknown() {
         // The status-guard widening must not produce false
-        // positives — a plain 401 Basic-Auth response with no
+        // positives, a plain 401 Basic-Auth response with no
         // challenge keywords in body still classifies as Unknown.
         let body = b"Unauthorized";
         let headers = vec![("WWW-Authenticate".into(), "Basic realm=\"x\"".into())];
@@ -1366,7 +1366,7 @@ mod tests {
     #[test]
     fn dispatch_replays_even_for_interactive_kind_if_cookie_present() {
         // Operator solved Turnstile interactively in a browser and we
-        // captured the resulting cookie — replay it on subsequent
+        // captured the resulting cookie, replay it on subsequent
         // requests instead of re-prompting.
         let s = store();
         s.record("h", "cf_clearance=manual", ChallengeKind::Turnstile, None);

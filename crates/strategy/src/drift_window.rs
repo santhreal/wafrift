@@ -7,10 +7,10 @@
 //! This module implements a CUSUM-based sequential change-point detector that
 //! tracks four per-target signals:
 //!
-//! 1. **Median response time** — slower = heavier inspection.
-//! 2. **P95 response time** — spike = new DPI layer spinning up.
-//! 3. **Block rate** (over last 50 probes) — direct measure of WAF policy.
-//! 4. **Body-hash entropy** — change in response diversity signals new rules.
+//! 1. **Median response time**: slower = heavier inspection.
+//! 2. **P95 response time**: spike = new DPI layer spinning up.
+//! 3. **Block rate** (over last 50 probes) (direct measure of WAF policy).
+//! 4. **Body-hash entropy**: change in response diversity signals new rules.
 //!
 //! Each signal runs an independent CUSUM detector. A [`RegimeChange`] fires
 //! when **≥ 2 signals agree** on the direction of change.
@@ -44,9 +44,9 @@ const SIGNAL_AGREEMENT: usize = 2;
 /// Direction and magnitude of a detected WAF regime change.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RegimeChange {
-    /// WAF is blocking less aggressively — retry the blocked corpus now.
+    /// WAF is blocking less aggressively (retry the blocked corpus now).
     LooserNow,
-    /// WAF is blocking more aggressively — back off, slow down probing.
+    /// WAF is blocking more aggressively (back off, slow down probing).
     StricterNow,
     /// Regime changed but signals disagree on direction (e.g. latency went
     /// up while block rate went down). Retry cautiously; do not assume free
@@ -113,7 +113,7 @@ impl CusumDetector {
         let (mean, std) = self.mean_std();
         // The CUSUM detection threshold k = threshold × σ. When the baseline
         // is perfectly stationary (σ ≈ 0), k → 0 and ANY deviation fires
-        // immediately — a false-positive on perfectly identical synthetic data.
+        // immediately (a false-positive on perfectly identical synthetic data).
         //
         // Enforce a minimum σ floor to keep the detector from being hair-
         // triggered by floating-point noise, while still allowing large step
@@ -131,9 +131,9 @@ impl CusumDetector {
         // Minimum σ floor: prevents hair-trigger on perfectly stationary
         // baselines where σ=0 would make k=0 and any deviation fires.
         // For near-zero-mean signals (block rate, entropy in [0,1]):
-        //   floor = 0.01 — requires a 1% meaningful shift per threshold unit.
+        //   floor = 0.01 (requires a 1% meaningful shift per threshold unit).
         // For positive-mean signals (latency in ms):
-        //   floor = 5% of mean — requires a 5% shift to count as signal.
+        //   floor = 5% of mean (requires a 5% shift to count as signal).
         // This keeps threshold=10 from firing on a 10% nudge (5ms on 50ms
         // baseline) while allowing threshold=3 to fire on a 10× step change.
         let floor = if mean.abs() < 1.0 {
@@ -285,7 +285,7 @@ impl DriftDetector {
         //
         // Directional signals (block rate + latency) determine whether the
         // WAF became looser or stricter. Body-hash entropy is a
-        // non-directional "something changed" witness — it contributes to
+        // non-directional "something changed" witness, it contributes to
         // the total change-event count but not to the directional split,
         // because entropy can rise or fall regardless of enforcement posture.
         let mut up_votes: i32 = 0;
@@ -313,7 +313,7 @@ impl DriftDetector {
             witness_events += 1;
         }
 
-        // ── 4. Agreement gate — need ≥ 2 signals agreeing ─────────────
+        // ── 4. Agreement gate, need ≥ 2 signals agreeing ─────────────
         // Directional vote count (block_rate + latencies fire), augmented
         // by the entropy witness if it also fired.
         let directional_votes = up_votes + down_votes;
@@ -338,11 +338,11 @@ impl DriftDetector {
         } else if down_votes >= SIGNAL_AGREEMENT as i32 && up_votes == 0 {
             Some(RegimeChange::LooserNow)
         } else if up_votes > 0 && down_votes == 0 {
-            // Only 1 directional up-vote but entropy corroborated — weak
+            // Only 1 directional up-vote but entropy corroborated, weak
             // evidence of stricter regime.
             Some(RegimeChange::StricterNow)
         } else if down_votes > 0 && up_votes == 0 {
-            // Only 1 directional down-vote but entropy corroborated — weak
+            // Only 1 directional down-vote but entropy corroborated, weak
             // evidence of looser regime.
             Some(RegimeChange::LooserNow)
         } else {
@@ -442,13 +442,13 @@ impl DriftDetector {
 ///
 /// `NoChange` means the CUSUM accumulator is below the decision threshold.
 /// `AlarmFired` means a statistically significant drop in bypass rate was
-/// detected — a WAF rule update likely pushed bypasses that were working
+/// detected, a WAF rule update likely pushed bypasses that were working
 /// into blocked territory.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ChangePointEvent {
     /// Bypass rate is stationary; no action needed.
     NoChange,
-    /// CUSUM threshold crossed — bypass rate dropped significantly.
+    /// CUSUM threshold crossed (bypass rate dropped significantly).
     AlarmFired {
         /// Current windowed bypass rate (fraction in `[0.0, 1.0]`).
         observed_rate: f64,
@@ -500,7 +500,7 @@ pub enum ChangePointEvent {
 /// for i in 0..50 {
 ///     monitor.observe(i % 3 == 0); // ~33% bypass
 /// }
-/// // Rate collapses to 0% — alarm should fire within 20 more samples.
+/// // Rate collapses to 0% (alarm should fire within 20 more samples).
 /// let mut fired = false;
 /// for _ in 0..30 {
 ///     if let ChangePointEvent::AlarmFired { .. } = monitor.observe(false) {
@@ -759,7 +759,7 @@ mod tests {
     fn looser_now_fires_on_block_rate_drop() {
         // Use a small window (8) so the baseline flushes quickly after the
         // regime change, and a low threshold (2.0) for fast detection.
-        // 80 transition observations is generous — the CUSUM should fire
+        // 80 transition observations is generous, the CUSUM should fire
         // well before that once both latency and block-rate signals agree.
         let mut det = DriftDetector::new(8, 2.0);
         // Baseline: 100% block, high latency.
@@ -813,7 +813,7 @@ mod tests {
         let mut det = DriftDetector::new(50, 10.0);
         feed_stationary(&mut det, 60, 50.0, false, 0xcccc);
 
-        // Tiny latency nudge — not enough to move multiple signals past threshold.
+        // Tiny latency nudge (not enough to move multiple signals past threshold).
         let mut fired = false;
         for _ in 0..10 {
             if det.observe(pass_obs(55.0)).is_some() {
@@ -909,7 +909,7 @@ mod tests {
         // Baseline: all responses identical body hash (entropy = 0).
         feed_stationary(&mut det, 30, 50.0, false, 0xAAAA_AAAA);
 
-        // Now each response has a unique body hash (high entropy) — new
+        // Now each response has a unique body hash (high entropy), new
         // challenge pages appearing signals rule change.
         let mut body_entropy_fired = false;
         for i in 0u64..40 {
@@ -994,7 +994,7 @@ mod tests {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // BypassRateMonitor tests (C-11 — CUSUM bypass-rate change-point)
+    // BypassRateMonitor tests (C-11: CUSUM bypass-rate change-point)
     // ═══════════════════════════════════════════════════════════════════════
 
     // ── BRM-1. Empty window: current_rate is None, baseline is None ───────
@@ -1038,7 +1038,7 @@ mod tests {
             monitor.observe(i % 2 == 0);
         }
         assert!(monitor.baseline_rate().is_some());
-        // Drop to 0% — alarm must fire within 30 more samples.
+        // Drop to 0% (alarm must fire within 30 more samples).
         let mut fired = false;
         for _ in 0..30 {
             if let ChangePointEvent::AlarmFired { .. } = monitor.observe(false) {
@@ -1089,7 +1089,7 @@ mod tests {
         for i in 0..30usize {
             monitor.observe(i % 2 == 0);
         }
-        // Drop to 40% — a moderate, not catastrophic, decrease.
+        // Drop to 40% (a moderate, not catastrophic, decrease).
         let mut fired = false;
         for i in 0..60usize {
             if let ChangePointEvent::AlarmFired { .. } = monitor.observe(i % 5 < 2) {
@@ -1140,7 +1140,7 @@ mod tests {
         for _ in 0..4 {
             monitor.observe(true);
         }
-        // Drive to 0% — run enough samples to (a) fire the alarm AND
+        // Drive to 0%, run enough samples to (a) fire the alarm AND
         // (b) fully flush all `true` values from the window before
         //     the second-alarm check begins.
         let mut first_alarm_fired = false;
@@ -1164,7 +1164,7 @@ mod tests {
         // After 20 blocked calls on a size-4 window, the window is
         // definitely all-false (0% bypass rate = 0%) and baseline = 0%.
 
-        // Now stay at 0% — no second alarm should fire within 100 samples
+        // Now stay at 0%, no second alarm should fire within 100 samples
         // (CUSUM accumulator stays at 0 when baseline ≈ p_observed).
         let mut second_alarm = false;
         for _ in 0..100 {
@@ -1196,7 +1196,7 @@ mod tests {
             "baseline must be ~30%: got {baseline:.3}"
         );
 
-        // Drop to 0% bypass — alarm MUST fire within 20 samples.
+        // Drop to 0% bypass (alarm MUST fire within 20 samples).
         let mut alarm_idx: Option<usize> = None;
         for i in 0..20 {
             if let ChangePointEvent::AlarmFired { .. } = monitor.observe(false) {

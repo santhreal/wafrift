@@ -64,7 +64,7 @@ for stack in "${STACKS[@]}"; do
     done
 
     if [ "$ready" != "true" ]; then
-        echo "  [$stack :$port] TIMEOUT — check: docker logs wafrift-zoo-${stack}" >&2
+        echo "  [$stack :$port] TIMEOUT, check: docker logs wafrift-zoo-${stack}" >&2
         FAILED+=("$stack")
     fi
 done

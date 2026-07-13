@@ -1,4 +1,4 @@
-//! Strategy planner — generates ordered lists of evasion pipelines.
+//! Strategy planner (generates ordered lists of evasion pipelines).
 //!
 //! The planner consumes host state, WAF fingerprint, payload type, and
 //! request budget to produce a ranked list of `EvasionPipeline`s.
@@ -14,11 +14,11 @@ use wafrift_types::{Technique, Verdict};
 ///
 /// # Arguments
 ///
-/// * `waf_fingerprint` — Detected WAF name or fingerprint.
-/// * `payload_type` — Detected payload type (e.g., "sql", "xss").
-/// * `budget` — Maximum request budget.
-/// * `cache` — Optional learning cache for historical winners.
-/// * `verdict_history` — Recent verdicts to avoid repeating failed pipelines.
+/// * `waf_fingerprint`: Detected WAF name or fingerprint.
+/// * `payload_type`: Detected payload type (e.g., "sql", "xss").
+/// * `budget`: Maximum request budget.
+/// * `cache`: Optional learning cache for historical winners.
+/// * `verdict_history`: Recent verdicts to avoid repeating failed pipelines.
 #[must_use]
 pub fn plan_pipelines(
     waf_fingerprint: Option<&str>,
@@ -38,7 +38,7 @@ pub fn plan_pipelines(
             // Saturating-via-min defends against a caller bug that
             // recorded more successes than attempts (success_rate
             // > 1.0). Bare `as u16` would wrap silently above
-            // ~6.55× — saturating at 10_000 bps (100%) is the
+            // ~6.55×, saturating at 10_000 bps (100%) is the
             // semantically-correct ceiling for a rate metric.
             cached.success_bps = ((entry.success_rate() * 10000.0).clamp(0.0, 10_000.0)) as u16;
             if within_budget(cached.cost, budget) {
@@ -162,7 +162,7 @@ pub fn plan_pipelines(
     }
 
     // Audit (2026-05-10): the previous "deprioritize blocked
-    // pipelines" stub was filter_map(|_| None) — collecting nothing
+    // pipelines" stub was filter_map(|_| None), collecting nothing
     // and binding to a `_blocked_names` it never used. That violates
     // the no-stubs rule. Verdict-to-pipeline-name attribution will
     // arrive when wafrift_types::Verdict gains a `pipeline_name`

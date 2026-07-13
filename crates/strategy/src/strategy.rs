@@ -1,4 +1,4 @@
-//! Evasion strategy engine — the pipeline that wires ALL modules.
+//! Evasion strategy engine (the pipeline that wires ALL modules).
 //!
 //! One job: take a request, consult host state, apply the right
 //! combination of evasion techniques based on escalation level.
@@ -33,7 +33,7 @@ pub use wafrift_types::calibration::{
 };
 // §8 ARCHITECTURE (2026-05-27): EvasionConfig and EscalationLevel are defined
 // in wafrift_types and re-exported from wafrift_core::*. They must NOT be
-// re-exported here — two import paths for the same type (`wafrift_strategy::
+// re-exported here, two import paths for the same type (`wafrift_strategy::
 // EvasionConfig` AND `wafrift_types::EvasionConfig`) caused grep-confusion
 // during refactors: half the usages were found under one path, half under the
 // other. Callers that used the strategy re-export have been updated to import
@@ -51,7 +51,7 @@ fn parse_named_encoding(name: &str) -> Option<encoding::Strategy> {
 /// F146: Pick a winner from `proven_winners` using a per-request hash,
 /// NOT `state.rotation_index`. The transport client clones `HostState`
 /// before calling `evade(&request, &state, ...)` and the cloned state
-/// is dropped after each request — `rotation_index` is therefore never
+/// is dropped after each request: `rotation_index` is therefore never
 /// advanced from this path, and pre-fix every single request through
 /// the non-proxy entry points picked `proven_winners[0]`. The
 /// "round-robin to defeat per-pattern WAF detection" claim was a lie
@@ -225,7 +225,7 @@ pub fn evade(request: &Request, state: &HostState, config: &EvasionConfig) -> Ev
         }
     }
 
-    // ── Step 3: Body padding (LAST — operates on assembled body) ─────
+    // ── Step 3: Body padding (LAST, operates on assembled body) ─────
     // Cloud-WAF inspection-window bypass. Runs after every other body-
     // mutating layer so encoding / content-type / smuggling rebuilds
     // don't wipe the padding. No-op if config.body_padding_bytes is 0
@@ -250,9 +250,9 @@ pub fn evade(request: &Request, state: &HostState, config: &EvasionConfig) -> Ev
 ///
 /// # Arguments
 ///
-/// * `req` — The HTTP request to optimize evasion for
-/// * `config` — Evasion configuration (enables/disables dimensions)
-/// * `max_depth` — Maximum mutation depth (recommended: 2-4)
+/// * `req`: The HTTP request to optimize evasion for
+/// * `config`: Evasion configuration (enables/disables dimensions)
+/// * `max_depth`: Maximum mutation depth (recommended: 2-4)
 ///
 /// # Returns
 ///
@@ -381,15 +381,15 @@ fn build_mcts_result(env: WafRiftEnv, config: &EvasionConfig) -> Option<EvasionR
 /// deeper search (capped at 5).
 ///
 /// **When to choose this vs the others:**
-/// - `evade` — pure heuristic pipeline. Cheapest. Use when you don't
+/// - `evade`: pure heuristic pipeline. Cheapest. Use when you don't
 ///   care about adaptation (one-shot scan, tiny budget).
-/// - `evade_mcts` — bare MCTS over the action space. Use when you have
+/// - `evade_mcts`: bare MCTS over the action space. Use when you have
 ///   a fixed depth budget and want it spent on tree search.
-/// - `evade_smart` — this. Heuristic on first contact, MCTS once
+/// - `evade_smart`: this. Heuristic on first contact, MCTS once
 ///   blocked. Default for the production proxy + `wafrift scan`.
-/// - `evade_adaptive` — heuristic pipeline with explicit `EvasionPlan`.
+/// - `evade_adaptive`: heuristic pipeline with explicit `EvasionPlan`.
 ///   Use when caller wants to dictate technique order from outside.
-/// - `evade_intelligent` — heuristic pipeline + the full
+/// - `evade_intelligent`: heuristic pipeline + the full
 ///   `IntelligenceLoop` (differential probing + advisor). Heaviest.
 pub fn evade_smart(request: &Request, state: &HostState, config: &EvasionConfig) -> EvasionResult {
     // Without prior block signal, there's nothing for MCTS to learn from yet.
@@ -409,7 +409,7 @@ pub fn evade_smart(request: &Request, state: &HostState, config: &EvasionConfig)
     if let Some(mcts_result) = evade_mcts(request, config, depth) {
         return mcts_result;
     }
-    // MCTS bailed (e.g., empty action space) — fall back to classic evade.
+    // MCTS bailed (e.g., empty action space) (fall back to classic evade).
     evade(request, state, config)
 }
 
@@ -417,7 +417,7 @@ pub fn evade_smart(request: &Request, state: &HostState, config: &EvasionConfig)
 /// pipeline. MCTS runs 500 iterations and each iteration clones the
 /// full request, so on a 100 KB POST the search alone allocates tens
 /// of MB and consumes seconds of CPU; on a 1 MB body it OOMs the
-/// proxy. Real injection payloads are KB-range — anything larger is a
+/// proxy. Real injection payloads are KB-range, anything larger is a
 /// file upload / JSON blob where header & URL evasion is enough.
 pub const MCTS_BODY_BUDGET: usize = 16 * 1024;
 
@@ -459,7 +459,7 @@ pub fn evade_adaptive(
             // value), use the context-aware encoder so the encoded
             // payload is simultaneously WAF-evading AND legal at the
             // target site. `plan.context = None` falls back to the
-            // raw encoder — preserves the pre-wiring behaviour for
+            // raw encoder, preserves the pre-wiring behaviour for
             // callers that don't pass a context (LAW 2).
             let encoded_opt = if let Some(ctx) = plan.context {
                 encoding_contextual::encode_in_context(body.as_slice(), strategy, ctx).ok()
@@ -510,20 +510,20 @@ pub type WafResponse<'a> = (u16, &'a [(String, String)], &'a [u8]);
 /// This is the **highest-level entry point** that combines all of `WafRift`'s
 /// intelligence subsystems into a single call:
 ///
-/// 1. **WAF Detection** — Identifies the WAF from previous response headers/body
-/// 2. **Advisor** — Generates a WAF-specific playbook with technique priorities
-/// 3. **MCTS Search** — Explores the combinatorial action space for the optimal
+/// 1. **WAF Detection**: Identifies the WAF from previous response headers/body
+/// 2. **Advisor**: Generates a WAF-specific playbook with technique priorities
+/// 3. **MCTS Search**: Explores the combinatorial action space for the optimal
 ///    multi-step evasion path
-/// 4. **Adaptive Fallback** — If MCTS fails (no valid path), falls back to the
+/// 4. **Adaptive Fallback**: If MCTS fails (no valid path), falls back to the
 ///    advisor's playbook applied linearly
 ///
 /// # Arguments
 ///
-/// * `request` — The HTTP request to evade
-/// * `config` — Evasion configuration (which dimensions to enable)
-/// * `waf_response` — Response from a previous probe (status, headers, body)
+/// * `request`: The HTTP request to evade
+/// * `config`: Evasion configuration (which dimensions to enable)
+/// * `waf_response`: Response from a previous probe (status, headers, body)
 ///   used for WAF detection. Pass `None` if no probe has been done.
-/// * `max_depth` — Maximum MCTS search depth
+/// * `max_depth`: Maximum MCTS search depth
 ///
 /// # Example
 ///
@@ -571,7 +571,7 @@ pub fn evade_intelligent<'a>(
         return mcts_result;
     }
 
-    // Step 4: MCTS found no valid path — fall back to advisor playbook
+    // Step 4: MCTS found no valid path, fall back to advisor playbook
     evade_adaptive(request, config, &plan, state)
 }
 
@@ -601,7 +601,7 @@ fn apply_body_padding(req: &mut Request, techniques: &mut Vec<Technique>, config
         req.body = Some(bytes);
         techniques.push(Technique::BodyPadding(added));
     }
-    // SkippedOpaque + SkippedTooSmall are silent — caller already
+    // SkippedOpaque + SkippedTooSmall are silent, caller already
     // chose the bytes value; per-request warnings would spam logs.
 }
 
@@ -774,7 +774,7 @@ fn apply_grammar_mutations(
 
     if mutated {
         // §1 SPEED: join the values without collecting into a temporary Vec
-        // first — `intersperse` folds the separator inline so no heap Vec
+        // first: `intersperse` folds the separator inline so no heap Vec
         // is materialised for detect-body construction.
         let mut detect_body = String::new();
         for (idx, (_, v)) in pairs.iter().enumerate() {
@@ -833,14 +833,14 @@ fn apply_header_obfuscation(
     }
 
     // 3. Add Transfer-Encoding with obs-fold-style whitespace.
-    // This is a CL+TE desync primitive — when paired with a
+    // This is a CL+TE desync primitive, when paired with a
     // Content-Length body, an intermediary that strips the tab
     // and accepts `Transfer-Encoding: chunked` will frame the
     // request as chunked while a CL-only intermediary keeps
     // reading the declared bytes. That's request smuggling, not
     // header obfuscation. Pre-gate it ran on every non-TE request
-    // at every level — including Light against production
-    // endpoints that were NOT being tested for smuggling — which
+    // at every level, including Light against production
+    // endpoints that were NOT being tested for smuggling, which
     // could desync HTTP/1.1 keep-alive connection pools and
     // corrupt unrelated subsequent requests on the same TCP
     // connection.
@@ -941,7 +941,7 @@ fn apply_content_type_switch(
         };
 
         req.body = Some(variant_body);
-        // Content-Type stays application/grpc — the WAF must not see a switch.
+        // Content-Type stays application/grpc (the WAF must not see a switch).
         techniques.push(Technique::ContentTypeSwitch(variant_tag.to_string()));
         return;
     }
@@ -966,7 +966,7 @@ fn apply_content_type_switch(
 
 /// Attach smuggling strategy metadata to the request.
 ///
-/// The core crate is I/O-free — it can't send raw TCP payloads. Instead,
+/// The core crate is I/O-free, it can't send raw TCP payloads. Instead,
 /// it attaches `X-Wafrift-Smuggle-*` headers that the transport layer
 /// interprets to perform actual smuggling if the connection supports it.
 ///
@@ -1081,7 +1081,7 @@ pub fn is_grpc_request(req: &Request) -> bool {
 
 /// Returns `true` when `req` looks like a GraphQL request.
 ///
-/// Two heuristics apply — either suffices:
+/// Two heuristics apply, either suffices:
 /// 1. `Content-Type: application/graphql` (raw SDL query).
 /// 2. Body begins with `{` AND contains `"query":` (JSON-envelope form).
 ///

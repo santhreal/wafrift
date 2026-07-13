@@ -41,7 +41,7 @@ fn open_policy() -> UpstreamPolicy {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// assert_forward_url_allowed — IPv4 bogons
+// assert_forward_url_allowed: IPv4 bogons
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[tokio::test]
@@ -57,7 +57,7 @@ async fn forward_loopback_v4_blocked() {
 
 #[tokio::test]
 async fn forward_imds_169_254_169_254_blocked() {
-    // AWS / GCP / Azure IMDS — the canonical SSRF target.
+    // AWS / GCP / Azure IMDS (the canonical SSRF target).
     let err = assert_forward_url_allowed(
         "http://169.254.169.254/latest/meta-data/",
         &default_policy(),
@@ -120,7 +120,7 @@ async fn forward_broadcast_255_255_255_255_blocked() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// assert_forward_url_allowed — IPv6 bogons
+// assert_forward_url_allowed: IPv6 bogons
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[tokio::test]
@@ -181,7 +181,7 @@ async fn forward_v6_unique_local_fc00_blocked() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// assert_forward_url_allowed — policy bypasses
+// assert_forward_url_allowed, policy bypasses
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[tokio::test]
@@ -201,7 +201,7 @@ async fn forward_allow_private_bypasses_bogon_check() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// assert_forward_url_allowed — malformed inputs
+// assert_forward_url_allowed, malformed inputs
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[tokio::test]
@@ -228,7 +228,7 @@ async fn forward_url_no_host_returns_error() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// resolve_forward_url_pinned — returns validated SocketAddrs
+// resolve_forward_url_pinned, returns validated SocketAddrs
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[tokio::test]
@@ -349,7 +349,7 @@ async fn connect_v6_loopback_rejected() {
 #[tokio::test]
 async fn connect_port_defaults_to_443_when_missing() {
     // An authority without an explicit port. hyper Authority parsing
-    // defaults to None for port — `resolve_connect_target_allowed`
+    // defaults to None for port: `resolve_connect_target_allowed`
     // must fall back to 443 for CONNECT without crashing.
     // We use a literal bogon IP with no port to exercise the default.
     let err = resolve_connect_target_allowed("127.0.0.1", &default_policy())
@@ -391,7 +391,7 @@ async fn connect_open_mode_bypasses_bogon_check() {
 
 #[tokio::test]
 async fn connect_public_literal_ip_allowed() {
-    // 1.1.1.1 is Cloudflare DNS — unambiguously public.
+    // 1.1.1.1 is Cloudflare DNS (unambiguously public).
     let addrs = resolve_connect_target_allowed("1.1.1.1:443", &default_policy())
         .await
         .expect("public literal IP must be allowed");
@@ -403,7 +403,7 @@ async fn connect_public_literal_ip_allowed() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BogonFilteringResolver — struct-level tests
+// BogonFilteringResolver, struct-level tests
 //
 // reqwest::dns::Name is not directly constructable from a string in test code
 // (it wraps an internal hyper type). We test BogonFilteringResolver's
@@ -418,7 +418,7 @@ async fn connect_public_literal_ip_allowed() {
 
 #[test]
 fn bogon_resolver_policy_field_is_arc() {
-    // Verify the struct correctly wraps Arc<UpstreamPolicy> — the field
+    // Verify the struct correctly wraps Arc<UpstreamPolicy>, the field
     // must be accessible and clone correctly so the resolver can be used
     // across async tasks.
     let policy = Arc::new(default_policy());
@@ -496,7 +496,7 @@ fn bogon_resolver_filter_predicate_correct_for_known_addresses() {
         "2002:7f00:1::",
         "fe80::1",
         "fc00::1",
-        // IPv4 multicast — blocked by proxy policy but NOT by ip_addr_is_bogon.
+        // IPv4 multicast (blocked by proxy policy but NOT by ip_addr_is_bogon).
         "224.0.0.1",
     ];
     let public_ips: &[&str] = &["8.8.8.8", "1.1.1.1", "2001:4860:4860::8888"];
@@ -553,7 +553,7 @@ async fn forward_url_with_explicit_port_preserves_port() {
 
 #[tokio::test]
 async fn forward_url_https_default_port_443() {
-    // https:// without explicit port — port_or_known_default must yield 443.
+    // https:// without explicit port (port_or_known_default must yield 443).
     let addrs = resolve_forward_url_pinned("https://1.1.1.1/", &default_policy())
         .await
         .expect("public IP must succeed");
@@ -563,7 +563,7 @@ async fn forward_url_https_default_port_443() {
 
 #[tokio::test]
 async fn forward_url_http_default_port_80() {
-    // http:// without explicit port — port_or_known_default must yield 80.
+    // http:// without explicit port (port_or_known_default must yield 80).
     let addrs = resolve_forward_url_pinned("http://8.8.8.8/", &default_policy())
         .await
         .expect("public IP must succeed");

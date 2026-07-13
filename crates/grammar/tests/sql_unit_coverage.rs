@@ -68,7 +68,7 @@ fn round_trip_preserves_block_comment() {
 #[test]
 fn round_trip_preserves_unicode_identifier() {
     // PROPERTY: non-ASCII alphabetic characters in an identifier (e.g.
-    // a column alias) must survive — the tokenizer must not drop them.
+    // a column alias) must survive (the tokenizer must not drop them).
     let p = "SELECT café FROM users";
     assert_eq!(esql::round_trip(p), p);
 }
@@ -208,26 +208,26 @@ fn still_executes_structured_attack_requires_structural_tokens() {
 #[test]
 fn still_executes_rejects_keyword_buried_in_larger_identifier() {
     // SOUNDNESS regression (R2 token-boundary fix). The structural-token
-    // gate used to test `normalized_candidate.contains(token)` — raw
+    // gate used to test `normalized_candidate.contains(token)`: raw
     // SUBSTRING containment. That let a mutation that buries each keyword
     // inside a LARGER identifier pass, even though the buried text is no
     // longer a SQL keyword: `union` survives in `reunion`, `select` in
     // `selected`, `from` in `fromage`, `users` in `userspace`. None of
     // those is the keyword, so the candidate does NOT execute the UNION
-    // exfil — yet the old gate credited it as equivalent. The fix matches
+    // exfil, yet the old gate credited it as equivalent. The fix matches
     // against the candidate's WHOLE tokens, so a buried substring no longer
     // counts. Reverting `token_set` membership back to `nc.contains(t)`
     // turns this red.
     let orig = "1 UNION SELECT 1,2 FROM users";
     // Every structural token of `orig` (union/select/from/users) appears
-    // here ONLY as a substring of a larger word — never as a token.
+    // here ONLY as a substring of a larger word (never as a token).
     let buried = "1 reunion selected fromage userspace 1,2";
     assert!(
         !esql::still_executes(orig, buried),
         "keywords buried inside larger identifiers must NOT count as surviving"
     );
     // Sanity twin: the SAME tokens present as REAL whole tokens (different
-    // column list / ordering of the projection) still execute — the fix
+    // column list / ordering of the projection) still execute, the fix
     // rejects burial, not legitimate re-spelling.
     let real = "1 union select 2,1 from users";
     assert!(
@@ -241,7 +241,7 @@ fn still_executes_tautology_with_whitespace_rewrite() {
     // PROPERTY: a whitespace rewrite of a tautology must still be
     // recognised as executing the same exploit.
     let orig = "1' OR '1'='1";
-    // Whitespace variation — still has quote, OR, and equality check.
+    // Whitespace variation (still has quote, OR, and equality check).
     let variant = "1'\tOR\t'1'='1";
     assert!(
         esql::still_executes(orig, variant),
@@ -304,7 +304,7 @@ fn sample_false_is_non_empty_and_deterministic() {
 fn sample_truth_differs_from_sample_false_for_same_seed() {
     // PROPERTY: a true-expression generator and a false-expression
     // generator MUST NOT produce the same string (if they did, one of
-    // them is broken). This is a sanity check, not a proof — the
+    // them is broken). This is a sanity check, not a proof, the
     // grammar-level truth property is proven by the equiv_sql tests.
     for seed in 0u64..20 {
         let t = esql::_sample_truth(seed);
@@ -360,7 +360,7 @@ fn delivery_arms_constant_is_at_least_seven() {
     // as statistically distinct in the CRS bypass study was 7 (the
     // original 7 axes). A regression below this value would silently
     // disable proven bypass channels.
-    // Constant-value assertion is INTENTIONAL — this is a build-time
+    // Constant-value assertion is INTENTIONAL, this is a build-time
     // regression gate: a DELIVERY_ARMS change below 7 should fail
     // CI, and clippy's `assertions_on_constants` lint would
     // otherwise hide the assert in test compilation. The const
@@ -380,7 +380,7 @@ fn delivery_arms_constant_is_at_least_seven() {
 
 #[test]
 fn generate_returns_empty_for_non_attack_input() {
-    // PROPERTY: anti-rig guarantee — a payload that is not a real attack
+    // PROPERTY: anti-rig guarantee, a payload that is not a real attack
     // must produce zero members. The generator cannot manufacture an
     // exploit from junk.
     //
@@ -467,7 +467,7 @@ fn generate_is_deterministic_across_invocations() {
 
 #[test]
 fn generate_every_member_still_executes() {
-    // PROPERTY: the soundness contract of the generator — every emitted
+    // PROPERTY: the soundness contract of the generator, every emitted
     // member must pass `still_executes`. A single violation is a
     // generator bug (it emitted a non-attack).
     let attacks = [
@@ -492,7 +492,7 @@ fn generate_every_member_still_executes() {
 #[test]
 fn generate_with_force_delivery_restricts_to_single_delivery_shape() {
     // PROPERTY: `force_delivery = Some(i)` must produce only members
-    // using ONE delivery shape variant — not a mixture. Used by the
+    // using ONE delivery shape variant, not a mixture. Used by the
     // Phase-C bandit to concentrate the budget on a single delivery axis.
     //
     // Note: `delivery_kind_label(i)` uses more granular labels than
@@ -538,7 +538,7 @@ fn generate_does_not_emit_duplicate_payload_delivery_pairs() {
 
 #[test]
 fn generate_oversized_max_does_not_panic() {
-    // PROPERTY: a very large `max` must not cause an OOM or panic — the
+    // PROPERTY: a very large `max` must not cause an OOM or panic, the
     // generator terminates when it cannot produce more unique members and
     // returns whatever it found.
     let p = "1' OR '1'='1";

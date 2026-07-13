@@ -1,7 +1,7 @@
 //! Server-Side Includes (SSI) grammar-aware payload mutation.
 //!
 //! Generates semantically-equivalent variants of an SSI directive
-//! payload — `<!--#exec cmd="..." -->` and friends. Modern WAFs match
+//! payload: `<!--#exec cmd="..." -->` and friends. Modern WAFs match
 //! the literal directive byte sequence; the same directive with
 //! reflowed whitespace, alternate attribute quoting, or interleaved
 //! comments evaluates identically on `mod_include` but evades pattern
@@ -9,9 +9,9 @@
 //!
 //! # Supported directives (Apache mod_include)
 //!
-//! - `<!--#exec cmd="..." -->` — shell command (rarely enabled but
+//! - `<!--#exec cmd="..." -->`: shell command (rarely enabled but
 //!   highest-impact when it is)
-//! - `<!--#exec cgi="..." -->` — CGI execution
+//! - `<!--#exec cgi="..." -->`: CGI execution
 //! - `<!--#include file="..." -->` / `<!--#include virtual="..." -->`
 //! - `<!--#config errmsg="..." -->`
 //! - `<!--#echo var="..." -->`
@@ -66,7 +66,7 @@ pub fn mutate(payload: &str) -> Vec<String> {
     }
 
     // ── Whitespace reflow variants ─────────────────────────────────
-    // Apache mod_include tokenises on any run of whitespace — extra
+    // Apache mod_include tokenises on any run of whitespace, extra
     // spaces, tabs, and newlines around tokens parse identically.
     push(format!("<!--#  {inner}  -->"), &mut out, &mut seen);
     push(format!("<!--#\t{inner}\t-->"), &mut out, &mut seen);
@@ -238,7 +238,7 @@ mod tests {
     /// LAW 12 anti-rig: mutations should all preserve the SSI
     /// envelope `<!--# ... -->`. If a transform breaks the envelope,
     /// the WAF "bypass" is just a different attack class, not an SSI
-    /// bypass — the oracle would reject it anyway.
+    /// bypass (the oracle would reject it anyway).
     #[test]
     fn every_mutation_preserves_ssi_envelope() {
         let muts = mutate(r#"<!--#exec cmd="ls" -->"#);
@@ -271,7 +271,7 @@ mod tests {
         );
     }
 
-    /// printenv has no attributes — case-fold + whitespace mutations
+    /// printenv has no attributes, case-fold + whitespace mutations
     /// still apply.
     #[test]
     fn mutate_handles_printenv_no_attrs() {
@@ -281,7 +281,7 @@ mod tests {
 
     /// LAW 12 invariant: every mutation differs from the input.
     /// Otherwise the bench would count the original payload as a
-    /// "bypass" if the WAF blocks the input — which is impossible by
+    /// "bypass" if the WAF blocks the input, which is impossible by
     /// definition (the bench oracle requires variant ≠ original).
     #[test]
     fn mutations_are_all_distinct_from_input() {
@@ -291,7 +291,7 @@ mod tests {
         }
     }
 
-    /// LAW 12: mutations are deterministic — same input produces
+    /// LAW 12: mutations are deterministic, same input produces
     /// the same set across calls. A nondeterministic mutator would
     /// make bench results irreproducible.
     #[test]
@@ -356,11 +356,11 @@ mod tests {
         for body in bodies {
             let p = format!("<!--#{body}-->");
             let _ = mutate(&p);
-            // No assertion — the test passes iff no panic.
+            // No assertion (the test passes iff no panic).
         }
     }
 
-    /// LAW 12: detect_type behaves consistently — `<!--#foo-->` is
+    /// LAW 12: detect_type behaves consistently: `<!--#foo-->` is
     /// SSI envelope EVEN for an unknown directive name. The oracle
     /// is responsible for narrowing to known directives; the grammar
     /// detector is the envelope check only.

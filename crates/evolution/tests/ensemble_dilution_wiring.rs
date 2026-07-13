@@ -1,4 +1,4 @@
-//! Integration tests for #128 — ensemble dilution wiring.
+//! Integration tests for #128 (ensemble dilution wiring).
 //!
 //! Covers: dilution=0 unchanged from baseline, dilution=1 only dilution
 //! matters, known-good dilutive payload scores higher than known-bad,
@@ -97,13 +97,13 @@ fn dilutive_payload_scores_higher_than_non_dilutive() {
     );
 }
 
-// ── Test 4: fingerprint gating — non-ensemble WAF → no effect ────────────────
+// ── Test 4: fingerprint gating, non-ensemble WAF → no effect ────────────────
 
 #[test]
 fn non_ensemble_waf_dilution_has_no_effect() {
     let est = default_estimator();
     let oracle_fitness = 0.65;
-    let cfg = config_with_weight(1.0); // maximum weight — still must be ignored
+    let cfg = config_with_weight(1.0); // maximum weight, still must be ignored
 
     // Unknown / non-ensemble WAF names.
     for non_ensemble in &[
@@ -127,7 +127,7 @@ fn non_ensemble_waf_dilution_has_no_effect() {
     }
 }
 
-// ── Test 5: determinism — same seed+payload → same score ─────────────────────
+// ── Test 5: determinism, same seed+payload → same score ─────────────────────
 
 #[test]
 fn deterministic_same_inputs_same_score() {

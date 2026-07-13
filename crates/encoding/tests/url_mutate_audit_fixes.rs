@@ -46,7 +46,7 @@ fn fragment_with_special_chars_is_not_mutated() {
 
 #[test]
 fn no_fragment_no_change_to_query_behaviour() {
-    // Negative twin — the fragment fix must not regress the
+    // Negative twin, the fragment fix must not regress the
     // happy-path case where there's no fragment at all.
     let cfg = UrlMutateConfig {
         mutate_query_values: true,
@@ -68,7 +68,7 @@ fn no_fragment_no_change_to_query_behaviour() {
 
 #[test]
 fn double_percent_encode_caps_oversize_input() {
-    // Hitting the cap should NOT produce 9× the input — the strategy
+    // Hitting the cap should NOT produce 9× the input, the strategy
     // falls back to single-pass aggressive encoding (3× max) when
     // input exceeds MAX_DOUBLE_ENCODE_INPUT. This is the DoS guard.
     let huge = "%".repeat(MAX_DOUBLE_ENCODE_INPUT + 1);
@@ -90,7 +90,7 @@ fn double_percent_encode_at_limit_still_double_encodes() {
     let val = "%".repeat(64);
     let s = UrlStrategy::DoublePercentEncode.apply(&val);
     // After two passes the literal % becomes %2525 (5 bytes per
-    // input byte). Don't pin exact length — pin the marker.
+    // input byte). Don't pin exact length (pin the marker).
     assert!(
         s.contains("%2525"),
         "small input must still get the full double-encode pass; got: {s}"
@@ -123,7 +123,7 @@ fn last_path_segment_decodes_before_re_encoding() {
 
 #[test]
 fn last_path_segment_without_pre_encoding_still_works() {
-    // Negative twin — clean segments shouldn't change behaviour.
+    // Negative twin (clean segments shouldn't change behaviour).
     let cfg = UrlMutateConfig {
         mutate_query_values: false,
         mutate_last_path_segment: true,
@@ -248,7 +248,7 @@ fn overlong_utf8_sequence_survives_query_value_round_trip() {
         mutate_last_path_segment: false,
         strategy: UrlStrategy::PercentEncodeAggressive,
     };
-    // %C0%AF is the classic overlong-UTF-8 encoding of `/` — a real
+    // %C0%AF is the classic overlong-UTF-8 encoding of `/`: a real
     // historical WAF-bypass vector against path traversal filters.
     // The bytes must survive the mutation round-trip exactly.
     let (out, _) = mutate_url("/?path=admin%C0%AF..%C0%AF", &cfg);
@@ -303,7 +303,7 @@ fn no_op_mutation_does_not_report_technique_applied() {
 
 #[test]
 fn real_mutation_still_reports_technique() {
-    // Negative twin — mutator that DOES change the value still
+    // Negative twin, mutator that DOES change the value still
     // reports technique applied.
     let cfg = UrlMutateConfig {
         mutate_query_values: true,
@@ -326,7 +326,7 @@ fn percent_encoded_slash_is_a_path_segment_boundary() {
         mutate_last_path_segment: true,
         strategy: UrlStrategy::PercentEncodeAggressive,
     };
-    // /a/b%2Fc — pre-fix the WHOLE tail `b%2Fc` was treated as the
+    // /a/b%2Fc, pre-fix the WHOLE tail `b%2Fc` was treated as the
     // last segment. Post-fix `%2F` counts as a boundary so only
     // `c` mutates.
     let (out, _) = mutate_url("/a/b%2Fc", &cfg);
@@ -347,7 +347,7 @@ fn non_canonical_spaces_capacity_does_not_overflow() {
     // Direct call via UrlStrategy::apply with a 64KB string to
     // exercise the saturating_mul path. We can't actually allocate
     // usize::MAX/2 bytes, but the saturating arithmetic must be
-    // present — this test pins the API path.
+    // present (this test pins the API path).
     let big = " ".repeat(64 * 1024);
     let s = UrlStrategy::NonCanonicalSpaces.apply(&big);
     assert!(s.len() >= big.len(), "output at least as long as input");

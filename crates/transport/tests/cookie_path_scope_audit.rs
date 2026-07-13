@@ -56,7 +56,7 @@ fn cookie_replays_on_proper_subpath() {
 #[test]
 fn cookie_does_not_replay_on_extension_attack_path() {
     let store = store_with_admin_cookie();
-    // PRE-FIX: this returned Some(...) — RFC 6265 violation, real
+    // PRE-FIX: this returned Some(...). RFC 6265 violation, real
     // credibility hit because the proxy was effectively widening the
     // cookie's reach.
     let got = store.get_for_request("example.com", "/adminxss/login", true);
@@ -79,7 +79,7 @@ fn cookie_does_not_replay_on_unrelated_path() {
 #[test]
 fn cookie_with_trailing_slash_scope_replays_correctly() {
     // When the scope ends with `/`, any starts_with match is by
-    // definition a proper subpath — confirm we don't break that case.
+    // definition a proper subpath (confirm we don't break that case).
     let store = ChallengeStore::new();
     store.record_scoped(
         "example.com",

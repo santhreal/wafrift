@@ -11,7 +11,7 @@
 //!    `serde_json`. WAFs and origin GraphQL servers reject malformed
 //!    JSON immediately, so any non-JSON output is a zero-bypass-rate
 //!    waste of a probe.
-//! 3. **GraphQL parser shape — balanced braces.** A depth-N or
+//! 3. **GraphQL parser shape, balanced braces.** A depth-N or
 //!    fragment-N body that doesn't balance braces gets a parse error
 //!    at the origin and the WAF rule never fires. We don't run a
 //!    full parser here, but balanced `{` / `}` is the cheapest
@@ -77,7 +77,7 @@ proptest! {
 
 #[test]
 fn alias_flood_zero_is_empty_query_but_valid_json() {
-    // n=0 is a degenerate but valid input — must produce a parseable
+    // n=0 is a degenerate but valid input, must produce a parseable
     // empty-aliases query, not a panic or malformed string.
     let p = alias_flood_payload(0);
     let v: serde_json::Value = serde_json::from_str(&p).unwrap();
@@ -85,7 +85,7 @@ fn alias_flood_zero_is_empty_query_but_valid_json() {
 }
 
 // ───────────────────────────────────────────────────────────────
-// 3. Brace-balance invariant — required for parser acceptance.
+// 3. Brace-balance invariant (required for parser acceptance).
 // ───────────────────────────────────────────────────────────────
 
 proptest! {
@@ -119,7 +119,7 @@ proptest! {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Vendored constants — sanity-pin the gqlprobe contract.
+// Vendored constants (sanity-pin the gqlprobe contract).
 // ───────────────────────────────────────────────────────────────
 
 #[test]
@@ -148,7 +148,7 @@ fn test_depths_are_strictly_increasing() {
     sorted.sort_unstable();
     assert_eq!(
         depths, sorted,
-        "TEST_DEPTHS not sorted ascending — sweep order is wrong"
+        "TEST_DEPTHS not sorted ascending, sweep order is wrong"
     );
 }
 
@@ -162,13 +162,13 @@ fn test_batch_sizes_are_strictly_increasing() {
 
 #[test]
 fn test_depths_include_dos_range() {
-    // The depths array MUST include at least one ≥100 entry — that's
+    // The depths array MUST include at least one ≥100 entry, that's
     // the depth where most unprotected GraphQL servers actually choke.
     assert!(TEST_DEPTHS.iter().any(|&d| d >= 100));
 }
 
 // ───────────────────────────────────────────────────────────────
-// Generator semantic tests — depth/size actually scales.
+// Generator semantic tests (depth/size actually scales).
 // ───────────────────────────────────────────────────────────────
 
 #[test]
@@ -199,7 +199,7 @@ fn alias_flood_scales_with_n() {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Wafrift-specific additions — invariant-pin them.
+// Wafrift-specific additions (invariant-pin them).
 // ───────────────────────────────────────────────────────────────
 
 #[test]
@@ -210,14 +210,14 @@ fn op_name_mismatch_payloads_at_least_three_variants() {
 #[test]
 fn op_name_mismatch_is_actual_mismatch() {
     // Each payload's operationName MUST NOT appear as a substring of
-    // its `query` field — that's the entire bypass technique.
+    // its `query` field (that's the entire bypass technique).
     for p in op_name_mismatch_payloads() {
         let v: serde_json::Value = serde_json::from_str(&p).unwrap();
         let op_name = v["operationName"].as_str().unwrap();
         let query = v["query"].as_str().unwrap();
         assert!(
             !query.contains(op_name),
-            "op name {op_name} found in query body {query} — not a mismatch"
+            "op name {op_name} found in query body {query}, not a mismatch"
         );
     }
 }
@@ -264,7 +264,7 @@ fn whitespace_split_at_least_one_uses_comment() {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Unified battery — all_evasion_payloads.
+// Unified battery (all_evasion_payloads).
 // ───────────────────────────────────────────────────────────────
 
 #[test]
@@ -284,7 +284,7 @@ fn all_evasion_payloads_no_duplicates() {
 fn all_evasion_payloads_all_valid_json() {
     for p in all_evasion_payloads() {
         let parsed: serde_json::Value = serde_json::from_str(&p)
-            .unwrap_or_else(|e| panic!("all_evasion_payloads emitted non-JSON: {p:?} — {e}"));
+            .unwrap_or_else(|e| panic!("all_evasion_payloads emitted non-JSON: {p:?}. {e}"));
         // Either an object with "query", or an array (the batch ones).
         assert!(
             parsed.is_object() || parsed.is_array(),
@@ -295,7 +295,7 @@ fn all_evasion_payloads_all_valid_json() {
 
 #[test]
 fn all_evasion_payloads_size_threshold() {
-    // Below this and we've regressed our battery — bump if you
+    // Below this and we've regressed our battery, bump if you
     // intentionally add. Catches accidental deletions.
     let v = all_evasion_payloads();
     assert!(v.len() >= 30, "evasion battery shrunk to {}", v.len());

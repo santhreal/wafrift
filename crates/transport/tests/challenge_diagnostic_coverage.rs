@@ -24,7 +24,7 @@ fn len_is_zero_on_fresh_store() {
 
 #[test]
 fn len_increments_on_record_and_decrements_on_forget() {
-    // PROPERTY: `len()` must reflect the number of live entries —
+    // PROPERTY: `len()` must reflect the number of live entries 
     // increment on `record`, decrement on `forget`.
     let s = ChallengeStore::new();
     s.record(
@@ -95,7 +95,7 @@ fn kind_returns_none_for_unknown_host() {
 #[test]
 fn kind_returns_none_after_ttl_expiry() {
     // PROPERTY: `kind()` must not return a stale kind after the entry's
-    // TTL has elapsed — the diagnostic must agree with `get()`.
+    // TTL has elapsed (the diagnostic must agree with `get()`).
     let s = ChallengeStore::new();
     s.record(
         "h",
@@ -155,7 +155,7 @@ fn age_is_non_negative_and_small_after_fresh_record() {
 #[test]
 fn age_is_none_after_forget() {
     // PROPERTY: `age()` must return `None` after `forget()` removes
-    // the entry — consistent with `get()` and `kind()`.
+    // the entry (consistent with `get()` and `kind()`).
     let s = ChallengeStore::new();
     s.record(
         "h",
@@ -266,7 +266,7 @@ fn refresh_solver_pending_returns_true_while_slot_held() {
 #[test]
 fn refresh_solver_pending_returns_false_after_clear() {
     // PROPERTY: once the slot is cleared, `refresh_solver_pending` must
-    // return `false` — the solver knows it has been superseded and should
+    // return `false`: the solver knows it has been superseded and should
     // stop. Without this check a zombie solver would keep running past
     // its eviction.
     let s = ChallengeStore::new();
@@ -281,7 +281,7 @@ fn refresh_solver_pending_returns_false_after_clear() {
 #[test]
 fn refresh_solver_pending_for_unknown_host_returns_false() {
     // PROPERTY: refreshing a slot that was never claimed (or that
-    // never existed) must return `false` — no panic, no false-positive.
+    // never existed) must return `false`: no panic, no false-positive.
     let s = ChallengeStore::new();
     assert!(!s.refresh_solver_pending("host.not.claimed"));
 }
@@ -317,7 +317,7 @@ fn challenge_store_is_send_sync() {
 fn concurrent_get_and_record_do_not_deadlock() {
     // PROPERTY: readers and writers must not deadlock under concurrent
     // access. This is the core correctness guarantee of the RwLock design
-    // — multiple readers can proceed simultaneously, a writer blocks only
+    //: multiple readers can proceed simultaneously, a writer blocks only
     // until all readers are done.
     let s = Arc::new(ChallengeStore::new());
     s.record(

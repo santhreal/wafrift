@@ -1,10 +1,10 @@
 //! LDAP-injection payload-string equivalence + the joint
-//! `(payload × delivery)` generator — the LDAP arm of Phase B.
+//! `(payload × delivery)` generator (the LDAP arm of Phase B).
 //!
 //! The sound equivalence here is RFC 4515 §3 assertion-value escaping:
 //! ANY byte of an LDAP filter assertion value may be written as `\`
 //! followed by two hex digits, and the directory server unescapes it
-//! before matching. So `admin` ≡ `\61dmin` ≡ `adm\69n` — identical at
+//! before matching. So `admin` ≡ `\61dmin` ≡ `adm\69n`: identical at
 //! the LDAP server, very different to a WAF. Attribute *descriptors*
 //! are also case-insensitive (`uid` ≡ `UID`). The filter-break
 //! structure (`)(`, `*`, `(|`, `(&`) is the injection mechanism and is
@@ -17,7 +17,7 @@ use super::{DeliveryShape, Dialect, EquivConfig, EquivPayload, Rng};
 /// OID pairs. Per RFC 4512 §2.5 an attribute type MAY be referenced by
 /// its `numericoid`; a conformant directory resolves the OID and the
 /// short name to the SAME attribute, so `(uid=x)` and
-/// `(0.9.2342.19200300.100.1.1=x)` select identical entries — while a
+/// `(0.9.2342.19200300.100.1.1=x)` select identical entries, while a
 /// WAF signature matching `uid=` / `cn=` sees neither. Names are stored
 /// lowercase (LDAP descriptors are case-insensitive, RFC 4512 §2.5).
 const OID_ALIASES: &[(&str, &str)] = &[
@@ -63,7 +63,7 @@ fn normalize(s: &str) -> String {
     // Fold OID → canonical name in descriptor position. An OID directly
     // followed by `=` (equality/presence/substring) or `:` (extensible
     // match) is unambiguously an attribute descriptor in LDAP filter
-    // syntax — a value never takes `<numericoid>=` form.
+    // syntax (a value never takes `<numericoid>=` form).
     for (name, oid) in OID_ALIASES {
         if o.contains(oid) {
             o = o.replace(&format!("{oid}="), &format!("{name}="));
@@ -74,7 +74,7 @@ fn normalize(s: &str) -> String {
 }
 
 /// Looks like an LDAP-injection payload (a filter-break or wildcard
-/// against an attribute) — else the generator emits nothing.
+/// against an attribute) (else the generator emits nothing).
 fn is_ldap_injection(s: &str) -> bool {
     let n = normalize(s);
     let structural = n.contains(")(")
@@ -95,7 +95,7 @@ fn is_ldap_injection(s: &str) -> bool {
     structural && attr
 }
 
-/// Significant assertion tokens (alnum runs ≥ 3) — the injection's
+/// Significant assertion tokens (alnum runs ≥ 3), the injection's
 /// targeted attributes/values that must survive.
 fn sig(n: &str) -> Vec<String> {
     n.split(|c: char| !c.is_ascii_alphanumeric())
@@ -128,7 +128,7 @@ pub fn still_matches(original: &str, cand: &str) -> bool {
     // §7 DEDUP + §14: whole-token survival via the shared boundary-aware
     // matcher. The prior `nc.contains(t)` substring check let an assertion
     // attribute/value survive buried in a larger identifier (`uid` in `uuid`,
-    // `admin` in `administrator`) — a different LDAP filter, not the original.
+    // `admin` in `administrator`) (a different LDAP filter, not the original).
     want.iter().all(|t| super::contains_token(&nc, t))
 }
 
@@ -139,7 +139,7 @@ const STRUCTURAL: &[char] = &['(', ')', '&', '|', '=', '*', '!'];
 /// RFC 4515 hex-escape of value characters (never the structural
 /// filter chars). `admin` → `\61dm\69n`. Server-identical.
 fn rw_hex_escape(s: &str, rng: &mut Rng) -> String {
-    // RFC 4515 permits `\XX` ONLY in an assertion VALUE — never in the
+    // RFC 4515 permits `\XX` ONLY in an assertion VALUE, never in the
     // attribute descriptor. Escaping the descriptor (`\75id=`) yields
     // an INVALID filter the directory rejects (was an unsound bug).
     // Track value position: inside `( attr op <VALUE> )`.
@@ -166,7 +166,7 @@ fn rw_hex_escape(s: &str, rng: &mut Rng) -> String {
 }
 
 /// Case-permute LDAP attribute descriptors (case-insensitive per
-/// RFC 4512) — the run of letters immediately before a `=`.
+/// RFC 4512) (the run of letters immediately before a `=`).
 fn rw_attr_case(s: &str, rng: &mut Rng) -> String {
     let b: Vec<char> = s.chars().collect();
     let mut out: Vec<char> = b.clone();
@@ -197,7 +197,7 @@ fn rw_attr_case(s: &str, rng: &mut Rng) -> String {
 /// numeric OID instead of its short name. `(uid=*)` → `(0.9.2342.\
 /// 19200300.100.1.1=*)`. The directory resolves both to the same
 /// attribute; a WAF keyed on `uid=` / `cn=` matches neither.
-/// Descriptor-position only (the run of letters before `=` / `:`) —
+/// Descriptor-position only (the run of letters before `=` / `:`) 
 /// never the value (anti-rig: the injection's value bytes are
 /// untouched). `normalize` folds the OID back so [`still_matches`]
 /// independently re-confirms equivalence.
@@ -216,7 +216,7 @@ fn rw_oid_alias(s: &str, rng: &mut Rng) -> Option<String> {
                 j -= 1;
             }
             // descriptor must start a clause (preceded by ( & | ! or
-            // be at string start) — otherwise it is value text.
+            // be at string start) (otherwise it is value text).
             let ok_start = j == 0 || matches!(b[j - 1], '(' | '&' | '|' | '!' | ')');
             if ok_start && j < i {
                 let name: String = b[j..i].iter().collect::<String>().to_ascii_lowercase();
@@ -286,7 +286,7 @@ fn child_clauses(b: &[char], open: usize) -> Option<(Vec<(usize, usize)>, usize)
 
 /// AND/OR are commutative in LDAP filter evaluation (RFC 4511 §4.5.1):
 /// `(&(A)(B)(C))` ≡ `(&(C)(B)(A))`, same for `|`. Reverse the sibling
-/// order of the first multi-child `(&…)` / `(|…)` group — every token
+/// order of the first multi-child `(&…)` / `(|…)` group, every token
 /// and structural marker is preserved, the match set is identical.
 fn rw_filter_commute(s: &str, _rng: &mut Rng) -> Option<String> {
     let b: Vec<char> = s.chars().collect();
@@ -329,9 +329,9 @@ fn rw_filter_commute(s: &str, _rng: &mut Rng) -> Option<String> {
 /// AND-identity (RFC 4511 §4.5.1): `X ∧ true ≡ X`. `(objectClass=*)`
 /// is a presence filter that every directory entry satisfies (RFC 4512
 /// §2.4: every entry has an `objectClass`). Insert it as an extra
-/// sibling of an `(&…)` group — match set unchanged, structure the WAF
+/// sibling of an `(&…)` group, match set unchanged, structure the WAF
 /// signatures on is now padded. NEVER applied to `(|…)` (there
-/// `X ∨ true ≡ true`, which would change the result — anti-rig).
+/// `X ∨ true ≡ true`, which would change the result (anti-rig)).
 fn rw_presence_pad(s: &str, _rng: &mut Rng) -> Option<String> {
     let b: Vec<char> = s.chars().collect();
     for open in 0..b.len() {
@@ -435,7 +435,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules.push("oid_alias");
         }
         // ── value-escape layer (mutually exclusive: full XOR partial,
-        // never both — re-escaping an `\XX` would corrupt it) ──
+        // never both, re-escaping an `\XX` would corrupt it) ──
         if rng.chance(2, 5) {
             let n = rw_full_hex(&s, &mut rng);
             if n != s {
@@ -605,15 +605,15 @@ mod tests {
 
     #[test]
     fn presence_pad_is_and_identity_and_never_corrupts_an_or() {
-        // (&(uid=*)) ≡ (&(objectClass=*)(uid=*)) — X ∧ true ≡ X.
+        // (&(uid=*)) ≡ (&(objectClass=*)(uid=*)). X ∧ true ≡ X.
         let p = rw_presence_pad("*)(&(uid=admin))", &mut Rng::new(1))
             .expect("an AND group accepts an always-true sibling");
         assert!(p.contains("(objectClass=*)"), "pad missing: {p}");
         assert!(still_matches("*)(&(uid=admin))", &p));
         // CRITICAL anti-rig: an OR group must NEVER be padded with an
-        // always-true clause — `X ∨ true ≡ true` changes the result.
+        // always-true clause: `X ∨ true ≡ true` changes the result.
         // The rewrite must refuse it at the source (still_matches alone
-        // cannot catch this — it only checks token survival).
+        // cannot catch this (it only checks token survival)).
         assert!(
             rw_presence_pad("*)(|(uid=admin))", &mut Rng::new(1)).is_none(),
             "padding an OR with objectClass=* is UNSOUND and must be refused"
@@ -641,7 +641,7 @@ mod tests {
     fn generator_emits_the_new_sound_classes_and_all_verify() {
         // Must carry LITERAL alnum values: `rfc4515_full_hex` escapes
         // value bytes, so a wildcard-only payload (`uid=*`) has nothing
-        // to escape and the class is legitimately unreachable on it —
+        // to escape and the class is legitimately unreachable on it 
         // asserting it there would assert a falsehood. A real
         // credential-bearing filter-break exercises all four classes.
         let atk = "*)(&(uid=admin)(userPassword=secret))";

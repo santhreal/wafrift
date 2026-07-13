@@ -108,7 +108,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<CmdWindowsMutation> {
     });
 
     // Strategy 7: Variable expansion bypass.
-    // `echo %TMP%` discards the operator's command entirely — a canned
+    // `echo %TMP%` discards the operator's command entirely, a canned
     // non-attack. For a structured attack that is the cmdi rig (a probe
     // shipped instead of the exploit); only emit it for a bare,
     // non-structured input where an env-echo probe is itself the test.

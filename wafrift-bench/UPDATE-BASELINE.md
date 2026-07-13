@@ -3,7 +3,7 @@
 The CI gate in `.github/workflows/bench-gate.yml` measures every PR's PL4 bypass
 rate against `wafrift-bench/canonical-baseline.json`. The gate fails if the rate
 drops by more than 2 percentage points below `oracle_valid_rate`. When a
-deliberate improvement lands — new strategy, corpus expansion, engine upgrade —
+deliberate improvement lands, new strategy, corpus expansion, engine upgrade 
 run the canonical bench locally (`./target/release/wafrift bench-waf --base-url
 http://localhost:18084 --corpus wafrift-bench/corpus --evade --strategies
 heavy,equiv-cegis --variants 5 --format json --output /tmp/bench.json

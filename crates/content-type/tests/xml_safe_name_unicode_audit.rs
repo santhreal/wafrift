@@ -32,7 +32,7 @@ fn preserves_cyrillic() {
 
 #[test]
 fn replaces_disallowed_punctuation_with_underscore() {
-    // Negative twin — the function must still reject XML-meta chars.
+    // Negative twin (the function must still reject XML-meta chars).
     let out = xml_safe_name("a<b>c");
     assert!(!out.contains('<'));
     assert!(!out.contains('>'));

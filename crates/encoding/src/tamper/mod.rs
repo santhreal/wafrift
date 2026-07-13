@@ -1,4 +1,4 @@
-//! Payload tampering strategies — advanced payload transformations beyond basic encoding.
+//! Payload tampering strategies (advanced payload transformations beyond basic encoding).
 //!
 //! Tamper strategies combine multiple transformations in sophisticated ways
 //! to bypass WAF rules that simple encoding cannot evade.

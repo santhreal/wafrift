@@ -1,16 +1,16 @@
-//! Scan's Step 2 — baseline fire of the raw payload.
+//! Scan's Step 2 (baseline fire of the raw payload).
 //!
 //! Before any evasion, hit the target with the unmodified payload
 //! and observe what happens. The result is the load-bearing pivot
 //! for everything downstream:
 //!
-//! - WAF blocks (the typical case) — confirms WAF is active on
+//! - WAF blocks (the typical case), confirms WAF is active on
 //!   this parameter; the variant loop is meaningful.
-//! - WAF passes through — the parameter isn't inspected; the
+//! - WAF passes through, the parameter isn't inspected; the
 //!   scan should still proceed but warn the operator that
 //!   "evasion" against an unguarded parameter is a noise-floor
 //!   measurement, not a finding.
-//! - Transport error — the target isn't reachable at all;
+//! - Transport error, the target isn't reachable at all;
 //!   nothing downstream will work.
 //!
 //! Lives in its own module so scan/mod.rs reads as "0, 1, 2, …"
@@ -20,7 +20,7 @@
 use colored::Colorize;
 
 /// Outcome of the baseline fire. `transport_ok = false` means we
-/// couldn't reach the target at all (DNS / connect / TLS) — every
+/// couldn't reach the target at all (DNS / connect / TLS), every
 /// downstream phase becomes meaningless, but we don't bail outright
 /// because the operator may want to see the variant build output
 /// anyway (useful for debugging filter / strategy selection without
@@ -110,7 +110,7 @@ fn render_text(outcome: &BaselineOutcome) {
     if !outcome.transport_ok {
         println!(
             "  {}",
-            "⚠ Baseline inconclusive — fix connectivity and re-run"
+            "⚠ Baseline inconclusive, fix connectivity and re-run"
                 .yellow()
                 .bold()
         );
@@ -119,13 +119,13 @@ fn render_text(outcome: &BaselineOutcome) {
     if outcome.blocked {
         println!(
             "  {} (HTTP {})",
-            "✓ Raw payload BLOCKED — WAF is active".green().bold(),
+            "✓ Raw payload BLOCKED: WAF is active".green().bold(),
             outcome.status
         );
     } else {
         println!(
             "  {} (HTTP {})",
-            "⚠ Raw payload PASSED — WAF may not inspect this parameter"
+            "⚠ Raw payload PASSED: WAF may not inspect this parameter"
                 .yellow()
                 .bold(),
             outcome.status
@@ -226,7 +226,7 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn run_passes_payload_through_query_string() {
         // The baseline request must inject the payload into the
-        // `param` query — sanity for the URL shape downstream
+        // `param` query, sanity for the URL shape downstream
         // phases assume.
         let received = Arc::new(std::sync::Mutex::new(String::new()));
         let received_c = received.clone();
@@ -259,7 +259,7 @@ mod tests {
         let req = received.lock().unwrap().clone();
         // The payload "victim123" is all unreserved ASCII, so it must
         // appear verbatim in the query string (no encoding artifacts).
-        // Also check that a second encoding pass did NOT happen — if
+        // Also check that a second encoding pass did NOT happen, if
         // scan_url_with_param double-encoded, "%" would appear in the
         // raw request (there are no percent chars in "victim123" so
         // any "%" means an encoding pass ran on an already-plain value).
@@ -316,14 +316,14 @@ mod tests {
         // Double-encoded: `%` → %25, so `%3C` would become `%253C`.
         assert!(
             !req.contains("%253C") && !req.contains("%253c"),
-            "double-encoding detected — scan_url_with_param re-encoded an already-encoded value: {req}"
+            "double-encoding detected, scan_url_with_param re-encoded an already-encoded value: {req}"
         );
     }
 
     #[tokio::test(flavor = "current_thread")]
     async fn run_with_sql_payload_encodes_single_quote_once() {
         // SQL injection payloads routinely contain `'` (apostrophe, %27).
-        // Double-encoding would send `%2527` — a wasted probe that no
+        // Double-encoding would send `%2527`: a wasted probe that no
         // WAF could mistake for a SQL injection.
         let received = Arc::new(std::sync::Mutex::new(String::new()));
         let received_c = received.clone();
@@ -375,7 +375,7 @@ mod tests {
     fn render_text_transport_failure_path_does_not_panic() {
         // Non-async unit test for the render_text branch that handles
         // transport_ok=false (the "fix connectivity and re-run" banner).
-        // Previously untested — ensures `render_text` handles the sad
+        // Previously untested, ensures `render_text` handles the sad
         // path without unwrapping or panicking.
         let outcome = BaselineOutcome {
             status: 0,

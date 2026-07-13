@@ -6,10 +6,10 @@
 //! - **Rate-limit / transient as block.** A `429` / `503` / gateway timeout is
 //!   the WAF (or an upstream) saying *"later"*, not *"this payload is blocked"*.
 //!   Counting it as a block manufactures false `Policed` / `unbypassable`
-//!   verdicts — the differential silently rots the moment the target throttles.
+//!   verdicts (the differential silently rots the moment the target throttles).
 //! - **200 block page as pass.** Cloudflare, Akamai, Imperva, F5 ASM, AWS WAF
 //!   and others serve a block / challenge interstitial with HTTP **200**.
-//!   Status-only classification reads that as the attack *passing* — a
+//!   Status-only classification reads that as the attack *passing*, a
 //!   FABRICATED bypass, the single worst outcome for an operator who will act
 //!   on it.
 //!
@@ -17,7 +17,7 @@
 //! [`LiveVerdict::Blocked`], or [`LiveVerdict::Transient`] using the status code
 //! AND a Tier-B set of block-page body signatures, then drives a **bounded
 //! retry** on transient (honouring `Retry-After`) so rate-limiting degrades to
-//! "inconclusive", never to a wrong answer. The core is pure and network-free —
+//! "inconclusive", never to a wrong answer. The core is pure and network-free 
 //! the live oracle injects the probe and the sleep.
 
 use std::time::Duration;
@@ -43,14 +43,14 @@ const MAX_BACKOFF: Duration = Duration::from_secs(30);
 pub enum LiveVerdict {
     /// The request reached the application and got a normal response.
     Allowed,
-    /// The WAF stopped the request — by status code, or a 2xx block page.
+    /// The WAF stopped the request (by status code, or a 2xx block page).
     Blocked,
-    /// Rate-limit / gateway / overload — a deferral, not a block decision.
+    /// Rate-limit / gateway / overload (a deferral, not a block decision).
     Transient,
 }
 
 /// What one live probe observed: status, an optional `Retry-After` hint, and the
-/// (bounded) body — only populated for 2xx, where block-page detection applies.
+/// (bounded) body (only populated for 2xx, where block-page detection applies).
 pub struct ProbeResponse {
     pub status: u16,
     pub retry_after_secs: Option<u64>,
@@ -59,7 +59,7 @@ pub struct ProbeResponse {
 
 /// Classify one response. `block_signatures` are lowercased substrings.
 ///
-/// Mapping (a strict refinement of the old status-only rule — the only changes
+/// Mapping (a strict refinement of the old status-only rule, the only changes
 /// are that 429/502/503/504 become `Transient` instead of `Blocked`, and a 2xx
 /// body carrying a block signature becomes `Blocked` instead of `Allowed`):
 /// - `429 | 502 | 503 | 504` → `Transient`
@@ -106,8 +106,8 @@ fn backoff_delay(retry_number: usize, retry_after_secs: Option<u64>) -> Duration
 
 /// Probe `probe` and classify each response with the injected `classify`,
 /// retrying on [`LiveVerdict::Transient`] up to `max_retries` times (sleeping
-/// via the injected `sleep`). On exhaustion the result is an `Oracle` error —
-/// i.e. **inconclusive**, never a fabricated `Block` — so a rate-limited target
+/// via the injected `sleep`). On exhaustion the result is an `Oracle` error 
+/// i.e. **inconclusive**, never a fabricated `Block`: so a rate-limited target
 /// degrades safely.
 ///
 /// `classify` is injected so the caller can compose the static
@@ -134,7 +134,7 @@ where
             LiveVerdict::Transient => {
                 if retries >= max_retries {
                     return Err(WafModelError::Oracle(format!(
-                        "target returned a transient status ({}) after {retries} retries — \
+                        "target returned a transient status ({}) after {retries} retries. \
                          rate-limited or overloaded; treated as inconclusive rather than a \
                          false block",
                         resp.status,

@@ -3,7 +3,7 @@
 //! ## Attack surface
 //!
 //! QUIC's 0-RTT (zero round-trip time) resumption (RFC 9001 §4.6) allows a
-//! client to send application data in the first flight — before the TLS 1.3
+//! client to send application data in the first flight, before the TLS 1.3
 //! handshake completes. The server processes this data using session ticket
 //! keying material from a previous connection.
 //!
@@ -11,7 +11,7 @@
 //! to 0-RTT data. The data arrives at the server before the WAF's inspection
 //! pipeline is initialized.
 //!
-//! Additionally, 0-RTT data is **replayable** — a network attacker (or the
+//! Additionally, 0-RTT data is **replayable**: a network attacker (or the
 //! WAF itself acting as a middlebox) can replay 0-RTT packets. RFC 9001
 //! requires servers to handle potential replays, but many implementations
 //! are configured to accept replayed 0-RTT data (anti-replay is costly).
@@ -125,7 +125,7 @@ impl ZeroRttReplayBuilder {
             early_data_bytes: h3_headers,
             handshake_bytes: h3_data,
             description: format!(
-                "0-RTT split: HEADERS early, DATA ({} bytes) in 1-RTT — {} {}",
+                "0-RTT split: HEADERS early, DATA ({} bytes) in 1-RTT. {} {}",
                 body.len(),
                 method,
                 path
@@ -185,7 +185,7 @@ impl ZeroRttReplayBuilder {
     }
 }
 
-// ── HTTP/3 frame builders (minimal, no QPACK — uses literal headers) ──────
+// ── HTTP/3 frame builders (minimal, no QPACK, uses literal headers) ──────
 
 /// Maximum byte length for a literal string field in a QPACK-encoded
 /// header. The probe generator uses single-byte prefix-int encoding
@@ -202,7 +202,7 @@ const MAX_QPACK_LITERAL_BYTE_LEN: usize = 127;
 /// Build a minimal HTTP/3 HEADERS frame with literal (unindexed) fields.
 ///
 /// This uses QPACK static table entries for known pseudo-headers and
-/// literal unindexed encoding for custom headers — no dynamic table
+/// literal unindexed encoding for custom headers, no dynamic table
 /// involvement, so it works even with a fresh QPACK state.
 ///
 /// Header names and values are truncated to [`MAX_QPACK_LITERAL_BYTE_LEN`]
@@ -225,13 +225,13 @@ fn build_h3_headers_frame(method: &str, path: &str, extra_headers: &[(&str, &str
             field_block.push(0xD4); // index 20
         }
         _ => {
-            // Literal unindexed: `0001 N XXXX` — name literal, N=0
+            // Literal unindexed: `0001 N XXXX`: name literal, N=0
             field_block.push(0x20); // never-indexed literal name
             let m = ":method".as_bytes();
-            // len is 7 — always fits in single-byte prefix-int. No truncation needed.
+            // len is 7 (always fits in single-byte prefix-int. No truncation needed).
             field_block.push(m.len() as u8);
             field_block.extend_from_slice(m);
-            // method value — cap to MAX_QPACK_LITERAL_BYTE_LEN to prevent silent as-u8 overflow.
+            // method value (cap to MAX_QPACK_LITERAL_BYTE_LEN to prevent silent as-u8 overflow).
             let v = &method.as_bytes()[..method.len().min(MAX_QPACK_LITERAL_BYTE_LEN)];
             field_block.push(v.len() as u8);
             field_block.extend_from_slice(v);
@@ -244,7 +244,7 @@ fn build_h3_headers_frame(method: &str, path: &str, extra_headers: &[(&str, &str
         // Literal name reference for :path (static index 1)
         // `01 T N XXXX` where T=1, name=static[1]=:path, value=literal
         field_block.push(0x51); // 0b0101_0001 = name ref static[1]
-        // Cap path to MAX_QPACK_LITERAL_BYTE_LEN — values >= 128 bytes would
+        // Cap path to MAX_QPACK_LITERAL_BYTE_LEN, values >= 128 bytes would
         // require multi-byte prefix-int encoding, not the single `as u8` below.
         let v = &path.as_bytes()[..path.len().min(MAX_QPACK_LITERAL_BYTE_LEN)];
         field_block.push(v.len() as u8);
@@ -505,7 +505,7 @@ mod tests {
     /// emitted bytes.
     #[test]
     fn h3_headers_frame_long_header_does_not_overflow_length_byte() {
-        // 200-byte value — would have overflowed u8 and produced length=200-256=0
+        // 200-byte value, would have overflowed u8 and produced length=200-256=0
         // (actually 200u8 = 0xC8, which is a valid byte but would be misinterpreted
         // as a Huffman-encoded prefix-int due to bit 7 being set).
         let long_value = "V".repeat(200);
@@ -542,7 +542,7 @@ mod tests {
     fn max_qpack_literal_byte_len_is_127() {
         assert_eq!(
             MAX_QPACK_LITERAL_BYTE_LEN, 127,
-            "MAX_QPACK_LITERAL_BYTE_LEN must be 127 — values >= 128 require multi-byte prefix-int"
+            "MAX_QPACK_LITERAL_BYTE_LEN must be 127, values >= 128 require multi-byte prefix-int"
         );
     }
 }

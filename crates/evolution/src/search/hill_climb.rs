@@ -78,7 +78,7 @@ impl SearchAlgorithm for HillClimbing {
     fn submit_evaluations(&mut self, results: Vec<(u64, OracleVerdict)>) {
         for (_id, verdict) in results {
             // Record the verdict on a clone first, then compare the
-            // resulting EMA-smoothed fitness — this keeps both sides
+            // resulting EMA-smoothed fitness, this keeps both sides
             // of the comparison in the same units. The earlier
             // approach compared raw verdict.to_fitness() against
             // self.current.fitness (an EMA), which made the

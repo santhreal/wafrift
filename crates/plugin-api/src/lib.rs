@@ -1,4 +1,4 @@
-//! wafrift-plugin-api — External tamper plugin system.
+//! wafrift-plugin-api: External tamper plugin system.
 //!
 //! Lets external contributors add tampers **without a Rust rebuild**.
 //! Plugins live at `~/.wafrift/tampers/`:
@@ -44,7 +44,7 @@ use serde::{Deserialize, Serialize};
 // Public trait: Tamper
 // ──────────────────────────────────────────────────────────────────────────
 
-/// Every plugin — TOML or WASM — implements this trait.
+/// Every plugin: TOML or WASM (implements this trait).
 ///
 /// The trait is object-safe so plugins can be stored as `Box<dyn Tamper>`.
 pub trait Tamper: Send + Sync {
@@ -191,7 +191,7 @@ pub enum PluginError {
 #[derive(Debug, Deserialize)]
 struct TomlPluginFile {
     manifest: TomlManifest,
-    /// Rules are optional — a manifest-only plugin loads as an
+    /// Rules are optional, a manifest-only plugin loads as an
     /// identity tamper. Used by external contributors who want to
     /// register metadata (e.g. for a future WASM upgrade path) without
     /// shipping regex rules yet.
@@ -317,7 +317,7 @@ fn load_toml_plugin(path: &Path) -> Result<Box<dyn Tamper>, PluginError> {
     // engine. 1 MiB is stricter than the workspace-canonical 4 MiB
     // (wafrift_types::REGEX_NFA_SIZE_LIMIT) because plugin patterns
     // come from fully untrusted third parties. The tighter cap is
-    // intentional — do NOT bump it to match the workspace constant.
+    // intentional (do NOT bump it to match the workspace constant).
     const PLUGIN_REGEX_SIZE_LIMIT: usize = 1024 * 1024;
     let mut compiled_rules = Vec::with_capacity(parsed.rules.len());
     for rule in &parsed.rules {
@@ -368,7 +368,7 @@ impl WasmRuntime {
     ///
     /// We resolve borrow-checker conflicts by cloning the `TypedFunc`
     /// values out of their `Option` wrappers before mutably borrowing
-    /// `self.store` — `TypedFunc` is a lightweight handle (index +
+    /// `self.store`: `TypedFunc` is a lightweight handle (index +
     /// type marker) designed to be cloned cheaply.
     fn call_tamper(&mut self, input: &str) -> Option<String> {
         // Clone handles upfront to avoid aliasing borrows later.
@@ -400,17 +400,17 @@ impl WasmRuntime {
         let result_ptr = ((result_packed >> 32) & 0xFFFF_FFFF) as usize;
         let result_len = (result_packed & 0xFFFF_FFFF) as usize;
 
-        // §15 host-OOM defence: `result_len` is attacker-controlled — the low
+        // §15 host-OOM defence: `result_len` is attacker-controlled, the low
         // 32 bits of the UNTRUSTED guest's return value, up to ~4 GiB. The
         // guest's own linear memory is capped (4 MiB), so any (ptr, len) that
-        // does not fit inside the current guest memory is necessarily a lie —
+        // does not fit inside the current guest memory is necessarily a lie 
         // and a naive `vec![0u8; result_len]` would allocate gigabytes on the
         // HOST and OOM it BEFORE `memory.read` (which only bounds-checks the
         // read itself) ever runs. Reject the out-of-bounds/oversized result
         // up front so the host allocation can never exceed guest memory.
         let mem_size = memory.data_size(&self.store);
         if result_ptr.saturating_add(result_len) > mem_size {
-            return None; // oversized / out-of-bounds guest result — fail safe
+            return None; // oversized / out-of-bounds guest result, fail safe
         }
 
         let mut out = vec![0u8; result_len];
@@ -435,7 +435,7 @@ impl Tamper for WasmTamper {
     fn apply(&self, input: &str) -> String {
         let mut rt = match self.store_module.lock() {
             Ok(g) => g,
-            Err(_) => return input.to_owned(), // poisoned — fail safe
+            Err(_) => return input.to_owned(), // poisoned, fail safe
         };
         rt.call_tamper(input).unwrap_or_else(|| input.to_owned())
     }
@@ -492,7 +492,7 @@ fn load_wasm_plugin(path: &Path) -> Result<Box<dyn Tamper>, PluginError> {
             cause: format!("module compilation failed: {e}"),
         })?;
 
-    // Linker with NO imports — no WASI, no host functions.
+    // Linker with NO imports (no WASI, no host functions).
     let linker: wasmtime::Linker<()> = wasmtime::Linker::new(&engine);
 
     let mut store = wasmtime::Store::new(&engine, ());
@@ -616,7 +616,7 @@ fn extract_wasm_manifest(wasm_bytes: &[u8], path: &Path) -> Result<TamperManifes
 
     Err(PluginError::WasmLoad {
         file: path.to_owned(),
-        cause: "missing 'wafrift_manifest' custom section — see docs/PLUGIN_API.md".into(),
+        cause: "missing 'wafrift_manifest' custom section, see docs/PLUGIN_API.md".into(),
     })
 }
 
@@ -709,7 +709,7 @@ impl TamperRegistry {
     pub fn load_dir(&mut self, dir: &Path) -> Vec<PluginError> {
         let entries = match std::fs::read_dir(dir) {
             Ok(e) => e,
-            Err(_) => return Vec::new(), // directory doesn't exist — not an error
+            Err(_) => return Vec::new(), // directory doesn't exist, not an error
         };
 
         let mut errors = Vec::new();
@@ -1061,7 +1061,7 @@ replacement = "x"
     #[test]
     fn wasm_wrong_magic_rejected() {
         let dir = TempDir::new().unwrap();
-        // Not a WASM binary — write random bytes.
+        // Not a WASM binary (write random bytes).
         let path = dir.path().join("fake.wasm");
         std::fs::write(&path, b"not a wasm file at all!!!!").unwrap();
 

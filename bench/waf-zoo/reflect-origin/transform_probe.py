@@ -10,11 +10,11 @@ models and fires it via GET (the collection CRS inspects most thoroughly), then
 reports whether CRS passed it (200) and whether the DECODED payload reflected
 raw (executable).
 
-  b64 / hex / rot13  — genuinely WAF-opaque: CRS has no matching transform.
-  jsesc / entity     — NEGATIVE CONTROLS: CRS's jsDecode / htmlEntityDecode see
+  b64 / hex / rot13 (genuinely WAF-opaque: CRS has no matching transform).
+  jsesc / entity: NEGATIVE CONTROLS: CRS's jsDecode / htmlEntityDecode see
                        through them, so they should stay blocked.
-  dd                 — double-URL: CRS 403s it (920240/920250). Control.
-  body               — raw payload, no transform: CRS blocks it. Control.
+  dd: double-URL: CRS 403s it (920240/920250). Control.
+  body: raw payload, no transform: CRS blocks it. Control.
 """
 import argparse
 import base64

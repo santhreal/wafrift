@@ -5,11 +5,11 @@
 # when a WAF is fingerprinted.
 #
 # Fields:
-#   name        — WAF product name (matches detect crate output)
-#   techniques  — ordered list of encoding/mutation strategies to try first
-#   notes       — operator notes for manual review
-#   sql_tricks  — SQL-specific bypass patterns that work against this WAF
-#   xss_tricks  — XSS-specific bypass patterns
+#   name: WAF product name (matches detect crate output)
+#   techniques: ordered list of encoding/mutation strategies to try first
+#   notes: operator notes for manual review
+#   sql_tricks: SQL-specific bypass patterns that work against this WAF
+#   xss_tricks: XSS-specific bypass patterns
 
 [[waf_preset]]
 name = "Cloudflare"

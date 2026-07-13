@@ -59,7 +59,7 @@ pub trait SearchAlgorithm: Send + Sync + std::fmt::Debug {
     /// Restore internal state from bytes.
     fn restore(&mut self, bytes: &[u8]) -> Result<(), EvolutionError>;
 
-    /// Snapshot the algorithm's current "live" chromosomes — the set
+    /// Snapshot the algorithm's current "live" chromosomes, the set
     /// the engine is actively searching from.
     ///
     /// Population-based algorithms (`NoveltySearch`, `MapElites`)
@@ -81,7 +81,7 @@ pub trait SearchAlgorithm: Send + Sync + std::fmt::Debug {
     /// panicked with "must override". That panic was reachable from
     /// any out-of-tree algorithm that forgot to override; calling
     /// `clone_box` from the proxy path then aborted the whole evade
-    /// pipeline. The fix removes the default — the compiler now
+    /// pipeline. The fix removes the default, the compiler now
     /// enforces the override at build time instead.
     fn clone_box(&self) -> Box<dyn SearchAlgorithm>;
 }

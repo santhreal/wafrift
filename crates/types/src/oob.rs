@@ -30,7 +30,7 @@ pub struct OobCanary {
 // (HTTP/3, DoH, STUN, etc.) is no longer a breaking change.
 //
 // SMTP / LDAP / FTP were silently dropped at interactsh_provider.rs's
-// `_ =&gt; continue` arm before — meaning Oracle UTL_SMTP-based blind
+// `_ =&gt; continue` arm before, meaning Oracle UTL_SMTP-based blind
 // SQLi, every LDAP injection, every ftp:// SSRF callback reported
 // `OobConfirmation::Timeout` despite the payload actually working.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -46,7 +46,7 @@ pub enum OobInteraction {
         body: Option<String>,
     },
     SmtpMessage {
-        // Full interactsh `raw_request` of the SMTP exchange — HELO,
+        // Full interactsh `raw_request` of the SMTP exchange. HELO,
         // MAIL FROM, RCPT TO, DATA. Single string because the wire
         // format is line-delimited and consumers usually grep it.
         raw: String,

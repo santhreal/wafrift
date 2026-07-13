@@ -1,4 +1,4 @@
-# E10/75 — doc-claim ledger. Every load-bearing claim the crate's
+# E10/75: doc-claim ledger. Every load-bearing claim the crate's
 # public docs (lib.rs crate doc + README.md) make is registered here
 # and bound to a REAL test that fails if the claim becomes false.
 #

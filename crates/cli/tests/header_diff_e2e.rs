@@ -1,6 +1,6 @@
 //! End-to-end test for `wafrift header-diff`.
 //!
-//! Spins up a mock origin that's "header-aware" — it returns
+//! Spins up a mock origin that's "header-aware", it returns
 //! different bodies depending on whether `X-Real-IP: 127.0.0.1` is
 //! present (simulating a backend that trusts the header for
 //! "internal" gating). Drives `wafrift header-diff --format json`
@@ -31,7 +31,7 @@ async fn spawn_header_aware_mock() -> std::net::SocketAddr {
                     lo.starts_with("x-real-ip:") && lo.contains("127.0.0.1")
                 });
                 let body: String = if internal {
-                    "<html>internal admin panel — secret content (long body)</html>".into()
+                    "<html>internal admin panel, secret content (long body)</html>".into()
                 } else {
                     "<html>public</html>".into()
                 };
@@ -70,10 +70,10 @@ fn header_diff_finds_xff_localhost_divergence_via_real_binary() {
         "--timeout-secs",
         "30",
     ]);
-    assert_eq!(code, 0, "header-diff should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "header-diff should exit 0, stderr:\n{stderr}");
 
     let parsed: serde_json::Value =
-        serde_json::from_str(stdout.trim()).expect("JSON parse — stdout:\n{stdout}");
+        serde_json::from_str(stdout.trim()).expect("JSON parse, stdout:\n{stdout}");
     assert_eq!(parsed["baseline_status"], 200);
     assert!(
         parsed["baseline_body_len"].as_u64().unwrap_or(0) > 0,
@@ -117,7 +117,7 @@ fn header_diff_against_unreachable_target_exits_1() {
     ]);
     assert_eq!(
         code, 1,
-        "unreachable target must exit 1 — stderr:\n{stderr}"
+        "unreachable target must exit 1, stderr:\n{stderr}"
     );
 }
 
@@ -147,14 +147,14 @@ fn header_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "header", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff header --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff header --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["header-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift header-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift header-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }
 
@@ -187,7 +187,7 @@ fn header_diff_text_format_emits_summary_when_not_quiet() {
 
 #[test]
 fn header_diff_concurrency_and_delay_options_accepted() {
-    // Smoke: pass aggressive concurrency + delay flags — should
+    // Smoke: pass aggressive concurrency + delay flags, should
     // parse without erroring, even if the target is unreachable
     // (we don't care about completion, just option parsing).
     let (code, _stdout, _stderr) = wafrift(&[

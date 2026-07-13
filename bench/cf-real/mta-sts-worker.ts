@@ -1,4 +1,4 @@
-// mta-sts-worker.ts — minimal Cloudflare Worker that serves the MTA-STS
+// mta-sts-worker.ts, minimal Cloudflare Worker that serves the MTA-STS
 // policy file at https://mta-sts.santh.dev/.well-known/mta-sts.txt.
 //
 // Deploy: copy this into its own wrangler project (or add a second

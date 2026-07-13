@@ -4,10 +4,10 @@
 //! through** (accept ⇔ [`Outcome::Pass`]). Two independent learners are
 //! provided and a differential test forces them to agree:
 //!
-//! - [`l_star`] — Angluin's L\* with all-suffixes counterexample
+//! - [`l_star`]. Angluin's L\* with all-suffixes counterexample
 //!   handling. The simplest *provably convergent* learner; the
 //!   correctness baseline.
-//! - [`kv_learn`] — a Kearns–Vazirani discrimination-tree learner with
+//! - [`kv_learn`], a Kearns–Vazirani discrimination-tree learner with
 //!   Rivest–Schapire counterexample decomposition: the
 //!   query-economical learner, which is what matters when every
 //!   membership query is a live request.
@@ -33,7 +33,7 @@ use wafrift_types::Request;
 /// (`<`, `'`, `(`, …); the rest are interchangeable. The catch-all
 /// keeps the learned [`Sfa`] total without a 256-way table. When the
 /// distinguished set covers every byte any rule branches on, learning
-/// is *exact* (not PAC) — the property the truth-suite asserts.
+/// is *exact* (not PAC) (the property the truth-suite asserts).
 #[derive(Debug, Clone)]
 pub struct Alphabet {
     /// Distinguished bytes, in stable order. The last entry is the
@@ -95,7 +95,7 @@ impl Alphabet {
     }
 
     /// The raw symbol table (distinguished bytes followed by the
-    /// catch-all representative) — for artifact serialization.
+    /// catch-all representative) (for artifact serialization).
     #[must_use]
     pub fn raw_symbols(&self) -> &[u8] {
         &self.symbols
@@ -185,7 +185,7 @@ pub trait EquivalenceOracle {
 /// `max_queries` bounds the total number of membership calls the EQ
 /// oracle issues across all depths.  When the limit is reached the
 /// oracle returns `None` ("no counterexample found within the
-/// budget") — the search is best-effort, not complete.  Set to
+/// budget"), the search is best-effort, not complete.  Set to
 /// `None` (or `u64::MAX`) for unbounded exhaustive search (the
 /// default for the offline truth-suite, where every call is a cheap
 /// in-memory operation).  Against a *live HTTP oracle* always set a
@@ -223,7 +223,7 @@ impl EquivalenceOracle for BoundedExhaustiveEq {
                 // round-trips when the alphabet is large (e.g. the
                 // 22-symbol sqli alphabet produces 22⁶ ≈ 51 M frontier
                 // entries at max_len=6, capped to 1 M by FRONTIER_CAP
-                // — still 1 M HTTP calls per EQ round without this gate).
+                //: still 1 M HTTP calls per EQ round without this gate).
                 if queries_used >= query_cap {
                     return Ok(None);
                 }
@@ -236,7 +236,7 @@ impl EquivalenceOracle for BoundedExhaustiveEq {
                 // depth) once the next frontier crosses the cap.
                 // Without this guard the frontier grows as k^len,
                 // so a 256-symbol alphabet at max_len=10 would
-                // allocate ~10^24 entries — instant OOM before any
+                // allocate ~10^24 entries, instant OOM before any
                 // counterexample is checked. With the cap the
                 // search returns whatever it found within the
                 // memory budget.
@@ -259,7 +259,7 @@ impl BoundedExhaustiveEq {
     /// Hard upper bound on the BFS frontier size between depth
     /// levels. ~1M entries × max_len bytes per entry caps memory
     /// at tens of MiB on a realistic max_len. Past this we stop
-    /// expanding and return whatever we found — the oracle is
+    /// expanding and return whatever we found, the oracle is
     /// best-effort by design.
     pub const FRONTIER_CAP: usize = 1_000_000;
 }
@@ -268,7 +268,7 @@ impl BoundedExhaustiveEq {
 /// Defends against a non-regular / flaky oracle that yields a novel
 /// row at every depth and would otherwise grow up to Σ k^i states
 /// (1.1B at depth=10 over a 10-symbol alphabet). Past the cap the
-/// learner folds the post-cap rows to existing states — the model
+/// learner folds the post-cap rows to existing states, the model
 /// is less precise but bounded.
 pub const PASSIVE_LEARN_MAX_STATES: usize = 100_000;
 
@@ -332,7 +332,7 @@ fn build_hypothesis<F: FnMut(&[usize]) -> Result<bool>>(
     // R51 pass-13 I3 (CLAUDE.md §15 AUDIT): non-deterministic oracle
     // answers can break the L* closure invariant. Surface the
     // failure as `WafModelError::TableNotClosed` so the caller can
-    // retry or raise the budget — never a mid-scan panic.
+    // retry or raise the budget (never a mid-scan panic).
     let eps_idx =
         t.e.iter()
             .position(|e| e.is_empty())
@@ -359,7 +359,7 @@ fn build_hypothesis<F: FnMut(&[usize]) -> Result<bool>>(
 /// complete test suite** (every suffix up to `depth`), with no
 /// equivalence queries and no counterexample refinement. This is a
 /// fundamentally different inference strategy from L\* (incremental
-/// table) and KV (discrimination tree) — the RPNI/Trakhtenbrot–Barzdin
+/// table) and KV (discrimination tree), the RPNI/Trakhtenbrot–Barzdin
 /// exact-recovery regime. It exists for the **triple-learner
 /// differential**: L\* ≡ KV ≡ passive on any oracle, so a bug in any
 /// one strategy is caught by the other two. Exact when `depth` ≥ the
@@ -412,15 +412,15 @@ where
     // Bounded RPNI / Trakhtenbrot–Barzdin *truncated* regime. We grow a
     // prefix-closed REACHABLE automaton by BFS over access strings (so
     // for a regular target only the true minimal DFA's few states are
-    // ever materialised — O(|DFA|·k·|E|) queries, fast and exact when
+    // ever materialised: O(|DFA|·k·|E|) queries, fast and exact when
     // `depth` ≥ the Myhill–Nerode distinguishing length). The single
-    // hard rule that makes it terminate for *any* oracle — including a
+    // hard rule that makes it terminate for *any* oracle, including a
     // noisy / non-regular one, where almost every row is novel and the
     // prior unbounded BFS grew kⁱ states forever (a real engine defect,
     // now fixed): a new state is created ONLY for an access string of
     // length ≤ depth. A transition whose extended prefix would exceed
     // that horizon, or whose row is novel past it, folds by row-equality
-    // to an existing state (else the start) — a bounded, honest
+    // to an existing state (else the start), a bounded, honest
     // approximation. Total states ≤ Σ_{i=0}^{depth} kⁱ < ∞, so the
     // construction provably halts with no refinement loop.
     let mut id_of: Map<Vec<bool>, StateId> = Map::new();
@@ -451,7 +451,7 @@ where
                         // novel row at every depth and would
                         // otherwise materialise Σ_{i=0}^{depth} k^i
                         // states (1.1B at depth=10, k=10). Past the
-                        // cap, fold to the start state (0) — the same
+                        // cap, fold to the start state (0), the same
                         // conservative fallback used past the depth
                         // horizon. The prior code called
                         // `id_of.get(&r).unwrap_or(&0)` here, but we
@@ -475,7 +475,7 @@ where
                 }
             } else {
                 // Past the horizon: fold by row-equality to an existing
-                // state (start if none) — never create, never enqueue.
+                // state (start if none) (never create, never enqueue).
                 id_of.get(&r).copied().unwrap_or(0)
             };
             delta[s].push((alpha.guard(a), tgt));
@@ -601,7 +601,7 @@ where
         // membership queries are spent. If the distinct-query count has
         // passed the cap, stop honestly with the spend rather than
         // continue or return a partial hypothesis as if complete.
-        // F94: was `>` — at exactly `budget` queries the learner
+        // F94: was `>`: at exactly `budget` queries the learner
         // still entered the next inner close/consistency cycle,
         // which can spend O(|S| * |alpha| + |E|) more queries before
         // the next gate check. Tighten to `>=` so we stop at the cap.
@@ -644,7 +644,7 @@ where
 }
 
 /// Angluin L\* with all-suffixes counterexample handling (unbounded
-/// membership budget — the offline / trusted-oracle path).
+/// membership budget (the offline / trusted-oracle path)).
 pub fn l_star<B>(
     oracle: &mut dyn WafOracle,
     build: &B,
@@ -661,7 +661,7 @@ where
 /// WAF an unbounded learner can issue unboundedly many requests; this
 /// entry point caps the spend and returns
 /// [`WafModelError::BudgetExhausted`](crate::error::WafModelError) with
-/// the exact count when the cap is crossed — never a partial model
+/// the exact count when the cap is crossed, never a partial model
 /// dressed up as complete. `max_queries == u64::MAX` is exactly
 /// `l_star`.
 pub fn l_star_budgeted<B>(
@@ -727,7 +727,7 @@ where
         // §1 SPEED: index-based loop splits the borrow between `self.mqx`
         // (mutable) and `self.access[i]` (immutable) without cloning the
         // entire access list.  The pre-fix `self.access.clone().iter()`
-        // allocated O(states × avg_word_len) bytes on every hypothesis call —
+        // allocated O(states × avg_word_len) bytes on every hypothesis call 
         // a cost that scales linearly with the L* discrimination-tree depth.
         for (i, slot) in accept.iter_mut().enumerate().take(n) {
             *slot = self.mqx.ask(&self.access[i])?;
@@ -785,7 +785,7 @@ fn replacement_clone(n: &Node) -> Node {
 
 /// Kearns–Vazirani learner with Rivest–Schapire counterexample
 /// decomposition. Tree-structured hypotheses keep the membership-query
-/// count low — the property that matters against a live WAF.
+/// count low (the property that matters against a live WAF).
 pub fn kv_learn<B>(
     oracle: &mut dyn WafOracle,
     build: &B,
@@ -831,14 +831,14 @@ where
         // on the residual c[i..]. That yields a new state and a
         // distinguishing suffix that splits an existing leaf.
         let n = c.len();
-        // F92: an `EquivalenceOracle` returning `Some(vec![])` —
-        // "the empty word is a counterexample" — would slice `c[1..]`
+        // F92: an `EquivalenceOracle` returning `Some(vec![])` 
+        // "the empty word is a counterexample", would slice `c[1..]`
         // on an empty Vec and panic. The Rivest–Schapire decomposition
         // is undefined for an empty counterexample (γ0 == γn
         // trivially), so bail with a clear error instead of crashing.
         if n == 0 {
             return Err(crate::error::WafModelError::Oracle(
-                "equivalence oracle returned an empty counterexample — \
+                "equivalence oracle returned an empty counterexample. \
                  Rivest–Schapire decomposition is undefined for ε"
                     .into(),
             ));

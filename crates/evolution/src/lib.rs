@@ -1,19 +1,19 @@
-//! wafrift-evolution — Genetic algorithm, MCTS, differential analysis, and WAF-aware advisor.
+//! wafrift-evolution: Genetic algorithm, MCTS, differential analysis, and WAF-aware advisor.
 //!
 //! The adaptive feedback loop: detect WAF → analyze differential responses →
 //! evolve technique populations → recommend optimal evasion strategies.
 //!
 //! Key modules:
-//! - [`evolution`]    — genetic algorithm (crossover, mutation, fitness)
-//! - [`ast_mcts`]     — MCTS over the technique action space
-//! - [`differential`] — differential response analysis (surface divergences)
-//! - [`advisor`]      — WAF-class-aware technique recommender
-//! - [`body_padding`] — inspection-window evasion (pad JSON/form past WAF scan cap)
-//! - [`dilution`]     — ensemble dilution for ML-WAF evasion
-//! - [`intelligence`] — cross-scan intelligence aggregation
-//! - [`lineage`]      — technique lineage tracking across generations
-//! - [`search`]       — novelty search + MAP-Elites algorithm
-//! - [`custom_rules`] — operator-supplied TOML evasion rules
+//! - [`evolution`], genetic algorithm (crossover, mutation, fitness)
+//! - [`ast_mcts`]. MCTS over the technique action space
+//! - [`differential`], differential response analysis (surface divergences)
+//! - [`advisor`]. WAF-class-aware technique recommender
+//! - [`body_padding`], inspection-window evasion (pad JSON/form past WAF scan cap)
+//! - [`dilution`], ensemble dilution for ML-WAF evasion
+//! - [`intelligence`], cross-scan intelligence aggregation
+//! - [`lineage`], technique lineage tracking across generations
+//! - [`search`], novelty search + MAP-Elites algorithm
+//! - [`custom_rules`], operator-supplied TOML evasion rules
 //!
 //! # Examples
 //!
@@ -32,7 +32,7 @@
 //!     PadOutcome::Padded { bytes, added } => {
 //!         assert!(added >= 9000, "padded by at least 9000 bytes");
 //!         assert!(bytes.len() > body.len() + 8000);
-//!         // Still parses as valid JSON — origin sees the same payload.
+//!         // Still parses as valid JSON (origin sees the same payload).
 //!         let s = std::str::from_utf8(&bytes).unwrap();
 //!         assert!(s.contains("' OR 1=1 --"), "attack payload preserved");
 //!     }
@@ -40,7 +40,7 @@
 //! }
 //! ```
 //!
-//! Opaque content types (binary blobs) are left alone — padding
+//! Opaque content types (binary blobs) are left alone, padding
 //! would corrupt them:
 //!
 //! ```
@@ -62,7 +62,7 @@ pub mod dilution;
 /// bias rotation toward egresses that haven't yet hit a given POP,
 /// detect anycast pinning early, and report total POP coverage.
 pub mod edge_pop_coverage;
-/// Encoding-stack lattice search — enumerate compositions of N
+/// Encoding-stack lattice search, enumerate compositions of N
 /// encoders to find chains that defeat a target WAF rule. The
 /// systematic-search engine the hunt loop uses to fill the
 /// (rule × class) cells of the corpus.
@@ -79,7 +79,7 @@ pub mod h1_dedup;
 pub mod hunt_corpus_bridge;
 pub mod intelligence;
 pub mod lineage;
-/// Minimum Bypass Set computer — greedy set-cover on bypassing payloads.
+/// Minimum Bypass Set computer (greedy set-cover on bypassing payloads).
 /// Computes the smallest subset that collectively exercises every WAF rule
 /// class reachable by the full input. Used to produce forensically minimal
 /// payload sets for security reports.
@@ -89,7 +89,7 @@ pub mod min_bypass_set;
 /// (blocks vs bypasses) so the L\* learner explores tight,
 /// rule-scoped symbolic automata instead of a generic alphabet.
 pub mod rule_alphabet;
-/// Persistent per-rule bypass corpus — accumulates rule-level bypass records
+/// Persistent per-rule bypass corpus, accumulates rule-level bypass records
 /// across hunt rounds and surfaces them to the genome-registry submission gate.
 pub mod rule_corpus;
 pub mod search;

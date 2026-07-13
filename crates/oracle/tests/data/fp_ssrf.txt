@@ -1,5 +1,5 @@
 <<<SAMPLE>>>
-Our public status page: https://status.example.com — subscribe for incident notifications.
+Our public status page: https://status.example.com (subscribe for incident notifications).
 <<<SAMPLE>>>
 For API details see https://docs.example.org/api/reference#authentication (OAuth2 client credentials).
 <<<SAMPLE>>>

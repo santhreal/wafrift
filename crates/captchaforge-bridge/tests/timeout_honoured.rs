@@ -1,8 +1,8 @@
 //! Integration test: `solve_in_browser` honours `solve_timeout_ms` as
-//! the per-solve OVERALL budget — it bounds the browser launch AND the
+//! the per-solve OVERALL budget, it bounds the browser launch AND the
 //! solve phase, not just the solve phase.
 //!
-//! The contract under test is "the timeout is HONOURED — the call does
+//! The contract under test is "the timeout is HONOURED, the call does
 //! not outlive its budget" (a real timeout failure means waiting on the
 //! browser launch / solver for many seconds past the budget). Before the
 //! fix, the launch ran OUTSIDE the timeout: on a host with no usable
@@ -12,7 +12,7 @@
 //! wrapped in the same overall budget, so the deadline is real.
 //!
 //! `timeout_honoured_against_unresponsive_html` accepts either `Ok(_)` or
-//! `Err(_)` (the test box may or may not have Firefox installed) — it
+//! `Err(_)` (the test box may or may not have Firefox installed), it
 //! verifies only the wall-clock bound. `launch_hang_is_bounded_by_budget`
 //! is the targeted regression for the unbounded-launch bug: it points the
 //! bridge at a fake "firefox" that never speaks BiDi, so the launch would
@@ -26,7 +26,7 @@ const TIMEOUT_MS: u64 = 1_000;
 // Slack absorbs shared-CI scheduling jitter (process spawn + tokio
 // wake-up under load + the best-effort browser teardown close()). The
 // launch is now bounded by TIMEOUT_MS itself, so this no longer has to
-// absorb an unbounded cold-launch probe — it stays well below a true
+// absorb an unbounded cold-launch probe, it stays well below a true
 // hang (tens of seconds).
 const SLACK_MS: u64 = 4_000;
 
@@ -39,7 +39,7 @@ async fn timeout_honoured_against_unresponsive_html() {
         navigate_first: false,
     };
 
-    // An HTML page with no captcha widgets and no external resources —
+    // An HTML page with no captcha widgets and no external resources 
     // the browser would load it instantly, the solver chain returns
     // None quickly, but if Firefox is unavailable the launch fails
     // fast too. Either way the function must not outlive the budget.
@@ -62,7 +62,7 @@ async fn timeout_honoured_against_unresponsive_html() {
 
 /// Targeted regression for the unbounded-launch bug: point `FIREFOX_PATH`
 /// at a real, executable binary that exists (so the early not-found guard
-/// is bypassed) but never speaks the BiDi protocol — it just sleeps far
+/// is bypassed) but never speaks the BiDi protocol, it just sleeps far
 /// longer than the budget. `launch_firefox` therefore blocks waiting for a
 /// session that never arrives. With the launch bounded by the overall
 /// budget, `solve_in_browser` must still return within the budget + slack;
@@ -79,7 +79,7 @@ async fn launch_hang_is_bounded_by_budget() {
     let fake = dir.join("firefox");
     {
         let mut f = std::fs::File::create(&fake).expect("create fake firefox");
-        // Sleep 30s — ~30× the budget. If the launch were unbounded the
+        // Sleep 30s: ~30× the budget. If the launch were unbounded the
         // call would block here; the overall-budget timeout must cut it.
         f.write_all(b"#!/bin/sh\nsleep 30\n")
             .expect("write fake firefox");

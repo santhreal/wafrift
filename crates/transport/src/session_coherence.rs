@@ -10,7 +10,7 @@
 //!   profile name + the caller's header bag, and returns a reordered
 //!   bag in the browser's canonical insertion order. Headers not in
 //!   the canonical slot list (custom evasion headers, etc.) follow
-//!   the browser block at the tail — preserving the browser shape
+//!   the browser block at the tail, preserving the browser shape
 //!   without dropping anything.
 //!
 //! - [`SharedSessionPool`] wraps a [`guise::http::session_coherence::SessionPool`]
@@ -29,7 +29,7 @@ use guise::http::session_coherence::{HeaderOrder, SessionPool, pair_for_name, pa
 
 /// Reorder `headers` to match the canonical insertion order of the
 /// named browser family. Returns the input unchanged if `profile_name`
-/// is not recognised — never panics, never errors. Coherence is
+/// is not recognised, never panics, never errors. Coherence is
 /// best-effort: an unknown profile is a config issue, not a transport
 /// failure.
 #[must_use]
@@ -59,7 +59,7 @@ pub fn reorder_headers_for_stealth_profile(
     }
 }
 
-/// Direct (HeaderOrder, _) lookup — exposed so callers that want
+/// Direct (HeaderOrder, _) lookup, exposed so callers that want
 /// the order without paying for the H2Profile clone get a small
 /// fast path. Returns `None` for unknown profiles.
 #[must_use]
@@ -77,7 +77,7 @@ pub fn header_order_for_stealth_profile(profile: StealthProfile) -> Option<Heade
 /// (which spawns tokio tasks freely and needs cheap clones).
 ///
 /// The pool itself uses interior `RwLock`s so the `Arc` does not
-/// add lock contention beyond what `SessionPool` already manages —
+/// add lock contention beyond what `SessionPool` already manages 
 /// it only saves the per-clone heap allocation of cloning the
 /// underlying `Vec<&'static HeaderProfile>` profile list.
 #[derive(Clone)]
@@ -153,7 +153,7 @@ mod tests {
     fn reorder_for_safari_drops_no_headers() {
         // Safari's slot list is much shorter than Chrome's; any
         // headers not in the Safari list must still come out (at the
-        // tail) — never dropped.
+        // tail) (never dropped).
         let input = vec![
             ("Host".into(), "x".into()),
             ("Accept".into(), "*/*".into()),
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn shared_session_pool_round_trips_through_arc_clones() {
         // Multiple Arc clones of the SAME pool must share the same
-        // host-binding state — assigning a profile through clone A
+        // host-binding state, assigning a profile through clone A
         // must show up in clone B's snapshot.
         let pool = SharedSessionPool::new(PROFILES.iter().collect(), 50);
         let clone = pool.clone();
@@ -333,7 +333,7 @@ mod tests {
     fn reorder_preserves_multi_cookie_relative_order() {
         // RFC 6265 §5.4: when multiple Cookie headers are present
         // (rare but legal), their relative order in the request
-        // matters — the server may interpret them as ordered. Our
+        // matters, the server may interpret them as ordered. Our
         // reorder must NOT shuffle them.
         let input = vec![
             ("Host".into(), "x".into()),
@@ -363,7 +363,7 @@ mod tests {
             ("User-Agent".into(), "ua".into()),
         ];
         let out = reorder_headers_for_profile("chrome131", input);
-        // Authorization isn't in Chrome's canonical slot list — it
+        // Authorization isn't in Chrome's canonical slot list, it
         // travels at the tail after the browser block.
         let auth_pos = out
             .iter()
@@ -387,7 +387,7 @@ mod tests {
 
     #[test]
     fn reorder_with_a_single_header_returns_single_element() {
-        // Edge: 1 header — output is the same 1-element vec
+        // Edge: 1 header, output is the same 1-element vec
         // regardless of slot membership.
         let input = vec![("X-Custom".into(), "1".into())];
         let out = reorder_headers_for_profile("chrome131", input.clone());
@@ -424,7 +424,7 @@ mod tests {
                 input.len(),
                 out.len()
             );
-            // Multiset equality — every input entry must appear in
+            // Multiset equality, every input entry must appear in
             // the output exactly once.
             let mut sorted_in = input.clone();
             sorted_in.sort();
@@ -441,7 +441,7 @@ mod tests {
     fn shared_session_pool_zero_rotate_coerces_inside_wrapper_too() {
         // The inner SessionPool coerces rotate=0 to rotate=1 to
         // avoid div-by-zero. The Arc-wrapped SharedSessionPool
-        // must inherit that — no panic on the boundary.
+        // must inherit that (no panic on the boundary).
         let pool = SharedSessionPool::new(PROFILES.iter().collect(), 0);
         // Several calls; never panic.
         for _ in 0..10 {

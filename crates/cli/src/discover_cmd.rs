@@ -1,4 +1,4 @@
-//! `wafrift discover` — surface the `OpenAPI` / GraphQL / parameter-mining
+//! `wafrift discover`: surface the `OpenAPI` / GraphQL / parameter-mining
 //! engines as a single CLI command. Output is a list of
 //! `DiscoveredEndpoint`s suitable for piping into `wafrift scan
 //! --from-discovery <file>`.
@@ -22,7 +22,7 @@ use wafrift_types::discovery::DiscoveredEndpoint;
 /// any legitimate document.
 const OPENAPI_SPEC_MAX_BYTES: usize = 16 * 1024 * 1024;
 
-/// Param-mining wordlists CAN be large — rockyou.txt is ~130 MiB,
+/// Param-mining wordlists CAN be large, rockyou.txt is ~130 MiB,
 /// SecLists has files up to ~200 MiB. 256 MiB matches cluster_cmd's
 /// bench-grade cap: real wordlists fit; `--wordlist /dev/zero` /
 /// multi-GB accident / symlink trap do not.
@@ -164,7 +164,7 @@ async fn run_discover_async(args: DiscoverArgs) -> ExitCode {
         // Track per-source failures so a silent `warn:` from one
         // source doesn't get hidden when its sibling produced 0
         // endpoints either. If every requested source failed to
-        // produce anything actionable, return exit 1 — an empty
+        // produce anything actionable, return exit 1, an empty
         // result with SUCCESS exit code is indistinguishable from
         // "ran fine, found nothing" and corrupts CI pipelines.
         let mut warnings: usize = 0;
@@ -245,7 +245,7 @@ async fn run_discover_async(args: DiscoverArgs) -> ExitCode {
                     Err(e) => {
                         eprintln!("warn: graphql introspection failed: {e}");
                         warnings += 1;
-                        // Don't fail the whole command yet — introspection-
+                        // Don't fail the whole command yet, introspection-
                         // disabled is informative, not immediately fatal.
                         // The end-of-run check converts "all sources failed
                         // and no endpoints" into a non-zero exit so CI can
@@ -303,7 +303,7 @@ async fn run_discover_async(args: DiscoverArgs) -> ExitCode {
             }
         }
 
-        // Merge by (method, url) — order-preserving, injection-point
+        // Merge by (method, url), order-preserving, injection-point
         // accumulating. Naive `retain(|e| seen.insert(key))` discards
         // the second occurrence's `injection_points`, so if two
         // sources (e.g. openapi spec + mine_params) hit the same URL,
@@ -347,7 +347,7 @@ async fn run_discover_async(args: DiscoverArgs) -> ExitCode {
         let abort_due_to_silent_failure = warnings > 0 && endpoints.is_empty();
         if abort_due_to_silent_failure {
             eprintln!(
-                "discover: {warnings} source(s) failed and 0 endpoints produced — exiting non-zero"
+                "discover: {warnings} source(s) failed and 0 endpoints produced, exiting non-zero"
             );
         }
 
@@ -438,7 +438,7 @@ async fn run_discover_async(args: DiscoverArgs) -> ExitCode {
                 }
                 if endpoints.is_empty() {
                     println!(
-                        "\nhint: 0 endpoints — for --mine-params try lowering --body-length-threshold,\n      \
+                        "\nhint: 0 endpoints, for --mine-params try lowering --body-length-threshold,\n      \
                          for --introspect check that the GraphQL server allows __schema queries"
                     );
                 }
@@ -464,7 +464,7 @@ mod round17_bounded_input_tests {
     //!
     //! Both tests use `concat!()` to embed the needle so the test
     //! source itself does not contain the literal string being
-    //! searched for — without that, the assertion would be a
+    //! searched for, without that, the assertion would be a
     //! tautology (test source contains needle, src contains test
     //! source, src "contains" needle).
     use super::{OPENAPI_SPEC_MAX_BYTES, WORDLIST_MAX_BYTES};
@@ -481,7 +481,7 @@ mod round17_bounded_input_tests {
         assert!(
             src.contains(needle),
             "discover_cmd.rs must read --spec through bounded reader \
-             with OPENAPI_SPEC_MAX_BYTES — unbounded read regression"
+             with OPENAPI_SPEC_MAX_BYTES, unbounded read regression"
         );
         // concat!() avoids embedding the literal in the test source,
         // which would otherwise be a tautology via include_str! self-
@@ -489,7 +489,7 @@ mod round17_bounded_input_tests {
         let banned = concat!("std::fs::", "read_to_", "string(spec_", "path)");
         assert!(
             !src.contains(banned),
-            "raw unbounded fs read of spec_path reintroduced — OOM regression"
+            "raw unbounded fs read of spec_path reintroduced. OOM regression"
         );
     }
 
@@ -505,12 +505,12 @@ mod round17_bounded_input_tests {
         assert!(
             src.contains(needle),
             "discover_cmd.rs must read --wordlist through bounded reader \
-             with WORDLIST_MAX_BYTES — unbounded read regression"
+             with WORDLIST_MAX_BYTES, unbounded read regression"
         );
         let banned = concat!("std::fs::", "read_to_", "string(words_", "path)");
         assert!(
             !src.contains(banned),
-            "raw unbounded fs read of words_path reintroduced — OOM regression"
+            "raw unbounded fs read of words_path reintroduced. OOM regression"
         );
     }
 
@@ -519,7 +519,7 @@ mod round17_bounded_input_tests {
         // Sanity: confirm the primitive we depend on actually
         // refuses to slurp past its cap. If safe_body ever loses
         // the Overrun behaviour, both fixes above become silent
-        // no-ops — this test catches that.
+        // no-ops (this test catches that).
         use std::io::Write;
         let dir = std::env::temp_dir();
         let path = dir.join(format!(
@@ -552,14 +552,14 @@ mod round17_bounded_input_tests {
     fn caps_are_sane_for_real_world_inputs() {
         // OpenAPI: typical specs are <10 MiB even for huge schemas.
         // Wordlist: rockyou.txt = ~133 MiB. Both caps must comfortably
-        // exceed those — if anyone ever tightens them below, fail loud.
+        // exceed those (if anyone ever tightens them below, fail loud).
         assert!(
             OPENAPI_SPEC_MAX_BYTES >= 8 * 1024 * 1024,
-            "OPENAPI_SPEC_MAX_BYTES tightened below 8 MiB — would reject legitimate specs"
+            "OPENAPI_SPEC_MAX_BYTES tightened below 8 MiB, would reject legitimate specs"
         );
         assert!(
             WORDLIST_MAX_BYTES >= 200 * 1024 * 1024,
-            "WORDLIST_MAX_BYTES tightened below 200 MiB — would reject rockyou-sized wordlists"
+            "WORDLIST_MAX_BYTES tightened below 200 MiB, would reject rockyou-sized wordlists"
         );
     }
 }

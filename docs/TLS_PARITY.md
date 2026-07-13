@@ -6,8 +6,8 @@ WafRift ships **two** HTTP transports the practitioner can pick between:
 
 | Transport | TLS stack | JA3/JA4 match | Default? | Pulls in |
 |-----------|-----------|---------------|----------|----------|
-| `EvasionClient` (default) | `rustls` via `reqwest` | **No** — rustls fingerprint, classifiable as "non-browser" | ✅ | none extra |
-| `StealthClient` (opt-in) | BoringSSL via `rquest` | **Yes** — wire-identical Chrome / Firefox / Safari / Edge ClientHello | ❌ | `boring-sys` (C build) |
+| `EvasionClient` (default) | `rustls` via `reqwest` | **No**: rustls fingerprint, classifiable as "non-browser" | ✅ | none extra |
+| `StealthClient` (opt-in) | BoringSSL via `rquest` | **Yes**: wire-identical Chrome / Firefox / Safari / Edge ClientHello | ❌ | `boring-sys` (C build) |
 
 Both transports expose the same `send_and_check`-shaped API, so the
 proxy + scan paths swap between them by reading the
@@ -26,7 +26,7 @@ cargo build -p wafrift-cli --features wafrift-transport/tls-impersonate
 Then drive it:
 
 ```bash
-# Proxy mode — every upstream request leaves the box wearing
+# Proxy mode, every upstream request leaves the box wearing
 # Firefox 133's ClientHello. This is the path that actually wires
 # BoringSSL impersonation today.
 wafrift-proxy --listen 127.0.0.1:8080 --tls-impersonate firefox133
@@ -52,11 +52,11 @@ The full set lives at `wafrift_transport::stealth::supported_profiles()`.
   classify the inbound TLS connection as a real browser before they
   ever look at HTTP. The default rustls path gets shunted to a JS
   challenge or an outright block; the impersonating path gets through
-  to inspection — at which point WafRift's HTTP-level evasion engine
+  to inspection, at which point WafRift's HTTP-level evasion engine
   takes over.
 - **HTTP/2 SETTINGS** are also matched (rquest sends Chrome's exact
   `HEADER_TABLE_SIZE` / `INITIAL_WINDOW_SIZE` / `MAX_CONCURRENT_STREAMS`
-  values, in Chrome's exact order — so h2-fingerprinting WAFs can't
+  values, in Chrome's exact order, so h2-fingerprinting WAFs can't
   distinguish on that either).
 
 ## Build cost trade-off
@@ -68,7 +68,7 @@ consumers pay zero extra cost.
 
 ## Implementation
 
-`crates/transport/src/stealth.rs` — `ImpersonateProfile` enum + parser
+`crates/transport/src/stealth.rs`: `ImpersonateProfile` enum + parser
 (case-insensitive aliases) + `StealthClient::{new, with_timeout, send}`.
 The compile-time stub when the feature is off returns an actionable
 `StealthError::Build` pointing the operator at the cargo flag, so
@@ -95,7 +95,7 @@ connection layer.
 
 ## Open work
 
-The static-profile path is solid; the **per-request fingerprint coherence** work — JA3 rotation that matches a real session lifecycle, H2 frame-layout fingerprint (`SETTINGS` order, priority tree, `WINDOW_UPDATE` cadence), browser-realistic header insertion order — is tracked as Tier 1, item 1 in the [roadmap](./GAP_CLOSURE_ROADMAP.md). This is what unlocks the cloud-WAF bot-management tier where rotating profiles round-robin still gets you classified as a bot.
+The static-profile path is solid; the **per-request fingerprint coherence** work. JA3 rotation that matches a real session lifecycle, H2 frame-layout fingerprint (`SETTINGS` order, priority tree, `WINDOW_UPDATE` cadence), browser-realistic header insertion order, is tracked as Tier 1, item 1 in the [roadmap](./GAP_CLOSURE_ROADMAP.md). This is what unlocks the cloud-WAF bot-management tier where rotating profiles round-robin still gets you classified as a bot.
 
 TCP raw-options rotation (MSS, window scale, SACK) needs `CAP_NET_RAW` + a bespoke connector replacing the kernel's TCP stack; coverage cost is high relative to the JA3/H2 gains, so it's parked in Tier 3.
 
@@ -103,7 +103,7 @@ TCP raw-options rotation (MSS, window scale, SACK) needs `CAP_NET_RAW` + a bespo
 
 Cloud WAFs only inspect the leading bytes of a request body
 (Cloudflare Pro 8 KB, AWS WAF 16 KB, Akamai 8 KB). WafRift now ships
-content-type-aware padding via `wafrift_evolution::body_padding` —
+content-type-aware padding via `wafrift_evolution::body_padding` 
 prepends `_wafrift_pad` as the leading JSON object key, form
 parameter, or multipart part so the malicious payload sits past the
 inspection window:
@@ -115,6 +115,6 @@ wafrift-proxy --body-padding-bytes 131072  # Cloudflare Enterprise
 ```
 
 Self-hosted modsec (PL1-4) and Naxsi inspect the full body up to
-Apache `LimitRequestBody` — this evasion does not bypass them. Real
+Apache `LimitRequestBody`: this evasion does not bypass them. Real
 value lives at the cloud-WAF tier where the inspection cap is
 architectural, not a config knob.

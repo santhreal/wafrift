@@ -1,4 +1,4 @@
-//! `wafrift header-diff` — WAF / origin parser-disagreement scanner
+//! `wafrift header-diff`: WAF / origin parser-disagreement scanner
 //! for REQUEST HEADERS.
 //!
 //! ## The innovation
@@ -13,7 +13,7 @@
 //! Examples of WAF↔origin header-parse disagreements:
 //!
 //! - **Duplicate-header dispatch.** `X-Forwarded-For: 10.0.0.1` +
-//!   `X-Forwarded-For: 1.2.3.4` — does the WAF check the FIRST
+//!   `X-Forwarded-For: 1.2.3.4`: does the WAF check the FIRST
 //!   value, LAST value, or the comma-joined list? Different stacks
 //!   pick differently; if your WAF checks first but Spring picks
 //!   last, you can spoof the client IP past the WAF.
@@ -26,10 +26,10 @@
 //!   parsers still implement it. A WAF that REJECTS folding sees
 //!   `X-Foo:` with an empty value; an origin that ACCEPTS folding
 //!   reassembles to `X-Foo: line2`.
-//! - **Trailing whitespace.** `X-Real-User: admin   ` — some parsers
+//! - **Trailing whitespace.** `X-Real-User: admin   `: some parsers
 //!   trim, some don't. If the WAF allowlists by exact string match
 //!   but the origin trims, padded whitespace bypasses the allowlist.
-//! - **NULL byte truncation.** `X-Real-User: admin\x00.attacker` —
+//! - **NULL byte truncation.** `X-Real-User: admin\x00.attacker` 
 //!   some C-style parsers truncate at NUL; the WAF sees the longer
 //!   form, the origin sees `admin`.
 //! - **Colon-adjacent whitespace.** `X-Foo : value` (with space before
@@ -42,7 +42,7 @@
 //! header block that exercises the disagreement. The baseline is
 //! the same URL with no extra headers. A divergence in response
 //! status or body length is evidence the WAF and origin treated the
-//! header block differently — investigate that divergence as a
+//! header block differently, investigate that divergence as a
 //! potential bypass seam.
 
 use std::process::ExitCode;
@@ -60,13 +60,13 @@ use crate::parser_diff_common::{body_delta_pct, severity_of};
 
 #[derive(Args, Debug)]
 pub(crate) struct HeaderDiffArgs {
-    /// Target URL. The full URL is fixed for every probe — we only
+    /// Target URL. The full URL is fixed for every probe, we only
     /// vary the request headers. Pick a route that the operator
     /// SUSPECTS the WAF guards via header inspection (login,
     /// `/admin/*`, `/internal/*`).
     pub url: String,
 
-    /// Inter-request delay (ms) — honour rate limits.
+    /// Inter-request delay (ms) (honour rate limits).
     #[arg(long, default_value_t = 25)]
     pub delay_ms: u64,
 
@@ -87,7 +87,7 @@ pub(crate) struct HeaderDiffArgs {
     #[arg(long, value_name = "URL")]
     pub proxy: Option<String>,
 
-    /// Operator-supplied baseline headers — applied to BOTH baseline
+    /// Operator-supplied baseline headers, applied to BOTH baseline
     /// and probe (so an auth cookie or bearer token rides through
     /// uniformly). Per-probe variants ADD to this set.
     #[arg(long, short = 'H', value_name = "HEADER", num_args = 0..)]
@@ -98,13 +98,13 @@ pub(crate) struct HeaderDiffArgs {
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
-    /// Quiet mode — suppress per-probe progress lines (still emits
+    /// Quiet mode, suppress per-probe progress lines (still emits
     /// the final summary / JSON).
     #[arg(long, default_value_t = false)]
     pub quiet: bool,
 }
 
-/// One header-parse-disagreement probe — a NAMED parser-pair
+/// One header-parse-disagreement probe, a NAMED parser-pair
 /// mechanism, a human description, and the literal header block
 /// to send. Pure data; `generate_header_variants` produces these
 /// deterministically so an operator pinning by index gets the same
@@ -139,7 +139,7 @@ pub(crate) struct HeaderDiffResult {
 }
 
 /// Generate the full header-disagreement variant set. Pure
-/// function — no I/O, deterministic, testable in isolation.
+/// function (no I/O, deterministic, testable in isolation).
 #[must_use]
 #[allow(clippy::vec_init_then_push)] // builder pattern reads better one push! per case
 pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
@@ -148,7 +148,7 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     // ── 1. Duplicate X-Forwarded-For: which value does the WAF see? ──
     out.push(HeaderDisagreement {
         kind: "dup-xff-first-vs-last",
-        description: "Two X-Forwarded-For headers — some parsers use the first, others the last; \
+        description: "Two X-Forwarded-For headers, some parsers use the first, others the last; \
              spoof client IP if WAF allowlists by IP",
         headers: vec![
             ("X-Forwarded-For".into(), "10.0.0.1".into()),
@@ -158,7 +158,7 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     out.push(HeaderDisagreement {
         kind: "xff-comma-list",
         description:
-            "Comma-joined X-Forwarded-For list — some parsers take leftmost (the original client), \
+            "Comma-joined X-Forwarded-For list, some parsers take leftmost (the original client), \
              some take rightmost (the last proxy hop); IP allowlist evasion",
         headers: vec![(
             "X-Forwarded-For".into(),
@@ -170,7 +170,7 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     out.push(HeaderDisagreement {
         kind: "dup-authorization",
         description:
-            "Two Authorization headers — first vs last dispatch can hand a forged token to the origin",
+            "Two Authorization headers, first vs last dispatch can hand a forged token to the origin",
         headers: vec![
             ("Authorization".into(), "Bearer FORGED-TOKEN".into()),
             ("Authorization".into(), "Bearer real-token".into()),
@@ -180,13 +180,13 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
         kind: "header-name-case-mix",
         // VERIFIED by `reqwest_canonicalises_header_name_case_...`: reqwest/http
         // lowercase every header NAME before the wire, so the `aUtHoRiZaTiOn`
-        // spelling below is transmitted as plain `authorization` — a mixed-case
+        // spelling below is transmitted as plain `authorization`: a mixed-case
         // header-NAME parser-differential is untestable through any
         // name-normalising client. Kept the `kind` for compat (LAW 2) but made
         // the description honest (LAW 1). The probe still has distinct value:
         // forged token LAST (real first) exercises LAST-occurrence dispatch,
         // complementing dup-authorization (forged first / first-occurrence).
-        description: "Duplicate Authorization, forged token LAST (real first) — catches origins \
+        description: "Duplicate Authorization, forged token LAST (real first), catches origins \
              that honour the LAST of repeated Authorization headers (companion to \
              dup-authorization's first-wins). NB the second spelling `aUtHoRiZaTiOn` \
              is lowercased by the HTTP client, so this is NOT a case-sensitive \
@@ -201,13 +201,13 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     out.push(HeaderDisagreement {
         kind: "trailing-ws-value",
         description:
-            "X-Real-User with trailing whitespace — trimming parsers see `admin`, non-trimming see \
+            "X-Real-User with trailing whitespace, trimming parsers see `admin`, non-trimming see \
              `admin   `; bypass exact-string allowlist",
         headers: vec![("X-Real-User".into(), "admin   ".into())],
     });
     out.push(HeaderDisagreement {
         kind: "leading-ws-value",
-        description: "X-Real-User with leading whitespace — same idea, opposite end",
+        description: "X-Real-User with leading whitespace, same idea, opposite end",
         headers: vec![("X-Real-User".into(), "   admin".into())],
     });
 
@@ -215,8 +215,8 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     out.push(HeaderDisagreement {
         kind: "nul-truncate-value",
         description:
-            "X-Real-User contains NUL — C-style parsers truncate at NUL, WAFs see the longer form. \
-             (Some HTTP stacks reject NUL outright; that's also informative — divergence-by-rejection)",
+            "X-Real-User contains NUL. C-style parsers truncate at NUL, WAFs see the longer form. \
+             (Some HTTP stacks reject NUL outright; that's also informative, divergence-by-rejection)",
         headers: vec![("X-Real-User".into(), "admin\x00.attacker".into())],
     });
 
@@ -224,7 +224,7 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     out.push(HeaderDisagreement {
         kind: "dup-host",
         description:
-            "Two Host headers — origin frameworks differ on which wins; routing bypass for \
+            "Two Host headers, origin frameworks differ on which wins; routing bypass for \
              virtual-host-based access control",
         headers: vec![
             ("Host".into(), "internal.svc".into()),
@@ -234,14 +234,14 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     out.push(HeaderDisagreement {
         kind: "x-original-host-rebind",
         description:
-            "X-Original-Host header — some app frameworks (Spring, Django) honour it as the routing \
+            "X-Original-Host header, some app frameworks (Spring, Django) honour it as the routing \
              host; WAF doesn't",
         headers: vec![("X-Original-Host".into(), "internal.svc".into())],
     });
     out.push(HeaderDisagreement {
         kind: "x-rewrite-url",
         description:
-            "X-Rewrite-URL header — Symfony / Laravel honour this for internal routing; bypass \
+            "X-Rewrite-URL header: Symfony / Laravel honour this for internal routing; bypass \
              URL-path-based WAF rules",
         headers: vec![("X-Rewrite-URL".into(), "/admin".into())],
     });
@@ -249,7 +249,7 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     // ── 6. Cookie smuggling via dup-header ──
     out.push(HeaderDisagreement {
         kind: "dup-cookie-attack-first",
-        description: "Two Cookie headers — most clients join with `; `, but some servers see them \
+        description: "Two Cookie headers, most clients join with `; `, but some servers see them \
              separately; smuggle an extra session cookie past the WAF's first-cookie check",
         headers: vec![
             ("Cookie".into(), "session=attacker; role=admin".into()),
@@ -261,44 +261,44 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     out.push(HeaderDisagreement {
         kind: "x-real-ip-localhost",
         description:
-            "X-Real-IP claims localhost — backends that trust this header think the request is \
+            "X-Real-IP claims localhost, backends that trust this header think the request is \
              internal; WAF doesn't strip it (some don't)",
         headers: vec![("X-Real-IP".into(), "127.0.0.1".into())],
     });
     out.push(HeaderDisagreement {
         kind: "x-forwarded-for-localhost",
         description:
-            "X-Forwarded-For claims localhost — same as above but the canonical header name",
+            "X-Forwarded-For claims localhost, same as above but the canonical header name",
         headers: vec![("X-Forwarded-For".into(), "127.0.0.1".into())],
     });
     out.push(HeaderDisagreement {
         kind: "x-originating-ip-localhost",
-        description: "X-Originating-IP localhost spoof — variation seen in Exchange / IIS stacks",
+        description: "X-Originating-IP localhost spoof, variation seen in Exchange / IIS stacks",
         headers: vec![("X-Originating-IP".into(), "127.0.0.1".into())],
     });
     out.push(HeaderDisagreement {
         kind: "x-cluster-client-ip-localhost",
         description:
-            "X-Cluster-Client-IP localhost spoof — variation seen in AWS ELB / GCP LB stacks",
+            "X-Cluster-Client-IP localhost spoof, variation seen in AWS ELB / GCP LB stacks",
         headers: vec![("X-Cluster-Client-IP".into(), "127.0.0.1".into())],
     });
     out.push(HeaderDisagreement {
         kind: "via-loopback-marker",
         description:
-            "Via header pretending the request came from the local proxy — some allowlists trust this",
+            "Via header pretending the request came from the local proxy, some allowlists trust this",
         headers: vec![("Via".into(), "1.1 localhost".into())],
     });
     out.push(HeaderDisagreement {
         kind: "x-http-method-override-get",
         description:
-            "X-HTTP-Method-Override: GET — frameworks that honour this can be tricked into changing \
+            "X-HTTP-Method-Override: GET, frameworks that honour this can be tricked into changing \
              method; WAFs that gate by HTTP verb miss the override",
         headers: vec![("X-HTTP-Method-Override".into(), "GET".into())],
     });
     out.push(HeaderDisagreement {
         kind: "x-http-method-override-delete",
         description:
-            "X-HTTP-Method-Override: DELETE — same primitive, far more dangerous side effect",
+            "X-HTTP-Method-Override: DELETE, same primitive, far more dangerous side effect",
         headers: vec![("X-HTTP-Method-Override".into(), "DELETE".into())],
     });
 
@@ -325,7 +325,7 @@ pub(crate) async fn run_header_diff(mut args: HeaderDiffArgs) -> ExitCode {
     }
 
     // Baseline: fire the URL with ONLY the operator's `-H` headers
-    // (no variant block) — gives us the reference response shape.
+    // (no variant block) (gives us the reference response shape).
     let (baseline_status, baseline_body_len, _baseline_body) =
         match fetch_with_extra(&http, &args.url, &[]).await {
             Ok(v) => v,
@@ -493,7 +493,7 @@ fn emit_output(
     for r in results.iter().filter(|r| r.severity != "none") {
         let badge = crate::parser_diff_common::severity_badge(r.severity);
         println!();
-        println!("  [{badge}] {} — {}", r.kind.bold(), r.description);
+        println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         crate::parser_diff_common::print_baseline_probe_arrow(
             r.baseline_status,
             r.baseline_body_len,
@@ -531,7 +531,7 @@ mod tests {
         assert_eq!(
             kinds.len(),
             v.len(),
-            "every probe must have a unique kind identifier — duplicate makes it impossible \
+            "every probe must have a unique kind identifier, duplicate makes it impossible \
              to pin a probe by id from the JSON output"
         );
     }
@@ -542,7 +542,7 @@ mod tests {
         for p in &v {
             assert!(
                 !p.headers.is_empty(),
-                "probe {} must send at least one header — empty block is a no-op",
+                "probe {} must send at least one header, empty block is a no-op",
                 p.kind
             );
         }
@@ -584,7 +584,7 @@ mod tests {
     #[test]
     fn generate_header_variants_includes_obscure_proxy_chain_spoofs() {
         let kinds: Vec<&str> = generate_header_variants().iter().map(|p| p.kind).collect();
-        // The IP-spoofing surface — covered fully.
+        // The IP-spoofing surface (covered fully).
         for needed in [
             "x-real-ip-localhost",
             "x-forwarded-for-localhost",
@@ -615,7 +615,7 @@ mod tests {
         // would see it as distinct from `Authorization`. But the fire path
         // (`fetch_with_extra` → `req.header(name, value)`) parses the name into
         // a `reqwest::header::HeaderName`, which canonicalises standard names to
-        // lowercase BEFORE the wire — so the mixed case is lost and the probe
+        // lowercase BEFORE the wire, so the mixed case is lost and the probe
         // degenerates to a duplicate lowercase `authorization`. Pin the
         // behaviour so the (corrected) description can't drift back to claiming
         // a live mixed-case-name test; if this ever preserves case, the probe
@@ -626,7 +626,7 @@ mod tests {
     }
 
     // body_delta_pct / severity_of / status_class are tested in
-    // their canonical home — crate::parser_diff_common. Probe-shape
+    // their canonical home, crate::parser_diff_common. Probe-shape
     // tests live here.
 
     // ── render_curl ───────────────────────────────────────────
@@ -676,13 +676,13 @@ mod tests {
                     let n = sock.read(&mut buf).await.unwrap_or(0);
                     let req = String::from_utf8_lossy(&buf[..n]).to_string();
                     // Simulate a parser that bypasses on X-Real-IP:
-                    // 127.0.0.1 — returns a longer "internal" body.
+                    // 127.0.0.1 (returns a longer "internal" body).
                     let internal_grant = req.lines().any(|l| {
                         let lo = l.to_ascii_lowercase();
                         lo.starts_with("x-real-ip:") && lo.contains("127.0.0.1")
                     });
                     let body: String = if internal_grant {
-                        "<html>internal admin panel — secret content</html>".into()
+                        "<html>internal admin panel, secret content</html>".into()
                     } else {
                         "<html>public</html>".into()
                     };

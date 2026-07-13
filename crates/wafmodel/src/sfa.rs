@@ -2,7 +2,7 @@
 //!
 //! A WAF's decision over one inspection channel is a regular language
 //! (CRS rules *are* regexes). The learned model is therefore a
-//! deterministic finite automaton — but a 256-way transition table per
+//! deterministic finite automaton, but a 256-way transition table per
 //! state is wasteful and does not match how rules actually partition
 //! the input. An [`Sfa`] labels each transition with a [`BytePred`]
 //! (an exact subset of `0..=256`); the predicates out of every state
@@ -11,8 +11,8 @@
 //!
 //! Everything here is exact (no PAC, no sampling): membership, the
 //! full Boolean algebra (∩, ∪, ¬, set-difference), emptiness, the
-//! shortest accepted word, and — the operation the learner's
-//! equivalence query and the bypass miner both stand on — the
+//! shortest accepted word, and, the operation the learner's
+//! equivalence query and the bypass miner both stand on, the
 //! **shortest distinguishing word** between two automata.
 
 /// An exact predicate over a byte: the characteristic set of `0..=255`
@@ -88,7 +88,7 @@ impl BytePred {
         self.0 == [0; 4]
     }
 
-    /// The smallest byte in the set, if any — the canonical witness
+    /// The smallest byte in the set, if any, the canonical witness
     /// used to concretize a symbolic transition into real bytes
     /// (stable so the learner and miner are deterministic).
     #[must_use]
@@ -151,7 +151,7 @@ pub type DeltaTable = Vec<Vec<(BytePred, StateId)>>;
 ///
 /// Invariant (checked by [`Sfa::new`] and preserved by every method):
 /// for each state the transition predicates are pairwise disjoint and
-/// their union is [`BytePred::any`] — so running any byte string lands
+/// their union is [`BytePred::any`], so running any byte string lands
 /// in exactly one state.
 #[derive(Debug, Clone)]
 pub struct Sfa {
@@ -166,7 +166,7 @@ impl Sfa {
     ///
     /// # Panics
     /// Panics if any state's guards overlap or fail to cover every
-    /// byte — a malformed automaton is a bug, never silently repaired.
+    /// byte (a malformed automaton is a bug, never silently repaired).
     #[must_use]
     pub fn new(start: StateId, accept: Vec<bool>, delta: Vec<Vec<(BytePred, StateId)>>) -> Self {
         assert_eq!(accept.len(), delta.len(), "accept/delta arity mismatch");
@@ -251,12 +251,12 @@ impl Sfa {
             }
         }
         // F99: pre-fix this returned `s` (self-loop) in release
-        // builds, silently corrupting `accepts()` results — a word
+        // builds, silently corrupting `accepts()` results, a word
         // that should have reached an accepting state stayed in a
         // non-accepting one. The SFA is constructed totality-checked,
         // so reaching this branch means a programmer error in
         // `Sfa::minimize` or `Sfa::import`. Panic loudly instead of
-        // silently producing wrong acceptance — a wrong "accepts"
+        // silently producing wrong acceptance, a wrong "accepts"
         // verdict is a false-negative bypass (the model "missed" a
         // hole) and is worse than crashing.
         panic!("SFA totality invariant broken: no transition for byte {b} in state {s}");
@@ -284,8 +284,8 @@ impl Sfa {
     }
 
     /// Synchronous product under a state-acceptance combiner. The
-    /// product alphabet is the set of *minterms* — maximal byte sets
-    /// on which both automata agree which transition to take — so the
+    /// product alphabet is the set of *minterms*, maximal byte sets
+    /// on which both automata agree which transition to take, so the
     /// result stays deterministic, total, and exact.
     fn product(&self, o: &Sfa, accept: impl Fn(bool, bool) -> bool) -> Sfa {
         use std::collections::HashMap;
@@ -383,7 +383,7 @@ impl Sfa {
     /// This is the bypass miner's harvest primitive.
     ///
     /// A `seen[state]` set CANNOT be applied here the way it can in
-    /// `shortest_accepted` — we WANT to find multiple distinct words
+    /// `shortest_accepted`: we WANT to find multiple distinct words
     /// that end at the same state (`out.len() == max_words` is the
     /// only stopping rule). So instead the queue is hard-capped at
     /// `Self::ENUMERATE_QUEUE_CAP`; when it would overflow, we
@@ -391,7 +391,7 @@ impl Sfa {
     ///
     /// Pre-cap, intersecting a learned automaton with a cyclic
     /// attack automaton could exponentially explode the BFS queue
-    /// before `max_words` was reached — `mine_bypasses` would OOM
+    /// before `max_words` was reached: `mine_bypasses` would OOM
     /// on real WAF rule sets long before producing usable output.
     #[must_use]
     pub fn enumerate_accepted(&self, max_words: usize, max_len: usize) -> Vec<Vec<u8>> {
@@ -444,7 +444,7 @@ impl Sfa {
     /// witness the WAF-diff product reports.
     #[must_use]
     pub fn distinguishing_word(&self, o: &Sfa) -> Option<Vec<u8>> {
-        // (L(self) \ L(o)) ∪ (L(o) \ L(self)) — shortest member.
+        // (L(self) \ L(o)) ∪ (L(o) \ L(self)) (shortest member).
         let sym = self.difference(o).union(&o.difference(self));
         sym.shortest_accepted()
     }
@@ -460,7 +460,7 @@ impl Sfa {
     /// symbolic alphabet via *minterms* (the coarsest byte partition on
     /// which every state's transitions are constant). Total + disjoint
     /// by construction; unreachable states dropped. `minimize` is
-    /// idempotent and language-preserving — both asserted by property
+    /// idempotent and language-preserving, both asserted by property
     /// test over 10k random automata.
     #[must_use]
     pub fn minimize(&self) -> Sfa {

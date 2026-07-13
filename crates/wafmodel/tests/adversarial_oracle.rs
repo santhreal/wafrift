@@ -1,6 +1,6 @@
-//! E7 — adversarial oracles & inputs. The engine must stay *honest*
-//! under hostile conditions: never panic, never hang, and — the
-//! load-bearing property — never falsely certify "exact" against a
+//! E7, adversarial oracles & inputs. The engine must stay *honest*
+//! under hostile conditions: never panic, never hang, and, the
+//! load-bearing property, never falsely certify "exact" against a
 //! target it cannot actually capture. Plus a self-adversarial test:
 //! run our OWN solver against our OWN hardened rules.
 
@@ -72,9 +72,9 @@ fn non_regular_waf_is_not_falsely_certified_exact() {
     // `passive_learn` (fixed test-suite, no unbounded refinement) is
     // guaranteed to terminate and yields a regular *approximation*. A
     // finite automaton provably cannot equal "#`<` == #`>`", so a
-    // balanced string deep enough must be misclassified — we exhibit
+    // balanced string deep enough must be misclassified, we exhibit
     // it. (Unbounded L* is deliberately NOT used here: refining
-    // against a non-regular oracle would not converge — using the
+    // against a non-regular oracle would not converge, using the
     // bounded learner is the honest, terminating contract.)
     let alpha = Alphabet::new(vec![b'<', b'>'], b'A');
     let mut waf = BalancedWaf { q: 0 };
@@ -108,7 +108,7 @@ fn non_regular_waf_is_not_falsely_certified_exact() {
     // <^i>^i is balanced (truth = pass); <^j>^i has j>i more `<` than
     // `>` (truth = block). The automaton is in the identical state
     // after <^i and <^j, so feeding the same >^i suffix yields the
-    // identical verdict for both — it therefore CANNOT match the
+    // identical verdict for both, it therefore CANNOT match the
     // non-regular truth on both. This is a guaranteed divergence, no
     // luck involved (the honest "this is only an approximation").
     let a: Vec<u8> = std::iter::repeat_n(b'<', i)
@@ -137,7 +137,7 @@ fn non_regular_waf_is_not_falsely_certified_exact() {
 #[test]
 fn noisy_oracle_terminates_and_never_panics() {
     // Under 1/16 answer-flip noise the learner has no exactness
-    // guarantee — but it MUST still terminate, never panic, and
+    // guarantee, but it MUST still terminate, never panic, and
     // produce a usable hypothesis (robustness, not a false claim).
     let alpha = Alphabet::new(vec![b'<', b's'], b'A');
     let mk_inner = || {
@@ -153,7 +153,7 @@ fn noisy_oracle_terminates_and_never_panics() {
         )
     };
     // `passive_learn` is the bounded RPNI regime: a FIXED test-suite,
-    // no refinement loop, |states| ≤ |suite| — so it is *guaranteed* to
+    // no refinement loop, |states| ≤ |suite|, so it is *guaranteed* to
     // terminate and produce a hypothesis even under a hostile/noisy
     // oracle (the prior unbounded-BFS construction did NOT terminate
     // here; that engine defect is fixed). Reaching the asserts at all
@@ -183,7 +183,7 @@ fn noisy_oracle_terminates_and_never_panics() {
     // NoisyWaf is a deterministic function of its INITIAL rng state, so
     // a second run from an IDENTICALLY-RESET oracle reproduces the
     // identical automaton. (Asserting two *independent* runs against a
-    // mutable-rng oracle are equal would assert a FALSE property — the
+    // mutable-rng oracle are equal would assert a FALSE property, the
     // rng advances and each run's cache is fresh; reset-equality is the
     // true, stronger invariant.)
     let mut noisy_b = NoisyWaf {
@@ -210,7 +210,7 @@ fn unicode_nul_and_overlong_inputs_are_handled_to_spec() {
 
     // RemoveNulls drops 0x00 exactly; UrlDecodeUni of an overlong
     // `%C0%AF` yields the literal bytes 0xC0 0xAF (we do not "fix up"
-    // overlong UTF-8 — the origin's job; we must be byte-faithful).
+    // overlong UTF-8 (the origin's job; we must be byte-faithful)).
     assert_eq!(
         Transform::RemoveNulls.apply(&[b'a', 0, b'b', 0, b'c']),
         b"abc"
@@ -250,7 +250,7 @@ fn our_own_solver_cannot_evade_our_own_hardened_rules() {
     // Self-adversarial: harden a brittle WAF against the double-URL
     // mismatch, then point OUR solver at the hardened config for the
     // same attack+sink. The double-decode synth rule must withstand
-    // the structural-preimage solver — `None`, not a bypass. If this
+    // the structural-preimage solver: `None`, not a bypass. If this
     // ever returns Some, that IS a real engine finding.
     let attack = b"<script>";
     let sink = Pipeline(vec![Stage::DoubleUrlDecode]);
@@ -282,7 +282,7 @@ fn our_own_solver_cannot_evade_our_own_hardened_rules() {
     assert!(
         sol.is_none(),
         "our double-decode hardening was evaded by our own solver: {sol:?} \
-         — this is a real engine finding, fix the engine not the test"
+This is a real engine finding, fix the engine not the test"
     );
     // Sanity (anti-vacuous): without the hardening it WAS bypassable.
     let mut brittle2 = SimRegexWaf::new(

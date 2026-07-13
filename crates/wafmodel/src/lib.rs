@@ -1,19 +1,19 @@
-//! # wafrift-wafmodel — the WAF decompiler
+//! # wafrift-wafmodel, the WAF decompiler
 //!
 //! Stop searching a black box. **Reconstruct the WAF's decision
 //! boundary as an executable symbolic automaton**, then turn evasion
 //! from search into deduction:
 //!
-//! - **P1 — Decompile.** Active-learn the WAF (the [`learn`] module)
+//! - **P1: Decompile.** Active-learn the WAF (the [`learn`] module)
 //!   over a [`WafOracle`] into an [`Sfa`], spending the minimum
 //!   membership-query budget. Emit it as a provenance-stamped artifact.
-//! - **P1 — Mine.** Intersect the learned pass-language with an attack
+//! - **P1: Mine.** Intersect the learned pass-language with an attack
 //!   grammar *offline* to harvest minimal-edit bypasses with no further
 //!   live queries.
-//! - **P2 — Solve.** Compose the learned WAF view with the pipeline's
+//! - **P2: Solve.** Compose the learned WAF view with the pipeline's
 //!   normalization transducers and solve for inputs that survive every
-//!   stage (the double-decode trick, rediscovered — not hard-coded).
-//! - **P3 — Dominate.** The same model drives constrained adversarial
+//!   stage (the double-decode trick, rediscovered (not hard-coded)).
+//! - **P3: Dominate.** The same model drives constrained adversarial
 //!   evasion of ML-WAFs *and* provable hole-closure for defenders.
 //!
 //! Everything here is zero-config and pure-Rust: no GPU, no external

@@ -1,7 +1,7 @@
 //! Cross-region Cloudflare edge-POP coverage map.
 //!
 //! Closes #170. Cloudflare runs an anycast network with 300+ edge
-//! POPs (IATA-coded data centers — `SJC`, `LHR`, `NRT`, `FRA`, etc).
+//! POPs (IATA-coded data centers. `SJC`, `LHR`, `NRT`, `FRA`, etc).
 //! A payload that's *blocked* through one POP can still be *bypassed*
 //! through another if that POP runs a different OpenResty build,
 //! older ruleset compiler, or different geo-specific managed rules.
@@ -16,7 +16,7 @@
 //! ## Coverage policy
 //!
 //! - A `(egress, target)` pair that has hit `≥k` distinct POPs is
-//!   considered *exhausted* for cross-region purposes — further
+//!   considered *exhausted* for cross-region purposes, further
 //!   probes through that egress are unlikely to land in a new POP
 //!   any time soon. (`k` defaults to 8; CF anycast usually pins a
 //!   client IP to a small set of nearby POPs.)
@@ -33,23 +33,23 @@
 //! often re-hits the same POP many times before stumbling onto a new
 //! one. With POP awareness, the loop can:
 //!
-//! 1. **Detect plateau early** — if the same egress has hit only one
+//! 1. **Detect plateau early**: if the same egress has hit only one
 //!    POP after 50 probes, anycast has pinned it; abandon faster.
-//! 2. **Prioritize gap-filling** — pick egress entries whose seen-POP
+//! 2. **Prioritize gap-filling**: pick egress entries whose seen-POP
 //!    set is smallest, since those have the most room to discover
 //!    new POPs.
-//! 3. **Report coverage** — after a hunt round, surface "we touched
+//! 3. **Report coverage**: after a hunt round, surface "we touched
 //!    47 distinct CF edge POPs" so the operator knows the search
 //!    actually fanned out.
 //!
-//! All persistent — same atomic save/load contract as
+//! All persistent, same atomic save/load contract as
 //! [`crate::rule_corpus`].
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 /// Bounded number of POPs we track per (egress, target). A pair that
-/// has hit this many distinct POPs is considered *exhausted* — the
+/// has hit this many distinct POPs is considered *exhausted*, the
 /// anycast network is unlikely to surface new POPs without major IP
 /// rotation. Conservative default; raise via [`EdgePopCoverage::set_exhaustion_threshold`].
 pub const DEFAULT_EXHAUSTION_THRESHOLD: usize = 8;
@@ -145,12 +145,12 @@ impl EdgePopCoverage {
     }
 
     /// Record that we observed `pop` (must be a valid IATA-style
-    /// string — pass the raw `signal.edge_pop` from `parse_cf_block`).
+    /// string (pass the raw `signal.edge_pop` from `parse_cf_block`)).
     /// Returns `true` if the POP was newly observed for this
     /// `(egress, target)`, `false` if already known.
     ///
     /// Invalid POP strings (wrong length, non-letter) increment
-    /// `total_probes` but don't add to the set — they're noise from
+    /// `total_probes` but don't add to the set, they're noise from
     /// non-CF responses (origin direct, captive portals, etc).
     pub fn record(&mut self, egress: &str, target: &str, pop_raw: &str) -> bool {
         let key = make_key(egress, target);
@@ -236,7 +236,7 @@ impl EdgePopCoverage {
         out
     }
 
-    /// Egress entries that are NOT yet exhausted for `target` —
+    /// Egress entries that are NOT yet exhausted for `target` 
     /// these are the candidates the hunt loop should prioritize for
     /// new probes, sorted ascending by current POP count so we
     /// favor entries with the most room to grow.
@@ -272,7 +272,7 @@ impl EdgePopCoverage {
 
     /// Load from disk; on missing file or corrupt JSON return
     /// `default()`. Same forgiveness contract as
-    /// `rule_corpus::load_or_default` — operator data is precious
+    /// `rule_corpus::load_or_default`: operator data is precious
     /// but a corrupt coverage map shouldn't crash a hunt round.
     #[must_use]
     pub fn load_or_default(path: &Path) -> Self {
@@ -371,7 +371,7 @@ mod tests {
         c.record("egress-a", "target.example", "SJC");
         c.record("egress-b", "target.example", "LHR");
         c.record("egress-c", "target.example", "AMS");
-        // Mixed in a different target — must not contaminate.
+        // Mixed in a different target (must not contaminate).
         c.record("egress-d", "other.example", "ORD");
 
         let pops = c.pops_covered_for_target("target.example");

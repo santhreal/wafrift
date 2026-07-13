@@ -1,7 +1,7 @@
 //! String literal and whitespace mutation helpers.
 use std::fmt::Write as _;
 /// Maximum number of split positions enumerated. A SQL string of byte
-/// length N previously produced `3 * (N - 1)` formatted variants — a
+/// length N previously produced `3 * (N - 1)` formatted variants, a
 /// 200 KB payload became ~600 000 allocations the caller almost always
 /// truncates to a handful. That is wasted work bordering on a memory
 /// DoS. The first few split points carry essentially all the WAF-evasion
@@ -13,7 +13,7 @@ const MAX_SPLIT_POINTS: usize = 48;
 /// Splits happen **only on UTF-8 character boundaries**. The previous
 /// `for i in 1..value.len() { &value[..i] }` panicked the entire
 /// mutator (and therefore `wafrift scan`/`evade`/the proxy) on any
-/// payload containing a multibyte character — e.g. a SQLi string with
+/// payload containing a multibyte character, e.g. a SQLi string with
 /// an accented letter, a smart quote, or invalid bytes lossily decoded
 /// from base64/stdin. Payloads are attacker-shaped by definition; this
 /// path must never assume ASCII.
@@ -33,13 +33,13 @@ pub(crate) fn split_string_concat(value: &str) -> Vec<String> {
         results.push(format!("'{left}'+'{right}'"));
     }
 
-    // Take the first 10 *characters*, not the first 10 *bytes* — byte
+    // Take the first 10 *characters*, not the first 10 *bytes*, byte
     // 10 routinely lands mid-codepoint.
     //
     // §1 SPEED: the previous `map(...).collect::<Vec<_>>().join(...)` for
     // CHAR/CHR/NCHAR variants allocated a Vec<String> (up to 10 elements)
     // just to join them. A single `write!` loop builds each string
-    // directly — zero intermediate Vec, ~30% fewer allocations for this block.
+    // directly (zero intermediate Vec, ~30% fewer allocations for this block).
     let prefix: String = value.chars().take(10).collect();
 
     /// Emit `FN(cp)` for each char in `chars`, joined by `sep`, into `buf`.

@@ -2,7 +2,7 @@
 //! of one fed as input to another remains structurally sensible.
 //!
 //! The user-facing pattern is multi-strategy escalation in
-//! `wafrift evade --max-strategies N` — once we ship N tampers,
+//! `wafrift evade --max-strategies N`: once we ship N tampers,
 //! C(N, k) combinations exist. We can't test all but we pin the
 //! interesting ones plus property-style invariants.
 
@@ -136,7 +136,7 @@ fn json_unicode_alnum_then_sql_adjacent() {
     let p = "WHERE n='admin'";
     let a = tamper("json_unicode_alnum", p, None).unwrap();
     let b = tamper("sql_adjacent_string_concat", &a, None).unwrap();
-    // The 'admin' literal in the JSON-encoded form is still quoted —
+    // The 'admin' literal in the JSON-encoded form is still quoted 
     // sql_adjacent_string_concat should shatter it.
     assert!(b.contains("' '"));
 }
@@ -213,7 +213,7 @@ fn three_way_composition_does_not_panic() {
 
 // ────────────────────────────────────────────────────────────────
 // Order-sensitivity check (one direction yields different result
-// than the reverse — useful for evidence that we're not silently
+// than the reverse, useful for evidence that we're not silently
 // no-op-ing)
 // ────────────────────────────────────────────────────────────────
 

@@ -308,7 +308,7 @@ mod tests {
 
     /// Adversarial coverage replacing 30 hand-generated smoke-alarm
     /// tests (`auto_0..auto_29`) flagged by the 2026-05-10 audit. Each
-    /// of the originals only asserted `!variants.is_empty()` — they
+    /// of the originals only asserted `!variants.is_empty()`: they
     /// passed regardless of whether the bodies were valid multipart
     /// framing, parseable JSON, or well-formed XML. This replacement
     /// drives the same payload set through `generate_variants_from_body`
@@ -400,7 +400,7 @@ mod tests {
     /// surrogate pair for supplementary-plane characters.
     #[test]
     fn json_unicode_escape_supplementary_plane_is_valid_json() {
-        // U+1F600 GRINNING FACE — supplementary plane.
+        // U+1F600 GRINNING FACE (supplementary plane).
         let params = vec![("emoji".to_string(), "\u{1F600}".to_string())];
         let variants = generate_variants(&params);
         let json = variants
@@ -509,7 +509,7 @@ mod tests {
         let candidate = unique_boundary(&["benign content with no boundary"]);
         // Structural check (brand-agnostic): the boundary must start
         // with one of the realistic-client prefixes the random pool
-        // draws from. We don't pin the specific brand — that's
+        // draws from. We don't pin the specific brand, that's
         // randomised per call to defeat signature WAFs (see
         // `NEUTRAL_BOUNDARY_PREFIXES`).
         assert!(
@@ -533,7 +533,7 @@ mod tests {
 
     #[test]
     fn unique_boundary_two_calls_differ() {
-        // Independent calls return distinct boundaries — important so a
+        // Independent calls return distinct boundaries, important so a
         // future caller that cached one boundary across requests would
         // not silently make framing predictable.
         let a = unique_boundary(&["x"]);
@@ -685,7 +685,7 @@ mod tests {
     #[test]
     fn content_type_sniffing_malformed_headers_no_panic() {
         // Malformed Content-Type strings in generate_variants_from_body should
-        // not panic — they just produce no variants.
+        // not panic (they just produce no variants).
         let bodies: &[&[u8]] = &[
             b"",
             b"plain text with no equals",
@@ -734,7 +734,7 @@ mod tests {
     // ── bound_params key-overflow fix (2026-05-25) ───────────────────────────
 
     /// When the key alone exhausts the remaining byte budget, the previous code
-    /// emitted `(key, "")` via `saturating_sub → 0` — wasting the budget and
+    /// emitted `(key, "")` via `saturating_sub → 0`: wasting the budget and
     /// misrepresenting the param. The fix breaks out of the loop instead.
     ///
     /// Budget math:
@@ -768,13 +768,13 @@ mod tests {
 
         for v in &variants {
             let body_str = String::from_utf8_lossy(&v.body);
-            // The big-key param must NOT appear — neither key prefix nor value.
+            // The big-key param must NOT appear (neither key prefix nor value).
             assert!(
                 !body_str.contains("should_not_appear"),
                 "value of skipped param must not appear in {:?} body",
                 v.technique
             );
-            // Check a short prefix of the key (it's 8192 Ks — unmistakable).
+            // Check a short prefix of the key (it's 8192 Ks (unmistakable)).
             let key_prefix = &big_key[..20];
             assert!(
                 !body_str.contains(key_prefix),
@@ -793,7 +793,7 @@ mod tests {
     fn json_duplicate_key_escapes_special_chars_in_key() {
         use crate::content_type::ContentTypeTechnique;
 
-        // Key with a double-quote — raw interpolation would produce {"a"b":... which is invalid.
+        // Key with a double-quote (raw interpolation would produce {"a"b":... which is invalid).
         let params = vec![(r#"a"b"#.to_string(), "injection_payload".to_string())];
         let variants = generate_variants(&params);
         let dup = variants
@@ -913,24 +913,24 @@ mod tests {
             // The CR/LF MUST be stripped before the key reaches the
             // header line. If "\r\nX-Smuggled:" appears anywhere in
             // the body it means a CRLF-bearing key punched out of the
-            // `name="..."` value and became a new header line — that
+            // `name="..."` value and became a new header line, that
             // is the injection. (The literal substring "X-Smuggled:"
             // still appears inside the quoted name= value when the
             // CR/LF are stripped, which is the safe behaviour.)
             assert!(
                 !v.body.windows(13).any(|w| w == b"\r\nX-Smuggled:"),
-                "{:?} body contains CRLF-injected header — first 200 bytes: {:?}",
+                "{:?} body contains CRLF-injected header, first 200 bytes: {:?}",
                 v.technique,
                 &v.body[..v.body.len().min(200)]
             );
         }
         assert!(
             saw_charset,
-            "anti-rig: expected MultipartCharsetEarlySection variant — test would be vacuous otherwise"
+            "anti-rig: expected MultipartCharsetEarlySection variant, test would be vacuous otherwise"
         );
         assert!(
             saw_filename_star,
-            "anti-rig: expected MultipartFilenameStarEncoded variant — test would be vacuous otherwise"
+            "anti-rig: expected MultipartFilenameStarEncoded variant, test would be vacuous otherwise"
         );
     }
 }

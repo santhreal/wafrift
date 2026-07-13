@@ -1,16 +1,16 @@
-//! # wafrift-tcpoverlap — genuine TCP sequence-overlap desync
+//! # wafrift-tcpoverlap, genuine TCP sequence-overlap desync
 //!
 //! Target-based TCP reassembly evasion (Ptacek & Newsham 1998; Snort
 //! `stream5`), done for real. Overlapping TCP segments carrying *different* bytes
-//! in the same sequence range are resolved differently by different stacks — so
+//! in the same sequence range are resolved differently by different stacks, so
 //! a WAF/IDS and the origin behind it can reassemble the **same packets** into
 //! two **different** byte streams. The WAF inspects the benign stream; the origin
 //! executes the attack stream.
 //!
-//! - [`policy`] — the reassembly policies (`first`/`last`/`bsd`/`linux`) and
+//! - [`policy`], the reassembly policies (`first`/`last`/`bsd`/`linux`) and
 //!   their precise overlap-resolution rules.
-//! - [`mod@reassemble`] — simulate reassembly of a segment set under a policy.
-//! - [`plan`] — construct overlapping segment sets and self-verifying
+//! - [`mod@reassemble`] (simulate reassembly of a segment set under a policy).
+//! - [`plan`], construct overlapping segment sets and self-verifying
 //!   [`DifferentialPlan`]s that split a WAF from its
 //!   origin.
 //!

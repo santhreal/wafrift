@@ -37,7 +37,7 @@ pub(crate) use wafrift_types::{DEFAULT_EGRESS_CHALLENGE_THRESHOLD, DEFAULT_EGRES
 
 /// Differential-baseline verification toggle. When enabled, a payload
 /// variant is credited as a WAF bypass ONLY when the UN-EVADED base
-/// payload is BLOCKED in the same delivery — proving the evasion is what
+/// payload is BLOCKED in the same delivery, proving the evasion is what
 /// passed the variant, not that the WAF never policed that attack at all.
 /// Set once at startup by `main()` from the `--differential` flag. Default
 /// OFF so the headline bypass metric is byte-for-byte unchanged unless the
@@ -85,7 +85,7 @@ pub(crate) fn detonate_engine() -> &'static str {
 static CONFIGURED_USER_AGENT: OnceLock<Option<String>> = OnceLock::new();
 
 /// Install the operator's configured User-Agent at startup.
-/// Idempotent — subsequent calls are no-ops. `None` means "use the
+/// Idempotent, subsequent calls are no-ops. `None` means "use the
 /// browser default"; `Some(s)` overrides it for every wafrift
 /// HTTP-client builder.
 pub(crate) fn install_user_agent(ua: Option<String>) {
@@ -171,7 +171,7 @@ pub(crate) fn shared_scan_browser_headers(
 
 /// Returns `Some(ua)` ONLY when the operator explicitly configured a
 /// User-Agent via `.wafrift.toml`. Returns `None` when no override is
-/// installed — callers can then fall back to their own UA policy
+/// installed, callers can then fall back to their own UA policy
 /// (e.g. bench-waf's fingerprint rotation). Scan-style clients should
 /// use [`shared_scan_browser_headers`] so UA, Accept, Accept-Language,
 /// and Sec-Fetch stay coherent.
@@ -195,7 +195,7 @@ fn parse_config_level(s: &str) -> Option<crate::Level> {
     }
 }
 
-/// Operational configuration (Tier A) — runtime behavior tuning.
+/// Operational configuration (Tier A) (runtime behavior tuning).
 // R48-I5 fix (dogfood pass 9): strict deserialisation so a typo in
 // the operator's .wafrift.toml (e.g. `timout_secs` for `timeout_secs`)
 // errors at load time instead of silently doing nothing. CLAUDE.md
@@ -359,7 +359,7 @@ impl WafRiftConfig {
         }
         // The clap arg name uses kebab-case (`report-layers`) but
         // ValueSource lookups always go through the underlying field
-        // name — match `ScanArgs.report_layers`. Pre-fix this field was
+        // name, match `ScanArgs.report_layers`. Pre-fix this field was
         // documented and parsed but never applied; a user setting
         // `output.report_layers = true` in `.wafrift.toml` got no
         // layer-report in their JSON. Honest behaviour now matches
@@ -368,7 +368,7 @@ impl WafRiftConfig {
             args.report_layers = self.output.report_layers;
         }
         // `scan.concurrency`, `http.timeout_secs`, `output.quiet` were
-        // documented config fields with no apply path — operators set
+        // documented config fields with no apply path, operators set
         // them in `.wafrift.toml` and got no effect. Now wired to the
         // matching ScanArgs flags (added 2026-05). 0 = scan-side
         // dynamic default (keeps every pre-flag invocation behaving
@@ -572,7 +572,7 @@ impl HasHttpConfig for crate::trailer_diff_cmd::TrailerDiffArgs {
 // R55 pass-18 I1 (CLAUDE.md §9 WIRING): distill and tmin (which
 // delegates to distill) both hit the network but were dispatched
 // without `apply_http_defaults`, so `.wafrift.toml`'s http.* keys
-// silently dropped on the floor — operators with a lab on a
+// silently dropped on the floor, operators with a lab on a
 // self-signed cert had no way to make distill work short of passing
 // --insecure on every invocation.
 impl HasHttpConfig for crate::distill_cmd::DistillArgs {
@@ -594,7 +594,7 @@ impl HasHttpConfig for crate::tmin_cmd::TminArgs {
 }
 
 // R55 pass-19 I1 (CLAUDE.md §9 WIRING): bypass-probe ignored
-// `.wafrift.toml`'s http.* keys silently — every other reachable
+// `.wafrift.toml`'s http.* keys silently, every other reachable
 // subcommand consumes them.
 impl HasHttpConfig for crate::replay::ReplayArgs {
     // R68 pass-21: pre-fix `wafrift replay` was the only network
@@ -944,7 +944,7 @@ delay_ms = 200
         let args = cfg.apply_http_defaults(args, None);
         // When m=None the impl always applies config; that's fine when
         // insecure=false in config and insecure=true was set by something
-        // else — but the test we care about is that the HasHttpConfig
+        // else, but the test we care about is that the HasHttpConfig
         // impl compiles and runs without panic.
         assert!(
             !args.insecure,

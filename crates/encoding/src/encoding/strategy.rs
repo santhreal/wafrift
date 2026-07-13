@@ -49,61 +49,61 @@ pub const MYSQL_VERSIONED_COMMENT_VERSION: u32 = 50_000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub enum Strategy {
-    /// Standard URL encoding (%XX) — preserves unreserved chars per RFC 3986.
+    /// Standard URL encoding (%XX) (preserves unreserved chars per RFC 3986).
     /// Safe for: query strings, paths, form data.
     UrlEncode,
-    /// Lowercase hex URL encoding (%xx) — same semantics as `UrlEncode`.
+    /// Lowercase hex URL encoding (%xx) (same semantics as `UrlEncode`).
     /// Safe for: query strings, paths, form data.
     UrlEncodeLower,
-    /// Double URL encoding (%25XX) — bypasses WAFs that decode once.
+    /// Double URL encoding (%25XX) (bypasses WAFs that decode once).
     /// Safe for: query strings, paths, form data.
     DoubleUrlEncode,
-    /// Triple URL encoding (%2525XX) — bypasses WAFs that decode twice.
+    /// Triple URL encoding (%2525XX) (bypasses WAFs that decode twice).
     /// Safe for: query strings, paths, form data.
     TripleUrlEncode,
-    /// Unicode escape (\uXXXX) — ONLY safe when target parses JSON/JavaScript.
+    /// Unicode escape (\uXXXX). ONLY safe when target parses JSON/JavaScript.
     /// Unsafe for: raw HTTP parameters, headers, most server frameworks.
     UnicodeEncode,
-    /// IIS/ASP percent Unicode (%uXXXX) — ONLY safe on IIS/ASP classic parsers.
+    /// IIS/ASP percent Unicode (%uXXXX). ONLY safe on IIS/ASP classic parsers.
     /// Unsafe for: modern servers (nginx, Apache, Node.js, etc.).
     IisUnicodeEncode,
-    /// JSON string encoding with Unicode escapes — ONLY safe in JSON contexts.
+    /// JSON string encoding with Unicode escapes. ONLY safe in JSON contexts.
     /// Unsafe for: raw HTTP parameters.
     JsonEncode,
-    /// HTML entity encoding (&#xXX;) — ONLY safe in HTML contexts.
+    /// HTML entity encoding (&#xXX;). ONLY safe in HTML contexts.
     /// Unsafe for: raw HTTP parameters, JSON bodies.
     HtmlEntityEncode,
-    /// HTML decimal entity encoding (&#60;) — ONLY safe in HTML contexts.
+    /// HTML decimal entity encoding (&#60;). ONLY safe in HTML contexts.
     /// Unsafe for: raw HTTP parameters, JSON bodies.
     HtmlEntityDecimalEncode,
-    /// Alternating case (`SeLeCt`) — bypasses case-sensitive keyword filters.
+    /// Alternating case (`SeLeCt`) (bypasses case-sensitive keyword filters).
     /// Safe for: any text context where case is preserved.
     CaseAlternation,
-    /// Random alternating case — non-deterministic variant of `CaseAlternation`.
+    /// Random alternating case (non-deterministic variant of `CaseAlternation`).
     /// Safe for: any text context where case is preserved.
     RandomCase,
-    /// Tab insertion BETWEEN tokens — preserves keyword integrity.
+    /// Tab insertion BETWEEN tokens (preserves keyword integrity).
     /// Safe for: SQL contexts where whitespace separates tokens.
     WhitespaceInsertion,
-    /// SQL comment insertion BETWEEN tokens — preserves keyword integrity.
+    /// SQL comment insertion BETWEEN tokens (preserves keyword integrity).
     /// Safe for: SQL contexts where comments are treated as whitespace.
     SqlCommentInsertion,
-    /// `MySQL` versioned comment (`/*!50000SELECT*/`) — executed by `MySQL`, ignored by WAFs.
+    /// `MySQL` versioned comment (`/*!50000SELECT*/`) (executed by `MySQL`, ignored by WAFs).
     /// Safe for: `MySQL` backends.
     MysqlVersionedComment,
-    /// Null byte injection (%00) — ONLY semantically correct for C-style string parsers.
+    /// Null byte injection (%00). ONLY semantically correct for C-style string parsers.
     /// Context: php, some CGI implementations.
     NullByte,
-    /// Overlong UTF-8 encoding (2-byte) — ONLY works against legacy WAFs that normalize.
+    /// Overlong UTF-8 encoding (2-byte). ONLY works against legacy WAFs that normalize.
     /// Context: iis-6, very old frontends.
     OverlongUtf8,
-    /// Extended overlong UTF-8 encoding (3-byte) — broader coverage than `OverlongUtf8`.
+    /// Extended overlong UTF-8 encoding (3-byte) (broader coverage than `OverlongUtf8`).
     /// Context: iis-6, very old frontends.
     OverlongUtf8More,
-    /// Chunked transfer-encoding split — ONLY valid with `Transfer-Encoding: chunked`.
+    /// Chunked transfer-encoding split: ONLY valid with `Transfer-Encoding: chunked`.
     /// Context: http-request-body.
     ChunkedSplit,
-    /// HTTP parameter pollution — duplicate parameter with benign first value.
+    /// HTTP parameter pollution (duplicate parameter with benign first value).
     /// Safe for: query strings, form data.
     ParameterPollution,
     /// Base64 encoding (standard alphabet).
@@ -118,10 +118,10 @@ pub enum Strategy {
     /// UTF-7 encoding per RFC 2152.
     /// Context: legacy IIS/.NET parsers that decode UTF-7.
     Utf7Encode,
-    /// Gzip compression — ONLY valid with `Content-Encoding: gzip`.
+    /// Gzip compression: ONLY valid with `Content-Encoding: gzip`.
     /// Context: http-request-body.
     GzipEncode,
-    /// Deflate compression — ONLY valid with `Content-Encoding: deflate`.
+    /// Deflate compression: ONLY valid with `Content-Encoding: deflate`.
     /// Context: http-request-body.
     DeflateEncode,
     /// Replace spaces with SQL comments (`/**/`).
@@ -139,22 +139,22 @@ pub enum Strategy {
     /// Replace spaces with random blank characters.
     /// Safe for: SQL contexts.
     SpaceToRandomBlank,
-    /// Prefix each character with `%` — lightweight bypass.
+    /// Prefix each character with `%`: lightweight bypass.
     /// Safe for: contexts that strip `%` before parsing.
     PercentagePrefix,
     /// Between obfuscation (`=` → `BETWEEN # AND #`).
     /// Safe for: SQL contexts.
     BetweenObfuscation,
-    /// Unmagic quotes (`%bf%27`) — multi-byte charset quote escape.
+    /// Unmagic quotes (`%bf%27`) (multi-byte charset quote escape).
     /// Context: PHP with GBK/Big5/Shift-JIS connections.
     UnmagicQuotes,
-    /// Fullwidth Unicode (`ＳＥＬＥＣＴuntouched`) — bypasses ASCII keyword regex.
+    /// Fullwidth Unicode (`ＳＥＬＥＣＴuntouched`) (bypasses ASCII keyword regex).
     /// Context: backends that perform NFKC normalization (Java, .NET, Python 3, `PostgreSQL`).
     FullwidthEncode,
-    /// Homoglyph substitution — visually identical Unicode chars for `'`, `"`, `<`, `>`, `=`.
+    /// Homoglyph substitution (visually identical Unicode chars for `'`, `"`, `<`, `>`, `=`).
     /// Context: byte-level WAFs with Unicode-tolerant backends.
     HomoglyphEncode,
-    /// Plan 9 tag-character encoding — every ASCII byte becomes
+    /// Plan 9 tag-character encoding, every ASCII byte becomes
     /// `U+E0000 + byte`. Renders invisible; LLM-WAF tokenizers
     /// frequently still decode them, defeating keyword filters.
     /// Context: any (codepoint-level transforms).
@@ -562,7 +562,7 @@ mod tests {
     #[test]
     fn encode_json() {
         // F67: encoder now produces escaped CONTENT only, no
-        // surrounding quotes — the variant builder substitutes
+        // surrounding quotes, the variant builder substitutes
         // into an existing JSON string field.
         assert_eq!(encode("A<", Strategy::JsonEncode).unwrap(), "A<");
         // Real escape: backslash + control char.

@@ -13,7 +13,7 @@
 //!   un-explored-cells query)
 //!
 //! Keeping this glue in one module means every consumer (hunt /
-//! bench / model-evade) routes attempts through the same logic — a
+//! bench / model-evade) routes attempts through the same logic, a
 //! corpus-key change here propagates everywhere with no
 //! per-consumer surface-area to chase.
 
@@ -28,13 +28,13 @@ use crate::rule_corpus::RuleBypassCorpus;
 /// dep on oracle for trivial routing logic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProbeOutcome {
-    /// Origin received and processed the attack-class payload —
+    /// Origin received and processed the attack-class payload 
     /// this is a confirmed WAF bypass.
     Bypass,
     /// WAF blocked the request (status 403/406/429/etc + body /
     /// header signature matched).
     Block,
-    /// WAF returned a JS / CAPTCHA / browser challenge — neither
+    /// WAF returned a JS / CAPTCHA / browser challenge, neither
     /// bypass nor confirmed block.
     Challenge,
     /// Oracle can't decide. May be transient (target down, network
@@ -53,7 +53,7 @@ pub enum ProbeOutcome {
 ///
 /// `response_hash` is the caller's hash of the response body (or a
 /// salt + body if the body varies trivially). Used as the dedup
-/// key alongside the payload — the corpus collapses near-identical
+/// key alongside the payload, the corpus collapses near-identical
 /// observations.
 pub fn record_outcome(
     corpus: &mut RuleBypassCorpus,
@@ -73,7 +73,7 @@ pub fn record_outcome(
             corpus.record_block(key, payload, payload_class, encoding_chain, response_hash);
         }
         ProbeOutcome::Challenge | ProbeOutcome::Ambiguous => {
-            // Intentionally NOT recorded — see module docs.
+            // Intentionally NOT recorded (see module docs).
         }
     }
 }
@@ -124,12 +124,12 @@ pub fn record_pop_observation(
 /// `signal.edge_pop` field. `None` for non-CF responses.
 ///
 /// Returns the [`BypassFingerprint`] that uniquely identifies this
-/// bypass — call `H1Archive::contains()` against it before queuing
+/// bypass, call `H1Archive::contains()` against it before queuing
 /// for submission.
 pub struct ProbeRecord<'a> {
-    /// Per-rule corpus (mutable — gets the recorded outcome).
+    /// Per-rule corpus (mutable (gets the recorded outcome)).
     pub corpus: &'a mut RuleBypassCorpus,
-    /// Cross-region edge-POP map (mutable — gets the recorded POP).
+    /// Cross-region edge-POP map (mutable (gets the recorded POP)).
     pub coverage: &'a mut EdgePopCoverage,
     /// Outcome the oracle decided about this probe.
     pub outcome: ProbeOutcome,
@@ -170,7 +170,7 @@ pub fn record_probe(probe: ProbeRecord<'_>) -> BypassFingerprint {
     } = probe;
     let key = rule_id.unwrap_or(UNATTRIBUTED_BUCKET);
     // Compute the dedup fingerprint up-front so the caller can use it
-    // even on Block outcomes (which is fine — operators dedup their
+    // even on Block outcomes (which is fine, operators dedup their
     // submission queue, and blocks-that-look-like-bypasses are worth
     // counting against the dedup archive too).
     let fp = fingerprint(key, &encoding_chain, payload);
@@ -188,7 +188,7 @@ pub fn record_probe(probe: ProbeRecord<'_>) -> BypassFingerprint {
     fp
 }
 
-/// Apply a single drift event to the corpus — the hunt loop calls
+/// Apply a single drift event to the corpus, the hunt loop calls
 /// this when the strategy's `drift_window` detector fires
 /// `RegimeChange::LooserNow`, signalling that previously-blocked
 /// payloads are worth re-trying. Marks every currently-blocked

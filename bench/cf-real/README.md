@@ -1,8 +1,8 @@
-# `bench/cf-real` — wafrift Cloudflare-real WAF target
+# `bench/cf-real`: wafrift Cloudflare-real WAF target
 
 A small intentionally-vulnerable Cloudflare Worker that lives in
 this repo so wafrift can fire bypass payloads through a REAL
-Cloudflare WAF — not a local mock. The Worker echoes what reached
+Cloudflare WAF: not a local mock. The Worker echoes what reached
 origin so a "passed" payload can be confirmed verbatim.
 
 ## Why this exists
@@ -19,7 +19,7 @@ ground-truth bypass rate against a known-fixed ruleset.
 The Worker is stateless and side-effect-free:
 
 - No database / KV / R2 / D1 binding.
-- No outbound `fetch()` — even a successful injection can't
+- No outbound `fetch()`: even a successful injection can't
   pivot to SSRF.
 - Every response bounded at 8 KiB (no amplification surface).
 - The `/redirect` endpoint refuses cross-origin destinations.
@@ -28,7 +28,7 @@ The Worker is stateless and side-effect-free:
   Worker.
 
 If an attacker fully compromises the Worker the blast radius is
-"they can make requests against the bench surface" — same as a
+"they can make requests against the bench surface", same as a
 public proof-of-concept page.
 
 ## Files
@@ -100,7 +100,7 @@ bench/cf-real/
    ```
 
    The Worker's response body for every successful (non-blocked)
-   payload contains the bytes the WAF let through to origin —
+   payload contains the bytes the WAF let through to origin 
    verify the payload semantics survived the bypass via
    `jq '.findings[] | {payload, echoed: .response_body.q}'`.
 
@@ -117,6 +117,6 @@ bench/cf-real/
 
 - **The WAF rules in `apply-waf.sh` are intentionally minimal**
   so wafrift's bypass-rate trend is meaningful. The free
-  Managed Ruleset offers far more coverage — toggle it in the
+  Managed Ruleset offers far more coverage, toggle it in the
   zone dashboard if you want a stricter target. Higher coverage
   = lower bypass rates, which is fine for trending.

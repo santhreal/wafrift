@@ -338,7 +338,7 @@ mod tests {
 
     /// B-3 wiring regression: when `plan.context = None` (the default),
     /// `evade_adaptive` uses the plain encoder, NOT the contextual one
-    /// — preserves pre-wiring behaviour (LAW 2 backwards compat).
+    ///: preserves pre-wiring behaviour (LAW 2 backwards compat).
     #[test]
     fn evade_adaptive_no_context_uses_plain_encoder() {
         use wafrift_encoding::encoding::Strategy;
@@ -359,7 +359,7 @@ mod tests {
                 .iter()
                 .any(|t| matches!(t, Technique::PayloadEncoding(_)))
         );
-        // No JSON-string escaping applied — the raw `"` is still present.
+        // No JSON-string escaping applied (the raw `"` is still present).
         let body = result.request.body.as_deref().unwrap_or(&[]);
         assert!(
             body.contains(&b'"'),
@@ -594,7 +594,7 @@ mod tests {
     fn winner_pick_varies_with_request_url() {
         // F146 regression: pre-fix `current_winner` used
         // `state.rotation_index % state.proven_winners.len()` but `evade`
-        // gets a CLONED &HostState that is dropped after each call —
+        // gets a CLONED &HostState that is dropped after each call 
         // `rotation_index` is never advanced from the transport path, so
         // every request picked `proven_winners[0]` and the round-robin
         // claim was a lie. Post-fix the pick hashes (URL + method), so
@@ -795,7 +795,7 @@ mod tests {
     #[test]
     fn is_text_payload_returns_false_for_bodyless_get() {
         use crate::strategy::is_text_payload;
-        // GET with no body — is_text_payload must return false, not panic.
+        // GET with no body (is_text_payload must return false, not panic).
         let req = Request::get("https://example.com/api?q=test");
         assert!(req.body.is_none(), "precondition: GET has no body");
         assert!(
@@ -814,7 +814,7 @@ mod tests {
     #[test]
     fn is_text_payload_returns_true_for_valid_utf8_body_no_content_type() {
         use crate::strategy::is_text_payload;
-        // POST with no Content-Type — falls through to UTF-8 check.
+        // POST with no Content-Type (falls through to UTF-8 check).
         let req = Request::post("https://example.com/api", b"hello world".to_vec());
         assert!(
             req.headers

@@ -7,7 +7,7 @@ allows, we record bypass rate next to the CF number.
 
 ## Status
 
-**STUB — not deployed.** Activate when `AWS_ACCESS_KEY_ID` lands in
+**STUB: not deployed.** Activate when `AWS_ACCESS_KEY_ID` lands in
 `C:\credentials\.env`. Until then this directory exists so the
 operator knows where the AWS bench will live and what it looks like.
 
@@ -22,21 +22,21 @@ operator knows where the AWS bench will live and what it looks like.
 | `aws_cloudwatch_log_group` | WAF sample logs (per-request) | <$1 |
 
 Roughly **$35–45 / month** if left running. Tear down after each
-bench run with `terraform destroy` — typical bench session is 1–2
+bench run with `terraform destroy`: typical bench session is 1–2
 hours, so a single run costs cents.
 
 ## Why these managed rule groups
 
-1. **`AWSManagedRulesCommonRuleSet`** — the OWASP-style baseline AWS
+1. **`AWSManagedRulesCommonRuleSet`**: the OWASP-style baseline AWS
    recommends for every WebACL. Covers generic injection, LFI, RCE.
    If wafrift can't beat this, the tool has nothing to sell.
-2. **`AWSManagedRulesSQLiRuleSet`** — focused SQLi detection. The
+2. **`AWSManagedRulesSQLiRuleSet`**: focused SQLi detection. The
    "wafrift specialty" rule group.
-3. **`AWSManagedRulesKnownBadInputsRuleSet`** — catches Log4Shell-
+3. **`AWSManagedRulesKnownBadInputsRuleSet`**: catches Log4Shell-
    style well-known exploit strings. Useful as an "obvious payload"
-   reference — wafrift should pass these AT BASELINE without any
+   reference: wafrift should pass these AT BASELINE without any
    evolution (because they're literal CVE strings, not the corpus).
-4. **`AWSManagedRulesAnonymousIpList`** — *NOT* added. It would block
+4. **`AWSManagedRulesAnonymousIpList`**: *NOT* added. It would block
    the operator's own VPN/Tor and pollute results.
 
 ## Activate later
@@ -63,6 +63,6 @@ terraform destroy
 
 ## Footnote: Akamai
 
-Akamai App & API Protector is SaaS-only — no self-host. Pending a
+Akamai App & API Protector is SaaS-only, no self-host. Pending a
 sales-channel trial account, we cite generalization from CF + AWS
 results. The wafrift engine is WAF-agnostic by design.

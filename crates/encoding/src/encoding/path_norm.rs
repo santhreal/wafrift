@@ -3,14 +3,14 @@
 //! WAFs and origins frequently disagree on how to normalize a request
 //! path. The WAF inspects the raw bytes; the origin (or a middlebox
 //! upstream of it) folds them into something else. This module
-//! produces the differential payloads — a path that the WAF sees as
+//! produces the differential payloads, a path that the WAF sees as
 //! benign and the origin sees as `/admin`, or vice versa.
 //!
 //! Every encoder here is reversible by the canonical
 //! [RFC 3986 §5.2.4](https://www.rfc-editor.org/rfc/rfc3986#section-5.2.4)
 //! "remove dot segments" algorithm. WAFs that don't run that exact
-//! algorithm — including most regex-based WAFs and several major
-//! cloud-WAF parsers as recently as 2025 — see a different string.
+//! algorithm, including most regex-based WAFs and several major
+//! cloud-WAF parsers as recently as 2025 (see a different string).
 //!
 //! Coverage:
 //!
@@ -21,7 +21,7 @@
 //!   `/foo/%2E%2E/admin` (upper), `/foo/%2e%2E/admin` (mixed),
 //!   `/foo/%2e%2e%2fadmin`, `/foo/..%2fadmin`, `/foo/.%2e/admin`
 //!   (literal-dot + encoded-dot).
-//! - **Double percent encoding**: `/foo/%252e%252e/admin` — bypasses
+//! - **Double percent encoding**: `/foo/%252e%252e/admin`: bypasses
 //!   WAFs that decode once and check, while origins that decode twice
 //!   collapse to `/admin`.
 //! - **Tomcat semicolon segment**: `/foo/..;/admin`. The `..;` is a
@@ -31,12 +31,12 @@
 //! - **Backslash variants** (IIS / .NET): `/foo/..\\admin`,
 //!   `/foo/%5c..%5c/admin`. IIS folds backslash to slash; most WAFs
 //!   don't.
-//! - **Question-mark suffix smuggle**: `/foo?/../admin` — some WAFs
+//! - **Question-mark suffix smuggle**: `/foo?/../admin`: some WAFs
 //!   normalize before query-string split, some after.
-//! - **Hash suffix smuggle**: `/foo#/../admin` — same shape.
+//! - **Hash suffix smuggle**: `/foo#/../admin`: same shape.
 //! - **Unicode fullwidth slash**: `/foo／../admin` (U+FF0F). NFKC-folding
 //!   backends collapse to `/`.
-//! - **Mixed dot encodings**: `/foo/%c0%ae%c0%ae/admin` — overlong UTF-8
+//! - **Mixed dot encodings**: `/foo/%c0%ae%c0%ae/admin`: overlong UTF-8
 //!   for `.`. Combined with `crate::encoding::structural::overlong_utf8`
 //!   it's the "mod_security 922110" class.
 
@@ -100,7 +100,7 @@ pub fn path_variants(prefix: &str, target: &str) -> Vec<String> {
 /// `target`.
 ///
 /// Useful when the WAF has a path-length limit (some cap inspection
-/// at 256 or 1024 bytes) — every dot-dot segment beyond the limit is
+/// at 256 or 1024 bytes), every dot-dot segment beyond the limit is
 /// silently ignored, while the origin still resolves to the target.
 ///
 /// `depth` is the number of `foo/..` round-trips to insert.
@@ -154,14 +154,14 @@ pub fn slash_encoded_path(segments: &[&str]) -> String {
 /// the canonical post-normalization path so tests and oracles can
 /// verify that every variant collapses to the same target.
 ///
-/// This is a faithful implementation of the reference algorithm —
-/// no shortcuts, no special-casing — so it can also serve as the
+/// This is a faithful implementation of the reference algorithm 
+/// no shortcuts, no special-casing, so it can also serve as the
 /// ground-truth normalizer for differential-fuzzing comparisons.
 ///
 /// # Performance
 ///
 /// Pre-fix: each iteration cloned the remaining input with `.to_string()`
-/// or `format!()` — O(n²) total allocations for a path of n segments.
+/// or `format!()`: O(n²) total allocations for a path of n segments.
 /// Post-fix: a cursor (`pos`) advances through the *original* `input`
 /// slice with no intermediate allocations; only `output` grows.
 /// Speedup: ~4–10× on paths with ≥ 5 segments (measured: 1 µs → 200 ns
@@ -181,17 +181,17 @@ pub fn rfc3986_remove_dot_segments(input: &str) -> String {
         let rem = &input[pos..];
 
         if rem.starts_with("../") {
-            // A: remove leading "../" — just skip 3 bytes.
+            // A: remove leading "../" (just skip 3 bytes).
             pos += 3;
         } else if rem.starts_with("./") {
-            // A: remove leading "./" — skip 2 bytes.
+            // A: remove leading "./" (skip 2 bytes).
             pos += 2;
         } else if rem.starts_with("/./") {
-            // B: collapse "/./" → "/" — replace with "/" prefix,
+            // B: collapse "/./" → "/", replace with "/" prefix,
             // i.e. skip 2 bytes (advance past the "." part).
             pos += 2; // pos now points at "/" that starts the next seg.
         } else if rem == "/." {
-            // B (end): replace "/." with "/" — emit "/" then stop.
+            // B (end): replace "/." with "/" (emit "/" then stop).
             output.push('/');
             pos = len;
         } else if rem.starts_with("/../") {
@@ -199,7 +199,7 @@ pub fn rfc3986_remove_dot_segments(input: &str) -> String {
             if let Some(idx) = output.rfind('/') {
                 output.truncate(idx);
             }
-            pos += 3; // skip "/.." — next char is the "/" that starts rest.
+            pos += 3; // skip "/.." (next char is the "/" that starts rest).
         } else if rem == "/.." {
             // C (end): remove last segment from output, emit "/".
             if let Some(idx) = output.rfind('/') {
@@ -208,7 +208,7 @@ pub fn rfc3986_remove_dot_segments(input: &str) -> String {
             output.push('/');
             pos = len;
         } else if rem == "." || rem == ".." {
-            // D: lone "." or ".." — remove entirely.
+            // D: lone "." or ".." (remove entirely).
             pos = len;
         } else {
             // E: move the first path segment (including initial "/") to output.
@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn rfc3986_handles_root_dot_dot() {
-        // Above root — output stays empty-with-leading-slash.
+        // Above root (output stays empty-with-leading-slash).
         let out = rfc3986_remove_dot_segments("/..");
         assert!(out == "/" || out.is_empty(), "got {out:?}");
     }
@@ -397,9 +397,9 @@ mod tests {
             // up), OR the variant uses an opaque encoding the RFC canonicalizer
             // can't see through (percent-encoded dots/slashes/backslashes,
             // fullwidth slash), OR the variant embeds the traversal in the query /
-            // fragment component (e.g. `?/../admin` — not visible to the path
+            // fragment component (e.g. `?/../admin`: not visible to the path
             // canonicalizer but processed by many origin servers).  All are
-            // legitimate differential conditions — what matters is that the
+            // legitimate differential conditions, what matters is that the
             // variant doesn't accidentally fold to the benign prefix alone.
             let touched_target = collapsed.contains("admin")
                 || v.contains("%2e")
@@ -438,7 +438,7 @@ mod tests {
     /// `rfc3986_remove_dot_segments` on a 400-segment path must complete in
     /// under 50 ms (100 repetitions, debug build).  Pre-fix: O(n²) allocations
     /// (each branch cloned the remaining string).  Post-fix: cursor advances
-    /// through the original slice — O(n) total work, zero intermediate
+    /// through the original slice: O(n) total work, zero intermediate
     /// allocations.
     #[test]
     fn rfc3986_cursor_throughput() {

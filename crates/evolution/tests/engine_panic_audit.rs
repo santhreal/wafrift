@@ -14,7 +14,7 @@ mod helpers {
     }
 
     pub fn malformed_chromosome() -> Chromosome {
-        // Unknown gene keys — must not crash the engine on feedback rejection.
+        // Unknown gene keys (must not crash the engine on feedback rejection).
         Chromosome::new(vec![
             ("not_a_real_gene".into(), "\u{0000}\u{00ff}".into()),
             ("".into(), "".into()),

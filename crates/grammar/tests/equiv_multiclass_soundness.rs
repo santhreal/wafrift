@@ -53,7 +53,7 @@ fn xss_every_member_still_executes() {
                 n += 1;
                 // still_executes_xss already REQUIRES every structured
                 // marker of the original to survive (entity/unicode
-                // normalised) — it is the soundness oracle.
+                // normalised) (it is the soundness oracle).
                 assert!(
                     exss::still_executes_xss(atk, &m.payload),
                     "XSS unsound / construct lost: {:?} from {atk:?}",
@@ -330,7 +330,7 @@ fn determinism_and_force_delivery_all_classes() {
 
 #[test]
 fn unsupported_class_returns_empty() {
-    // A class with no sound equivalence model must yield nothing —
+    // A class with no sound equivalence model must yield nothing 
     // the generator never guesses (anti-rig).
     assert!(!equiv::supports_class("smuggling"));
     assert!(!equiv::supports_class("totally-unknown"));

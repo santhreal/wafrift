@@ -91,7 +91,7 @@ impl DifferentialResult {
         let mut suggestions = Vec::new();
         if !self.blocked_sql_keywords.is_empty() && self.blocked_sql_comments.len() < 3 {
             suggestions.push(
-                "SqlCommentInsertion — WAF blocks keywords but may not handle inline comments"
+                "SqlCommentInsertion: WAF blocks keywords but may not handle inline comments"
                     .into(),
             );
         }
@@ -99,12 +99,12 @@ impl DifferentialResult {
             && !self.blocked_xss_tags.iter().any(|tag| tag == "details")
         {
             suggestions
-                .push("XSS via <details ontoggle> — script blocked but details tag not".into());
+                .push("XSS via <details ontoggle>, script blocked but details tag not".into());
         }
         if self.blocked_xss_tags.iter().any(|tag| tag == "script")
             && !self.blocked_xss_tags.iter().any(|tag| tag == "svg")
         {
-            suggestions.push("XSS via <svg onload> — script blocked but SVG not".into());
+            suggestions.push("XSS via <svg onload>, script blocked but SVG not".into());
         }
         if self
             .blocked_xss_functions
@@ -116,7 +116,7 @@ impl DifferentialResult {
                 .any(|function| function.contains("constructor"))
         {
             suggestions.push(
-                "XSS via constructor chain — alert() blocked but prototype access not".into(),
+                "XSS via constructor chain, alert() blocked but prototype access not".into(),
             );
         }
         if self
@@ -129,11 +129,11 @@ impl DifferentialResult {
                 .any(|separator| separator == "|")
         {
             suggestions
-                .push("CMD injection via pipe (|) — semicolons blocked but pipes not".into());
+                .push("CMD injection via pipe (|), semicolons blocked but pipes not".into());
         }
         if !self.blocked_cmd_commands.is_empty() {
             suggestions.push(
-                "CMD obfuscation (backslash, quotes, hex encoding) — command names blocked".into(),
+                "CMD obfuscation (backslash, quotes, hex encoding), command names blocked".into(),
             );
         }
         if self
@@ -145,11 +145,11 @@ impl DifferentialResult {
                 .iter()
                 .any(|tautology| tautology.contains("BETWEEN"))
         {
-            suggestions.push("SQL tautology via BETWEEN — 1=1 blocked but BETWEEN not".into());
+            suggestions.push("SQL tautology via BETWEEN: 1=1 blocked but BETWEEN not".into());
         }
         if suggestions.is_empty() {
             suggestions.push(
-                "WAF appears comprehensive — try Content-Type switching or encoding layering"
+                "WAF appears comprehensive, try Content-Type switching or encoding layering"
                     .into(),
             );
         }

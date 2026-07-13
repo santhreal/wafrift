@@ -32,7 +32,7 @@ detection indicators weighted by reliability.
 
 The signature catalog under `rules/detect/*.toml` is derived from the
 [wafw00f](https://github.com/EnableSecurity/wafw00f) project
-(BSD-3-Clause) — every TOML rule sourced from wafw00f carries a
+(BSD-3-Clause), every TOML rule sourced from wafw00f carries a
 `source = "WAFW00F:<plugin>"` field pointing back at the upstream
 plugin name. We re-express each signature in wafrift's structured
 TOML format so it can be loaded at runtime, weighted, scanned via a

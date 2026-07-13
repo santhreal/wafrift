@@ -22,7 +22,7 @@ fn dispatch_matrix_without_cookie_cookie_solvable_kinds_wait() {
                 );
             }
             other => {
-                panic!("Fix: {kind:?} without cookie must Wait for external solver — got {other:?}")
+                panic!("Fix: {kind:?} without cookie must Wait for external solver, got {other:?}")
             }
         }
     }
@@ -37,7 +37,7 @@ fn dispatch_matrix_without_cookie_interactive_kinds_escalate() {
         ChallengeKind::Recaptcha,
         // AwsWaf moved to cookie-solvable in the 2026-05-10 audit
         // because extract_clearance_cookie already stored aws-waf-token
-        // entries — the previous escalate-only path silently discarded
+        // entries, the previous escalate-only path silently discarded
         // captured tokens.
         ChallengeKind::Unknown,
     ] {
@@ -47,7 +47,7 @@ fn dispatch_matrix_without_cookie_interactive_kinds_escalate() {
                 assert_eq!(*k, kind);
                 assert_eq!(reason, &escalate_reason(kind));
             }
-            other => panic!("Fix: {kind:?} without cookie must EscalateToOperator — got {other:?}"),
+            other => panic!("Fix: {kind:?} without cookie must EscalateToOperator, got {other:?}"),
         }
     }
 }
@@ -58,7 +58,7 @@ fn negative_twin_cookie_solvable_without_cookie_must_not_escalate() {
     let action = dispatch("neg-cf.test", ChallengeKind::CloudflareManaged, &store);
     assert!(
         !matches!(action, SolveAction::EscalateToOperator { .. }),
-        "Fix: CloudflareManaged without cookie escalates only when misclassified — got {action:?}"
+        "Fix: CloudflareManaged without cookie escalates only when misclassified, got {action:?}"
     );
     assert!(
         matches!(action, SolveAction::Wait { .. }),
@@ -72,7 +72,7 @@ fn negative_twin_interactive_without_cookie_must_not_wait() {
     let action = dispatch("neg-hc.test", ChallengeKind::Hcaptcha, &store);
     assert!(
         !matches!(action, SolveAction::Wait { .. }),
-        "Fix: Hcaptcha must never Wait — needs human; got {action:?}"
+        "Fix: Hcaptcha must never Wait, needs human; got {action:?}"
     );
 }
 
@@ -101,7 +101,7 @@ fn dispatch_replays_for_every_kind_when_store_has_active_cookie() {
                 );
             }
             other => panic!(
-                "Fix: stored cookie for {kind:?} must force ReplayWithCookie — got {other:?}"
+                "Fix: stored cookie for {kind:?} must force ReplayWithCookie, got {other:?}"
             ),
         }
     }
@@ -119,7 +119,7 @@ fn negative_twin_escalate_kind_with_cookie_must_not_escalate() {
     let action = dispatch("turnstile-seeded.test", ChallengeKind::Turnstile, &store);
     assert!(
         matches!(action, SolveAction::ReplayWithCookie { .. }),
-        "Fix: after manual solve Turnstile must replay cookie, not re-escalate — got {action:?}"
+        "Fix: after manual solve Turnstile must replay cookie, not re-escalate, got {action:?}"
     );
     assert!(
         !matches!(action, SolveAction::EscalateToOperator { .. }),
@@ -143,7 +143,7 @@ fn negative_twin_wait_kind_with_cookie_must_not_wait() {
     );
     assert!(
         matches!(action, SolveAction::ReplayWithCookie { .. }),
-        "Fix: cookie present must skip Wait — got {action:?}"
+        "Fix: cookie present must skip Wait, got {action:?}"
     );
 }
 
@@ -157,12 +157,12 @@ fn dispatch_wait_jitter_spreads_across_back_to_back_calls() {
             SolveAction::Wait { delay } => {
                 distinct_ms.insert(delay.as_millis());
             }
-            other => panic!("expected Wait for AkamaiBmp without cookie — got {other:?}"),
+            other => panic!("expected Wait for AkamaiBmp without cookie, got {other:?}"),
         }
     }
     assert!(
         distinct_ms.len() > 1,
-        "Fix: jitter must desynchronize retries — got only {} distinct delays",
+        "Fix: jitter must desynchronize retries, got only {} distinct delays",
         distinct_ms.len()
     );
 }

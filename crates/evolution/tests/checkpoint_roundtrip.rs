@@ -4,7 +4,7 @@
 //!   corpus, `in_flight`, cache, `next_id`, `generation_evals`,
 //!   `target_health`, `checkpoint_path`, `pending_single`. A restored
 //!   engine lost ALL bypass discoveries and reset its eval-id counter
-//!   to 0 — mid-run crashes silently destroyed work.
+//!   to 0 (mid-run crashes silently destroyed work).
 //!
 //! Schema bumped to v2: corpus + `next_id` + `generation_evals` are now
 //! captured. v1 checkpoints still load via `#[serde(default)]`.
@@ -62,7 +62,7 @@ fn checkpoint_preserves_corpus() {
 
     engine.save_checkpoint(&path).expect("save");
 
-    // Fresh engine — corpus must be empty until load.
+    // Fresh engine (corpus must be empty until load).
     let mut restored = EvolutionEngine::new(8);
     assert_eq!(restored.corpus.entries.len(), 0);
 

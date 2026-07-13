@@ -1,6 +1,6 @@
 # wafrift Plugin / Tamper API
 
-Add a new tamper in 60 seconds — no Rust, no rebuild.
+Add a new tamper in 60 seconds (no Rust, no rebuild).
 
 ## Overview
 
@@ -17,7 +17,7 @@ supported:
 
 ## TOML format (quickest path)
 
-### Step 1 — create the file
+### Step 1: create the file
 
 ```toml
 # ~/.wafrift/tampers/my_tamper.toml
@@ -41,7 +41,7 @@ pattern     = "SELECT"
 replacement = "SEL/**/ECT"
 ```
 
-### Step 2 — verify
+### Step 2: verify
 
 ```
 wafrift tamper --payload "SELECT * FROM users" --tamper my_tamper
@@ -76,14 +76,14 @@ replacement = "N"
 
 ## WebAssembly format (advanced)
 
-For transforms that require real logic — crypto, stateful generation,
-external libraries compiled to Wasm — ship a `.wasm` module.
+For transforms that require real logic, crypto, stateful generation,
+external libraries compiled to Wasm (ship a `.wasm` module).
 
 ### Security sandbox
 
 The WASM runtime is **fully sandboxed**:
 
-- No WASI imports — no filesystem, no network, no environment variables
+- No WASI imports, no filesystem, no network, no environment variables
 - Fuel limited to **1 000 000 instructions** per `apply()` call (prevents infinite loops)
 - Stack capped at **512 KiB**
 - No threads (wasm-threads disabled)
@@ -184,7 +184,7 @@ printf '[manifest]\nname="my_wasm_tamper"\nversion="1.0.0"\nauthor="You"\npayloa
 ## Plugin loading rules
 
 1. Files scanned at startup from `~/.wafrift/tampers/` (subdirectories ignored).
-2. Load failures are logged at `WARN` level and skipped — they do not prevent other plugins from loading.
+2. Load failures are logged at `WARN` level and skipped (they do not prevent other plugins from loading).
 3. Name collisions (two plugins with the same `name`) cause the second to be rejected.
 4. Manifest validation enforced:
    - `name`: non-empty, ASCII alphanumeric + underscores only

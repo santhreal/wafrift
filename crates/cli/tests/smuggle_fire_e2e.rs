@@ -50,7 +50,7 @@ async fn spawn_canary_bypass_mock() -> std::net::SocketAddr {
     addr
 }
 
-/// Spawn a mock that always returns 403 — used to test the
+/// Spawn a mock that always returns 403, used to test the
 /// "no bypass" path (all probes report bypass_signal=none).
 async fn spawn_always_block_mock() -> std::net::SocketAddr {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -122,7 +122,7 @@ async fn spawn_canary_reflect_mock() -> std::net::SocketAddr {
 
 /// Spawn a mock that echoes the `X-Wafrift-Canary` value into a
 /// RESPONSE HEADER (`X-Echoed-Canary`) while keeping the body free of
-/// the token — exercises header-surface reflection that body-only
+/// the token, exercises header-surface reflection that body-only
 /// scanning would miss.
 async fn spawn_canary_header_reflect_mock() -> std::net::SocketAddr {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -297,7 +297,7 @@ fn smuggle_fire_reports_none_when_mock_blocks_every_probe() {
 
 /// `--origin-ip` pins the target Host to a supplied origin IP at the
 /// connector, so probes connect to the origin while keeping the real
-/// Host + SNI. Proof: target a `.invalid` host (RFC 6761 — guaranteed
+/// Host + SNI. Proof: target a `.invalid` host (RFC 6761, guaranteed
 /// never to resolve) pinned to the loopback mock. Without the override
 /// no probe could connect at all; with it, every probe (carrying the
 /// canary header the mock honours) reaches the origin and returns 200.
@@ -311,7 +311,7 @@ fn smuggle_fire_origin_ip_reaches_origin_for_unresolvable_host() {
         .build()
         .unwrap();
     let addr = rt.block_on(spawn_canary_bypass_mock());
-    // Deliberately non-resolvable Host — the ONLY path to the mock is
+    // Deliberately non-resolvable Host, the ONLY path to the mock is
     // the --origin-ip override pinning it to loopback.
     let url = format!("http://origin-direct-test.invalid:{}/admin", addr.port());
     let ip = addr.ip().to_string();
@@ -345,7 +345,7 @@ fn smuggle_fire_origin_ip_reaches_origin_for_unresolvable_host() {
     for line in &lines {
         let v: serde_json::Value = serde_json::from_str(line).expect("JSON");
         // The probe carried the canary header, so the mock answered 200
-        // — only reachable if the .invalid Host was pinned to the origin.
+        //: only reachable if the .invalid Host was pinned to the origin.
         assert_eq!(
             v["status"].as_u64().unwrap(),
             200,
@@ -355,7 +355,7 @@ fn smuggle_fire_origin_ip_reaches_origin_for_unresolvable_host() {
 }
 
 /// A malformed `--origin-ip` must fail fast (exit 2) with a message
-/// naming the flag — never silently fall back to normal DNS, which
+/// naming the flag, never silently fall back to normal DNS, which
 /// would quietly defeat the operator's go-around intent (a silent
 /// fallback is the §9 "flag parsed but ignored" anti-pattern).
 #[test]
@@ -928,7 +928,7 @@ fn smuggle_fire_save_bypasses_against_blocking_mock_emits_empty_corpus() {
 #[serial]
 fn smuggle_fire_prioritize_bypasses_fires_listed_techniques_first() {
     // Build a corpus file with ONE specific cookie technique. Then
-    // fire with --prioritize-bypasses and --limit 1 — the prioritized
+    // fire with --prioritize-bypasses and --limit 1, the prioritized
     // technique must be the one that fires.
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -1180,7 +1180,7 @@ fn smuggle_fire_path_family_splices_into_url_path() {
         "0",
     ]);
     assert_eq!(code, 0);
-    // At least one report — and we can't assert the exact path
+    // At least one report, and we can't assert the exact path
     // value in the body because the mock echo includes the
     // request-line which contains the SPLICED path, not the
     // baseline path. The fact that any report came back with a

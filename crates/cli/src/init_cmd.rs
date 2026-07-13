@@ -1,8 +1,8 @@
-//! `wafrift init` — scaffold a commented `.wafrift.toml` so first-run
+//! `wafrift init`: scaffold a commented `.wafrift.toml` so first-run
 //! is something other than `--help` archaeology.
 //!
 //! All keys are commented out so the unmodified file behaves like
-//! "all defaults" — operators uncomment what they need. This avoids
+//! "all defaults", operators uncomment what they need. This avoids
 //! the surprise where a scaffolded config silently changes behaviour
 //! the user didn't ask for.
 
@@ -18,12 +18,12 @@ pub(crate) struct InitArgs {
     pub output: Option<PathBuf>,
 
     /// Overwrite the file if it already exists. Without this flag, init
-    /// refuses to clobber an existing config — operators have no
+    /// refuses to clobber an existing config, operators have no
     /// expectation that `wafrift init` would destroy in-flight tuning.
     #[arg(long, default_value_t = false)]
     pub force: bool,
 
-    /// Suppress all human-readable output — only errors are emitted.
+    /// Suppress all human-readable output (only errors are emitted).
     /// The success confirmation ("wrote scaffold … bytes") and the
     /// "Next steps" advisory are silenced so `wafrift init` can be
     /// called from scripts without polluting their output.
@@ -38,7 +38,7 @@ pub(crate) fn run_init(args: InitArgs) -> ExitCode {
         .unwrap_or_else(|| PathBuf::from(".wafrift.toml"));
 
     // R49 tail (CLAUDE.md §15 AUDIT/TOCTOU): the prior exists()+write
-    // pattern was racy on shared NFS — a concurrent agent could
+    // pattern was racy on shared NFS, a concurrent agent could
     // create the file in the window and have it overwritten. Use
     // OpenOptions::create_new(true) for atomic create-or-error.
     // --force preserves the prior overwrite semantic.
@@ -81,7 +81,7 @@ pub(crate) fn run_init(args: InitArgs) -> ExitCode {
         );
         eprintln!("Next steps:");
         eprintln!(
-            "  1. Edit the file — uncomment the keys you want. `wafrift scan` \
+            "  1. Edit the file, uncomment the keys you want. `wafrift scan` \
              auto-loads it (CLI flags still win)."
         );
         match locate_proxy() {
@@ -92,7 +92,7 @@ pub(crate) fn run_init(args: InitArgs) -> ExitCode {
             None => {
                 eprintln!(
                     "  2. `wafrift-proxy` is NOT on your PATH. It is a separate binary in the \
-                     same workspace — build/install it with:"
+                     same workspace, build/install it with:"
                 );
                 eprintln!("       cargo install --path crates/proxy   # from a wafrift checkout");
                 eprintln!(
@@ -128,15 +128,15 @@ fn locate_proxy() -> Option<PathBuf> {
     dirs.into_iter().map(|d| d.join(exe)).find(|p| p.is_file())
 }
 
-const SCAFFOLD: &str = r#"# .wafrift.toml — wafrift configuration scaffold.
+const SCAFFOLD: &str = r#"# .wafrift.toml (wafrift configuration scaffold).
 #
 # This file is parsed by wafrift CLI subcommands that consult it.
 # Every key below is commented out, so an unmodified file behaves
-# identically to the compiled defaults — uncomment what you need.
+# identically to the compiled defaults (uncomment what you need).
 #
 # `wafrift scan` AUTO-LOADS this file (./.wafrift.toml, then
 # ~/.config/wafrift/config.toml). Precedence is: CLI flag > this file >
-# compiled default — an explicit flag always wins, so the config only
+# compiled default, an explicit flag always wins, so the config only
 # fills in values you didn't pass on the command line.
 #
 # wafrift-proxy is configured via CLI flags, not this file. The values
@@ -187,7 +187,7 @@ const SCAFFOLD: &str = r#"# .wafrift.toml — wafrift configuration scaffold.
 # Suppress all human-readable progress output (only results are emitted).
 # quiet = false
 
-# ── proxy hints (NOT auto-loaded — use these as a `wafrift-proxy` flag reference) ──
+# ── proxy hints (NOT auto-loaded, use these as a `wafrift-proxy` flag reference) ──
 # wafrift-proxy --listen 127.0.0.1:8080 \
 #   --mitm \
 #   --max-rps-per-host 5 \
@@ -252,7 +252,7 @@ mod tests {
         ] {
             assert!(
                 SCAFFOLD.contains(key),
-                "scaffold missing config key `{key}` — add a commented-out example line"
+                "scaffold missing config key `{key}`: add a commented-out example line"
             );
         }
     }

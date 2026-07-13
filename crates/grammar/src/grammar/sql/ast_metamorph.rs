@@ -422,7 +422,7 @@ fn walk_expr_inner(e: &mut Expr, f: &mut impl FnMut(&mut Expr)) {
     // function arguments, Cast, ILike, SimilarTo, AnyOp / AllOp,
     // Substring / Trim / Position / Overlay, IsNull / IsNotNull, etc.
     // The result was a "grammar-aware" engine that quietly skipped
-    // half the SQL grammar — pure credibility hit. Walk every
+    // half the SQL grammar, pure credibility hit. Walk every
     // child-bearing variant explicitly; the new fall-through is for
     // leaves (Identifier, Value, Wildcard) which legitimately have
     // no children.
@@ -535,7 +535,7 @@ fn walk_expr_inner(e: &mut Expr, f: &mut impl FnMut(&mut Expr)) {
             }
         }
         // AnyOp / AllOp / Function / Subquery / Identifier / Value /
-        // Wildcard / Array / Map / etc. — leaves OR variants whose
+        // Wildcard / Array / Map / etc., leaves OR variants whose
         // child shape is too implementation-specific (Function args,
         // subqueries) to traverse here without dragging the whole
         // sqlparser crate into the walker. Document the boundary.

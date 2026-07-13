@@ -1,4 +1,4 @@
-# waf-zoo/shadowdaemon — Shadow Daemon WAF
+# waf-zoo/shadowdaemon: Shadow Daemon WAF
 
 ## What this is
 
@@ -6,13 +6,13 @@
 with a three-component architecture that differs fundamentally from
 ModSec/Coraza/Naxsi:
 
-- **Connector** — a language-specific library (PHP/Perl/Python/Node) embedded
+- **Connector**, a language-specific library (PHP/Perl/Python/Node) embedded
   directly inside the web application process. It intercepts incoming request
   parameters _after_ the app server has parsed them, then sends the parsed
   parameter map to the daemon for scoring.
-- **Daemon** (`shadowd`) — scores the parsed parameters against a signature
+- **Daemon** (`shadowd`), scores the parsed parameters against a signature
   database and returns a block/allow decision.
-- **Dashboard** — web UI for rule management (not needed for bench purposes).
+- **Dashboard** (web UI for rule management (not needed for bench purposes)).
 
 Because the connector runs _after_ HTTP parsing, transport-layer evasion
 techniques (chunked encoding, multipart boundary manipulation, HTTP/2 smuggling)
@@ -26,7 +26,7 @@ app's parameter endpoint.
 
 ## Port
 
-`18105` — does not conflict with any other waf-zoo or wafrift-bench/targets stack.
+`18105`: does not conflict with any other waf-zoo or wafrift-bench/targets stack.
 
 ## Important: different backend
 
@@ -46,7 +46,7 @@ docker compose -f bench/waf-zoo/shadowdaemon/docker-compose.yml up -d
 # 2. Wait for shadowd to be ready (~10s on first start)
 docker logs wafrift-zoo-shadowd 2>&1 | tail -5
 
-# 3. Smoke test — expect 200 OK from the PHP demo app
+# 3. Smoke test: expect 200 OK from the PHP demo app
 curl -si http://127.0.0.1:18105/ | head -2
 
 # 4. Verify WAF blocks a raw SQLi payload submitted as a POST parameter
@@ -69,9 +69,9 @@ docker compose -f bench/waf-zoo/shadowdaemon/docker-compose.yml down -v
 
 ## Licensing
 
-`zecure/shadowd` — GPLv2 (https://github.com/zecure/shadowd/blob/master/LICENSE).
-`zecure/shadowd_php` — LGPLv2.1 connector, Apache 2.0 demo app.
-`kennethreitz/httpbin` — not used in this stack.
+`zecure/shadowd`: GPLv2 (https://github.com/zecure/shadowd/blob/master/LICENSE).
+`zecure/shadowd_php`: LGPLv2.1 connector, Apache 2.0 demo app.
+`kennethreitz/httpbin`: not used in this stack.
 No commercial or trial licenses required.
 
 **GPLv2 note**: `shadowd` is GPLv2. This bench stack runs it as an unmodified

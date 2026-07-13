@@ -1,4 +1,4 @@
-//! Integration tests for #73 — coverage_feedback wiring.
+//! Integration tests for #73 (coverage_feedback wiring).
 //!
 //! Uses `wiremock` to serve fake ModSecurity block responses with
 //! rule_id headers / bodies, then verifies that:
@@ -65,7 +65,7 @@ async fn coverage_records_rule_id_from_block_response() {
 
     // Verify wiremock actually served the response (endpoint was hit).
     let reqs = server.received_requests().await.unwrap_or_default();
-    // The test doesn't actually send HTTP — we mock the verdict directly.
+    // The test doesn't actually send HTTP (we mock the verdict directly).
     // This assertion confirms the server was set up without panics.
     let _ = reqs; // silence unused warning
 }

@@ -1,5 +1,5 @@
 //! Regression coverage for the 2026-05-10 swarm-audit HIGH:
-//!   `global_prompt_window` was first-come-first-served — one chatty
+//!   `global_prompt_window` was first-come-first-served, one chatty
 //!   host could fill the 30-prompt window inside its cooldown and
 //!   starve every other host's prompt for 60 seconds. Per-host cap
 //!   added at `OPERATOR_PROMPT_PER_HOST_CAP_PER_MIN` = 8.

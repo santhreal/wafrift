@@ -19,7 +19,7 @@ async fn buckets_capped_at_max_tracked_hosts() {
     let count = limiter.tracked_host_count().await;
     assert!(
         count <= 4096,
-        "tracked_host_count {count} exceeds MAX_TRACKED_HOSTS=4096 — \
+        "tracked_host_count {count} exceeds MAX_TRACKED_HOSTS=4096. \
          buckets HashMap grows unboundedly"
     );
 }
@@ -37,7 +37,7 @@ async fn lru_eviction_keeps_recently_used_hosts() {
         limiter.acquire(&format!("flood-{i}.example.com")).await;
     }
     // The recently-touched important host should NOT have been the
-    // oldest victim — we touched it after baseline-0..4095 and before
+    // oldest victim, we touched it after baseline-0..4095 and before
     // the flood. Implementation evicts min-by `last`, so the baseline
     // hosts get drained first. (Asserting precise survival is fragile
     // because Instant resolution can tie multiple hosts; we just

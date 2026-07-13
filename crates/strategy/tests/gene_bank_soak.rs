@@ -1,4 +1,4 @@
-//! Gene-bank persistence soak — 10,000 round-trips through serde_json.
+//! Gene-bank persistence soak: 10,000 round-trips through serde_json.
 //!
 //! A `WafGenome` is the core data structure the proxy persists per WAF.
 //! This test proves that:

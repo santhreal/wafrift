@@ -1,6 +1,6 @@
 # SQL Operator Alternatives
 # Logical and equality operator variations across SQL dialects for WAF bypass
-# Loaded at compile-time via include_str! — adding entries here = zero Rust changes
+# Loaded at compile-time via include_str!, adding entries here = zero Rust changes
 
 # ═══════════════════════════════════════════
 #  Logical OR alternatives
@@ -101,10 +101,10 @@ description = "RLIKE operator (MySQL)"
 #              syntax error.
 #   DIV        integer division, NOT comparison. `id DIV 1` is `id`,
 #              not `id = 1`.
-#   XOR        bitwise/logical exclusive-or. `1 XOR 1` is FALSE — the
+#   XOR        bitwise/logical exclusive-or. `1 XOR 1` is FALSE, the
 #              OPPOSITE of what an equality swap intends.
 #
-# Kept: REGEXP, RLIKE, GLOB, SOUNDS LIKE — all real string-equality
+# Kept: REGEXP, RLIKE, GLOB, SOUNDS LIKE, all real string-equality
 # equivalents on at least one mainstream dialect.
 
 [[equality_alternative]]

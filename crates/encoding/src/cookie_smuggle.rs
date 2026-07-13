@@ -21,18 +21,18 @@
 //!   nginx keeps last; Go net/http parses both; PHP varies by
 //!   version. WAFs and origins disagree → privilege escalation.
 //! - **Quoted-string values** (6265bis §4.1.1). `Cookie: a="b;c=d"`
-//!   — strict RFC 6265 forbids `"`; bis allows quoted-string. Strict
+//!, strict RFC 6265 forbids `"`; bis allows quoted-string. Strict
 //!   WAF parsers see `a` set to literal `"b`, missing the `c=d`
 //!   smuggled pair; lax origin parsers see the full quoted value.
 //! - **Empty-name cookie** `Cookie: =value`. Per RFC the name MUST
 //!   be a non-empty `cookie-name` token; some lenient parsers accept
-//!   the empty form and store under the empty key — a hash-map
+//!   the empty form and store under the empty key, a hash-map
 //!   namespace collision waiting to happen.
 //! - **Whitespace insensitivity**: `Cookie: name =value` (space
-//!   between name and `=`) — RFC says single SP after `;`, but
+//!   between name and `=`). RFC says single SP after `;`, but
 //!   whitespace around `=` is parser-specific.
 //! - **Control-byte injection in value**: `Cookie: name=a\tb` (TAB
-//!   in value) — strict 6265 §4.1.1 forbids CTLs; bis is silent on
+//!   in value), strict 6265 §4.1.1 forbids CTLs; bis is silent on
 //!   internal whitespace. Origin parsers that strip-and-trim differ
 //!   from WAFs that scan raw bytes.
 //!
@@ -54,7 +54,7 @@ use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 /// header-amplifier DoS payloads.
 pub const MAX_COOKIE_HEADER_BYTES: usize = 8 * 1024;
 
-/// Cookie smuggle variants — each surfaces a different RFC 6265 /
+/// Cookie smuggle variants, each surfaces a different RFC 6265 /
 /// 6265bis parser divergence between WAFs and origin servers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CookieSmuggleVariant {
@@ -67,19 +67,19 @@ pub enum CookieSmuggleVariant {
     /// §4.1.3.2 forbids the Domain attribute for `__Host-`; lax
     /// parsers accept it and the cookie escapes host isolation.
     HostPrefixWithDomain,
-    /// `a=safe; a=evil` — duplicate-name pair. WAFs taking the first
+    /// `a=safe; a=evil`: duplicate-name pair. WAFs taking the first
     /// value see `safe`; origin servers that take the last (nginx,
     /// PHP recent) see `evil`. Privilege escalation surface.
     DuplicateNameLastWins,
-    /// `a="b; c=d"` — RFC 6265bis quoted-string value carrying an
+    /// `a="b; c=d"`: RFC 6265bis quoted-string value carrying an
     /// embedded `;` that strict 6265 parsers misread as a new
     /// cookie-pair delimiter.
     QuotedSemicolonValue,
-    /// `=value` — empty-name cookie. RFC says illegal; some lenient
+    /// `=value`: empty-name cookie. RFC says illegal; some lenient
     /// parsers store under empty-key, others reject the whole
     /// Cookie header. Fingerprint probe.
     EmptyNamePair,
-    /// `name\tvalue` style — a TAB between name and `=` (or in the
+    /// `name\tvalue` style, a TAB between name and `=` (or in the
     /// value). RFC 6265 §4.1.1 forbids CTL bytes; lax parsers
     /// silently strip them, often producing a different name on each
     /// side of the parser-differential.
@@ -113,7 +113,7 @@ impl CookieSmuggleProbe {
         if header_value.len() > MAX_COOKIE_HEADER_BYTES {
             // §15 panic-in-production: `String::truncate` panics if the byte
             // index isn't a UTF-8 char boundary. Cookie values pass through
-            // `sanitise_cookie_token`, which strips only CR/LF/NUL — multibyte
+            // `sanitise_cookie_token`, which strips only CR/LF/NUL, multibyte
             // UTF-8 (operator `--credential "café"`, a unicode payload seed)
             // survives, so a >8 KB value with a multibyte char at byte 8192
             // would crash the process. Snap the cut down to a char boundary.
@@ -141,12 +141,12 @@ impl CookieSmuggleProbe {
         Self::finalise(
             CookieSmuggleVariant::SecurePrefixWithoutHttps,
             header,
-            "__Secure- prefix on a Cookie sent over plain HTTP — RFC 6265bis §4.1.3.1 violation"
+            "__Secure- prefix on a Cookie sent over plain HTTP. RFC 6265bis §4.1.3.1 violation"
                 .into(),
         )
     }
 
-    /// `__Host-name=value; Domain=...` — Host-prefix MUST forbid the
+    /// `__Host-name=value; Domain=...`: Host-prefix MUST forbid the
     /// Domain attribute per RFC 6265bis §4.1.3.2.
     #[must_use]
     pub fn host_prefix_with_domain(name: &str, value: &str, domain: &str) -> Self {
@@ -157,7 +157,7 @@ impl CookieSmuggleProbe {
         Self::finalise(
             CookieSmuggleVariant::HostPrefixWithDomain,
             header,
-            "__Host- prefix with Domain attribute — RFC 6265bis §4.1.3.2 violation".into(),
+            "__Host- prefix with Domain attribute. RFC 6265bis §4.1.3.2 violation".into(),
         )
     }
 
@@ -174,7 +174,7 @@ impl CookieSmuggleProbe {
         Self::finalise(
             CookieSmuggleVariant::DuplicateNameLastWins,
             header,
-            "Duplicate-name cookie pair — first/last resolution differential".into(),
+            "Duplicate-name cookie pair, first/last resolution differential".into(),
         )
     }
 
@@ -190,11 +190,11 @@ impl CookieSmuggleProbe {
         Self::finalise(
             CookieSmuggleVariant::QuotedSemicolonValue,
             header,
-            "Quoted-string value with embedded ';' — RFC 6265 vs 6265bis differential".into(),
+            "Quoted-string value with embedded ';'. RFC 6265 vs 6265bis differential".into(),
         )
     }
 
-    /// `=value` — empty-name pair.
+    /// `=value`: empty-name pair.
     #[must_use]
     pub fn empty_name_pair(value: &str) -> Self {
         let safe_value = sanitise_cookie_token(value);
@@ -202,11 +202,11 @@ impl CookieSmuggleProbe {
         Self::finalise(
             CookieSmuggleVariant::EmptyNamePair,
             header,
-            "Empty-name cookie pair — RFC violation, lax parsers accept under empty key".into(),
+            "Empty-name cookie pair: RFC violation, lax parsers accept under empty key".into(),
         )
     }
 
-    /// `name=a<CTL>b` — control byte in value. The CTL is drawn from
+    /// `name=a<CTL>b`: control byte in value. The CTL is drawn from
     /// `CONTROL_BYTE_POOL` per-call so signature WAFs that pin a
     /// specific byte don't catch every probe.
     #[must_use]
@@ -230,12 +230,12 @@ impl CookieSmuggleProbe {
             CookieSmuggleVariant::ControlByteInValue,
             header,
             format!(
-                "Control byte 0x{ctl:02x} inside cookie value — strict CTL-reject vs lax-strip"
+                "Control byte 0x{ctl:02x} inside cookie value, strict CTL-reject vs lax-strip"
             ),
         )
     }
 
-    /// `name = value` — whitespace around `=`.
+    /// `name = value`: whitespace around `=`.
     #[must_use]
     pub fn whitespace_around_equals(name: &str, value: &str) -> Self {
         let safe_name = sanitise_cookie_token(name);
@@ -253,7 +253,7 @@ impl CookieSmuggleProbe {
         Self::finalise(
             CookieSmuggleVariant::WhitespaceAroundEquals,
             header,
-            "Whitespace around '=' — trim vs preserve differential".into(),
+            "Whitespace around '=', trim vs preserve differential".into(),
         )
     }
 }
@@ -282,7 +282,7 @@ impl SmuggleProbe for CookieSmuggleProbe {
 
     fn artifact(&self) -> SmuggleArtifact {
         // Cookie probes always attach exactly one `Cookie:` header
-        // (or two for the duplicate-name variant — but that
+        // (or two for the duplicate-name variant, but that
         // duplication happens inside the single header value, not
         // across two header lines, in this module's design).
         SmuggleArtifact::Headers(vec![("Cookie".into(), self.header_value.clone())])
@@ -301,7 +301,7 @@ pub(crate) const CONTROL_BYTE_POOL: &[u8] = &[
 ];
 
 /// Strip CR / LF / NUL bytes that would break the Cookie header on
-/// the wire even when the test is exploring "lax" parsers — those
+/// the wire even when the test is exploring "lax" parsers, those
 /// three are universally fatal. Everything else passes through so
 /// downstream probes can exercise the actual parser-differential
 /// surface.
@@ -416,7 +416,7 @@ mod tests {
     #[test]
     fn whitespace_probe_inserts_spaces_around_equals() {
         let p = CookieSmuggleProbe::whitespace_around_equals("name", "value");
-        // Should contain " =" or "= " (or both) — never "name=value"
+        // Should contain " =" or "= " (or both), never "name=value"
         // tightly.
         assert!(
             !p.header_value.contains("name=value"),
@@ -453,7 +453,7 @@ mod tests {
     #[test]
     fn header_value_capped_at_max() {
         // Anti-rig: caller-supplied giant value must NOT produce a
-        // megabyte header — cap enforced at finalise().
+        // megabyte header (cap enforced at finalise()).
         let huge = "x".repeat(MAX_COOKIE_HEADER_BYTES * 4);
         let p = CookieSmuggleProbe::secure_prefix_without_https("name", &huge);
         assert!(

@@ -1,16 +1,16 @@
-//! `wafrift cluster` — offline bypass clustering by root cause.
+//! `wafrift cluster`: offline bypass clustering by root cause.
 //!
 //! Reads a `wafrift bench-waf --output bypasses.json` file and groups the
 //! bypass records by three axes:
 //!
-//! 1. **`rule_id`** — WAF rule that *would* have blocked the raw payload
+//! 1. **`rule_id`**: WAF rule that *would* have blocked the raw payload
 //!    (extracted from the bench result's `id` field, which encodes class and
 //!    sequence number, e.g. `sql_blind_001`). If the bench JSON carries an
 //!    explicit `rule_id` field per result we use that; otherwise we fall back
 //!    to the `class` field (e.g. `sql`, `xss`).
-//! 2. **Payload class** — the attack class from the corpus case (`sql`, `xss`,
+//! 2. **Payload class**: the attack class from the corpus case (`sql`, `xss`,
 //!    `cmdi`, …).
-//! 3. **Edit-distance similarity** — within each (rule_id × class) bucket,
+//! 3. **Edit-distance similarity**: within each (rule_id × class) bucket,
 //!    bypasses are further sub-grouped by Levenshtein distance from a
 //!    representative payload chosen as the shortest member. Two bypasses join
 //!    the same sub-cluster when their normalized edit distance is ≤
@@ -35,7 +35,7 @@
 //!
 //! For clustering purposes the "bypass payload" is reconstructed from the
 //! case `id` and the `bypass_techniques` list (the actual wire payload is
-//! not stored in the summary JSON — only the technique names are). Sub-
+//! not stored in the summary JSON, only the technique names are). Sub-
 //! clustering by edit distance therefore operates on the technique-list
 //! joined as a string, which is a faithful proxy for payload similarity.
 //!
@@ -97,7 +97,7 @@ pub(crate) struct ClusterArgs {
 pub(crate) struct BypassRecord {
     rule_id: String,
     payload_class: String,
-    /// Technique-list joined into a string — used as the edit-distance key.
+    /// Technique-list joined into a string (used as the edit-distance key).
     technique_sig: String,
 }
 
@@ -129,7 +129,7 @@ struct ClusterOutput {
 const CLUSTER_INPUT_MAX_BYTES: usize = 256 * 1024 * 1024;
 
 pub(crate) fn run_cluster(args: ClusterArgs) -> ExitCode {
-    // Read input — bounded so an operator typo (e.g. `/dev/zero`)
+    // Read input, bounded so an operator typo (e.g. `/dev/zero`)
     // can't OOM the host.
     let raw = if args.input.as_os_str() == "-" {
         match crate::safe_body::read_bounded_text_stdin(CLUSTER_INPUT_MAX_BYTES) {
@@ -216,7 +216,7 @@ fn extract_bypass_records(json: &Value) -> Result<Vec<BypassRecord>, String> {
     let results = json
         .get("results")
         .and_then(|v| v.as_array())
-        .ok_or("JSON has no 'results' array — is this a bench-waf --output file?")?;
+        .ok_or("JSON has no 'results' array, is this a bench-waf --output file?")?;
 
     let mut records = Vec::new();
     for result in results {
@@ -260,7 +260,7 @@ fn extract_bypass_records(json: &Value) -> Result<Vec<BypassRecord>, String> {
             .unwrap_or_default();
 
         if techniques.is_empty() {
-            // Evaded but no technique names logged — still record it with
+            // Evaded but no technique names logged, still record it with
             // the case id as the technique signature so it doesn't vanish.
             records.push(BypassRecord {
                 rule_id: rule_id.clone(),
@@ -446,7 +446,7 @@ pub(crate) struct ClusterOutputDeser {
 }
 
 /// Deserializable mirror of [`Cluster`] for test roundtrips. Every
-/// field is asserted on in [`tests::json_output_schema`] — LAW 11:
+/// field is asserted on in [`tests::json_output_schema`]. LAW 11:
 /// no `#[allow(dead_code)]` smuggling; if a field is in the public
 /// schema it gets tested.
 #[cfg(test)]
@@ -578,7 +578,7 @@ mod tests {
         assert!(!deser.clusters.is_empty());
         assert!(deser.total_bypasses > 0);
         // Verify cluster fields via ClusterDeser. Every public schema
-        // field is asserted on — LAW 11 anti-rig (the previous code
+        // field is asserted on: LAW 11 anti-rig (the previous code
         // had `#[allow(dead_code)]` on `representative` and `members`,
         // which silently let a schema regression through).
         let first: &ClusterDeser = &deser.clusters[0];
@@ -657,7 +657,7 @@ mod tests {
         assert!(records.is_empty());
     }
 
-    // ── Test 11: true single-linkage — sig close to a later member, not cluster[0] ──
+    // ── Test 11: true single-linkage, sig close to a later member, not cluster[0] ──
     //
     // Property tested: when C is far from cluster[0] (A) but close to a later
     // member (B), single-linkage must still absorb C into the cluster. A

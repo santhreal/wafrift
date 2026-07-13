@@ -10,7 +10,7 @@
 //! Locking discipline:
 //! - Both register and release/kill take the write lock briefly,
 //!   never across an `await` that performs I/O.
-//! - The waiting future does NOT hold the lock — it parks on a
+//! - The waiting future does NOT hold the lock, it parks on a
 //!   per-request `tokio::sync::oneshot` instead.
 
 use std::collections::BTreeMap;
@@ -33,7 +33,7 @@ static INTERCEPT_STORE: OnceLock<InterceptStore> = OnceLock::new();
 ///
 /// Uses `Acquire` to pair with the `Release` store in
 /// `toggle_intercept_mode` / `set_intercept_mode`. Pre-R60 this was
-/// `Relaxed` on both sides — the mutex around the WRITE serialised
+/// `Relaxed` on both sides, the mutex around the WRITE serialised
 /// writers against each other but did NOT establish a happens-before
 /// edge from writer-with-mutex to reader-without-mutex. On
 /// weakly-ordered hardware (ARM/aarch64) a request handler thread
@@ -57,14 +57,14 @@ static MODE_TRANSITION: std::sync::Mutex<()> = std::sync::Mutex::new(());
 /// requests don't wedge.
 pub fn toggle_intercept_mode() -> bool {
     // Hold MODE_TRANSITION across the entire (read-modify-drain)
-    // sequence — the atomic alone isn't enough because the drain is
+    // sequence, the atomic alone isn't enough because the drain is
     // a separate observation of the store. Closes the TOCTOU window
     // identified by the 2026-05-10 audit.
     let _guard = MODE_TRANSITION
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     // R60 pass-21 §15: Release pairs with the Acquire load in
-    // `intercept_mode_enabled()` — establishes the happens-before edge
+    // `intercept_mode_enabled()`: establishes the happens-before edge
     // required for the reader to observe the new value on ARM/aarch64.
     let prev = INTERCEPT_MODE.fetch_xor(true, Ordering::Release);
     let now_on = !prev;
@@ -129,14 +129,14 @@ struct InterceptInner {
     /// Snapshot of the same set the TUI iterates for display.
     pending: BTreeMap<u64, PendingIntercept>,
     /// Monotonic ID generator. Starts at 0 so the first `register`
-    /// call's `wrapping_add(1)` yields id=1 — id=0 is RESERVED as
+    /// call's `wrapping_add(1)` yields id=1, id=0 is RESERVED as
     /// an "invalid intercept" sentinel. `resolve(0, ...)` and
     /// `cancel(0, ...)` silently return false, so callers must
     /// never pass 0 expecting it to map to a real intercept.
     next_id: u64,
 }
 
-/// Default intercept timeout — after which the request defaults
+/// Default intercept timeout, after which the request defaults
 /// to `Release` so the proxy never wedges if the operator walks
 /// away.
 pub const INTERCEPT_TIMEOUT: Duration = Duration::from_secs(30);
@@ -150,7 +150,7 @@ impl InterceptStore {
     /// handler should await on, plus the assigned ID.
     ///
     /// Each call also opportunistically GCs any senders whose receiver
-    /// has been dropped — this catches the client-disconnect path where
+    /// has been dropped, this catches the client-disconnect path where
     /// neither `resolve` nor the timeout's `cancel` fires (the request
     /// future is cancelled before either arm of `tokio::select!` runs).
     /// Without the GC the entries leak forever in `senders` + `pending`.
@@ -181,7 +181,7 @@ impl InterceptStore {
         // once more gives 1, resuming the sequence. IDs are not
         // guaranteed unique if the map still holds the re-issued ID
         // at wraparound, but that requires ~1.8×10^19 concurrent
-        // pending intercepts — practically impossible.
+        // pending intercepts (practically impossible).
         inner.next_id = inner.next_id.wrapping_add(1);
         if inner.next_id == 0 {
             inner.next_id = 1;
@@ -223,7 +223,7 @@ impl InterceptStore {
         n
     }
 
-    /// Resolve a pending intercept with a decision. Idempotent — a
+    /// Resolve a pending intercept with a decision. Idempotent, a
     /// second resolve for the same id is a no-op.
     pub fn resolve(&self, id: u64, decision: InterceptDecision) -> bool {
         let mut inner = self
@@ -257,7 +257,7 @@ impl InterceptStore {
     }
 
     /// Release every pending intercept with `Release`. Used when the
-    /// operator toggles intercept-mode OFF — don't strand existing
+    /// operator toggles intercept-mode OFF, don't strand existing
     /// requests.
     pub fn drain_release(&self) -> usize {
         let mut inner = self
@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     fn id_zero_is_reserved_and_resolve_cancel_return_false() {
-        // Contract regression: id=0 is a reserved sentinel — no
+        // Contract regression: id=0 is a reserved sentinel, no
         // register() call can ever assign it (the first call hands
         // back id=1). Caller mistakes that pass 0 must not match
         // any real intercept; both resolve and cancel return false.
@@ -400,7 +400,7 @@ mod tests {
         // No intercepts registered yet.
         assert!(!s.resolve(0, InterceptDecision::Release));
         assert!(!s.cancel(0));
-        // Register one — id is 1, never 0.
+        // Register one (id is 1, never 0).
         let (id, _rx) = s.register("h", "GET", "/");
         assert_eq!(id, 1, "first id must be 1 (0 is reserved)");
         // 0 still returns false even with real intercepts present.
@@ -443,7 +443,7 @@ mod tests {
     fn gc_dead_senders_removes_disconnected_rx() {
         let s = store();
         let (id, rx) = s.register("h", "GET", "/");
-        // Drop the receiver — simulates client disconnect.
+        // Drop the receiver (simulates client disconnect).
         drop(rx);
         // gc_dead_senders must clean up the orphaned sender + pending entry.
         let removed = s.gc_dead_senders();

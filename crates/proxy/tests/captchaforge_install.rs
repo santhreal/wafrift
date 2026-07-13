@@ -14,7 +14,7 @@ fn combined_output(output: &Output) -> String {
     combined
 }
 
-// Only meaningful when the feature is OFF — the test asserts the binary
+// Only meaningful when the feature is OFF, the test asserts the binary
 // rejects --captchaforge with an actionable hint at startup. With the
 // feature ON the flag installs the solver and the proxy runs indefinitely,
 // so cmd.output().await would hang. Skip the test in that build.

@@ -18,7 +18,7 @@
 //!       - the provider errors → `Error`
 //!
 //! `confirm_background()` returns immediately with a `Receiver` that
-//! gets one message when the polling loop terminates — for the
+//! gets one message when the polling loop terminates, for the
 //! pentester running scan in parallel.
 
 use crate::oob::provider::{OobError, OobProviderTrait};
@@ -28,12 +28,12 @@ use wafrift_types::oob::{OobCanary, OobConfig, OobConfirmation};
 
 /// Maximum number of consecutive poll errors before treating the provider
 /// as permanently failed.  A single transient network blip should not abort
-/// the full confirmation window — DNS / HTTP hiccups in CI happen.
+/// the full confirmation window: DNS / HTTP hiccups in CI happen.
 const MAX_CONSECUTIVE_POLL_ERRORS: usize = 3;
 
 pub struct OobOracle {
     /// `Arc` rather than `Box` so `confirm_background` can clone a
-    /// handle into the polling task — otherwise the spawned future
+    /// handle into the polling task, otherwise the spawned future
     /// couldn't outlive the `&self` borrow.
     provider: Arc<dyn OobProviderTrait>,
     config: OobConfig,
@@ -51,7 +51,7 @@ impl OobOracle {
     /// interaction or the configured timeout elapses.
     ///
     /// `payload` and `payload_type` are accepted for API symmetry with
-    /// `confirm_background` — the actual embedding lives in
+    /// `confirm_background`: the actual embedding lives in
     /// `crate::oob::embed::embed_canary`. This function only owns the
     /// polling lifecycle.
     pub async fn confirm(
@@ -69,7 +69,7 @@ impl OobOracle {
                     return Ok(OobConfirmation::Confirmed);
                 }
                 Ok(_) => {
-                    // Empty interaction list — keep polling.
+                    // Empty interaction list (keep polling).
                     consecutive_errors = 0;
                 }
                 Err(e) => {
@@ -96,7 +96,7 @@ impl OobOracle {
     ///
     /// Caller is expected to embed the returned `OobCanary` into their
     /// payload (via `embed::embed_canary`) BEFORE awaiting the receiver
-    /// — otherwise the canary will time out.
+    ///: otherwise the canary will time out.
     pub async fn confirm_background(
         &self,
     ) -> Result<(OobCanary, tokio::sync::mpsc::Receiver<OobConfirmation>), OobError> {
@@ -105,7 +105,7 @@ impl OobOracle {
         // Spawn the polling loop on tokio so this function returns
         // IMMEDIATELY with the canary. Pre-fix the loop ran inline
         // on the caller's task and blocked for the full timeout
-        // before yielding — any caller that embedded the canary
+        // before yielding, any caller that embedded the canary
         // AFTER receiving (canary, rx) was guaranteed to time out
         // because the polling window had already elapsed. The
         // Arc-stored provider is cheap to clone into the task.
@@ -116,7 +116,7 @@ impl OobOracle {
         tokio::spawn(async move {
             let outcome =
                 poll_until(provider.as_ref(), &canary_for_task, timeout, interval_secs).await;
-            // Receiver may have been dropped — that's the caller's
+            // Receiver may have been dropped, that's the caller's
             // choice (e.g. scan completed early). Silently swallow
             // the send error; the poll loop has done its job.
             let _ = tx.send(outcome).await;
@@ -138,7 +138,7 @@ async fn poll_until(
         match provider.poll(canary).await {
             Ok(ints) if !ints.is_empty() => return OobConfirmation::Confirmed,
             Ok(_) => {
-                // Empty interaction list — keep polling.
+                // Empty interaction list (keep polling).
                 consecutive_errors = 0;
             }
             // F93 sibling: the background-poll path still has to
@@ -159,7 +159,7 @@ async fn poll_until(
                 if consecutive_errors >= MAX_CONSECUTIVE_POLL_ERRORS {
                     return OobConfirmation::Error;
                 }
-                // Transient error — continue to the deadline check and
+                // Transient error, continue to the deadline check and
                 // sleep before retrying.
             }
         }
@@ -292,19 +292,19 @@ mod tests {
         let elapsed = start.elapsed();
         assert!(
             elapsed < Duration::from_millis(500),
-            "confirm_background must return immediately (background poll) — \
+            "confirm_background must return immediately (background poll). \
              took {elapsed:?} which suggests inline blocking"
         );
-        // Don't await the receiver — we proved the return-fast contract.
+        // Don't await the receiver (we proved the return-fast contract).
     }
 
-    /// Transient poll errors do not abort the confirmation window —
+    /// Transient poll errors do not abort the confirmation window 
     /// poll_until must retry up to MAX_CONSECUTIVE_POLL_ERRORS times
     /// before giving up, allowing a later successful poll to confirm.
     #[tokio::test]
     async fn transient_poll_errors_are_retried_not_fatal() {
         // Provider: returns errors for first 2 polls, then confirms.
-        // This must NOT produce OobConfirmation::Error — it must Confirm.
+        // This must NOT produce OobConfirmation::Error (it must Confirm).
         #[derive(Debug)]
         struct ErrorThenConfirmProvider {
             polls: AtomicUsize,
@@ -359,7 +359,7 @@ mod tests {
 
     #[tokio::test]
     async fn persistent_poll_errors_produce_error_outcome() {
-        // Provider that always errors — after MAX_CONSECUTIVE_POLL_ERRORS
+        // Provider that always errors, after MAX_CONSECUTIVE_POLL_ERRORS
         // consecutive failures the background poll should return Error.
         #[derive(Debug)]
         struct AlwaysErrorProvider;

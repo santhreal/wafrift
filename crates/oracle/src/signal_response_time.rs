@@ -13,7 +13,7 @@ const BASELINE_MULTIPLIER: f64 = 3.0;
 /// Minimum baseline in milliseconds to avoid division issues. R55
 /// pass-18 I5 (CLAUDE.md §7 DEDUP): named distinctly from
 /// `timing::MIN_TIMING_ORACLE_BASELINE_MS` (50.0 f64) because the two
-/// floors apply to different oracle semantics — this one is a
+/// floors apply to different oracle semantics, this one is a
 /// signal-extraction divide-by-zero guard, the other is the
 /// online-mean lower bound used by the bias-aware timing oracle.
 /// Different name = no collision = no silent drift when one is tuned.

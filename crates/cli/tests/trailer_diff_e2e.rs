@@ -6,7 +6,7 @@
 //! 1. The baseline request arrives WITHOUT the trailer field.
 //! 2. The attack request arrives WITH the trailer field.
 //!
-//! We test OUR side — that wafrift sends the right bytes. We do NOT
+//! We test OUR side, that wafrift sends the right bytes. We do NOT
 //! validate WAF behaviour (there is no WAF in these tests; the mock
 //! acts only as the origin).
 
@@ -57,7 +57,7 @@ async fn spawn_capturing_mock() -> (std::net::SocketAddr, tokio::sync::mpsc::Rec
     // the Windows loopback race, but we must drain the probe hit because
     // the channel-based mock counts every accepted connection.
     // R66 pass-21 §7 DEDUP: shared poll-until-ready helper. The hit
-    // drained from `rx` after readiness is preserved — trailer-diff
+    // drained from `rx` after readiness is preserved, trailer-diff
     // mocks count every accepted connection on `rx` and we must
     // discard the probe so test assertions only see wafrift's
     // production requests.
@@ -143,7 +143,7 @@ fn trailer_diff_sends_trailer_in_attack_request() {
         );
 
         // Attack: the trailer field value MUST be present somewhere in the
-        // captured bytes — wafrift appended it after the terminal chunk.
+        // captured bytes (wafrift appended it after the terminal chunk).
         assert!(
             attack_raw.contains("Trailer: X-Original-URL"),
             "attack must declare Trailer: X-Original-URL; got:\n{attack_raw}"

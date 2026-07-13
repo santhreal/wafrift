@@ -50,7 +50,7 @@ fn boundary_does_not_appear_inside_param_value() {
             let boundary = &body[2..first_line_end];
             assert!(
                 !evil.contains(boundary),
-                "boundary {boundary:?} appears inside attacker-controlled value {evil:?} — \
+                "boundary {boundary:?} appears inside attacker-controlled value {evil:?}. \
                  multipart self-framing attack possible (this is exactly the \
                  contract unique_boundary was supposed to enforce)"
             );
@@ -60,7 +60,7 @@ fn boundary_does_not_appear_inside_param_value() {
 
 #[test]
 fn boundary_unique_across_runs_for_same_input() {
-    // Defence-in-depth — two separate generate_variants calls should
+    // Defence-in-depth, two separate generate_variants calls should
     // not produce IDENTICAL boundaries (random hex tail keeps them
     // unpredictable). If they did, an attacker could reproduce the
     // boundary offline and craft a self-framing value.
@@ -80,14 +80,14 @@ fn boundary_unique_across_runs_for_same_input() {
     }
     assert!(
         boundaries.len() >= 60,
-        "64 runs should produce ~64 distinct boundaries — got {} (random source may have wedged)",
+        "64 runs should produce ~64 distinct boundaries, got {} (random source may have wedged)",
         boundaries.len()
     );
 }
 
 #[test]
 fn empty_params_does_not_panic() {
-    // Defence-in-depth — empty params used to produce a body of just
+    // Defence-in-depth, empty params used to produce a body of just
     // "--<boundary>--\r\n". With unique_boundary against an empty value
     // list, the boundary is always fresh and the body is well-formed.
     let variants = generate_variants(&[]);

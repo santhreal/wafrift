@@ -1,4 +1,4 @@
-//! wafrift-grammar — Grammar-aware payload mutation engine.
+//! wafrift-grammar: Grammar-aware payload mutation engine.
 //!
 //! Understands the semantics of SQL, XSS, CMD, LDAP, SSRF,
 //! path traversal, and template injection payloads. Generates
@@ -58,7 +58,7 @@ pub mod grammar;
 // Re-export the grammar module's public API at crate root.
 //
 // §9 WIRING: mutate_request / MutationRequest / DiversityPolicy are part of
-// the documented API contract — scald-core calls them directly. Re-exporting
+// the documented API contract, scald-core calls them directly. Re-exporting
 // from the crate root makes the canonical import path obvious and prevents
 // consumer drift to the internal submodule path.
 pub use grammar::{

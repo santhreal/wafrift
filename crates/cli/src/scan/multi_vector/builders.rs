@@ -1,4 +1,4 @@
-//! Per-vector request builders — the giant match that turns a
+//! Per-vector request builders, the giant match that turns a
 //! `(Vector, payload)` pair into a wire-ready `reqwest::RequestBuilder`.
 //!
 //! Lives in its own file so growing the catalogue is a single-file
@@ -22,7 +22,7 @@ use super::encoders::{
 // arms one-liner each and makes it impossible for two arms to drift
 // out of sync on the wire format.
 
-/// Build a `key=urlencoded(value)` form body — the canonical
+/// Build a `key=urlencoded(value)` form body, the canonical
 /// `application/x-www-form-urlencoded` payload shape.
 fn form_body(param: &str, payload: &str) -> String {
     format!("{param}={}", urlencoding::encode(payload))
@@ -54,7 +54,7 @@ fn bom_prefix(raw: &[u8]) -> Vec<u8> {
     out
 }
 
-/// Build a `{"p":"x","p":<json-value>}` dup-key JSON body — the
+/// Build a `{"p":"x","p":<json-value>}` dup-key JSON body, the
 /// benign value first, the attack value second. Used by
 /// `POST-json-dupkey` and the BOM-prefix compound variant.
 fn json_dupkey_body(param: &str, payload: &str) -> String {
@@ -67,7 +67,7 @@ fn json_dupkey_body(param: &str, payload: &str) -> String {
 
 /// Build the reqwest::RequestBuilder for `vector` against the
 /// target with `payload`. Returns `None` when the vector chooses
-/// to skip this fire (e.g. a transient compression failure —
+/// to skip this fire (e.g. a transient compression failure 
 /// caller logs and moves on). Centralising the per-vector wire
 /// shape here is the dedup win: scan/mod.rs no longer carries a
 /// 400-line match.
@@ -168,7 +168,7 @@ pub(super) fn build_request_for_vector(
             } else {
                 form_body(param, payload)
             };
-            // Chain: outer = gzip, inner = brotli — body is
+            // Chain: outer = gzip, inner = brotli, body is
             // gzip(brotli(payload)). WAFs that decode gzip then
             // stop see a brotli blob; WAFs without brotli see the
             // gzip blob; origins per RFC 9110 §8.4 decode both
@@ -194,7 +194,7 @@ pub(super) fn build_request_for_vector(
         "POST-json-bom" => {
             // UTF-8 BOM (EF BB BF) prefix on a JSON body. ModSec's
             // JSON body processor refuses on BOM and falls through
-            // to "no JSON inspection" — payload escapes ARGS rules.
+            // to "no JSON inspection" (payload escapes ARGS rules).
             let body = bom_prefix(json_body(param, payload).as_bytes());
             Some(http.post(target).header("Content-Type", ct).body(body))
         }
@@ -284,7 +284,7 @@ pub(super) fn build_request_for_vector(
         ),
         "POST-yaml" => {
             // YAML 1.2 §7.3.2 double-quoted scalars share JSON
-            // string escaping — `serde_json::Value::String(p).to_string()`
+            // string escaping: `serde_json::Value::String(p).to_string()`
             // emits exactly that surface. Backends parsing
             // `application/yaml` (YAML 1.1+, all major libs)
             // recover the payload byte-identical; WAFs without a
@@ -296,7 +296,7 @@ pub(super) fn build_request_for_vector(
         "POST-cbor" => {
             // Minimal CBOR (RFC 8949): {param: payload} as a
             // single-entry text-string-to-text-string map. We
-            // hand-encode rather than pulling a CBOR crate — the
+            // hand-encode rather than pulling a CBOR crate, the
             // shape is small and stable, and a dependency would
             // be pure overhead for one builder.
             let body = encode_cbor_string_map(param, payload);
@@ -304,7 +304,7 @@ pub(super) fn build_request_for_vector(
         }
         "POST-ndjson" => {
             // NDJSON: one JSON doc per line. Decoy doc first,
-            // payload doc second — WAFs that parse only the
+            // payload doc second: WAFs that parse only the
             // FIRST top-level JSON doc inspect a harmless object;
             // backends that iterate every line (logging ingest,
             // streaming consumers) hit the payload.
@@ -355,7 +355,7 @@ pub(super) fn build_request_for_vector(
         // ──────── MULTIPART VARIANTS ─────────────────────────────
         "POST-multipart-b64" => {
             // Part-level `Content-Transfer-Encoding: base64` per
-            // RFC 2045 §6.8 — backend MIME parsers decode the
+            // RFC 2045 §6.8, backend MIME parsers decode the
             // base64 payload back into the field value; WAFs
             // inspecting raw multipart bytes see only the encoded
             // blob.
@@ -401,7 +401,7 @@ pub(super) fn build_request_for_vector(
             // QP payload back to bytes; WAFs without a QP decoder
             // see the encoded text. Differs from base64 in that
             // ASCII-heavy payloads stay mostly readable on the
-            // wire — the WAF gap is the encoding-aware decode,
+            // wire, the WAF gap is the encoding-aware decode,
             // not the visual obscurity.
             let boundary = format!("----WafRiftQpBoundary{fire_counter:x}");
             let encoded = quoted_printable_encode(payload.as_bytes());
@@ -571,7 +571,7 @@ pub(super) fn build_request_for_vector(
         }
         "origin" => {
             // Origin: <scheme>://<host> shape. We embed the
-            // payload as if it were a host name — apps that
+            // payload as if it were a host name, apps that
             // log/render Origin flow it through.
             Some(
                 http.get(target)
@@ -580,7 +580,7 @@ pub(super) fn build_request_for_vector(
         }
         "range" => {
             // Range: bytes=<payload> shape. Wafrift's lazy on
-            // exact RFC 9110 syntax — the point is to fire a
+            // exact RFC 9110 syntax, the point is to fire a
             // header value past the WAF; backend reflection /
             // logging is what lands the attack.
             Some(http.get(target).header("Range", format!("bytes={payload}")))
@@ -596,7 +596,7 @@ pub(super) fn build_request_for_vector(
         }
         "accept-language" => {
             // Accept-Language carrying payload. We embed the
-            // payload as if it were a language tag — backends
+            // payload as if it were a language tag, backends
             // that log the raw header (or use it in template
             // expansion / SQL select-language queries) flow the
             // attack through.

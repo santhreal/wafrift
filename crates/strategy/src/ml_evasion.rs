@@ -2,7 +2,7 @@
 //!
 //! When the target WAF fingerprint indicates a learned classifier (AWS Bot
 //! Control, Cloudflare Bot Management, Akamai Bot Manager, Datadome), the
-//! standard heuristic pipeline provides weak signal — there are no
+//! standard heuristic pipeline provides weak signal, there are no
 //! normalization mismatches to exploit because the classifier doesn't use
 //! rules. This module routes those targets through structural,
 //! manifold-projected payload mutation instead.
@@ -10,7 +10,7 @@
 //! # Architecture
 //!
 //! The full decision-based boundary attack
-//! ([`wafrift_wafmodel::mlwaf::evade_ml`]) needs a *live* oracle — it descends
+//! ([`wafrift_wafmodel::mlwaf::evade_ml`]) needs a *live* oracle, it descends
 //! toward the WAF's decision boundary using block/allow feedback. The strategy
 //! crate is I/O-free and cannot make HTTP requests, so it owns only the
 //! **mutation side**: it produces a semantics-preserving structural mutation
@@ -21,14 +21,14 @@
 //! candidate at the target and credits only *verified* bypasses.
 //!
 //! The *adaptive* descent (choosing each next mutation from live block/allow
-//! feedback — the true HopSkipJump walk) is a frontier upgrade tracked in
+//! feedback, the true HopSkipJump walk) is a frontier upgrade tracked in
 //! `docs/legendary-todo.md`; this module is the sound, I/O-free mutation
 //! generator it builds on.
 //!
 //! # Anti-rig
 //!
 //! Every returned candidate must still satisfy the manifold check
-//! ([`wafrift_wafmodel::mlwaf::is_attack_payload`]) — a mutation that destroys
+//! ([`wafrift_wafmodel::mlwaf::is_attack_payload`]), a mutation that destroys
 //! the attack into something inert is a discarded sample, never a "bypass".
 //! Verifying an actual pass is the I/O layer's job against the live WAF; this
 //! layer never fabricates a pass it cannot observe.
@@ -58,7 +58,7 @@ pub const DEFAULT_ML_BUDGET: u64 = 512;
 ///
 /// `queries` is always 0 here (no live oracle was consulted);
 /// `off_manifold_rejected` records how many liberal proposals were discarded
-/// for leaving the attack manifold — the anti-rig ledger.
+/// for leaving the attack manifold (the anti-rig ledger).
 ///
 /// # Anti-rig
 ///
@@ -76,7 +76,7 @@ pub fn ml_evasion_candidates(payload: &[u8], budget: u64, seed: u64) -> Option<M
     let mut s = seed;
     let cap = budget.clamp(1, 4096);
     // `off` (the loop index) is the count of liberal proposals already
-    // discarded for leaving the manifold — the anti-rig ledger reported in the
+    // discarded for leaving the manifold, the anti-rig ledger reported in the
     // returned `MlEvasion`.
     for off in 0..cap {
         let cand = propose_mutation(payload, s);
@@ -109,10 +109,10 @@ pub fn ml_evasion_candidates(payload: &[u8], budget: u64, seed: u64) -> Option<M
 ///
 /// # Arguments
 ///
-/// * `request` — The HTTP request to transform.
-/// * `waf_name` — The detected WAF name (used for routing).
-/// * `budget` — ML oracle budget (defaults to [`DEFAULT_ML_BUDGET`]).
-/// * `seed` — Deterministic RNG seed.
+/// * `request`: The HTTP request to transform.
+/// * `waf_name`: The detected WAF name (used for routing).
+/// * `budget`: ML oracle budget (defaults to [`DEFAULT_ML_BUDGET`]).
+/// * `seed`: Deterministic RNG seed.
 #[must_use]
 pub fn apply_ml_evasion_if_applicable(
     request: &Request,
@@ -144,7 +144,7 @@ pub fn apply_ml_evasion_if_applicable(
 }
 
 /// Build the ML-evasion probe, mutate it, and return the mutated payload
-/// string plus the techniques applied — `None` when the WAF is not ML-backed
+/// string plus the techniques applied. `None` when the WAF is not ML-backed
 /// or no on-manifold mutation was produced.
 ///
 /// The payload is carried IN THE BODY because
@@ -152,7 +152,7 @@ pub fn apply_ml_evasion_if_applicable(
 /// payload is then extracted from that body. This is the SINGLE helper both
 /// `wafrift scan` and `bench-waf` call, so the probe-shape + extract wiring
 /// lives in ONE place (§7 DEDUP) and is unit-tested below (§9/§14): a revert
-/// to a no-body probe — the exact bug that made this a silent no-op — trips
+/// to a no-body probe, the exact bug that made this a silent no-op, trips
 /// `ml_evasion_probe_payload_mutates_for_ml_backed`.
 #[must_use]
 pub fn ml_evasion_probe_payload(
@@ -183,7 +183,7 @@ mod tests {
         // The fix that matters: the strategy layer must return a candidate
         // that (a) is DIFFERENT from the input and (b) still carries an attack
         // token. A regression to the old always-block fake oracle returned
-        // None unconditionally — caught here.
+        // None unconditionally (caught here).
         let payload = b"' UNION SELECT 1,2--";
         let evasion = ml_evasion_candidates(payload, 256, 99)
             .expect("an attack payload must yield an on-manifold structural mutation");
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn ml_evasion_rejects_non_attack_input() {
-        // A benign payload is not on the manifold — there is nothing to evade,
+        // A benign payload is not on the manifold, there is nothing to evade,
         // so the mutator must return None rather than fabricate a "bypass".
         assert!(
             ml_evasion_candidates(b"hello world", 256, 1).is_none(),
@@ -236,7 +236,7 @@ mod tests {
         let req = Request::post("https://target.internal/", original_body.clone())
             .header("Content-Type", "application/x-www-form-urlencoded");
 
-        // Cloudflare Bot Management is ML-backed — must route and mutate.
+        // Cloudflare Bot Management is ML-backed (must route and mutate).
         let waf = "Cloudflare Bot Management";
         assert!(
             WafClass::from_waf_name(waf).is_ml_backed(),

@@ -40,8 +40,8 @@ general standards above, contributors and users agree to:
 
 1. **Use the tool only against authorised targets.** Running wafrift
    against a system you do not own and have not been explicitly
-   authorised to test — by bug-bounty scope, signed penetration-test
-   agreement, CTF competition rules, or a lab you operate — is
+   authorised to test, by bug-bounty scope, signed penetration-test
+   agreement, CTF competition rules, or a lab you operate, is
    misuse, regardless of intent. The full lawful-use clause is in
    [`SECURITY.md`](./SECURITY.md#lawful-use--repository-responsibility).
 2. **Do not solicit help with unauthorised testing.** Issues, pull
@@ -69,8 +69,8 @@ may be forwarded to the affected organisation.
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behaviour —
-including violations of the Lawful Use clause above — may be reported
+Instances of abusive, harassing, or otherwise unacceptable behaviour 
+including violations of the Lawful Use clause above, may be reported
 by contacting the project team at
 **security@santh.dev**. All complaints will be reviewed and
 investigated and will result in a response that is deemed necessary

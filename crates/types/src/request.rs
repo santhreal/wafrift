@@ -1,13 +1,13 @@
-//! HTTP method and request types — the foundation layer all wafrift crates depend on.
+//! HTTP method and request types (the foundation layer all wafrift crates depend on).
 //!
-//! Intentionally simple — no dependency on any HTTP library. The transport
+//! Intentionally simple, no dependency on any HTTP library. The transport
 //! layer converts to/from `reqwest::Request` or raw bytes as needed.
 
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-/// HTTP method — enforced at the type level instead of a bare `String`.
+/// HTTP method (enforced at the type level instead of a bare `String`).
 ///
 /// Using an enum prevents typos like `"POSTT"` and makes exhaustive
 /// matching possible. The `Custom` variant preserves extensibility.
@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 /// let m: Method = "POST".parse().unwrap();
 /// assert_eq!(m, Method::Post);
 ///
-/// // Lowercase parses fine — case-insensitive.
+/// // Lowercase parses fine (case-insensitive).
 /// let m: Method = "delete".parse().unwrap();
 /// assert_eq!(m, Method::Delete);
 ///
@@ -111,7 +111,7 @@ impl From<String> for Method {
 
 /// A request that wafrift can transform.
 ///
-/// Intentionally simple — no HTTP library dependency. The transport
+/// Intentionally simple, no HTTP library dependency. The transport
 /// layer converts to/from `reqwest::Request` or raw bytes as needed.
 ///
 /// # Construction

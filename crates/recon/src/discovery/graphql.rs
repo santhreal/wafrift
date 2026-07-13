@@ -1,4 +1,4 @@
-//! GraphQL introspection — POST `__schema { queryType / mutationType /
+//! GraphQL introspection: POST `__schema { queryType / mutationType /
 //! subscriptionType { fields { name args { name type { ... } } } } }`
 //! and convert each top-level operation field into a discovered endpoint
 //! with its arguments as injection points.
@@ -51,14 +51,14 @@ pub async fn from_graphql(
     // F128: Many GraphQL servers reject introspection with a 4xx (often
     // 400 or 403) AND `{"errors":[{"message":"introspection is not
     // allowed"}]}` in the body. Pre-fix any non-2xx mapped to
-    // GraphQlEndpointNotFound — operator saw "wrong URL" when the URL
+    // GraphQlEndpointNotFound, operator saw "wrong URL" when the URL
     // was correct and only introspection was off. Peek at the body for
     // an `errors` array before deciding which classification to return.
     let status_ok = resp.status().is_success();
     // §15 decompression-bomb defence: reqwest auto-decompresses gzip/br with
     // NO size cap, so a hostile endpoint can answer a tiny introspection
     // query with a ~1 KB bomb that expands to gigabytes and OOMs the
-    // scanner. Read chunk-by-chunk and stop at a generous cap — even a huge
+    // scanner. Read chunk-by-chunk and stop at a generous cap, even a huge
     // real introspection schema is single-digit MB, so 16 MiB sits far above
     // any legitimate response while staying laptop-safe. Mirrors the sibling
     // bounded reads (lib.rs `CT_RESPONSE_MAX_BYTES`, active/http.rs
@@ -71,7 +71,7 @@ pub async fn from_graphql(
             Ok(Some(chunk)) => {
                 if bytes.len().saturating_add(chunk.len()) > INTROSPECTION_RESPONSE_MAX_BYTES {
                     // An oversized response to a tiny introspection query is
-                    // not a usable GraphQL endpoint — refuse rather than
+                    // not a usable GraphQL endpoint, refuse rather than
                     // buffer the bomb (same `GraphQlEndpointNotFound` bucket
                     // the transport/parse failures below already use).
                     return Err(DiscoveryError::GraphQlEndpointNotFound {
@@ -100,7 +100,7 @@ pub async fn from_graphql(
 
 /// Classify a non-2xx GraphQL response. Body is the response bytes
 /// (may or may not be valid JSON). Returns the appropriate
-/// `DiscoveryError` — `IntrospectionDisabled` when the body parses as
+/// `DiscoveryError`: `IntrospectionDisabled` when the body parses as
 /// JSON containing the standard `errors` array (the introspection-off
 /// pattern), `GraphQlEndpointNotFound` otherwise. Pure / testable.
 pub fn classify_non_success_response(body: &[u8], endpoint: &str) -> DiscoveryError {
@@ -120,7 +120,7 @@ pub fn classify_non_success_response(body: &[u8], endpoint: &str) -> DiscoveryEr
     }
 }
 
-/// Pure parsing helper — split out so unit tests don't need a live server.
+/// Pure parsing helper (split out so unit tests don't need a live server).
 pub fn parse_introspection_response(
     response: &Value,
     endpoint: &str,
@@ -146,7 +146,7 @@ pub fn parse_introspection_response(
             let mut points = Vec::new();
             if let Some(args) = field.get("args").and_then(Value::as_array) {
                 // Cap defends against an adversarial introspection
-                // response that lists a million args per operation —
+                // response that lists a million args per operation 
                 // each would allocate an InjectionPoint (~120 bytes)
                 // and OOM the process well before any real probe.
                 if args.len() > super::openapi::MAX_GRAPHQL_ARGS_PER_FIELD {
@@ -302,7 +302,7 @@ mod tests {
 
     /// §15 anti-rig: the introspection body read must stay byte-bounded
     /// (a `.chunk()` loop enforcing a cap), never reqwest's unbounded
-    /// auto-decompressing whole-body read — a hostile endpoint can answer a
+    /// auto-decompressing whole-body read, a hostile endpoint can answer a
     /// tiny introspection query with a gzip bomb. A future "simplification"
     /// back to the raw form is a decompression-bomb regression and must fail
     /// here. (Mirrors the sibling `recon_http_body_drain_is_bounded`.)
@@ -322,7 +322,7 @@ mod tests {
         let banned = concat!("resp.", "bytes().", "await");
         assert!(
             !src.contains(banned),
-            "introspection read must not use unbounded .bytes().await — \
+            "introspection read must not use unbounded .bytes().await. \
              decompression-bomb regression"
         );
     }
@@ -330,7 +330,7 @@ mod tests {
     // F128 regression: a 4xx response with `{"errors":[...]}` is the
     // introspection-disabled pattern (most GraphQL servers reject the
     // request with 400 or 403 + the standard errors body). Pre-fix
-    // mapped every non-2xx to GraphQlEndpointNotFound — operator
+    // mapped every non-2xx to GraphQlEndpointNotFound, operator
     // chasing a "wrong URL" they actually had correct.
     #[test]
     fn classify_400_with_errors_body_is_introspection_disabled() {
@@ -360,7 +360,7 @@ mod tests {
     #[test]
     fn classify_json_without_errors_field_is_endpoint_not_found() {
         // 500 with a JSON body that doesn't carry the standard
-        // GraphQL `errors` shape — could be anything; treat as
+        // GraphQL `errors` shape, could be anything; treat as
         // wrong-URL rather than incorrectly claiming introspection
         // was the issue.
         let body = br#"{"message":"server error"}"#;

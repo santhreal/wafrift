@@ -19,7 +19,7 @@ Restrict the report to hosts matching this glob (`*.example.com`). Repeatable / 
 Write the markdown to this file instead of stdout
 .TP
 \fB\-\-target\-template\fR \fI<TARGET_TEMPLATE>\fR
-Suggested target URL for replay commands (e.g. `https://api.example.com/search`). If omitted, replay snippets use `https://{host}/<PATH>` where `<PATH>` is a literal placeholder — it is printed verbatim and must be replaced by the operator with the actual endpoint path. Passing a target that literally contains `<PATH>` is allowed and will be reproduced as\-is
+Suggested target URL for replay commands (e.g. `https://api.example.com/search`). If omitted, replay snippets use `https://{host}/<PATH>` where `<PATH>` is a literal placeholder, it is printed verbatim and must be replaced by the operator with the actual endpoint path. Passing a target that literally contains `<PATH>` is allowed and will be reproduced as\-is
 .TP
 \fB\-\-param\fR \fI<PARAM>\fR [default: q]
 Suggested param name for replay commands

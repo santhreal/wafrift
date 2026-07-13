@@ -20,22 +20,22 @@
 //! Per the RFC each spec is a comma-separated list. Real parser
 //! divergence emerges around:
 //!
-//! - **Multiple `Range:` headers** — RFC 7230 §3.2.2 prohibits, but
+//! - **Multiple `Range:` headers**: RFC 7230 §3.2.2 prohibits, but
 //!   clients send them; nginx keeps first, Apache last.
-//! - **Empty range** — `Range: bytes=` is accepted as "the whole
+//! - **Empty range**: `Range: bytes=` is accepted as "the whole
 //!   resource" by some, rejected with 416 by others.
-//! - **Reversed range** — `Range: bytes=100-0` (first > last); MUST
+//! - **Reversed range**: `Range: bytes=100-0` (first > last); MUST
 //!   be 416 per RFC but some servers swap the boundaries silently.
-//! - **Overlapping ranges** — `Range: bytes=0-99,50-149`; some
+//! - **Overlapping ranges**: `Range: bytes=0-99,50-149`; some
 //!   servers coalesce, some emit separate multipart parts.
-//! - **Gigabyte ranges** — `Range: bytes=0-999999999`; servers that
+//! - **Gigabyte ranges**: `Range: bytes=0-999999999`; servers that
 //!   pre-allocate based on declared length OOM.
-//! - **Whitespace inside range** — `Range: bytes= 0-99` or `bytes=0
+//! - **Whitespace inside range**: `Range: bytes= 0-99` or `bytes=0
 //!   -99` (space around `-`); RFC says no whitespace, parsers vary.
-//! - **Suffix length** — `Range: bytes=-1000` (last 1000 bytes);
+//! - **Suffix length**: `Range: bytes=-1000` (last 1000 bytes);
 //!   some interpret as "byte at -1000" (negative-position interpretation
 //!   error → off-by-one or wraparound).
-//! - **Non-bytes units** — `Range: pages=0-9`; RFC allows but only
+//! - **Non-bytes units**: `Range: pages=0-9`; RFC allows but only
 //!   `bytes` is universally implemented; lax origins accept, strict
 //!   reject.
 
@@ -49,20 +49,20 @@ use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 /// builder).
 pub const MAX_RANGE_HEADER_BYTES: usize = 2 * 1024;
 
-/// Range-header smuggle variants — each surfaces a distinct RFC 7233
+/// Range-header smuggle variants, each surfaces a distinct RFC 7233
 /// parser-divergence seam.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RangeSmuggleVariant {
-    /// `Range: bytes=` — empty range-set. RFC says 400/416; lax
+    /// `Range: bytes=`: empty range-set. RFC says 400/416; lax
     /// servers serve the whole resource as if no Range was set.
     EmptyRangeSet,
     /// `Range: bytes=last-first` (e.g. `bytes=100-0`). Strictly
     /// 416; lax servers swap.
     ReversedFirstLast,
-    /// `Range: bytes=0-99,50-149` — overlapping spans. Coalesce vs
+    /// `Range: bytes=0-99,50-149`: overlapping spans. Coalesce vs
     /// multipart vs reject differential.
     OverlappingRanges,
-    /// `Range: bytes=0-<gigabyte>` — over-large last-byte position.
+    /// `Range: bytes=0-<gigabyte>`: over-large last-byte position.
     /// Servers that pre-allocate OOM; capped at a sane ceiling
     /// (`SAFE_LARGE_LAST_POS`) so wafrift itself doesn't enable
     /// denial-of-service attacks on authorized targets.
@@ -71,13 +71,13 @@ pub enum RangeSmuggleVariant {
     /// `bytes=0 -99` (whitespace around `-`). RFC says no WS;
     /// lenient parsers strip.
     WhitespaceInsideRange,
-    /// `Range: bytes=-1000` — suffix range; some implementations
+    /// `Range: bytes=-1000`: suffix range; some implementations
     /// misread as "byte position -1000" leading to underflow.
     SuffixLengthAsNegativePosition,
-    /// `Range: pages=0-9` — non-bytes unit. RFC allows; only
+    /// `Range: pages=0-9`: non-bytes unit. RFC allows; only
     /// `bytes` is universal. Probes which side rejects.
     NonBytesUnit,
-    /// Two `Range:` headers — first benign, second smuggle. nginx
+    /// Two `Range:` headers, first benign, second smuggle. nginx
     /// keeps first, Apache last → differential.
     DuplicateHeaderFirstWinsBenign,
 }
@@ -169,13 +169,13 @@ impl RangeSmuggleProbe {
         }
     }
 
-    /// `Range: bytes=` — empty range set.
+    /// `Range: bytes=`: empty range set.
     #[must_use]
     pub fn empty_range_set() -> Self {
         Self::finalise(
             RangeSmuggleVariant::EmptyRangeSet,
             vec![("Range".into(), "bytes=".into())],
-            "Empty Range value — `bytes=` with no spec; RFC 7233 vs lax differential".into(),
+            "Empty Range value: `bytes=` with no spec; RFC 7233 vs lax differential".into(),
         )
     }
 
@@ -197,22 +197,22 @@ impl RangeSmuggleProbe {
         Self::finalise(
             RangeSmuggleVariant::ReversedFirstLast,
             vec![("Range".into(), value)],
-            format!("Reversed Range `bytes={hi}-{lo}` — first > last violation, swap-vs-416 diff"),
+            format!("Reversed Range `bytes={hi}-{lo}`: first > last violation, swap-vs-416 diff"),
         )
     }
 
-    /// `Range: bytes=0-99,50-149` — overlapping spans.
+    /// `Range: bytes=0-99,50-149`: overlapping spans.
     #[must_use]
     pub fn overlapping_ranges() -> Self {
         let value = "bytes=0-99,50-149".to_string();
         Self::finalise(
             RangeSmuggleVariant::OverlappingRanges,
             vec![("Range".into(), value)],
-            "Overlapping Range spans — coalesce vs multipart vs reject differential".into(),
+            "Overlapping Range spans, coalesce vs multipart vs reject differential".into(),
         )
     }
 
-    /// `Range: bytes=0-{LARGE}` — over-large last position. The
+    /// `Range: bytes=0-{LARGE}`: over-large last position. The
     /// position is drawn from `SAFE_LARGE_LAST_POS` per-call.
     #[must_use]
     pub fn over_large_last_position() -> Self {
@@ -222,12 +222,12 @@ impl RangeSmuggleProbe {
             RangeSmuggleVariant::OverLargeLastPosition,
             vec![("Range".into(), value)],
             format!(
-                "Over-large last-byte position {last} — naive pre-allocators OOM, capped vs error"
+                "Over-large last-byte position {last}, naive pre-allocators OOM, capped vs error"
             ),
         )
     }
 
-    /// `Range: bytes= 0 - 99` — whitespace sprinkled in the spec.
+    /// `Range: bytes= 0 - 99`: whitespace sprinkled in the spec.
     /// Specific whitespace insertion locations are randomised per
     /// call so signature WAFs that pin "exactly one space after `=`"
     /// don't catch every probe.
@@ -241,11 +241,11 @@ impl RangeSmuggleProbe {
         Self::finalise(
             RangeSmuggleVariant::WhitespaceInsideRange,
             vec![("Range".into(), value)],
-            "Whitespace inside Range spec — strict-reject vs trim differential".into(),
+            "Whitespace inside Range spec, strict-reject vs trim differential".into(),
         )
     }
 
-    /// `Range: bytes=-1000` — suffix range. Some implementations
+    /// `Range: bytes=-1000`: suffix range. Some implementations
     /// misread the leading `-` as a sign.
     #[must_use]
     pub fn suffix_length_as_negative_position(suffix_len: u64) -> Self {
@@ -253,11 +253,11 @@ impl RangeSmuggleProbe {
         Self::finalise(
             RangeSmuggleVariant::SuffixLengthAsNegativePosition,
             vec![("Range".into(), value)],
-            format!("Suffix range `bytes=-{suffix_len}` — last-N vs negative-position misparse"),
+            format!("Suffix range `bytes=-{suffix_len}`: last-N vs negative-position misparse"),
         )
     }
 
-    /// `Range: <unit>=0-9` — non-`bytes` unit. Unit drawn from
+    /// `Range: <unit>=0-9`: non-`bytes` unit. Unit drawn from
     /// `NON_BYTES_UNITS` per-call.
     #[must_use]
     pub fn non_bytes_unit() -> Self {
@@ -266,11 +266,11 @@ impl RangeSmuggleProbe {
         Self::finalise(
             RangeSmuggleVariant::NonBytesUnit,
             vec![("Range".into(), value)],
-            format!("Non-bytes range unit `{unit}` — RFC allows; only `bytes` universal"),
+            format!("Non-bytes range unit `{unit}`: RFC allows; only `bytes` universal"),
         )
     }
 
-    /// Two `Range:` header lines — first benign full-resource,
+    /// Two `Range:` header lines, first benign full-resource,
     /// second the smuggled range.
     #[must_use]
     pub fn duplicate_header_first_wins_benign(smuggle_range: &str) -> Self {
@@ -283,7 +283,7 @@ impl RangeSmuggleProbe {
         Self::finalise(
             RangeSmuggleVariant::DuplicateHeaderFirstWinsBenign,
             vec![("Range".into(), benign), ("Range".into(), smuggle)],
-            "Duplicate Range headers — nginx-vs-Apache first/last-wins differential".into(),
+            "Duplicate Range headers, nginx-vs-Apache first/last-wins differential".into(),
         )
     }
 }
@@ -380,7 +380,7 @@ mod tests {
         }
         assert!(
             saw_ws,
-            "20 calls to whitespace_inside_range produced ZERO spaces — RNG broken or coin biased"
+            "20 calls to whitespace_inside_range produced ZERO spaces. RNG broken or coin biased"
         );
     }
 

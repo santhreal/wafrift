@@ -1,4 +1,4 @@
-//! E3/20–21 — the legendary learner contract: on **10k random regular
+//! E3/20–21, the legendary learner contract: on **10k random regular
 //! oracles**, the three independent inference strategies must all
 //! recover the *exact* language and agree with each other, and the
 //! differential must be *non-vacuous* (it can tell a mutated language
@@ -7,14 +7,14 @@
 //! This is precisely the property that exposes finding **F2**: an
 //! exactness claim is only meaningful with a *provably complete*
 //! equivalence oracle. Every learn here is driven by
-//! `BoundedExhaustiveEq` (complete for any fault ≤ `max_len`) — never
+//! `BoundedExhaustiveEq` (complete for any fault ≤ `max_len`), never
 //! the only-conditionally-complete W-method. `passive_learn` uses no
 //! equivalence oracle at all (a fixed complete test-suite, bounded
 //! |states|). If any strategy is wrong on any oracle, two others
 //! out-vote it and the case fails with the distinguishing word.
 //!
 //! Random oracles are literal substring patterns over a 3+catch-all
-//! alphabet (length 1..=3) — small enough that every case is fast and
+//! alphabet (length 1..=3), small enough that every case is fast and
 //! exact, rich enough to include self-overlapping shapes like `s/s`
 //! and `<s` (the KMP structure behind F2's `<s/s`).
 
@@ -181,10 +181,10 @@ fn thousand_random_oracles_triple_learner_exact_and_nonvacuous() {
         assert_triple_exact(&pat, "seed");
 
         // Non-vacuous: a one-position mutation that genuinely changes
-        // the language must be detected — the learned model of `pat`
+        // the language must be detected, the learned model of `pat`
         // is NOT equivalent to the learned model of the mutated
         // pattern. (If the mutation does not change the language we
-        // skip — the differential's job is to separate *different*
+        // skip, the differential's job is to separate *different*
         // languages, never to invent a difference.)
         let mut mut_pat = pat.clone();
         let pos = (seed as usize) % mut_pat.len();

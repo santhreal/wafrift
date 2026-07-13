@@ -4,7 +4,7 @@
 //! (up to 10 hops). An attacker-controlled origin that returned
 //! `302 Location: http://169.254.169.254/latest/meta-data/` (or any RFC1918 /
 //! link-local target) caused the proxy to silently follow the redirect and
-//! forward the IMDS response back to the downstream client — one redirect
+//! forward the IMDS response back to the downstream client, one redirect
 //! away from full cloud SSRF. Neither `assert_forward_url_allowed` (only run
 //! on the original URL) nor `BogonFilteringResolver` (only intercepts DNS,
 //! not literal IPs) re-checked the redirect target.
@@ -24,7 +24,7 @@ async fn start_redirect_origin() -> (u16, tokio::task::JoinHandle<()>) {
     let app = Router::new().route(
         "/",
         get(|| async {
-            // 169.254.169.254 is the AWS/Azure/GCP Instance Metadata Service —
+            // 169.254.169.254 is the AWS/Azure/GCP Instance Metadata Service 
             // the canonical cloud SSRF target. The proxy MUST surface this 302
             // to the downstream client rather than following it.
             (
@@ -46,7 +46,7 @@ async fn start_redirect_origin() -> (u16, tokio::task::JoinHandle<()>) {
     (port, handle)
 }
 
-/// The proxy must surface the 302 to the downstream — NOT follow it.
+/// The proxy must surface the 302 to the downstream. NOT follow it.
 ///
 /// Pre-fix: the reqwest client followed redirects by default (up to 10 hops)
 /// and returned the IMDS body. Post-fix: Policy::none() means the 302 passes
@@ -58,7 +58,7 @@ async fn proxy_does_not_follow_redirect_to_bogon_imds() {
         .await
         .expect("start proxy");
 
-    // The downstream client itself must NOT follow redirects — we want to
+    // The downstream client itself must NOT follow redirects, we want to
     // observe what the PROXY returned, not auto-follow again.
     let client = reqwest::Client::builder()
         .proxy(reqwest::Proxy::all(format!("http://127.0.0.1:{proxy_port}")).expect("proxy url"))
@@ -78,11 +78,11 @@ async fn proxy_does_not_follow_redirect_to_bogon_imds() {
         resp.status().as_u16(),
         302,
         "proxy must surface the 302 to downstream, not follow it to the IMDS target \
-         (status {} means redirect was followed — SSRF regression)",
+         (status {} means redirect was followed. SSRF regression)",
         resp.status().as_u16()
     );
 
-    // The Location header must be present and unchanged — we're not
+    // The Location header must be present and unchanged, we're not
     // supposed to scrub it, just not follow it.
     let location = resp
         .headers()
@@ -135,7 +135,7 @@ async fn proxy_does_not_follow_redirect_to_rfc1918() {
         .await
         .expect("send");
 
-    // Must be 3xx — proxy surfaces the redirect, not the target resource.
+    // Must be 3xx (proxy surfaces the redirect, not the target resource).
     assert!(
         resp.status().is_redirection(),
         "proxy must not follow RFC1918 redirect: got {}",

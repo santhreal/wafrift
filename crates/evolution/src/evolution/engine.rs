@@ -38,7 +38,7 @@ pub struct EvolutionEngine {
     /// originally minted in `request_evaluations` and the same ID it
     /// expects to see back in `submit_evaluations`. Population-based
     /// algorithms (`MapElites`, `NoveltySearch`) keep their own private
-    /// `in_flight` keyed by that ID — if we forwarded the engine's
+    /// `in_flight` keyed by that ID, if we forwarded the engine's
     /// `eval_id` instead, their lookup misses and the evaluation is
     /// silently dropped (the grid / archive never gets updated).
     pub in_flight: HashMap<u64, (u64, Chromosome, Instant)>,
@@ -90,7 +90,7 @@ impl Clone for EvolutionEngine {
     fn clone(&self) -> Self {
         // Algorithm state is duplicated via the trait's `clone_box`
         // method, which all in-tree algorithms override with a direct
-        // `Box::new(self.clone())` — no serde_json round-trip.
+        // `Box::new(self.clone())`: no serde_json round-trip.
         // The previous checkpoint/restore path was 10-100× slower
         // on populated MapElites grids and was the original "clone
         // spike on the proxy hot path" blocker (see #113).
@@ -98,7 +98,7 @@ impl Clone for EvolutionEngine {
             algorithm: self.algorithm.clone_box(),
             gene_pool: self.gene_pool.clone(),
             rng: self.rng.clone(),
-            // The LRU cache deliberately does not survive cloning —
+            // The LRU cache deliberately does not survive cloning 
             // each cloned engine gets a fresh same-capacity cache.
             // Sharing the cache across clones is what `SharedEngine`
             // is for (Arc<RwLock<EvolutionEngine>>); deep-cloning the
@@ -106,7 +106,7 @@ impl Clone for EvolutionEngine {
             cache: LruCache::new(self.cache.cap()),
             budget: self.budget,
             // Mid-flight evaluations belong to the caller, not the
-            // clone — drop them.
+            // clone (drop them).
             in_flight: HashMap::new(),
             stats: self.stats,
             target_health: self.target_health.clone(),
@@ -128,7 +128,7 @@ impl Clone for EvolutionEngine {
     }
 }
 
-/// Shared engine pointer — what the proxy and any future
+/// Shared engine pointer, what the proxy and any future
 /// shared-state worker pool should hold.
 ///
 /// Use this instead of `Clone` whenever multiple async tasks need
@@ -142,13 +142,13 @@ impl Clone for EvolutionEngine {
 /// - mutation paths (`submit_evaluations`, `gene_stats` updates,
 ///   checkpoint persistence) → `write()`
 /// - never hold the write lock across an `await` that performs network
-///   I/O — drop it before the await, re-acquire after
+///   I/O, drop it before the await, re-acquire after
 pub type SharedEngine = std::sync::Arc<tokio::sync::RwLock<EvolutionEngine>>;
 
 impl EvolutionEngine {
     /// Move this engine behind the canonical [`SharedEngine`] pointer.
     ///
-    /// Equivalent to `Arc::new(RwLock::new(self))` — exists so the
+    /// Equivalent to `Arc::new(RwLock::new(self))`: exists so the
     /// shared-access pattern is discoverable on the type itself
     /// rather than buried in module-level docs.
     #[must_use]
@@ -167,7 +167,7 @@ impl EvolutionEngine {
     /// Create a new engine with a seeded RNG.
     /// `population_size` is clamped to the inclusive range `[1, 10_000]`:
     /// 0 would leave the selection helpers (tournament/roulette) with
-    /// nothing to index — a contract violation that used to panic.
+    /// nothing to index (a contract violation that used to panic).
     /// `10_000` caps memory at construction so a misconfigured caller
     /// can't OOM the process by passing `usize::MAX`.
     #[must_use]
@@ -188,7 +188,7 @@ impl EvolutionEngine {
         // re-generated `population2` with the engine's now-moved RNG
         // and called `initialize` again. Because `with_algorithm`
         // doesn't advance the RNG, `population` and `population2`
-        // were IDENTICAL chromosomes — and every `initialize` impl
+        // were IDENTICAL chromosomes, and every `initialize` impl
         // is last-call-wins (HillClimbing overwrites current/best,
         // MapElites .clear()s the grid, NoveltySearch overwrites
         // self.population). Net effect: 2× chromosome generation +
@@ -253,7 +253,7 @@ impl EvolutionEngine {
 
     fn cache_key(chromosome: &Chromosome) -> String {
         // §1 SPEED: the pre-fix code allocated a Vec<String>, sorted it,
-        // and joined it — three heap operations per cache lookup. This is
+        // and joined it, three heap operations per cache lookup. This is
         // unnecessary because chromosome genes are always emitted in the
         // canonical GenePool order (encoding → content_type →
         // header_obfuscation → grammar_rule) by every construction path
@@ -386,7 +386,7 @@ impl EvolutionEngine {
     /// periodically (or when a Worker pool is reaped) so a dropped
     /// evaluation doesn't permanently consume a budget slot.
     ///
-    /// Audit (2026-05-10): pre-fix `in_flight` grew without any TTL —
+    /// Audit (2026-05-10): pre-fix `in_flight` grew without any TTL 
     /// every dropped eval permanently consumed a `max_requests` slot,
     /// so a long scan with even moderate eval-loss would terminate
     /// prematurely with budget exhausted while the in-flight map
@@ -422,14 +422,14 @@ impl EvolutionEngine {
 
             chromosome.record_verdict(&verdict);
             // Compute the cache key once and reuse for both the LRU cache
-            // insert and the WAFBooster update — previously this called
+            // insert and the WAFBooster update, previously this called
             // cache_key() twice per chromosome, allocating Vec + sort + join
             // both times. Pre-fix cost: 2× per submit; post-fix: 1×.
             let key = Self::cache_key(&chromosome);
 
             // Coverage-feedback: record the (payload_class × rule_id)
             // MAP-Elites behavior descriptor.  Use the chromosome's
-            // `grammar_rule` gene as the class signal — it is the
+            // `grammar_rule` gene as the class signal, it is the
             // closest available proxy to "attack class" inside the
             // engine layer.  When the verdict carries a `rule_id`, we
             // get a 2-D descriptor; without it the descriptor collapses
@@ -471,7 +471,7 @@ impl EvolutionEngine {
             // here was both wasteful and BROKEN: it compared a 16-char
             // u64 `chromosome.hash()` against the corpus's 64-char
             // SHA-256 `payload_hash`, so it never matched and deduped
-            // nothing — every high-fitness chromosome fell through to
+            // nothing, every high-fitness chromosome fell through to
             // `add`, which did the real (then-linear) dedup. Now `add`
             // is the single, correct, O(1) gate.
             if chromosome.fitness >= 0.85 {
@@ -480,7 +480,7 @@ impl EvolutionEngine {
             }
 
             // Forward the *algorithm's* candidate ID, not the engine's
-            // eval_id — population-based algorithms key their own
+            // eval_id, population-based algorithms key their own
             // in_flight by it (see in_flight doc).
             to_submit.push((algorithm_candidate_id, verdict));
             self.generation_evals = self.generation_evals.saturating_add(1);
@@ -531,17 +531,17 @@ impl EvolutionEngine {
     }
 
     /// Signal that the online CUSUM bypass-rate monitor detected a change-point
-    /// (C-11) — i.e. the WAF vendor likely pushed a rule update.
+    /// (C-11) (i.e. the WAF vendor likely pushed a rule update).
     ///
     /// The engine responds by:
-    /// 1. Resetting `stagnation_counter` to 0 — prevents premature termination
+    /// 1. Resetting `stagnation_counter` to 0, prevents premature termination
     ///    that would otherwise fire because the bypass rate collapsed (high
     ///    stagnation from many blocked attempts).
-    /// 2. Setting `exploration_boost_remaining` to `boost_rounds` — for the
+    /// 2. Setting `exploration_boost_remaining` to `boost_rounds`: for the
     ///    next `boost_rounds` calls to `evolve`, the booster score for
     ///    candidates is discounted so the engine explores more broadly
     ///    rather than exploiting the (now-broken) learned strategy.
-    /// 3. Setting `exploration_boost_factor` to `factor` — the multiplier
+    /// 3. Setting `exploration_boost_factor` to `factor`: the multiplier
     ///    applied to candidate selection diversity during boost rounds.
     ///
     /// # Parameters
@@ -566,7 +566,7 @@ impl EvolutionEngine {
         self.stagnation_counter = 0;
         self.stats.stagnation_counter = 0;
 
-        // Set the exploration boost — decays by 1 each evolve() call.
+        // Set the exploration boost (decays by 1 each evolve() call).
         self.exploration_boost_remaining = boost_rounds.max(1);
         self.exploration_boost_factor = factor.max(1.0);
 
@@ -592,7 +592,7 @@ impl EvolutionEngine {
             if self.exploration_boost_remaining == 0 {
                 // Boost expired: restore default (no-boost) exploration factor.
                 self.exploration_boost_factor = 1.0;
-                tracing::info!("C-11 exploration boost expired — returning to normal exploitation");
+                tracing::info!("C-11 exploration boost expired, returning to normal exploitation");
             }
         }
 
@@ -604,7 +604,7 @@ impl EvolutionEngine {
             self.fitness_history.pop_front();
         }
 
-        // Detect stagnation — but skip the stagnation increment while the
+        // Detect stagnation, but skip the stagnation increment while the
         // exploration boost is active: a burst of new-territory exploration
         // after a rule update naturally shows lower short-term fitness and
         // would spuriously trigger stagnation-based termination.
@@ -698,7 +698,7 @@ impl EvolutionEngine {
         self.stagnation_counter = state.stagnation_counter;
         self.request_count = state.request_count;
         self.stats = state.stats;
-        // v2 fields — `#[serde(default)]` on EngineState means a v1
+        // v2 fields: `#[serde(default)]` on EngineState means a v1
         // checkpoint loads cleanly with empty corpus / next_id=0.
         self.corpus = state.corpus;
         self.next_id = state.next_id;
@@ -723,7 +723,7 @@ impl EvolutionEngine {
         )
     }
 
-    /// Seed the underlying algorithm with an explicit population —
+    /// Seed the underlying algorithm with an explicit population 
     /// the public path callers use to warm-start search from a known
     /// good corpus (or to inject a synthetic population from tests).
     ///
@@ -731,7 +731,7 @@ impl EvolutionEngine {
     /// `initialize`, so the engine's owned RNG was never advanced. Any
     /// random draws made by `initialize` (e.g. MapElites grid placement,
     /// initial mutation in SimulatedAnnealing) were "used up" in the
-    /// clone and the engine remained at the same RNG state — making two
+    /// clone and the engine remained at the same RNG state, making two
     /// successive `seed_population` calls (or a `seed_population` + an
     /// `evolve`) produce identical random sequences and identical
     /// chromosomes.
@@ -748,7 +748,7 @@ impl EvolutionEngine {
         self.algorithm.population_snapshot()
     }
 
-    /// Population diversity in `[0.0, 1.0]` — drives adaptive mutation
+    /// Population diversity in `[0.0, 1.0]`: drives adaptive mutation
     /// pressure (see `crossover::diversity::adaptive_mutation_rate`).
     ///
     /// Strategy:
@@ -758,10 +758,10 @@ impl EvolutionEngine {
     ///    via `crossover::diversity::diversity_score`.
     /// 3. Otherwise (single-state algorithm with nothing in-flight),
     ///    fall back to gene-pool exploration entropy from
-    ///    [`Self::gene_stats_diversity`] — measures how broadly the
+    ///    [`Self::gene_stats_diversity`], measures how broadly the
     ///    engine has *explored* the gene space rather than how varied
     ///    the *current* population is. With no exploration history
-    ///    either, return 1.0 (max-safe default — keeps mutation
+    ///    either, return 1.0 (max-safe default, keeps mutation
     ///    pressure conservative on a fresh engine).
     #[must_use]
     pub fn diversity_score(&self) -> f64 {
@@ -810,7 +810,7 @@ impl EvolutionEngine {
         for attempts in by_gene.values() {
             let total: u64 = attempts.iter().map(|a| u64::from(*a)).sum();
             if total == 0 || attempts.len() < 2 {
-                // Single value tried — zero entropy contribution. Still
+                // Single value tried, zero entropy contribution. Still
                 // counted so the per-gene mean isn't biased by skipping.
                 counted += 1;
                 continue;
@@ -878,16 +878,16 @@ pub struct EngineState {
     pub request_count: usize,
     pub stats: SearchStats,
     pub schema_version: u32,
-    /// Saved bypass discoveries — added in `schema_version` 2.
+    /// Saved bypass discoveries (added in `schema_version` 2).
     /// Defaults to empty for v1 checkpoints loaded by a v2 engine.
     #[serde(default)]
     pub corpus: BypassCorpus,
-    /// Next `eval_id` to mint — added in `schema_version` 2 so a
+    /// Next `eval_id` to mint, added in `schema_version` 2 so a
     /// restored engine doesn't recycle IDs that may collide with
     /// any in-flight evaluation that survived the crash.
     #[serde(default)]
     pub next_id: u64,
-    /// Evaluations issued in the current generation — added in v2.
+    /// Evaluations issued in the current generation (added in v2).
     #[serde(default)]
     pub generation_evals: usize,
 }

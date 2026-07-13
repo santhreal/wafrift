@@ -11,7 +11,7 @@
 //!
 //! Helpers in this file are `pub`. Unused-import / dead-code warnings
 //! per call site are suppressed via `#[allow(dead_code)]` on each
-//! function — not every test uses every helper, and integration-test
+//! function, not every test uses every helper, and integration-test
 //! binaries don't share a single linker root.
 //!
 //! See: <https://doc.rust-lang.org/cargo/reference/cargo-targets.html#integration-tests>
@@ -21,7 +21,7 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 /// Deadline for the `wait_for_server` poll loop. Pre-fix several
-/// individual tests hardcoded `Duration::from_secs(30)` inline — if a
+/// individual tests hardcoded `Duration::from_secs(30)` inline, if a
 /// future CI change needed to raise this, every site had to agree.
 ///
 /// 30s is the empirical worst-case on Windows under the heaviest
@@ -46,14 +46,14 @@ pub const SERVER_READY_BACKOFF: Duration = Duration::from_millis(10);
 ///
 /// Pre-R66 this loop was open-coded in 19 e2e test files. A single
 /// tuning (raising the deadline because Windows loopback got slower)
-/// would have had to land in 19 places. The honest contract — "poll
-/// the listener until ready or panic at the budget" — lives here.
+/// would have had to land in 19 places. The honest contract: "poll
+/// the listener until ready or panic at the budget" (lives here).
 ///
 /// Panics with a message containing `addr` and the budget so the
 /// failure message is self-describing on CI logs.
 /// Spawn the `wafrift` binary with `args` and return `(exit_code, stdout, stderr)`.
 ///
-/// This is the canonical definition — §7 DEDUP: 38 e2e test files previously
+/// This is the canonical definition: §7 DEDUP: 38 e2e test files previously
 /// carried byte-for-byte copies. A single change here (binary name, env vars,
 /// timeout policy) now propagates everywhere automatically.
 #[allow(dead_code)]
@@ -74,7 +74,7 @@ pub fn wafrift(args: &[&str]) -> (i32, String, String) {
 /// Under the full `cargo test --workspace` gate, ~20 integration-test binaries
 /// fork `wafrift` subprocesses concurrently; on a memory-limited CI runner the
 /// kernel OOM-killer SIGKILLs the heaviest one at random, surfacing as exit -1
-/// with empty stdout/stderr — the process never ran, so the measurement is
+/// with empty stdout/stderr, the process never ran, so the measurement is
 /// *absent*, not *wrong*. Re-running the SAME invocation re-attempts the aborted
 /// measurement; it never masks a real result, because any real exit code
 /// (`>= 0`) is returned immediately with no retry. This covers the *cross-binary*

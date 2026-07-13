@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Multi-context reflective origin for EXECUTION benchmarking.
 
-The waf-zoo's default backend is httpbin, which echoes the request as JSON —
+The waf-zoo's default backend is httpbin, which echoes the request as JSON 
 so an injected XSS payload can never EXECUTE there regardless of the WAF, and
 the bench can only ever measure *bypass*, never *exploitation*. This origin is
 the opposite: it is deliberately, obviously XSS-vulnerable so that a payload
@@ -12,38 +12,38 @@ measure the honest bypass-vs-exploit split.
 A first generation reflected `q` only into the HTML body + an `innerHTML` sink.
 On that single-decode body origin, OWASP CRS blocks every executable markup
 vector at every paranoia level, so thousands of *bypasses* reflect **inert** and
-0 EXECUTE. That is real — but it only proves CRS beats *one* reflection context.
+0 EXECUTE. That is real: but it only proves CRS beats *one* reflection context.
 Real apps expose many. This origin reflects `q` into the contexts that turn a
 "WAF bypass" into a working exploit, selected by the `ctx` query parameter:
 
-  * ``body``     (default) — ``<div>{q}</div>`` plus an ``innerHTML`` DOM sink.
+  * ``body``     (default): ``<div>{q}</div>`` plus an ``innerHTML`` DOM sink.
                   Auto-firing handlers (``<svg onload>``) and mXSS fire here.
                   Kept byte-identical to gen-1 so prior numbers reproduce.
-  * ``attr``     — ``<input value="{q}">`` : double-quote attribute breakout
+  * ``attr``: ``<input value="{q}">`` : double-quote attribute breakout
                   (``"><svg onload=...>`` or ``" autofocus onfocus=...``).
-  * ``attr_sq``  — ``<input value='{q}'>`` : single-quote attribute breakout.
-  * ``js``       — ``<script>var t="{q}";</script>`` : JS double-quoted-string
+  * ``attr_sq``: ``<input value='{q}'>`` : single-quote attribute breakout.
+  * ``js``: ``<script>var t="{q}";</script>`` : JS double-quoted-string
                   breakout (``";alert(1);//``). The high-value bridge: a payload
-                  with NO angle brackets and NO event-handler attribute — which
-                  many WAF rulesets never policed — executes verbatim here.
-  * ``js_sq``    — ``<script>var t='{q}';</script>`` : single-quote JS string.
-  * ``dd``       — double-decode: the (already URL-decoded) ``q`` is decoded a
+                  with NO angle brackets and NO event-handler attribute, which
+                  many WAF rulesets never policed (executes verbatim here).
+  * ``js_sq``: ``<script>var t='{q}';</script>`` : single-quote JS string.
+  * ``dd``, double-decode: the (already URL-decoded) ``q`` is decoded a
                   SECOND time before reflection, modelling an app that decodes
                   twice. A double-percent-encoded ``%253Csvg%2520onload...`` is
                   inert text to the WAF (no ``<``) yet decodes to live markup in
-                  the app — the classic encode-to-bypass / decode-to-execute
+                  the app, the classic encode-to-bypass / decode-to-execute
                   bridge that single-decode origins cannot model.
-  * ``uri``      — ``<a href="{q}">`` auto-clicked: ``javascript:`` URI context.
-  * ``hpp``      — reflects into the body like ``body``, but the handler joins
+  * ``uri``: ``<a href="{q}">`` auto-clicked: ``javascript:`` URI context.
+  * ``hpp``, reflects into the body like ``body``, but the handler joins
                   ALL repeated ``q=`` values (HTTP Parameter Pollution): a
-                  payload split into inert fragments across params — each one no
-                  WAF signature — reassembles into live markup. A parsing-layer
+                  payload split into inert fragments across params, each one no
+                  WAF signature, reassembles into live markup. A parsing-layer
                   evasion axis with nothing encoded (``exploit --split-param``).
 
 Gen-4 adds the **app-transform** axis (the one that beats CRS at every paranoia
 level). The ctx grammar is ``[<transform>.]<render>``: a *transform* decodes the
 value before it is reflected into a *render* context. ``b64`` / ``hex`` / ``b32``
-/ ``rot13`` are genuinely WAF-opaque — CRS has no transform to reverse them, so
+/ ``rot13`` are genuinely WAF-opaque. CRS has no transform to reverse them, so
 it sees an inert blob while the app decodes live markup that executes. ``zb64``
 (base64+zlib URL-state compression), ``b58`` (Bitcoin base58) and ``b64x2`` (a
 double-base64 decode chain) generalise the axis beyond base-N: a WAF that models
@@ -70,7 +70,7 @@ PORT = 80
 
 
 def _b64(value: str) -> str:
-    # Tolerant base64: restore stripped padding, accept urlsafe alphabet — what a
+    # Tolerant base64: restore stripped padding, accept urlsafe alphabet, what a
     # real `atob()`/library decode would forgive. validate=False so surrounding
     # whitespace is ignored.
     s = value.strip()
@@ -147,7 +147,7 @@ _B62_ALPHABET = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 def _b62(value: str) -> str:
     # Base62 decode (base-62 → base-256), GMP digit order 0-9A-Za-z. Leading `0`s
     # are leading zero bytes. Pure-alphanumeric, so the blob carries zero special
-    # characters for a CRS character rule to count — the cleanest PL4 alphabet.
+    # characters for a CRS character rule to count (the cleanest PL4 alphabet).
     s = value.strip()
     zeros = len(s) - len(s.lstrip("0"))
     n = 0
@@ -193,18 +193,18 @@ _TRANSFORMS = {
 #
 # The TRANSFORM contexts (`b64`, `hex`, `rot13`, `jsesc`, `entity`) model an
 # application that runs an attacker-controllable value through a decoder BEFORE
-# reflecting it into the executable body/innerHTML sink — `atob()` in a SPA, a
+# reflecting it into the executable body/innerHTML sink: `atob()` in a SPA, a
 # base64/hex token field rendered after decode, a templating layer that
 # HTML-unescapes, `JSON.parse` on a `\uXXXX`-escaped string. The WAF sees an
 # OPAQUE encoded blob carrying no XSS signature; the app decodes it to live
 # markup and it executes. Unlike the percent-encodings CRS normalises with its
 # own transforms, an arbitrary app-side decoder is something the WAF cannot
-# reverse without knowing the app — the "transform CRS can't model" frontier.
+# reverse without knowing the app (the "transform CRS can't model" frontier).
 # (`entity`/`jsesc` are deliberate NEGATIVE controls: CRS *does* apply
-# htmlEntityDecode / jsDecode when inspecting, so it CAN see through them — they
+# htmlEntityDecode / jsDecode when inspecting, so it CAN see through them, they
 # should stay blocked, isolating which decoders are genuinely WAF-opaque.)
 #
-# ctx GRAMMAR — `[<transform>.]<render>`. A transform decodes the value; a
+# ctx GRAMMAR: `[<transform>.]<render>`. A transform decodes the value; a
 # render context places the decoded value in executable markup. They compose:
 # `ctx=b64.attr` base64-decodes THEN reflects into a double-quoted attribute, so
 # an attribute-breakout vector executes through an app that base64-decodes a
@@ -214,17 +214,17 @@ _TRANSFORMS = {
 # value from ALL repeated `q=` parameters (HTTP Parameter Pollution): an app that
 # joins duplicate values sees one live markup string, while the WAF inspected
 # only the individual inert fragments. The split point is chosen so no single
-# fragment is a WAF signature — a parsing-layer evasion axis, nothing encoded.
+# fragment is a WAF signature (a parsing-layer evasion axis, nothing encoded).
 # `title`/`textarea` (RCDATA) and `style` (RAWTEXT) are additional real
 # reflection sinks: the `</title>`/`</textarea>`/`</style>` breakout catalog
 # re-enters markup and executes there, multiplying the number of contexts a
 # decoded/reassembled payload can execute in. (An iframe-`srcdoc` sink was tried
 # and dropped: its XSS fires in the child document, which the detonation oracle's
-# top-frame alert hook cannot observe — an unmeasurable sink is excluded.)
+# top-frame alert hook cannot observe, an unmeasurable sink is excluded.)
 RENDER_CONTEXTS = ("body", "attr", "attr_sq", "js", "js_sq", "uri", "hpp",
                    "title", "textarea", "style")
 TRANSFORM_NAMES = tuple(_TRANSFORMS.keys())
-# Legacy flat list — every single-token context that remains valid on its own.
+# Legacy flat list (every single-token context that remains valid on its own).
 CONTEXTS = RENDER_CONTEXTS + TRANSFORM_NAMES
 
 
@@ -260,7 +260,7 @@ def _doc(inner: str, raw_value: str) -> bytes:
 def render(raw_value: str, ctx: str) -> bytes:
     """Reflect ``raw_value`` (already transform-decoded) into ctx's RENDER part.
 
-    Every context reflects the value UNescaped — that is the deliberate
+    Every context reflects the value UNescaped, that is the deliberate
     vulnerability. The render context decides the surrounding markup, which is
     what decides whether a given WAF bypass actually executes.
     """
@@ -275,7 +275,7 @@ def render(raw_value: str, ctx: str) -> bytes:
         inner = f"<script>\n  var t = '{raw_value}';\n  window.__t = t;\n</script>"
     elif r == "uri":
         # `javascript:` URI sink. A plain anchor only fires on a real click, so
-        # the page synthetically clicks it — exactly what a SPA router or a
+        # the page synthetically clicks it, exactly what a SPA router or a
         # "click to continue" flow does with attacker-controlled href.
         inner = (
             f'<a id="lnk" href="{raw_value}">go</a>\n'
@@ -294,7 +294,7 @@ def render(raw_value: str, ctx: str) -> bytes:
     else:
         # `body`: reflect into body text AND an innerHTML DOM sink. json.dumps
         # gives a safe JS string literal for the sink assignment without
-        # hand-rolled escaping — the XSS is the body reflection plus the sink.
+        # hand-rolled escaping (the XSS is the body reflection plus the sink).
         js_literal = json.dumps(raw_value)
         inner = (
             f'<div id="body-ctx">{raw_value}</div>\n'
@@ -313,7 +313,7 @@ class Handler(BaseHTTPRequestHandler):
         return urllib.parse.parse_qs(query, keep_blank_values=True)
 
     def _ctx(self, params: dict) -> str:
-        # Accept any ctx that parses to a valid (transform?, render) pair —
+        # Accept any ctx that parses to a valid (transform?, render) pair 
         # including composite `b64.attr`. Anything else collapses to `body`.
         ctx = params.get("ctx", ["body"])[-1]
         t, r = _parse_ctx(ctx)
@@ -325,7 +325,7 @@ class Handler(BaseHTTPRequestHandler):
     def _decode_for(value: str, ctx: str) -> str:
         # Apply the ctx's TRANSFORM part (if any): the app runs an
         # attacker-controllable decoder over the value before reflecting it.
-        # Best-effort — a value that does not decode cleanly reflects empty
+        # Best-effort: a value that does not decode cleanly reflects empty
         # (clearly inert), never crashes the origin. Each models a real, common
         # app behaviour (atob / hex / base32 / rot13 / double-URL-decode).
         t, _r = _parse_ctx(ctx)
@@ -348,7 +348,7 @@ class Handler(BaseHTTPRequestHandler):
     def _value_for(params: dict, ctx: str) -> str:
         # `hpp` render: the app concatenates ALL repeated `q=` values (HTTP
         # Parameter Pollution reassembly) with no separator, so a payload split
-        # across params — each fragment inert to the WAF — becomes live markup.
+        # across params (each fragment inert to the WAF (becomes live markup)).
         # Every other context takes the last value (standard last-wins).
         _t, r = _parse_ctx(ctx)
         qs = params.get("q", [""])

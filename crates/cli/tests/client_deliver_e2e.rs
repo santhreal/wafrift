@@ -1,7 +1,7 @@
 //! End-to-end dogfood of the shipped `wafrift client-deliver` binary.
 //!
 //! `client-deliver` emits the WAF-blind client-side delivery plan for an XSS
-//! payload — the fragment / window.name / postMessage / storage / client-route
+//! payload, the fragment / window.name / postMessage / storage / client-route
 //! channels whose taint source never reaches the server. It sends nothing, so
 //! these tests need no mock server: they drive the compiled binary's arg
 //! parsing, plan construction, and both output formats, and assert the operator

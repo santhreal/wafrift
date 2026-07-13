@@ -1,6 +1,6 @@
 //! Property-based fuzz tests for [`rule_corpus`].
 //!
-//! Closes [#171] — the corpus is the hunt loop's persistent state and
+//! Closes [#171], the corpus is the hunt loop's persistent state and
 //! may be loaded from operator-supplied paths (or eventually from
 //! genome-registry pulls). Every load path must withstand:
 //!
@@ -9,7 +9,7 @@
 //! 2. Arbitrary garbage on disk where a valid corpus is expected.
 //! 3. Arbitrary record sequences (block / bypass / drift interleaving)
 //!    without panicking or corrupting cross-rule state.
-//! 4. Round-trip determinism — serialize → deserialize must preserve
+//! 4. Round-trip determinism, serialize → deserialize must preserve
 //!    every field byte-for-byte.
 
 use proptest::prelude::*;
@@ -191,7 +191,7 @@ proptest! {
 }
 
 // ───────────────────────────────────────────────────────────────
-// Concurrency stress — closes #172.
+// Concurrency stress (closes #172).
 // ───────────────────────────────────────────────────────────────
 
 #[test]
@@ -227,7 +227,7 @@ fn concurrent_record_no_data_race_via_mutex() {
     let c = corpus.lock().expect("final lock");
     // 8 workers × 200 distinct payloads = 1600 distinct records.
     let total: usize = c.buckets.values().map(|b| b.blocked.len()).sum();
-    assert_eq!(total, 1600, "lost writes — concurrency bug");
+    assert_eq!(total, 1600, "lost writes, concurrency bug");
 }
 
 #[test]
@@ -276,7 +276,7 @@ fn save_atomic_no_torn_write_under_concurrent_readers() {
 
     let reader = thread::spawn(move || {
         reader_barrier.wait();
-        // Concurrent reads — every load must either see the prior
+        // Concurrent reads, every load must either see the prior
         // valid snapshot or a new valid snapshot. Never a torn one.
         for _ in 0..100 {
             let c = RuleBypassCorpus::load_or_default(&reader_path, "fallback");

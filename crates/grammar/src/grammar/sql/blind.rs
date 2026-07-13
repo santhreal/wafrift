@@ -122,7 +122,7 @@ pub(crate) fn json_xml_mutations(max_mutations: usize) -> Vec<SqlMutation> {
 /// time delays, making them harder for WAFs to detect since there are no
 /// SLEEP/WAITFOR/BENCHMARK keywords to match.
 const BOOLEAN_BLINDS: &[(&str, &str)] = &[
-    // Substring extraction — extract one character at a time
+    // Substring extraction, extract one character at a time
     (
         "' AND SUBSTRING(@@version,1,1)='5'--",
         "mysql_version_probe",

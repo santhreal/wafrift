@@ -39,7 +39,7 @@ impl TargetContext {
 ///
 /// Rules are conservative: only strategies whose output is clearly
 /// unusable in a context are excluded. Borderline cases (e.g. base64
-/// anywhere) stay in — `--explain` shows the reasoning and the user
+/// anywhere) stay in: `--explain` shows the reasoning and the user
 /// decides.
 pub(crate) fn context_applicability(s: Strategy, ctx: TargetContext) -> Result<(), &'static str> {
     use Strategy::{ChunkedSplit, DeflateEncode, GzipEncode, NullByte, ParameterPollution};
@@ -54,12 +54,12 @@ pub(crate) fn context_applicability(s: Strategy, ctx: TargetContext) -> Result<(
         // Body intentionally NOT included: parameter-pollution output (`a=1&b=2`)
         // is valid in `application/x-www-form-urlencoded` bodies. Whether it's
         // useful in a given body subtype (JSON, multipart, raw) is the user's
-        // call — we don't model body subtypes, so we permit and let them decide.
+        // call (we don't model body subtypes, so we permit and let them decide).
         (ParameterPollution, Header | Cookie) => Err(
-            "parameter pollution operates on `key=val&key=val` syntax — headers/cookies don't parse that way",
+            "parameter pollution operates on `key=val&key=val` syntax, headers/cookies don't parse that way",
         ),
         (ChunkedSplit, Header | Cookie | QueryParam) => {
-            Err("chunked-split is a body transfer encoding — N/A in this context")
+            Err("chunked-split is a body transfer encoding. N/A in this context")
         }
         _ => Ok(()),
     }
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn parameter_pollution_allowed_in_query_and_body() {
-        // Body is OK because form-urlencoded bodies use `a=1&b=2` syntax —
+        // Body is OK because form-urlencoded bodies use `a=1&b=2` syntax 
         // we don't model body subtypes, so we leave the judgment to the user.
         assert!(
             context_applicability(Strategy::ParameterPollution, TargetContext::QueryParam).is_ok()
@@ -123,7 +123,7 @@ mod tests {
                 "ChunkedSplit must be blocked in {ctx:?}"
             );
         }
-        // Body is the legitimate carrier — must be OK.
+        // Body is the legitimate carrier (must be OK).
         assert!(context_applicability(Strategy::ChunkedSplit, TargetContext::Body).is_ok());
     }
 
@@ -178,7 +178,7 @@ mod tests {
 
     #[test]
     fn applicability_error_message_is_human_readable() {
-        // Operator-facing strings must be specific — no `Err(())`
+        // Operator-facing strings must be specific, no `Err(())`
         // tuples or opaque codes.
         let err = context_applicability(Strategy::GzipEncode, TargetContext::Header).unwrap_err();
         assert!(err.contains("compression"));
@@ -188,7 +188,7 @@ mod tests {
     #[test]
     fn applicability_error_mentions_recovery_path_when_possible() {
         // The compression error tells the user where compression IS
-        // applicable (the body via Content-Encoding) — operator
+        // applicable (the body via Content-Encoding), operator
         // doesn't have to guess what to do next.
         let err = context_applicability(Strategy::GzipEncode, TargetContext::Cookie).unwrap_err();
         assert!(
@@ -232,7 +232,7 @@ mod tests {
         }
         let ctx = TargetContext::Header;
         assert!(takes_by_value(ctx));
-        // ctx is still usable after the call — proving Copy.
+        // ctx is still usable after the call (proving Copy).
         let _ = ctx.label();
     }
 

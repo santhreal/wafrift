@@ -1,6 +1,6 @@
 //! Display-format helpers shared across the TUI render layers.
 //!
-//! Pure functions only — no mutable state, no I/O. Centralised so the
+//! Pure functions only, no mutable state, no I/O. Centralised so the
 //! palette and truncation rules are consistent across every panel.
 
 use std::time::Duration;

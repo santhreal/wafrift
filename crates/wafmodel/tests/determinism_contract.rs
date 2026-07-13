@@ -1,4 +1,4 @@
-//! E6 — determinism & reproducibility. A decompilation is a pure
+//! E6, determinism & reproducibility. A decompilation is a pure
 //! function of (oracle, seed): same inputs ⇒ byte-identical artifact,
 //! identical mining, identical results after a serialize/reload round
 //! trip. Non-determinism leaking into output (e.g. HashMap iteration
@@ -83,7 +83,7 @@ fn mining_is_deterministic_and_survives_a_serialize_reload() {
     let r3 = mine_bypasses(&reloaded, &g, 16, 10);
     assert_eq!(
         r1, r3,
-        "mining differs after serialize/reload — artifact is lossy"
+        "mining differs after serialize/reload, artifact is lossy"
     );
 }
 

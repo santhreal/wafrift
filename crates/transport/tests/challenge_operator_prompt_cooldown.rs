@@ -1,4 +1,4 @@
-//! Integration: `OPERATOR_PROMPT_COOLDOWN` — one prompt slot per normalized host,
+//! Integration: `OPERATOR_PROMPT_COOLDOWN`: one prompt slot per normalized host,
 //! no burst re-prompts inside the window.
 
 use wafrift_transport::challenge::{
@@ -51,7 +51,7 @@ fn operator_prompt_throttle_collapses_host_case_and_port_to_one_logical_host() {
     );
     assert!(
         !store.should_prompt_operator("example.com:443"),
-        "Fix: DNS case + :port must normalize to the same operator-prompt key — \
+        "Fix: DNS case + :port must normalize to the same operator-prompt key. \
          second call must throttle within cooldown"
     );
     assert!(
@@ -62,7 +62,7 @@ fn operator_prompt_throttle_collapses_host_case_and_port_to_one_logical_host() {
 
 #[test]
 fn distinct_hosts_do_not_share_each_others_cooldown_buckets() {
-    // Distinct hosts have INDEPENDENT per-host cooldowns — host A's
+    // Distinct hosts have INDEPENDENT per-host cooldowns, host A's
     // prompt doesn't blow host B's window. Verified by interleaving
     // up to the global cap so neither test arm hits the storm
     // throttle.

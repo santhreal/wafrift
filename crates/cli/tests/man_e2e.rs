@@ -1,7 +1,7 @@
 //! End-to-end tests for `wafrift man`.
 //!
 //! `man` generates a troff man page from the live clap command tree.
-//! It is fully offline — no HTTP, no mock server.
+//! It is fully offline (no HTTP, no mock server).
 //!
 //! Tests verify:
 //! 1. `man --help` exits 0.

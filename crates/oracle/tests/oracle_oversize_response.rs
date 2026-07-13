@@ -7,7 +7,7 @@ use wafrift_oracle::path::PathOracle;
 use wafrift_oracle::ssrf::SsrfOracle;
 use wafrift_oracle::traits::PayloadOracle;
 
-/// One hundred megabytes of benign filler (ASCII — valid UTF-8, no injection structure).
+/// One hundred megabytes of benign filler (ASCII (valid UTF-8, no injection structure)).
 const HUNDRED_MB: usize = 100 * 1024 * 1024;
 
 #[test]

@@ -163,7 +163,7 @@ fn bypass_probe_detects_xfwd_header_bypass() {
         "10",
         "--skip-paths",
         "--skip-methods",
-        // Only run header probes — XFF bypass is in the header family.
+        // Only run header probes: XFF bypass is in the header family.
     ]);
     assert_eq!(code, 0, "bypass-probe must exit 0; stderr: {stderr}");
 

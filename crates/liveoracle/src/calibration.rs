@@ -1,6 +1,6 @@
 //! Per-target self-calibration of the live block/pass signal.
 //!
-//! The static classifier ([`crate::verdict`]) catches *known* block shapes —
+//! The static classifier ([`crate::verdict`]) catches *known* block shapes 
 //! recognised status codes and listed block-page phrases. But a WAF we have
 //! never seen can signal a block in a way no signature lists: a bespoke 200
 //! page, an unusual status, a redirect to a captcha host. Calibration **learns
@@ -13,8 +13,8 @@
 //!    discriminator from that difference.
 //!
 //! Every later probe is then classified by comparison to the two learned
-//! baselines. When calibration cannot find a distinction — no WAF in front, or
-//! one that blocks even the benign control — it **declines** ([`calibrate`]
+//! baselines. When calibration cannot find a distinction, no WAF in front, or
+//! one that blocks even the benign control, it **declines** ([`calibrate`]
 //! returns `None`) and the oracle falls back to the static classifier. It never
 //! guesses: an ambiguous probe yields `None` from [`Calibration::classify`] so
 //! the caller can defer to the static rule rather than fabricate a verdict.
@@ -28,7 +28,7 @@ use crate::verdict::LiveVerdict;
 const COMPARE_BYTES: usize = 16 * 1024;
 
 /// Two bodies with Jaccard token similarity at or below this are "different
-/// pages" — the threshold below which a malicious control counts as a distinct
+/// pages", the threshold below which a malicious control counts as a distinct
 /// (block) response from the benign baseline.
 const DISTINCT_MAX_SIMILARITY: f64 = 0.5;
 
@@ -36,7 +36,7 @@ const DISTINCT_MAX_SIMILARITY: f64 = 0.5;
 /// other; within the margin the probe is ambiguous (defer to the static rule).
 const ASSIGN_MARGIN: f64 = 0.15;
 
-/// A harmless control value that no reasonable WAF rule should block — its
+/// A harmless control value that no reasonable WAF rule should block, its
 /// response is the "allowed" baseline.
 #[must_use]
 pub fn benign_control() -> &'static str {
@@ -44,7 +44,7 @@ pub fn benign_control() -> &'static str {
 }
 
 /// Obvious attacks across classes. The first one the target treats differently
-/// from the benign baseline defines the learned block signal — using several
+/// from the benign baseline defines the learned block signal, using several
 /// guards against a target that polices only one class.
 #[must_use]
 pub fn malicious_controls() -> &'static [&'static str] {
@@ -57,7 +57,7 @@ pub fn malicious_controls() -> &'static [&'static str] {
 }
 
 /// One observed control response, tagged with the control value that produced
-/// it so calibration can tell a *reflection* (the body echoes the input — the
+/// it so calibration can tell a *reflection* (the body echoes the input, the
 /// payload reached the app) from a *block* (a fixed page that does not).
 #[derive(Debug, Clone)]
 pub struct Baseline {
@@ -92,12 +92,12 @@ pub struct Calibration {
 }
 
 /// Build a calibration from the benign baseline and the malicious baselines.
-/// Returns `None` when no malicious control is distinguishable from benign —
+/// Returns `None` when no malicious control is distinguishable from benign 
 /// i.e. calibration could not learn a signal and the caller must fall back.
 #[must_use]
 pub fn calibrate(benign: Baseline, malicious: Vec<Baseline>) -> Option<Calibration> {
     for m in malicious {
-        // A reflected control — the body echoes the payload — means the attack
+        // A reflected control, the body echoes the payload, means the attack
         // REACHED the app (it was not blocked). Reflection makes every body
         // differ just because the input differs, so it must NOT be read as a
         // block signal; skip it and try the next control.
@@ -124,7 +124,7 @@ pub fn calibrate(benign: Baseline, malicious: Vec<Baseline>) -> Option<Calibrati
 
 impl Calibration {
     /// Classify a probe response against the learned baselines. `None` means
-    /// *ambiguous* — neither baseline clearly fits — so the caller should defer
+    /// *ambiguous*, neither baseline clearly fits, so the caller should defer
     /// to the static classifier rather than guess.
     #[must_use]
     pub fn classify(&self, status: u16, body: &[u8]) -> Option<LiveVerdict> {

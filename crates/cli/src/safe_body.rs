@@ -1,4 +1,4 @@
-//! Decompression-bomb defence — bounded response-body reader.
+//! Decompression-bomb defence (bounded response-body reader).
 //!
 //! ## The threat
 //!
@@ -8,8 +8,8 @@
 //! body when the server sets `Content-Encoding: gzip` or `br`.
 //! Reqwest does NOT cap the decompressed size.
 //!
-//! A hostile target — including any WAF under test that decides to
-//! retaliate against the scanner — can serve a ~1 KB gzipped response
+//! A hostile target, including any WAF under test that decides to
+//! retaliate against the scanner, can serve a ~1 KB gzipped response
 //! that expands to many gigabytes ("zip bomb"). Without a cap, wafrift
 //! exhausts memory and crashes. For a pentester running wafrift on a
 //! laptop in front of a customer, that is a remote DoS triggered by a
@@ -19,11 +19,11 @@
 //!
 //! [`read_bounded`] consumes the response as a chunked stream and
 //! aborts as soon as the running total exceeds `max_bytes`. The cap
-//! applies to the DECOMPRESSED stream — reqwest's gzip / brotli
+//! applies to the DECOMPRESSED stream, reqwest's gzip / brotli
 //! decoders sit BEHIND the bytes_stream chain, so what we count is
 //! what the rule engine would see.
 //!
-//! The default cap [`DEFAULT_MAX_RESPONSE_BYTES`] is 8 MiB — much
+//! The default cap [`DEFAULT_MAX_RESPONSE_BYTES`] is 8 MiB, much
 //! larger than any legitimate WAF block page, JSON envelope, or
 //! HTML response, but small enough to fit in a laptop's headroom
 //! many times over.
@@ -38,7 +38,7 @@
 //! [`read_bounded_text_file`] and [`read_bounded_text_stdin`] replace
 //! `std::fs::read_to_string` at every site that accepts operator-supplied
 //! file paths. The reason: `read_to_string(path)` has no size cap AND
-//! opens a TOCTOU race — a symlink swap between `stat()` and `open()`
+//! opens a TOCTOU race, a symlink swap between `stat()` and `open()`
 //! can bypass a separate size check. These functions open + read in one
 //! fd with a hard byte cap, closing both gaps at once.
 //!
@@ -53,7 +53,7 @@
 //!   allocator never gets a chance to over-allocate based on a
 //!   bomb's Content-Length lie.
 //! - On overrun we return an `Err`; the caller MUST treat that as
-//!   "target tried to bomb us" and abort the probe — never retry.
+//!   "target tried to bomb us" and abort the probe (never retry).
 //! - A network read error returns a different `Err` variant so
 //!   callers can distinguish bomb defence from transient I/O.
 //! - The function consumes the [`reqwest::Response`] so the
@@ -63,14 +63,14 @@ use futures_util::StreamExt;
 use reqwest::Response;
 use std::fmt;
 
-/// Default size cap for an arbitrary target's response body —
+/// Default size cap for an arbitrary target's response body 
 /// 8 MiB. Bigger than any legitimate WAF block page or JSON API
 /// envelope, smaller than any laptop's free RAM by orders of
 /// magnitude.
 pub(crate) const DEFAULT_MAX_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
 
 /// Larger cap for responses from operator-controlled services
-/// (e.g. their own `wafrift listener`). Still bounded — even a
+/// (e.g. their own `wafrift listener`). Still bounded, even a
 /// trusted service can have a bug.
 ///
 /// §7: the value is the workspace-canonical
@@ -82,7 +82,7 @@ pub(crate) const HEADROOM_MAX_RESPONSE_BYTES: usize = wafrift_types::MAX_RESPONS
 #[derive(Debug)]
 pub(crate) enum ReadError {
     /// Decompressed stream exceeded `max_bytes`. Caller should
-    /// treat as hostile target — never retry.
+    /// treat as hostile target (never retry).
     Overrun {
         cap_bytes: usize,
         observed_bytes: usize,
@@ -105,7 +105,7 @@ impl fmt::Display for ReadError {
             } => write!(
                 f,
                 "input exceeded {cap_bytes}-byte cap ({observed_bytes} bytes \
-                 seen so far) — bounded-read defence aborted the read \
+                 seen so far), bounded-read defence aborted the read \
                  (decompression-bomb or oversized stream)"
             ),
             Self::Transport(e) => write!(f, "read failed: {e}"),
@@ -117,7 +117,7 @@ impl std::error::Error for ReadError {}
 
 /// Read the response body as bytes, aborting if the running total
 /// exceeds `max_bytes`. The cap is checked AGAINST the
-/// decompressed stream — gzip / brotli decoders run upstream of
+/// decompressed stream, gzip / brotli decoders run upstream of
 /// us, so this is what the WAF / origin actually emitted post-
 /// decompress.
 pub(crate) async fn read_bounded(resp: Response, max_bytes: usize) -> Result<Vec<u8>, ReadError> {
@@ -137,7 +137,7 @@ pub(crate) async fn read_bounded(resp: Response, max_bytes: usize) -> Result<Vec
 }
 
 /// String view of the bounded body. Returns `Ok` with the decoded
-/// UTF-8 (lossy — replacement chars for any invalid bytes, same
+/// UTF-8 (lossy, replacement chars for any invalid bytes, same
 /// shape reqwest's `.text()` returns).
 pub(crate) async fn read_bounded_text(
     resp: Response,
@@ -149,14 +149,14 @@ pub(crate) async fn read_bounded_text(
 
 /// Serialize a response's status line and header block to bytes, so the
 /// reflection fingerprinter can observe input echoed into **headers**
-/// (`Location` on a redirect, `Set-Cookie`, custom `X-` headers) — not only the
+/// (`Location` on a redirect, `Set-Cookie`, custom `X-` headers), not only the
 /// body. Many origins decode/normalize a parameter and place the result in a
 /// header (a 302 `Location` echoing `?q=`, a cookie round-trip), which a
 /// body-only scan would miss and mis-report as "no reflection".
 ///
 /// Bounded at [`HEADER_SCAN_CAP`]: real header blocks are a few KiB; the cap
 /// stops a pathological header flood from unbounding the probe. Names and values
-/// are emitted verbatim as the origin sent them — the value is what may carry
+/// are emitted verbatim as the origin sent them, the value is what may carry
 /// the normalized reflection the fold check looks for.
 pub(crate) const HEADER_SCAN_CAP: usize = 64 * 1024;
 
@@ -178,7 +178,7 @@ pub(crate) fn header_bytes(resp: &Response) -> Vec<u8> {
 
 /// Sane cap for OPERATOR-supplied input files (curl-format paste,
 /// session-init file, gene-bank import). These are tiny in
-/// practice — a "Copy as cURL" Burp paste is < 16 KiB; a session
+/// practice, a "Copy as cURL" Burp paste is < 16 KiB; a session
 /// init file is a single HTTP request. 1 MiB is generous and
 /// catches `--curl-file /dev/zero` operator typos AND symlink
 /// traps.
@@ -187,7 +187,7 @@ pub(crate) const MAX_OPERATOR_INPUT_BYTES: usize = 1024 * 1024;
 /// Read `reader` to EOF in 64 KiB chunks, aborting the moment the
 /// running total would exceed `max_bytes`. This is the SINGLE
 /// OOM-guard loop behind every bounded file/stdin reader in the crate
-/// (and `compress`'s input path) — callers own the open/lock and any
+/// (and `compress`'s input path), callers own the open/lock and any
 /// caller-specific error phrasing, while the cap enforcement lives
 /// here exactly once. Pre-dedup the same 64 KiB-chunk + `saturating_add`
 /// loop was copy-pasted five times; a future tightening (smaller
@@ -247,7 +247,7 @@ pub(crate) fn read_bounded_stdin_bytes(max_bytes: usize) -> Result<Vec<u8>, Read
 
 /// Shared cap for `.wafrift/gene-bank.json` and any other persisted
 /// gene-bank file. Banks accumulate proven winners across hosts but
-/// remain compact JSON — even a year of heavy use stays well under
+/// remain compact JSON, even a year of heavy use stays well under
 /// the cap. 64 MiB catches `/dev/zero`, hostile symlinks, and
 /// runaway-generated files.
 pub(crate) const GENE_BANK_FILE_MAX_BYTES: usize = 64 * 1024 * 1024;
@@ -330,7 +330,7 @@ mod tests {
 
     #[tokio::test]
     async fn read_bounded_text_handles_lossy_utf8() {
-        // Body has invalid utf8 bytes — the function must NOT
+        // Body has invalid utf8 bytes, the function must NOT
         // panic and must return replacement-char-substituted
         // string (matches reqwest::Response::text behaviour).
         let body = vec![0xFF, b'a', 0xFE, b'b'];
@@ -345,7 +345,7 @@ mod tests {
     #[tokio::test]
     async fn read_bounded_aborts_mid_stream_when_cap_reached() {
         // Body is intentionally larger than the cap. The early-
-        // abort path must not consume the remainder — the network
+        // abort path must not consume the remainder, the network
         // read should stop as soon as the cap is hit. Functionally
         // this is observable by the elapsed time staying short:
         // a 1 GB body would otherwise take >> 1s.
@@ -364,7 +364,7 @@ mod tests {
 
     #[tokio::test]
     async fn read_bounded_handles_zero_cap_correctly() {
-        // Cap of 0 — any non-empty response must overrun. Empty
+        // Cap of 0, any non-empty response must overrun. Empty
         // body (Content-Length: 0) is the only success case.
         let url = spawn_server(ok_response(b"")).await;
         let resp = reqwest::get(&url).await.unwrap();
@@ -398,7 +398,7 @@ mod tests {
     #[test]
     fn read_error_overrun_display_includes_both_numbers() {
         // Operator must see WHAT cap was exceeded BY HOW MUCH
-        // — abbreviated errors are debugging hostile.
+        //: abbreviated errors are debugging hostile.
         let e = ReadError::Overrun {
             cap_bytes: 8388608,
             observed_bytes: 12345678,
@@ -460,7 +460,7 @@ mod tests {
 
     #[test]
     fn read_bounded_text_file_handles_lossy_utf8() {
-        // Mixed valid + invalid UTF-8 bytes — must not panic, must
+        // Mixed valid + invalid UTF-8 bytes, must not panic, must
         // emit replacement chars for the bad sequences.
         let tmp = std::env::temp_dir().join(format!("wafrift-sb-utf8-{}.bin", std::process::id()));
         std::fs::write(&tmp, [0x68, 0x69, 0xFF, 0xFE, 0x21]).unwrap();
@@ -536,7 +536,7 @@ mod tests {
         }
         assert!(
             elapsed < Duration::from_secs(60),
-            "the abort must be fast (under 1 min even under loaded CI) — \
+            "the abort must be fast (under 1 min even under loaded CI). \
              bomb fully expanded would take much longer; \
              actual elapsed={elapsed:?}"
         );
@@ -609,7 +609,7 @@ mod tests {
     #[tokio::test]
     async fn read_bounded_returns_empty_vec_for_empty_body_with_zero_cap() {
         // The previous case + cap = 0. Empty body still must pass
-        // because the cap check is acc.len + chunk.len > max — at
+        // because the cap check is acc.len + chunk.len > max, at
         // empty body there are no chunks to compare.
         let url = spawn_server(ok_response(b"")).await;
         let resp = reqwest::get(&url).await.unwrap();
@@ -634,7 +634,7 @@ mod tests {
     #[tokio::test]
     async fn read_bounded_text_propagates_overrun_error() {
         // The text wrapper must NOT swallow Overrun into the
-        // string path — overruns are control-flow critical.
+        // string path (overruns are control-flow critical).
         let body = vec![b'X'; 4096];
         let url = spawn_server(ok_response(&body)).await;
         let resp = reqwest::get(&url).await.unwrap();
@@ -763,7 +763,7 @@ mod tests {
     #[test]
     fn read_error_overrun_display_mentions_bomb_defence_in_message() {
         // Operator should immediately understand WHY the read
-        // aborted — phrase the message in attack terms, not bland
+        // aborted, phrase the message in attack terms, not bland
         // "limit reached".
         let e = ReadError::Overrun {
             cap_bytes: 100,
@@ -848,7 +848,7 @@ mod tests {
         let resp = reqwest::get(&url).await.unwrap();
         let got = read_bounded(resp, 32).await.expect("32 > 16");
         // Content-Length=16 but body sent is "sixteen byte body"
-        // which is 17 bytes — reqwest reads ONLY the declared
+        // which is 17 bytes, reqwest reads ONLY the declared
         // content length, so the result is exactly 16 bytes.
         assert_eq!(got.len(), 16);
         assert!(got.starts_with(b"sixteen byte bod"));
@@ -857,7 +857,7 @@ mod tests {
     #[tokio::test]
     async fn read_bounded_cap_check_fires_within_first_chunk_when_chunk_above_cap() {
         // 1 MB body arrives in one chunk. Cap of 1024 must abort
-        // on the first chunk read — chunk.len() pushes the running
+        // on the first chunk read, chunk.len() pushes the running
         // total over the cap in a single comparison.
         let body = vec![b'X'; 1_000_000];
         let url = spawn_server(ok_response(&body)).await;
@@ -877,7 +877,7 @@ mod round19_bounded_input_audit {
     //! the bounded call is present + the banned unbounded call is gone.
     //!
     //! Banned literals are built with concat!() so the test source
-    //! itself does not contain the needle — include_str! self-reference
+    //! itself does not contain the needle, include_str! self-reference
     //! would otherwise turn the negative assertion into a tautology.
 
     // hunt_cmd ────────────────────────────────────────────────────────
@@ -931,7 +931,7 @@ mod round19_bounded_input_audit {
             "seed.rs gene-bank read must be bounded"
         );
         // The seed.rs file's test block intentionally reads tmp files via
-        // raw std::fs::read_to_string for assertion convenience — match
+        // raw std::fs::read_to_string for assertion convenience, match
         // only the production-path pattern of `fs::read_to_string(&path)`.
         let banned = concat!(
             "\n    let mut bank = match fs::",
@@ -997,7 +997,7 @@ mod round19_bounded_input_audit {
             "pub fn read_bounded_stdin_bytes(max_bytes: usize) -> Result<Vec<u8>, ReadError>";
         assert!(
             src.contains(needle),
-            "read_bounded_stdin_bytes signature changed — evade_cmd.rs depends on it"
+            "read_bounded_stdin_bytes signature changed, evade_cmd.rs depends on it"
         );
     }
 
@@ -1007,7 +1007,7 @@ mod round19_bounded_input_audit {
     fn gene_bank_cap_is_sane() {
         assert!(
             super::GENE_BANK_FILE_MAX_BYTES >= 16 * 1024 * 1024,
-            "GENE_BANK_FILE_MAX_BYTES tightened below 16 MiB — could reject mature banks"
+            "GENE_BANK_FILE_MAX_BYTES tightened below 16 MiB, could reject mature banks"
         );
     }
 
@@ -1192,7 +1192,7 @@ mod round19_bounded_input_audit {
         let banned = concat!("std::fs::", "read_to_string(path)");
         assert!(
             !src.contains(banned),
-            "smuggle_fire_cmd.rs must not use unbounded fs::read_to_string — OOM regression"
+            "smuggle_fire_cmd.rs must not use unbounded fs::read_to_string. OOM regression"
         );
     }
 
@@ -1210,7 +1210,7 @@ mod round19_bounded_input_audit {
         let banned = concat!("std::fs::", "read_to_", "string(path)");
         assert!(
             !src.contains(banned),
-            "exploit_cmd.rs must not use unbounded fs::read_to_string — OOM/TOCTOU regression"
+            "exploit_cmd.rs must not use unbounded fs::read_to_string. OOM/TOCTOU regression"
         );
     }
 

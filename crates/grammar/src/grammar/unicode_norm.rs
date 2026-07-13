@@ -2,7 +2,7 @@
 //!
 //! WAFs that normalise request input to one Unicode Normal Form (NFC) before
 //! applying their pattern-match rules will miss payloads expressed in a form
-//! whose code-points differ from the blocked pattern — even though the
+//! whose code-points differ from the blocked pattern, even though the
 //! target application, which normalises differently (or not at all), receives
 //! the semantically identical attack string.
 //!
@@ -30,21 +30,21 @@
 //! This module owns the *forward* normalization helpers the classifier and
 //! bench oracle need:
 //!
-//! - [`detect_fullwidth`] — cheap gate: does the input already carry fullwidth
+//! - [`detect_fullwidth`], cheap gate: does the input already carry fullwidth
 //!   Latin letters? (classifier short-circuit, `super::mutate_as`).
-//! - [`nfkc_fold_ascii`] — selective NFKC fold of the fullwidth/math ranges back
+//! - [`nfkc_fold_ascii`], selective NFKC fold of the fullwidth/math ranges back
 //!   to ASCII, so a fullwidth payload classifies as its real attack class.
-//! - [`reachable_keywords`] — oracle primitive: which known attack keywords
+//! - [`reachable_keywords`], oracle primitive: which known attack keywords
 //!   survive the fold (gates bypass claims for normalization-mutated payloads).
 //!
 //! (A small fullwidth *generation* helper used to build test vectors for the
-//! above lives in this module's `#[cfg(test)]` block — it has no production
+//! above lives in this module's `#[cfg(test)]` block, it has no production
 //! caller, since reverse generation belongs to `nfkc_preimage`.)
 //!
 //! # Reverse generation lives elsewhere (NO-DUP)
 //!
-//! *Producing* homoglyph bypass variants — the inverse-NFKC map and the
-//! style-pass / single-codepoint / alternating substitution strategies — is the
+//! *Producing* homoglyph bypass variants, the inverse-NFKC map and the
+//! style-pass / single-codepoint / alternating substitution strategies, is the
 //! sole responsibility of [`super::nfkc_preimage`] (data-derived from the real
 //! NFKC function, ~30 styles per letter). The four hand-rolled reverse
 //! transforms that once lived here (fullwidth/math-bold/math-monospace/mixed)
@@ -53,19 +53,19 @@
 //!
 //! # Scope
 //!
-//! These forward helpers are pure compile-time-table lookups — no dependency on
+//! These forward helpers are pure compile-time-table lookups, no dependency on
 //! the `unicode-normalization` crate (that lives behind `nfkc_preimage`). The
 //! goal here is *checking*/*folding* for classification, not *generating*.
 //!
 //! # Visibility note
 //!
-//! This module is `pub(crate)` — the API is internal to `wafrift-grammar`.
+//! This module is `pub(crate)`: the API is internal to `wafrift-grammar`.
 //! The functions (`fullwidth`, `detect_fullwidth`, `reachable_keywords`,
 //! `nfkc_fold_ascii`) are callable from any module in this crate.
 
 /// Detect whether a payload contains fullwidth Unicode letters.
 ///
-/// Used by the classifier to short-circuit normalization detection — if the
+/// Used by the classifier to short-circuit normalization detection, if the
 /// input already has fullwidth characters, the WAF oracle can apply the
 /// normalization heuristic even if the payload doesn't look like a known
 /// attack class.
@@ -104,7 +104,7 @@ pub(crate) fn reachable_keywords<'a>(payload: &str, keywords: &[&'a str]) -> Vec
 /// This is a selective NFKC fold for the character ranges we emit; it is NOT
 /// a full Unicode NFKC normalizer (that lives in `wafrift-encoding` which
 /// depends on the `unicode-normalization` crate). We don't want to pull that
-/// dependency into `wafrift-grammar` — instead, this targeted fold is
+/// dependency into `wafrift-grammar`: instead, this targeted fold is
 /// sufficient for the oracle's keyword-detection use-case.
 #[must_use]
 pub(crate) fn nfkc_fold_ascii(s: &str) -> String {
@@ -140,7 +140,7 @@ pub(crate) fn nfkc_fold_ascii(s: &str) -> String {
 mod tests {
     use super::*;
 
-    /// Max payload the fullwidth test-vector constructor will process — a DoS
+    /// Max payload the fullwidth test-vector constructor will process, a DoS
     /// guard mirrored from the forward functions, kept here because the only
     /// users of fullwidth *generation* are these tests (reverse generation for
     /// production lives in `nfkc_preimage`).

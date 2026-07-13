@@ -221,7 +221,7 @@ fn replay_403_response_sets_blocked_true() {
         "json",
         "--quiet",
     ]);
-    // replay exits 2 when the WAF blocks (blocked=true) — this is the
+    // replay exits 2 when the WAF blocks (blocked=true), this is the
     // designed behaviour so CI gates can distinguish "bypassed" (exit 0)
     // from "blocked" (exit 2).
     assert_eq!(code, 2, "blocked replay must exit 2; stderr: {stderr}");

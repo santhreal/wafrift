@@ -6,8 +6,8 @@
 //! Pre-pass-21 each consumer maintained its own copy of the FNV-1a-64
 //! constants and inner loop (`evolution::h1_dedup`,
 //! `cli::cache_diff_cmd`, `cli::corpus_recorder`). All three were
-//! byte-for-byte identical. A future tweak — switching seed, swapping
-//! to a SIMD variant, adding a salt — would have had to land in three
+//! byte-for-byte identical. A future tweak, switching seed, swapping
+//! to a SIMD variant, adding a salt, would have had to land in three
 //! places synchronously or silently diverge. R57 pass-21 §7 DEDUP
 //! collapses them to this single canonical home.
 //!
@@ -34,7 +34,7 @@ pub const FNV_PRIME_64: u64 = 0x100_0000_01b3;
 
 /// Hash a byte slice with FNV-1a-64 in a single call.
 ///
-/// `hash(b"") == FNV_OFFSET_64` per the algorithm contract — the empty
+/// `hash(b"") == FNV_OFFSET_64` per the algorithm contract, the empty
 /// input is the zero element of the hash, not a sentinel.
 #[must_use]
 pub fn fnv1a_64(bytes: &[u8]) -> u64 {
@@ -56,7 +56,7 @@ pub const fn fnv1a_64_step(h: u64, b: u8) -> u64 {
     (h ^ (b as u64)).wrapping_mul(FNV_PRIME_64)
 }
 
-/// Streaming variant — fold `bytes` into the running `h` in place.
+/// Streaming variant (fold `bytes` into the running `h` in place).
 /// Equivalent to `*h = bytes.iter().fold(*h, fnv1a_64_step)` but
 /// preserves the existing call site shape from `evolution::h1_dedup`.
 pub fn fnv1a_64_extend(h: &mut u64, bytes: &[u8]) {
@@ -81,10 +81,10 @@ mod tests {
     #[test]
     fn single_byte_matches_canonical_table() {
         // Reference values from the FNV homepage test vector table
-        // (http://www.isthe.com/chongo/tech/comp/fnv/) — the canonical
+        // (http://www.isthe.com/chongo/tech/comp/fnv/), the canonical
         // 64-bit FNV-1a outputs for "a" and "foobar". Pre-fix the
         // foobar value was 0x85848004_8634e0f5, which is not the
-        // FNV-1a-64 of any common input — a transcription error that
+        // FNV-1a-64 of any common input, a transcription error that
         // sat dormant because the algorithm was correct and the only
         // observer was this assertion. If any future "optimisation"
         // diverges, this test fires.
@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn fnv1a_64_is_deterministic_across_calls() {
-        // Anti-rig: confirm no hidden state / entropy leak — same input
+        // Anti-rig: confirm no hidden state / entropy leak, same input
         // always hashes the same. If we ever swap to AHash and forget
         // this test, the corpus-dedup contract silently breaks.
         let input = b"wafrift-canonical-form";

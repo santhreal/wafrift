@@ -2,7 +2,7 @@
 //!
 //! Mock only speaks HTTP/1.1; H2 negotiation will fail on every
 //! probe. h2-diff should exit 0 with per-probe `h2_error` populated
-//! — informational, not a build failure.
+//! (informational, not a build failure).
 
 use serial_test::serial;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -32,7 +32,7 @@ async fn spawn_h1_mock() -> std::net::SocketAddr {
             });
         }
     });
-    // R56 pass-21 §12 TESTING: do NOT call wait_for_server() here — it
+    // R56 pass-21 §12 TESTING: do NOT call wait_for_server() here, it
     // calls std::thread::sleep inside an async context, which blocks the
     // tokio runtime thread and causes a race / signal-kill flake. The
     // caller must call wait_for_server() after block_on returns (outside
@@ -48,13 +48,13 @@ async fn spawn_h1_mock() -> std::net::SocketAddr {
 // and the bug looks like a wafrift crash when in fact wafrift never
 // got the chance to run.
 //
-// `#[serial]` only orders spawns WITHIN this test binary — it cannot see
+// `#[serial]` only orders spawns WITHIN this test binary, it cannot see
 // the ~20 OTHER integration-test binaries `cargo test --workspace` runs
 // in parallel, each forking its own subprocesses. That cross-binary
 // contention is what still SIGKILLs wafrift here at random (observed red
 // on CI: `left: -1`). `wafrift_resilient` re-attempts ONLY the signal-kill
 // artifact (exit -1 = killed before running, output absent) and never a
-// real exit code — so it re-runs an aborted measurement, it does not
+// real exit code, so it re-runs an aborted measurement, it does not
 // paper over a wrong result.
 #[test]
 #[serial]
@@ -86,7 +86,7 @@ fn h2_diff_against_h1_only_mock_records_h2_errors_per_probe() {
     // Callers must handle exit 6 as "did not cleanly measure H1/H2 diff".
     assert_eq!(
         code, 6,
-        "h2-diff must exit 6 (inconclusive) on H1-only target — stderr:\n{stderr}"
+        "h2-diff must exit 6 (inconclusive) on H1-only target, stderr:\n{stderr}"
     );
     let p: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     let results = p["results"].as_array().expect("results");
@@ -116,7 +116,7 @@ fn h2_diff_against_unreachable_target_exits_inconclusive() {
         "1",
     ]);
     // F78: when every H2 probe fails (unreachable target → all H1+H2
-    // probes error), h2-diff exits 6 to signal "inconclusive — not a
+    // probes error), h2-diff exits 6 to signal "inconclusive, not a
     // clean differential measurement." Callers must not treat exit 6 as
     // "no H1/H2 divergence found"; they must treat it as "we could not
     // measure." Exit 0 means "cleanly measured, no divergence."
@@ -150,13 +150,13 @@ fn h2_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift_resilient(&["diff", "h2", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff h2 --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff h2 --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift_resilient(&["h2-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift h2-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift h2-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }

@@ -48,7 +48,7 @@ use crate::Level;
 use crate::helpers::{Variant, build_variants, max_mutations_for_level, strategies_for_level};
 
 /// Convert days since the Unix epoch (1970-01-01) to a `(year, month, day)`
-/// Gregorian triple.  Pure arithmetic — no std::time dependency beyond what
+/// Gregorian triple.  Pure arithmetic, no std::time dependency beyond what
 /// the caller already holds.
 ///
 /// Algorithm: proleptic Gregorian calendar via the civil-date formula from
@@ -120,29 +120,29 @@ pub struct BenchWafArgs {
     pub variants: usize,
 
     /// Comma-separated list of evasion strategies.
-    /// Default: `heavy,equiv-cegis` — payload-string mutation PLUS the
+    /// Default: `heavy,equiv-cegis`: payload-string mutation PLUS the
     /// flagship B→C→A equivalence moat (the same engine `wafrift scan`
     /// ships), so the headline bypass number measures what the product
     /// actually does out of the box, not a strategy a user must opt in.
     /// Pass `--strategies all` to run the full set in one shot.
     /// Available:
-    ///   light / medium / heavy   — payload-string mutation via `build_variants`
+    ///   light / medium / heavy, payload-string mutation via `build_variants`
     ///   equiv / equiv-adaptive / equiv-cegis
-    ///                              — sound `(payload×delivery)` moat (B / B+bandit / B→C→A+learned-WAF)
-    ///   mcts                      — Monte Carlo Tree Search over actions (mctrust)
-    ///   smuggling                 — HTTP request smuggling variants (CL.TE / TE.CL / TE.TE / dual-CL)
-    ///   content-type              — Content-Type confusion variants (multipart/json/xml/...)
-    ///   redos                     — wrap payload in catastrophic-backtracking patterns
+    ///: sound `(payload×delivery)` moat (B / B+bandit / B→C→A+learned-WAF)
+    ///   mcts: Monte Carlo Tree Search over actions (mctrust)
+    ///   smuggling: HTTP request smuggling variants (CL.TE / TE.CL / TE.TE / dual-CL)
+    ///   content-type: Content-Type confusion variants (multipart/json/xml/...)
+    ///   redos, wrap payload in catastrophic-backtracking patterns
     ///   hill-climb / sim-anneal / tabu / novelty / map-elites
-    ///                              — feedback-driven search via wafrift-evolution
-    ///   differential              — class-filtered probes from `wafrift-evolution::differential`
+    ///: feedback-driven search via wafrift-evolution
+    ///   differential, class-filtered probes from `wafrift-evolution::differential`
     ///                              (rule-fingerprint coverage; "what does this WAF NOT block")
-    ///   ml-evasion                — manifold-projected structural mutation for ML-backed WAFs,
+    ///   ml-evasion, manifold-projected structural mutation for ML-backed WAFs,
     ///                              verified live (needs `--waf-name`; clean no-op on rule WAFs)
     ///
     /// NOTE: `--strategies all` expands to the broad rule-WAF set and
     /// intentionally EXCLUDES `ml-evasion` (it is ML-WAF-specific and needs
-    /// `--waf-name`) as well as `light` / `medium` — pass those explicitly.
+    /// `--waf-name`) as well as `light` / `medium`: pass those explicitly.
     #[arg(long, value_delimiter = ',', default_value = "heavy,equiv-cegis")]
     pub strategies: Vec<String>,
 
@@ -151,7 +151,7 @@ pub struct BenchWafArgs {
     /// bot-management, Datadome) and route through the manifold-projected
     /// structural mutator. Matched case-insensitively by substring (e.g.
     /// "Cloudflare Bot Management"). Omit, or pass a rule-based name, and
-    /// `ml-evasion` is a clean no-op — that paradigm is wrong for rule WAFs.
+    /// `ml-evasion` is a clean no-op (that paradigm is wrong for rule WAFs).
     #[arg(long)]
     pub waf_name: Option<String>,
 
@@ -165,7 +165,7 @@ pub struct BenchWafArgs {
     pub i_have_permission: Option<String>,
 
     /// DEPRECATED / NO-OP. Oracle gating is now ALWAYS on and cannot be
-    /// disabled — a "bypass" only counts if the per-class oracle agrees
+    /// disabled, a "bypass" only counts if the per-class oracle agrees
     /// the effective payload is still a working attack. The previous
     /// opt-in default (off) meant the headline counted every non-blocked
     /// response, including mutations that destroyed the payload into
@@ -191,7 +191,7 @@ pub struct BenchWafArgs {
     pub format: String,
 
     /// Also write the JSON result blob to this file. Refuses to
-    /// clobber an existing file unless `--force-overwrite` is set —
+    /// clobber an existing file unless `--force-overwrite` is set 
     /// CLAUDE.md §7 + §11: two back-to-back bench-waf runs with the
     /// same --output silently wiped the first result before R48.
     /// `-`, `/dev/stdout`, and `/dev/fd/N` are always permitted (not
@@ -212,7 +212,7 @@ pub struct BenchWafArgs {
     /// Prove EXECUTION, not just bypass: for each verified bypass whose response
     /// is HTML, detonate the response body via the `detonate` tool and count how
     /// many actually EXECUTE (`alert(1)` fires) vs merely bypass-and-reflect.
-    /// This is the honest bypass-vs-exploit split — the headline `bypassed` rate
+    /// This is the honest bypass-vs-exploit split, the headline `bypassed` rate
     /// counts WAF passes; `executed` counts confirmed XSS. Needs `detonate` on
     /// PATH (or `$WAFRIFT_DETONATE_BIN`) and a reflective HTML origin behind the
     /// WAF (a JSON-echo backend like httpbin can never execute, so it reports 0
@@ -244,7 +244,7 @@ pub struct BenchWafArgs {
     #[arg(long, default_value_t = 2)]
     pub adaptive_pause_secs: u64,
 
-    /// Just validate the corpus and exit — load every TOML, check every
+    /// Just validate the corpus and exit, load every TOML, check every
     /// case has a unique id + non-empty payload + a known class, then
     /// report counts and exit. Doesn't connect to the WAF target. Useful
     /// in CI to catch corpus drift without standing a WAF up.
@@ -257,7 +257,7 @@ pub struct BenchWafArgs {
     /// lineage trace records every mutation step that led to it. When unset,
     /// bypasses still count toward the headline rate but are not persisted.
     /// Only the search-loop strategies (hill-climb / sim-anneal / tabu /
-    /// novelty / map-elites) populate lineage — the static strategies have
+    /// novelty / map-elites) populate lineage, the static strategies have
     /// no chromosome.
     #[arg(long)]
     pub lineage_output: Option<PathBuf>,
@@ -271,7 +271,7 @@ pub struct BenchWafArgs {
     /// top N cases are sent against the WAF.
     ///
     /// "Information gain" is the binary Shannon entropy of the
-    /// current block-probability estimate for the case — peaks at
+    /// current block-probability estimate for the case, peaks at
     /// 1 bit when the WAF blocks 50% of the time (maximally
     /// discriminating) and drops to 0 at the endpoints (trivial
     /// block or trivial pass). High-entropy cases teach the operator
@@ -298,7 +298,7 @@ pub struct BenchWafArgs {
     /// history. Useful for operators running parallel WAF assessments
     /// who want to aggregate posteriors before a follow-up bench.
     ///
-    /// Saturating arithmetic per `History::merge` — overflow on a
+    /// Saturating arithmetic per `History::merge`: overflow on a
     /// single payload caps at `u32::MAX` rather than wrapping. Paths
     /// that fail to read are reported as warnings on stderr; benching
     /// continues with whatever histories did load.
@@ -306,13 +306,13 @@ pub struct BenchWafArgs {
     pub history_merge: Vec<PathBuf>,
 
     /// Enforce per-class fairness when scheduling under `--budget`.
-    /// Without this flag, the scheduler is class-blind — a corpus
+    /// Without this flag, the scheduler is class-blind, a corpus
     /// dominated by one class (e.g. 95% sql) will return an all-sql
     /// schedule. With `--fair-class`, every class receives roughly
     /// `budget / num_classes` slots, then within each class payloads
     /// are ordered by descending expected info gain. Classes with
     /// fewer payloads than their allocation contribute what they have
-    /// (honest under-fill — see `info_gain_sched::schedule_per_class`
+    /// (honest under-fill, see `info_gain_sched::schedule_per_class`
     /// for the contract).
     ///
     /// Independent of `--budget`: with no `--budget`, fairness has no
@@ -431,11 +431,11 @@ pub struct BenchWafArgs {
     ///
     /// When > 0, each evolutionary-search engine created for this bench round
     /// calls `EvolutionEngine::on_change_point(exploration_boost_rounds, 2.0)`
-    /// immediately after construction so it explores more aggressively — the
+    /// immediately after construction so it explores more aggressively, the
     /// WAF rule update invalidated the learned strategy and re-exploration is
     /// exactly the right response.
     ///
-    /// Default 0 (no boost). Not exposed as a CLI flag — set programmatically
+    /// Default 0 (no boost). Not exposed as a CLI flag, set programmatically
     /// by `hunt_cmd` when the CUSUM alarm fires.
     #[arg(skip)]
     pub exploration_boost_rounds: u32,
@@ -464,7 +464,7 @@ fn parse_ci_threshold(s: &str) -> std::result::Result<f64, String> {
 #[derive(Debug, Deserialize)]
 struct CorpusFile {
     // Corpus YAML/JSON may carry a `schema:` key for forward compat
-    // — serde drops unknown fields by default, so it rides through
+    //: serde drops unknown fields by default, so it rides through
     // silently. When a real consumer (e.g. format-version gating)
     // appears, re-add the field then.
     #[serde(default, rename = "case")]
@@ -481,7 +481,7 @@ pub(crate) struct BenchCase {
     /// body `q=<urlenc payload>`). Alternatives: `url_query_q`, `raw_body`.
     #[serde(default = "default_mode")]
     pub(crate) mode: String,
-    /// Free-form one-line documentation of what the case exercises —
+    /// Free-form one-line documentation of what the case exercises 
     /// rides through to the per-case [`CaseResult`] output so an
     /// operator scanning bench results sees WHY the case exists.
     #[serde(default)]
@@ -496,7 +496,7 @@ fn default_mode() -> String {
 struct CaseResult {
     id: String,
     class: String,
-    /// Mirror of [`BenchCase::description`] — surfaces in the JSON
+    /// Mirror of [`BenchCase::description`], surfaces in the JSON
     /// bench output so an operator inspecting `case_id` knows what
     /// the case was MEANT to test (regression-context for a future
     /// debugger).
@@ -505,7 +505,7 @@ struct CaseResult {
     raw_blocked: bool,
     raw_status: u16,
     evaded: Option<EvadeResult>,
-    /// Mirror of [`BenchCase::payload`] — kept on the result so the
+    /// Mirror of [`BenchCase::payload`], kept on the result so the
     /// C-15 minimum-bypass-set computation (and any future post-hoc
     /// analysis like the info-gain scheduler's history replay) can
     /// recover the actual wire payload without re-indexing the corpus
@@ -517,12 +517,12 @@ struct CaseResult {
     /// corpus down to the cases that actually discriminate between
     /// WAFs ("signal" only). Cases that are `trivial_block` (WAF
     /// blocks every variant) or `trivial_pass` (WAF blocks nothing)
-    /// carry no information about THIS run — they're redundant for
+    /// carry no information about THIS run, they're redundant for
     /// regression tracking. `baseline_failed` cases never had an
     /// attack to evade in the first place.
     case_quality: CaseQuality,
     /// C-14 discriminative score in [0.0, 1.0]. Defined as the binary
-    /// Shannon entropy of (bypass_rate, 1-bypass_rate) — peaks at 1.0
+    /// Shannon entropy of (bypass_rate, 1-bypass_rate), peaks at 1.0
     /// when bypass_rate == 0.5 (maximum information), 0.0 at the
     /// endpoints. Only meaningful when `case_quality == Signal`;
     /// reported as 0.0 otherwise.
@@ -530,7 +530,7 @@ struct CaseResult {
 }
 
 /// C-14 case-quality classification. A bench case is "signal" iff
-/// the WAF rule discriminates between attack variants — some pass
+/// the WAF rule discriminates between attack variants, some pass
 /// and some are blocked. Pinned-at-0% (trivial_block) and
 /// pinned-at-100% (trivial_pass) cases tell the operator NOTHING
 /// new about the WAF on a re-run; filtering them out shrinks the
@@ -538,7 +538,7 @@ struct CaseResult {
 #[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 enum CaseQuality {
-    /// Baseline (raw) payload was NOT blocked — WAF has no rule on
+    /// Baseline (raw) payload was NOT blocked. WAF has no rule on
     /// this attack at all; no bypass to find, no quality to score.
     BaselineFailed,
     /// WAF blocks the raw payload AND every variant. Strong rule
@@ -546,7 +546,7 @@ enum CaseQuality {
     TrivialBlock,
     /// WAF blocks the raw payload but EVERY variant passes. The
     /// rule is byte-anchored to the exact attack string and is a
-    /// completeness gap — useful signal that the rule needs
+    /// completeness gap, useful signal that the rule needs
     /// widening, but redundant across many similar cases.
     TrivialPass,
     /// WAF blocks the raw payload AND blocks SOME variants while
@@ -561,7 +561,7 @@ enum CaseQuality {
 }
 
 /// Compute case-quality classification + discriminative score from
-/// the bench outcome. Pure — no allocation, no I/O. The threshold
+/// the bench outcome. Pure, no allocation, no I/O. The threshold
 /// constants are pinned by `case_quality_pinned_constants` so a
 /// silent re-tuning of "signal" boundary is impossible.
 fn classify_case_quality(raw_blocked: bool, evaded: Option<&EvadeResult>) -> (CaseQuality, f64) {
@@ -572,13 +572,13 @@ fn classify_case_quality(raw_blocked: bool, evaded: Option<&EvadeResult>) -> (Ca
         return (CaseQuality::BaselineFailed, 0.0);
     }
     if e.variants_total == 0 {
-        // Nothing was tested even though raw blocked — treat as no
+        // Nothing was tested even though raw blocked, treat as no
         // measurement rather than guessing a class.
         return (CaseQuality::NotMeasured, 0.0);
     }
     let p = e.bypass_rate;
     // Strict equality at 0.0/1.0 catches the pinned-at-endpoints
-    // cases; anything else is signal (no margin band — we don't want
+    // cases; anything else is signal (no margin band, we don't want
     // a `signal_threshold` knob that could be retuned silently).
     if p <= 0.0 {
         (CaseQuality::TrivialBlock, 0.0)
@@ -586,7 +586,7 @@ fn classify_case_quality(raw_blocked: bool, evaded: Option<&EvadeResult>) -> (Ca
         (CaseQuality::TrivialPass, 0.0)
     } else {
         // Binary Shannon entropy in [0, 1]. Shared with the info-gain
-        // scheduler — single canonical home at
+        // scheduler, single canonical home at
         // `wafrift_types::entropy::binary_shannon`.
         (CaseQuality::Signal, wafrift_types::binary_shannon(p))
     }
@@ -609,10 +609,10 @@ struct EvadeResult {
     variants_unverified_not_blocked: usize,
     /// PROVEN-EXECUTING bypasses (only populated under `--prove-execution`):
     /// of the verified bypasses, how many were detonated and actually fired a
-    /// sink (`alert(1)`) — confirmed XSS, not just a WAF pass. The honest
+    /// sink (`alert(1)`), confirmed XSS, not just a WAF pass. The honest
     /// bypass-vs-exploit split. `0` when `--prove-execution` is off.
     variants_executed: usize,
-    /// `variants_executed / variants_bypassed` — fraction of bypasses that are
+    /// `variants_executed / variants_bypassed`: fraction of bypasses that are
     /// confirmed exploits. `0.0` when nothing was proven.
     executed_rate: f64,
     /// Per-strategy breakdown.
@@ -635,7 +635,7 @@ struct StrategyStat {
     /// WAF did not block, but the oracle says what got through is NOT a
     /// working attack (mutation destroyed it, or it was a fingerprint
     /// probe, not an exploit). The OLD code counted every one of these
-    /// as a "bypass" — that was the rig. Surfaced, never hidden.
+    /// as a "bypass" (that was the rig. Surfaced, never hidden).
     unverified_not_blocked: usize,
     /// PROVEN-EXECUTING bypasses under `--prove-execution`: bypasses whose
     /// response body detonated to a fired sink (confirmed XSS). `0` otherwise.
@@ -643,7 +643,7 @@ struct StrategyStat {
 }
 
 // The verified-bypass oracle + per-class structural validators are
-// the SINGLE SOURCE in `crate::equiv_engine` — the corpus bench and
+// the SINGLE SOURCE in `crate::equiv_engine`: the corpus bench and
 // the shipped `wafrift scan` share exactly one definition of "bypass",
 // so a de-rig fix can never apply to one and not the other. Re-exported
 // here so existing call sites and the pinned anti-rig tests resolve.
@@ -662,13 +662,13 @@ pub fn run_bench_waf(args: BenchWafArgs) -> ExitCode {
     // §13 dogfood (round 2, DEFECT 1): an unusable `--corpus` is an INPUT
     // error, not a runtime error. The bench cannot start without a corpus,
     // and the exit-code contract (see main.rs `after_help`) reserves 2 for
-    // argument/input errors ("malformed value, missing required field") —
+    // argument/input errors ("malformed value, missing required field") 
     // exactly what a nonexistent `--corpus <path>` is. Pre-validate the
     // path here (reusing `resolve_corpus_path`, no §7 fork) so the failure
     // returns 2 consistently for BOTH `bench-waf` and `scan --corpus`,
     // matching every sibling input error (`--payload ""`, unknown flag).
     // Pre-fix this fell into the async runtime-error arm below, which maps
-    // every Err → exit 1 — so `scan --corpus /typo` returned 1 while
+    // every Err → exit 1, so `scan --corpus /typo` returned 1 while
     // `scan --payload ""` returned 2. (exit 2 is already overloaded with
     // bench-waf "zero bypasses"; CI scripts disambiguate via stderr, which
     // carries an explicit "Input error:" line here.)
@@ -773,7 +773,7 @@ fn validate_corpus_and_exit(cases: &[BenchCase], format: &str) -> Result<ExitCod
 /// Resolve `--corpus` to a path that actually exists.
 ///
 /// The default `wafrift-bench/corpus` is relative to the *current
-/// directory*, so it only works when run from the repo root — a
+/// directory*, so it only works when run from the repo root, a
 /// `cargo install`ed binary, or `bench-waf` run from anywhere else,
 /// fails with a bare `read_dir ...: No such file or directory`. Try a
 /// sequence of sensible locations and, on total failure, name every
@@ -808,7 +808,7 @@ fn resolve_corpus_path(requested: &Path) -> Result<PathBuf, String> {
         candidates.push(PathBuf::from(env_path));
     }
     // 2. Relative to the current working directory (the documented
-    //    repo-root case) — already covered by `requested` if relative,
+    //    repo-root case), already covered by `requested` if relative,
     //    but also try the bare default name explicitly.
     candidates.push(PathBuf::from("wafrift-bench/corpus"));
     // 3. Relative to the executable: <exe_dir>/.. walked up a few
@@ -927,7 +927,7 @@ pub(crate) fn build_request(base_url: &str, case: &BenchCase) -> Request {
 }
 
 // `send` (reqwest + `wafrift_types::Request`) is the single shared
-// transport in `crate::equiv_engine` — imported above.
+// transport in `crate::equiv_engine`: imported above.
 
 fn pick_level(name: &str) -> Option<Level> {
     match name {
@@ -950,7 +950,7 @@ fn class_to_payload_type(class: &str) -> PayloadType {
         "nosql" => PayloadType::NoSql,
         "ssi" => PayloadType::Ssi,
         "log4shell" => PayloadType::Jndi,
-        // xxe / cve_pocs have no wafrift grammar mutator yet — fall back
+        // xxe / cve_pocs have no wafrift grammar mutator yet, fall back
         // to encoding-only mutations so the bench still runs.
         _ => PayloadType::Unknown,
     }
@@ -986,7 +986,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     // R53 pass-15 §11-A (CLAUDE.md §11 UTILIZATION): warn operators
     // who still pass --oracle-gate=true that the flag is a no-op
     // (oracle gating is always-on since R32). Silent-no-op is worse
-    // than the flag absence — operators reading their command line
+    // than the flag absence, operators reading their command line
     // believe they enabled something. Tracing warn on stderr so JSON
     // consumers are unaffected.
     if args.oracle_gate {
@@ -1047,18 +1047,18 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     //
     // Load the history file (if any) before either the budget filter
     // or the bench loop so a single mutable handle survives end-to-end.
-    // Cold start when the file is missing — that is the documented
+    // Cold start when the file is missing, that is the documented
     // first-run path and must not error.
     // §15 OOM / TOCTOU fix: use read_bounded_text_file instead of
-    // std::fs::read_to_string — single fd open+read, no stat() race,
+    // std::fs::read_to_string, single fd open+read, no stat() race,
     // hard cap prevents a crafted history file from OOMing the bench run.
     // Cold start when the file is absent preserves the documented first-run
     // behaviour without calling read_bounded_text_file on a non-existent
     // path (the function propagates the IO error but we want a clean cold-
-    // start for "not found" — check existence first, which is fine because
+    // start for "not found", check existence first, which is fine because
     // the file is created and owned by wafrift itself, not a symlink target).
     // §7 DEDUP: the load (bounded read, cold-start-on-absent, warn-on-parse-error,
-    // hard-error-on-IO) is the canonical `info_gain_sched::load_history` — the same
+    // hard-error-on-IO) is the canonical `info_gain_sched::load_history`: the same
     // loader `fingerprint --filter-history` uses, so warm-start semantics never drift.
     let mut sched_history = match args.history_file.as_ref() {
         Some(path) => crate::info_gain_sched::load_history(path)?,
@@ -1069,7 +1069,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     // into the working history before scheduling. Each file is
     // read+parsed independently; a malformed or missing file emits
     // a warning and is skipped (benching continues with whatever
-    // did load — same robustness convention as --history-file).
+    // did load (same robustness convention as --history-file)).
     // §15 OOM fix: same read_bounded_text_file treatment as --history-file.
     for merge_path in &args.history_merge {
         match crate::safe_body::read_bounded_text_file(
@@ -1105,18 +1105,18 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
         // operators can disable the scheduler with `--budget 0` in
         // scripted dry-runs. Anything > 0 trims the corpus to the
         // top-N most informative cases (cold-start payloads land
-        // first under the n_trials tiebreak — see schedule docs).
+        // first under the n_trials tiebreak (see schedule docs)).
         if budget == 0 {
             eprintln!("info-gain scheduler: --budget 0 → scheduler disabled");
         } else if budget >= cases.len() {
             eprintln!(
-                "info-gain scheduler: --budget {budget} ≥ corpus size {} — no filter applied",
+                "info-gain scheduler: --budget {budget} ≥ corpus size {}, no filter applied",
                 cases.len()
             );
         } else if budget > 0 && budget < cases.len() {
             let original_count = cases.len();
             // Get diagnostic entries so the eprintln can surface the
-            // mean info_gain of the kept set — operators see the
+            // mean info_gain of the kept set, operators see the
             // schedule's actual quality, not just its cardinality.
             let entries: Vec<crate::info_gain_sched::ScheduleEntry> = if args.fair_class {
                 // Per-class fairness: every class gets roughly equal
@@ -1217,14 +1217,14 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
 
     // --list-schedule: emit the run-order schedule and exit BEFORE
     // any HTTP traffic. Operators use this to audit what the next
-    // real bench would actually fire — saves the budget pain of
+    // real bench would actually fire, saves the budget pain of
     // realising mid-run that --class or --budget excluded the wrong
     // payloads. Honours --format (text by default, json if asked).
     if args.list_schedule {
         let effective_budget = args.budget.unwrap_or(cases.len()).min(cases.len());
         // Re-derive diagnostics from the (already-filtered) case list
         // so the preview reflects --class, --budget, and --fair-class
-        // exactly — the cases that survived all filters above ARE
+        // exactly, the cases that survived all filters above ARE
         // the cases that will run, in the order they will run.
         let entries = if args.fair_class {
             let mut by_class: std::collections::BTreeMap<String, Vec<String>> =
@@ -1308,7 +1308,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     // R52 pass-14 I1 fix (CLAUDE.md §9 WIRING): apply --socks5 +
     // --http-proxy egress rotation to the client. Pre-fix the
     // fields were parsed by clap, stored in BenchWafArgs, and
-    // silently discarded — every operator-supplied proxy request
+    // silently discarded, every operator-supplied proxy request
     // routed direct. Build a single-entry-per-URL EgressPool and
     // apply the first entry to the bench client; rotation across
     // probes requires per-probe client construction; this builder still
@@ -1330,7 +1330,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
         }
         // R53 pass-15 §11-B (CLAUDE.md §11 UTILIZATION): wire
         // --tailscale-exit-node + --tailscale-socks-addr too.
-        // Pre-fix both args were declared, populated, persisted —
+        // Pre-fix both args were declared, populated, persisted 
         // and silently ignored by the pool build.
         if !args.egress_tailscale_nodes.is_empty() {
             let socks = if args.egress_tailscale_socks_addr.is_empty() {
@@ -1343,7 +1343,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
         let pool = pool_builder
             .build()
             .map_err(|e| format!("egress pool: {e}"))?;
-        // Use the first entry of the pool — bench-waf currently
+        // Use the first entry of the pool, bench-waf currently
         // builds one client for the run, so we can't rotate
         // mid-bench without restructuring. Operator-supplied
         // --socks5 / --http-proxy NOW affects requests; rotation
@@ -1364,7 +1364,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     //
     // Use the operator's `--timeout-secs` (clamped to a hard floor of
     // 5 s so a pathologically-low operator setting can't shorten the
-    // healthcheck below useful — many slow-starting WAF stacks need
+    // healthcheck below useful, many slow-starting WAF stacks need
     // at least that). Pre-fix the timeout was hardcoded `10` and
     // ignored `--timeout-secs`, producing false "healthcheck failed"
     // on slow stacks the operator had legitimately budgeted for.
@@ -1458,7 +1458,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
                     if args.adaptive_pause_after_errors > 0 && n == args.adaptive_pause_after_errors
                     {
                         eprintln!(
-                            "warn: {n} consecutive connection errors — pausing 2s and \
+                            "warn: {n} consecutive connection errors, pausing 2s and \
                              doubling per-request delay (target may be choked)"
                         );
                         tokio::time::sleep(std::time::Duration::from_secs(
@@ -1508,7 +1508,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     // Even when --budget was not set, --history-file may be specified
     // on its own to build up history across full-corpus runs (which a
     // later run can use with --budget to scope down). So this write
-    // path is independent of `args.budget` — it fires whenever the
+    // path is independent of `args.budget`: it fires whenever the
     // file is set.
     for r in &results {
         sched_history.observe(r.id.clone(), r.raw_blocked);
@@ -1523,7 +1523,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
                     sched_history.len(),
                     path.display(),
                     if sched_history.is_empty() {
-                        "empty history — first run"
+                        "empty history, first run"
                     } else {
                         "ready for warm-start on the next run"
                     }
@@ -1578,8 +1578,8 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     emit_report(&base_url, &args, &results)?;
 
     // Exit code:
-    //   0 — clean run
-    //   2 — wafrift achieved zero bypasses across ALL cases (in --evade mode only)
+    //   0, clean run
+    //   2, wafrift achieved zero bypasses across ALL cases (in --evade mode only)
     //       i.e. not a single variant bypassed the WAF on any of the corpus cases.
     let code = if args.evade
         && results
@@ -1870,7 +1870,7 @@ async fn run_payload_strategy(
                         } else if env.blocked {
                             wafrift_evolution::hunt_corpus_bridge::ProbeOutcome::Block
                         } else {
-                            // Unverified-not-blocked: don't record — the oracle
+                            // Unverified-not-blocked: don't record, the oracle
                             // wasn't certain and corpus dedup would treat this
                             // as noise.
                             wafrift_evolution::hunt_corpus_bridge::ProbeOutcome::Ambiguous
@@ -1936,7 +1936,7 @@ async fn run_payload_strategy(
                     bypass_techs.push(format!("{}:{}", strat, variant.techniques.join("+")));
                     // Prove EXECUTION (honest bypass-vs-exploit split): detonate
                     // the reflected response body. Counts only a fired sink as
-                    // executed — a WAF pass that reflects inert does not.
+                    // executed (a WAF pass that reflects inert does not).
                     if let Some((body, headers)) = proof_io
                         && detonate_bypass_body(&body, &headers, base_url)
                     {
@@ -1945,7 +1945,7 @@ async fn run_payload_strategy(
                 } else if !blocked {
                     // Not blocked, but either the mutation destroyed the
                     // attack OR the request was malformed (400/etc) and
-                    // never executed — the case the rig scored as a win.
+                    // never executed (the case the rig scored as a win).
                     stat.unverified_not_blocked += 1;
                 }
             }
@@ -1960,7 +1960,7 @@ async fn run_payload_strategy(
 
 /// Detonate a verified-bypass response `body` and report whether its injected
 /// JavaScript actually EXECUTED (a sink fired). Gated on the response being
-/// HTML — a JSON/text echo backend (e.g. httpbin) reflects the payload inertly
+/// HTML, a JSON/text echo backend (e.g. httpbin) reflects the payload inertly
 /// and can never execute, which is exactly the bypass-vs-exploit distinction
 /// this measures. Best-effort: a missing `detonate` tool / non-HTML body / parse
 /// failure yields `false` (counted as bypass-only, never a false exploit).
@@ -1981,14 +1981,14 @@ fn detonate_bypass_body(body: &[u8], headers: &[(String, String)], url: &str) ->
 }
 
 // `json_escape` and `build_request_for_delivery` (testbed shapes) are
-// the single source in `crate::equiv_engine` — imported above. The
+// the single source in `crate::equiv_engine`: imported above. The
 // pinned `delivery_shapes_build_correct_requests` test exercises that
 // one definition through `use super::*`.
 
 /// Record one verified equiv-family bypass (winning wire payload +
 /// response envelope, with H1 dedup) to the corpus recorder. Shared by
 /// the equiv / equiv-adaptive / equiv-cegis strategies so the record call
-/// lives in ONE place (§7) — the concrete payload is what makes a hunt
+/// lives in ONE place (§7), the concrete payload is what makes a hunt
 /// corpus re-verifiable and submittable (`wafrift harvest`).
 fn record_equiv_bypass(
     recorder: &std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>,
@@ -2005,8 +2005,8 @@ fn record_equiv_bypass(
         // Persist the EXACT delivery shape so `wafrift harvest` re-fires
         // the identical request that beat the WAF (the difference between
         // a recorded number and a submittable bypass). If serialization
-        // somehow failed we still record the bypass without it — harvest
-        // falls back to standard shapes — rather than drop a real bypass.
+        // somehow failed we still record the bypass without it, harvest
+        // falls back to standard shapes (rather than drop a real bypass).
         let delivery_json = serde_json::to_string(delivery).ok();
         let _ = guard.record(
             env,
@@ -2022,12 +2022,12 @@ fn record_equiv_bypass(
 }
 
 /// Strategy: Phase-B joint `(payload × delivery)` equivalence generator.
-/// Draws members of the (effectively infinite) equivalence class —
-/// every one sound-by-construction — and delivers each via its
+/// Draws members of the (effectively infinite) equivalence class 
+/// every one sound-by-construction, and delivers each via its
 /// WAF-blind shape. Still gated by the INDEPENDENT `verified_bypass`
 /// oracle (defense in depth: a member counts only if equiv's generator
 /// AND the external sqlparser oracle AND "reached the app" AND "not
-/// blocked" all agree). No rigging — this only makes the engine
+/// blocked" all agree). No rigging, this only makes the engine
 /// genuinely better, never the scoreboard.
 #[allow(clippy::too_many_arguments)]
 async fn run_equiv_strategy(
@@ -2042,14 +2042,14 @@ async fn run_equiv_strategy(
     recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>>,
 ) -> StrategyStat {
     let mut stat = StrategyStat::default();
-    // Only classes with a sound equivalence model are handled — see
+    // Only classes with a sound equivalence model are handled, see
     // `grammar::equiv::supports_class` (sql, xss, cmdi, path, ssti, ldap,
     // ssrf, nosql, log4shell, xxe). Anything else emits nothing rather
     // than guess (anti-rig).
     if !grammar::equiv::supports_class(&case.class) {
         return stat;
     }
-    // Deterministic per-case seed (FNV-1a of the case id) — reproducible
+    // Deterministic per-case seed (FNV-1a of the case id), reproducible
     // runs, distinct streams per case.
     let mut seed: u64 = FNV_OFFSET_64;
     for byte in case.id.bytes() {
@@ -2125,7 +2125,7 @@ async fn run_equiv_strategy(
 /// delivery-shape arms is played against the LIVE WAF; the verified-
 /// bypass signal is the reward. Within a few rounds the request budget
 /// concentrates on exactly the shapes that beat THIS WAF instead of
-/// blindly sampling shapes it blocks — per-target learning over the
+/// blindly sampling shapes it blocks, per-target learning over the
 /// provably-sound equivalence space (no round wasted on a destroyed
 /// payload). Still gated by the independent `verified_bypass` oracle.
 #[allow(clippy::too_many_arguments)]
@@ -2252,7 +2252,7 @@ async fn run_equiv_cegis_strategy(
     // bench drives `equiv_engine::run_equiv_cegis` with the
     // httpbin-testbed request builder; `wafrift scan` drives the same
     // function with the live-target builder. One B→C→A loop, one model
-    // path, one oracle — measured here, shipped there.
+    // path, one oracle (measured here, shipped there).
     let mut stat = StrategyStat::default();
     let outcome = run_equiv_cegis(
         client,
@@ -2283,7 +2283,7 @@ async fn run_equiv_cegis_strategy(
         ));
         // Persist the concrete winning wire payload + its response
         // envelope to the rule-bypass corpus (with H1 dedup) so a hunt
-        // campaign yields a re-verifiable, submittable bypass set —
+        // campaign yields a re-verifiable, submittable bypass set 
         // technique tags alone can't reconstruct the payload.
         if let Some(rec) = recorder {
             record_equiv_bypass(
@@ -2303,12 +2303,12 @@ async fn run_equiv_cegis_strategy(
     stat
 }
 
-/// Strategy: feedback-driven evolution search — `wafrift_evolution::EvolutionEngine`
+/// Strategy: feedback-driven evolution search: `wafrift_evolution::EvolutionEngine`
 /// runs one of {`hill_climbing`, `simulated_annealing`, `tabu_search`, `novelty_search`,
 /// `map_elites`}. For each round we get a candidate chromosome, render it to a
 /// payload (apply the chromosome's grammar + encoding genes to case.payload),
 /// send it, and feed the WAF's verdict back. The algorithm learns which gene
-/// combos beat *this* WAF as the round progresses — same loop the production
+/// combos beat *this* WAF as the round progresses, same loop the production
 /// `wafrift scan` uses, just headless against a corpus instead of a live host.
 async fn run_evolution_strategy(
     client: &Client,
@@ -2344,7 +2344,7 @@ async fn run_evolution_strategy(
     // R54 pass-16 I2 fix (CLAUDE.md §10 COHERENCE + §11 UTILIZATION):
     // pre-fix the unseeded path used a hardcoded constant 0xC0FFEE
     // so every "non-deterministic" run produced byte-identical
-    // evolution trajectories — directly contradicting --help's claim
+    // evolution trajectories, directly contradicting --help's claim
     // that without --seed the bench is non-deterministic. Now: when
     // --seed is absent we draw from the OS entropy source per
     // invocation. Each bench run gets its own base_seed; reruns are
@@ -2355,7 +2355,7 @@ async fn run_evolution_strategy(
     // emitted UNCONDITIONALLY on stderr (not via tracing::info!,
     // which the default `warn` filter swallows). Without this an
     // unseeded run produces a bypass the operator wants to re-pin and
-    // has no way to recover the seed — directly defeating R54's
+    // has no way to recover the seed, directly defeating R54's
     // reproducibility promise.
     let base_seed: u64 = match args.seed {
         Some(s) => s,
@@ -2423,7 +2423,7 @@ async fn run_evolution_strategy(
                     let (p, l) = render_chromosome(c, &case.payload, payload_type);
                     // Snapshot the chromosome (genes + lineage) for replay
                     // before we lose the borrow on the next loop iteration.
-                    // Only when corpus collection is on — saves a clone otherwise.
+                    // Only when corpus collection is on (saves a clone otherwise).
                     let snap = bypass_corpus.as_ref().map(|_| c.clone());
                     (i, p, l, snap)
                 }
@@ -2532,7 +2532,7 @@ fn render_chromosome(
     (encoded, label)
 }
 
-/// Strategy: MCTS — `wafrift::strategy::evade_mcts` learns the WAF mid-run by
+/// Strategy: MCTS: `wafrift::strategy::evade_mcts` learns the WAF mid-run by
 /// playing N games against it (depth-bounded action search with mctrust 0.4).
 async fn run_mcts_strategy(
     client: &Client,
@@ -2543,7 +2543,7 @@ async fn run_mcts_strategy(
     total: &mut usize,
     // MCTS never contributes to the VERIFIED headline (its transformed
     // payload is buried in the request with no recoverable plaintext to
-    // oracle-check) — unused by design, not an oversight.
+    // oracle-check) (unused by design, not an oversight).
     _bypassed: &mut usize,
     bypass_techs: &mut Vec<String>,
 ) -> StrategyStat {
@@ -2566,7 +2566,7 @@ async fn run_mcts_strategy(
         *total += 1;
         match send(client, &evaded.request, args.timeout_secs).await {
             Ok((_s, blocked, _l)) if !blocked => {
-                // MCTS applies grammar/encoding ACTIONS to the request —
+                // MCTS applies grammar/encoding ACTIONS to the request 
                 // it does NOT provably preserve the payload (the old
                 // "preserves semantics by construction" comment was an
                 // unverified assertion used to fake `oracle_valid += 1`).
@@ -2590,7 +2590,7 @@ async fn run_mcts_strategy(
     stat
 }
 
-/// Strategy: HTTP request smuggling — CL.TE / TE.CL / TE.TE / dual-CL / etc.
+/// Strategy: HTTP request smuggling: CL.TE / TE.CL / TE.TE / dual-CL / etc.
 /// Sends a smuggled payload via raw socket so the WAF parser sees harmless
 /// data while the backend parser ingests the smuggled-prefix payload.
 async fn run_smuggling_strategy(
@@ -2611,12 +2611,12 @@ async fn run_smuggling_strategy(
         .to_string();
     // Build the smuggled prefix as a POST containing the payload.
     // Content-Length must reflect the BYTE LENGTH of the body
-    // actually on the wire — `q=` + URL-encoded payload. Pre-fix
+    // actually on the wire: `q=` + URL-encoded payload. Pre-fix
     // the CL was computed on the RAW payload length (`+ 2` for
     // `q=`), but the body sent was URL-encoded: every `<`, `>`,
     // `&`, `"`, space, and non-ASCII byte expanded to 3-byte
     // `%XX`. A `<script>` payload (raw 8 bytes) URL-encodes to
-    // 28 bytes, so CL would be 10 while body was 30 — server
+    // 28 bytes, so CL would be 10 while body was 30, server
     // truncates the body mid-payload AND falsely records a WAF
     // block in the bench score.
     let encoded_body = format!("q={}", urlencoding::encode(&case.payload));
@@ -2635,7 +2635,7 @@ async fn run_smuggling_strategy(
         if *total > 0 && args.delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(args.delay_ms)).await;
         }
-        // Send the raw smuggled bytes as a POST body — this is a synthetic
+        // Send the raw smuggled bytes as a POST body, this is a synthetic
         // probe (not real wire-level smuggling), but it exercises the WAF's
         // parser for the smuggling shapes wafrift knows how to construct.
         let url = format!("{}/post", base_url.trim_end_matches('/'));
@@ -2646,7 +2646,7 @@ async fn run_smuggling_strategy(
         match send(client, &req, args.timeout_secs).await {
             Ok((status, blocked, _l)) => {
                 // Smuggling wraps `q=<urlencode(case.payload)>` in the
-                // smuggled request — the backend URL-decodes back to the
+                // smuggled request, the backend URL-decodes back to the
                 // exact original attack, so the oracle gate is on the
                 // ORIGINAL payload (it really is transmitted intact).
                 if verified_bypass(&case.class, &case.payload, &case.payload, blocked, status) {
@@ -2667,7 +2667,7 @@ async fn run_smuggling_strategy(
     stat
 }
 
-/// Strategy: Content-Type confusion — wrap payload in many Content-Types so
+/// Strategy: Content-Type confusion, wrap payload in many Content-Types so
 /// WAF parser disagrees with backend parser.
 async fn run_content_type_strategy(
     client: &Client,
@@ -2681,7 +2681,7 @@ async fn run_content_type_strategy(
 ) -> StrategyStat {
     let mut stat = StrategyStat::default();
     let form_body = format!("q={}", urlencoding::encode(&case.payload));
-    // §9 WIRING — `generate_all_variants_from_body` is the full sweep
+    // §9 WIRING: `generate_all_variants_from_body` is the full sweep
     // (WAFFLED set interleaved with preamble/epilogue/nested-envelope
     // multipart-smuggle shapes). The interleave guarantees that even a
     // small `--variants N` cap exercises at least one shape from each
@@ -2699,7 +2699,7 @@ async fn run_content_type_strategy(
         match send(client, &req, args.timeout_secs).await {
             Ok((status, blocked, _l)) => {
                 // Content-Type confusion reformats the wrapper, the
-                // `q=<urlencode(case.payload)>` value is preserved — the
+                // `q=<urlencode(case.payload)>` value is preserved, the
                 // backend parses back to the original attack. Oracle gate
                 // on the original (genuinely transmitted intact).
                 if verified_bypass(&case.class, &case.payload, &case.payload, blocked, status) {
@@ -2720,7 +2720,7 @@ async fn run_content_type_strategy(
     stat
 }
 
-/// Strategy: `ml-evasion` — route ML-backed WAFs (AWS/Cloudflare/Akamai
+/// Strategy: `ml-evasion`: route ML-backed WAFs (AWS/Cloudflare/Akamai
 /// bot-management, Datadome) through a manifold-projected structural mutator
 /// (`ml_evasion_probe_payload`) instead of rule-decompilation. Each seed
 /// yields a semantics-preserving structural mutation of the payload that
@@ -2730,12 +2730,12 @@ async fn run_content_type_strategy(
 /// are credited.
 ///
 /// Gated on `--waf-name`: a non-ML-backed name (or none) yields zero
-/// candidates, so this is a clean no-op on rule-based targets — correct, since
+/// candidates, so this is a clean no-op on rule-based targets, correct, since
 /// rule-decompilation is the wrong paradigm for a learned classifier. This is
 /// the forward-paradigm tool for the next-gen ML-WAF threat, reachable from the
 /// autonomous loop (`bench-waf` / `hunt`), not just `scan`. (The full
-/// *adaptive* decision-boundary descent — `wafmodel::evade_ml` driven by live
-/// feedback — is a tracked frontier upgrade in docs/legendary-todo.md.)
+/// *adaptive* decision-boundary descent: `wafmodel::evade_ml` driven by live
+/// feedback, is a tracked frontier upgrade in docs/legendary-todo.md.)
 async fn run_ml_evasion_strategy(
     client: &Client,
     case: &BenchCase,
@@ -2752,7 +2752,7 @@ async fn run_ml_evasion_strategy(
     // Different seeds → diverse on-manifold mutations of the payload, each fired
     // live + oracle-verified. `ml_evasion_probe_payload` owns the probe/extract
     // wiring (shared with `wafrift scan`); it returns `None` on a non-ML-backed
-    // `--waf-name`, so a rule-based bench is a true no-op here — never warns,
+    // `--waf-name`, so a rule-based bench is a true no-op here, never warns,
     // never counts, no denominator pollution.
     for seed in 0..args.variants as u64 {
         let Some((mutated_payload, techs)) =
@@ -2769,7 +2769,7 @@ async fn run_ml_evasion_strategy(
         match send(client, &req, args.timeout_secs).await {
             Ok((status, blocked, _l)) => {
                 // The manifold projection guarantees the mutated payload is
-                // still a working attack — oracle-gate on the mutated form.
+                // still a working attack (oracle-gate on the mutated form).
                 if verified_bypass(
                     &case.class,
                     &case.payload,
@@ -2801,7 +2801,7 @@ async fn run_ml_evasion_strategy(
     stat
 }
 
-/// Strategy: `ReDoS` — wrap payload in catastrophic-backtracking patterns.
+/// Strategy: `ReDoS`: wrap payload in catastrophic-backtracking patterns.
 ///
 /// Goal is to force the WAF's regex engine into exponential evaluation time
 /// so it hits its per-rule timeout. Some WAFs fail-OPEN on rule timeout,
@@ -2828,12 +2828,12 @@ async fn run_redos_strategy(
         ("alternation_overlap", format!("{}{}", "ab".repeat(30), p)),
         ("nested_quantifier", format!("{}{}", "x".repeat(80), p)),
         ("evil_email_shape", format!("a@{}.{}", "a".repeat(50), p)),
-        // Long Unicode escape sequence — most regex implementations slow down
+        // Long Unicode escape sequence, most regex implementations slow down
         // on large surrogate-pair sequences.
         ("unicode_storm", format!("{}{}", "\\u00ff".repeat(40), p)),
-        // Repeated backslash quoting — known historical CRS slowdown.
+        // Repeated backslash quoting (known historical CRS slowdown).
         ("backslash_storm", format!("{}{}", "\\\\".repeat(60), p)),
-        // Many word-boundary anchors — \b matching forces re-evaluation.
+        // Many word-boundary anchors: \b matching forces re-evaluation.
         ("word_boundary_storm", format!("{}{}", " a ".repeat(40), p)),
     ];
 
@@ -2846,7 +2846,7 @@ async fn run_redos_strategy(
         *total += 1;
         match send(client, &req, args.timeout_secs).await {
             Ok((status, blocked, _l)) => {
-                // The redos `blob` is `<storm-prefix><original payload>` —
+                // The redos `blob` is `<storm-prefix><original payload>` 
                 // the attack is still present, so oracle-gate on the blob.
                 if verified_bypass(&case.class, &case.payload, blob, blocked, status) {
                     stat.bypassed += 1;
@@ -2899,7 +2899,7 @@ fn class_probes(class: &str) -> Vec<Probe> {
 /// `differential`: probe the WAF with class-relevant rule-fingerprint
 /// payloads from `wafrift-evolution::differential::generate_probes`. A
 /// probe that comes back unblocked tells you which signature your WAF
-/// does NOT have — the inverse of bypass-rate measurement, useful for
+/// does NOT have, the inverse of bypass-rate measurement, useful for
 /// rule-coverage gap analysis.
 async fn run_differential_strategy(
     client: &Client,
@@ -2908,7 +2908,7 @@ async fn run_differential_strategy(
     args: &BenchWafArgs,
     strat: &str,
     total: &mut usize,
-    // Differential probes are WAF-rule FINGERPRINTS, not exploits — they
+    // Differential probes are WAF-rule FINGERPRINTS, not exploits, they
     // never count as bypasses, so the shared accumulator is unused here
     // by design.
     _bypassed: &mut usize,
@@ -2918,7 +2918,7 @@ async fn run_differential_strategy(
     let probes = class_probes(&case.class);
     if probes.is_empty() {
         // No probe family for this class (e.g. xxe, log4shell). Don't lie
-        // with a 0/0 bypass rate — return an empty stat.
+        // with a 0/0 bypass rate (return an empty stat).
         return stat;
     }
 
@@ -2933,7 +2933,7 @@ async fn run_differential_strategy(
             Ok((_s, blocked, _l)) if !blocked => {
                 // Differential probes are WAF-rule FINGERPRINTS, not
                 // exploits ("what does this WAF NOT inspect"). The old
-                // code fed them straight into the bypass headline — by
+                // code fed them straight into the bypass headline, by
                 // its own admission ("not full attacks"). That is the
                 // rig. They are a separate measurement and never count
                 // as a bypass.
@@ -3027,7 +3027,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
     // Default threshold 0.0 means any bypass (at least one) passes.
     let ci_pass: bool = overall_bypass_rate >= args.ci_threshold;
 
-    // RFC 3339 UTC timestamp — use SystemTime to avoid pulling chrono.
+    // RFC 3339 UTC timestamp (use SystemTime to avoid pulling chrono).
     let run_timestamp: String = {
         use std::time::{SystemTime, UNIX_EPOCH};
         let secs = SystemTime::now()
@@ -3105,7 +3105,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
             let oracle_valid: usize = results.iter().filter_map(|r| r.evaded.as_ref()).map(|e| e.variants_oracle_valid).sum();
             let unverified: usize = results.iter().filter_map(|r| r.evaded.as_ref()).map(|e| e.variants_unverified_not_blocked).sum();
             serde_json::json!({
-                "metric_definition": "bypassed = WAF did NOT block AND the per-class oracle confirms the effective payload is still a working attack. 'unverified_not_blocked' = WAF passed it but it is NOT a working attack (the OLD bench reported this as 'bypassed' — that was the rig).",
+                "metric_definition": "bypassed = WAF did NOT block AND the per-class oracle confirms the effective payload is still a working attack. 'unverified_not_blocked' = WAF passed it but it is NOT a working attack (the OLD bench reported this as 'bypassed', that was the rig).",
                 "total_variants_sent": total,
                 "total_variants_bypassed": bypassed,
                 "overall_bypass_rate": if total > 0 { bypassed as f64 / total as f64 } else { 0.0 },
@@ -3137,7 +3137,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
         // each case_quality variant + mean quality_score over the
         // signal cases. Operators tracking a regression-test corpus
         // use this to compute "what fraction of my corpus actually
-        // discriminates this WAF" — `signal/total` is the load-bearing
+        // discriminates this WAF": `signal/total` is the load-bearing
         // ratio. Mean score over Signal cases tells you how close to
         // p=0.5 (max entropy) the surviving signal is.
         "quality_summary": args.evade.then(|| {
@@ -3164,7 +3164,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
                 signal_scores.iter().sum::<f64>() / signal_scores.len() as f64
             };
             serde_json::json!({
-                "metric_definition": "case_quality classifies each case: baseline_failed (WAF didn't block raw — no attack to evade), trivial_block (WAF blocked every variant — no signal about brittleness), trivial_pass (every variant slipped — completeness gap), signal (some variants blocked, some passed — discriminative), not_measured (no --evade or zero variants). quality_score = binary Shannon entropy of bypass_rate, peaks at 1.0 when p=0.5.",
+                "metric_definition": "case_quality classifies each case: baseline_failed (WAF didn't block raw, no attack to evade), trivial_block (WAF blocked every variant, no signal about brittleness), trivial_pass (every variant slipped, completeness gap), signal (some variants blocked, some passed, discriminative), not_measured (no --evade or zero variants). quality_score = binary Shannon entropy of bypass_rate, peaks at 1.0 when p=0.5.",
                 "overall": {
                     "baseline_failed": overall[0],
                     "trivial_block": overall[1],
@@ -3186,7 +3186,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
         // C-15 minimum bypass set: given all bypassing payloads across the
         // bench, which smallest subset covers every WAF rule class that any
         // bypass touches? Used to produce forensically minimal payload lists
-        // for security reports — one payload per distinct detection surface.
+        // for security reports (one payload per distinct detection surface).
         "min_bypass_set": if args.evade {
             let bypass_payloads: Vec<BypassPayload> = results.iter()
                 .filter_map(|r| {
@@ -3246,14 +3246,14 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
     } else {
         println!(
             "{}",
-            format!("WAF bench — {base_url} ({} cases)", results.len()).bold()
+            format!("WAF bench: {base_url} ({} cases)", results.len()).bold()
         );
         println!();
         println!(
             "{:<28} {:<8} {:>5} {:>9} {:>9} {:>9}",
             "id", "class", "raw", "ev_sent", "ev_pass", "rate"
         );
-        println!("{}", "—".repeat(78));
+        println!("{}", ": ".repeat(78));
         for r in results {
             let raw = if r.raw_blocked {
                 "blk".red().to_string()
@@ -3267,7 +3267,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
                     format!("{:.1}%", e.bypass_rate * 100.0),
                 )
             } else {
-                ("—".into(), "—".into(), "—".into())
+                (": ".into(), ": ".into(), ": ".into())
             };
             println!(
                 "{:<28} {:<8} {:>5} {:>9} {:>9} {:>9}",
@@ -3279,7 +3279,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
                 rate,
             );
         }
-        println!("{}", "—".repeat(78));
+        println!("{}", ": ".repeat(78));
         println!();
         println!("{}", "by class:".bold());
         for (class, rs) in &by_class {
@@ -3320,7 +3320,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
             }
         }
 
-        // Per-strategy breakdown — answers "which of the 10 strategies
+        // Per-strategy breakdown, answers "which of the 10 strategies
         // is doing work and which is dead weight on this WAF?"
         if args.evade && !by_strategy_acc.is_empty() {
             println!();
@@ -3353,7 +3353,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
                         "  {:<14} {}",
                         "",
                         format!(
-                            "└─ EXECUTING {executed}/{bypassed} bypasses ({exec_rate:.1}%) — \
+                            "└─ EXECUTING {executed}/{bypassed} bypasses ({exec_rate:.1}%). \
                              confirmed XSS; the rest bypass but reflect inert"
                         )
                         .dimmed()
@@ -3366,7 +3366,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
         if args.prove_execution {
             println!();
             println!(
-                "{} {evade_executed}/{evade_bypassed} verified bypasses EXECUTE ({:.1}%) — \
+                "{} {evade_executed}/{evade_bypassed} verified bypasses EXECUTE ({:.1}%). \
                  confirmed XSS (alert fired). The remaining {} bypass the WAF but reflect inert: \
                  WAF bypasses, not proven exploits.",
                 "EXECUTION:".bold(),

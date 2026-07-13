@@ -22,7 +22,7 @@ jobs:
       # clang/gcc/cmake/golang; `ninja-build` is the only missing tool
       # (same as the dedicated `tls-impersonate` job). Without it
       # `cargo check --workspace --all-features` fails building
-      # boring-sys — the actual cause of this job's prior red, not a
+      # boring-sys: the actual cause of this job's prior red, not a
       # code/MSRV regression.
       - name: Install boring-sys C build deps
         run: |
@@ -66,9 +66,9 @@ jobs:
       # Fast per-push gate: the wafrift-wafmodel property + scale suites
       # run with a *reduced* case/config count so the push gate stays
       # quick. The IDENTICAL properties run at full 10k/1000 in the
-      # parallel `legendary` job below, which also gates — coverage is
+      # parallel `legendary` job below, which also gates, coverage is
       # not reduced, only split into a fast lane + a thorough lane.
-      - name: test (fast gate — scaled property/scale suites)
+      - name: test (fast gate, scaled property/scale suites)
         run: cargo test --workspace
         env:
           WAFMODEL_PROPTEST_CASES: "256"
@@ -79,7 +79,7 @@ jobs:
         run: |
           # Recompute the hash and assert it matches the pinned value.
           # This stops anyone from quietly editing corpus TOML files
-          # while keeping the published bypass-rate numbers — those
+          # while keeping the published bypass-rate numbers, those
           # numbers depend on this exact corpus.
           set -euo pipefail
           actual=$(find wafrift-bench/corpus -type f -name '*.toml' | sort | xargs sha256sum | sha256sum | awk '{print $1}')
@@ -102,12 +102,12 @@ jobs:
     # Best-effort: surface RustSec advisories on the dep graph without
     # gating PR merges. Three advisories live in transitive deps we cannot
     # patch from here:
-    #   - RUSTSEC-2023-0071 (`rsa` Marvin timing sidechannel) — pulled by
+    #   - RUSTSEC-2023-0071 (`rsa` Marvin timing sidechannel), pulled by
     #     `interactsh` for its OOB-server crypto; no fixed `rsa` release
     #     exists. (We did drop the *dead* direct `rsa` dep from wafrift-cli,
     #     but interactsh still requires it, so the advisory stays.)
-    #   - RUSTSEC-2026-0118 (`hickory-proto` NSEC3 loop) — no upstream fix.
-    #   - RUSTSEC-2026-0119 (`hickory-proto` O(n²) name compression) — fix
+    #   - RUSTSEC-2026-0118 (`hickory-proto` NSEC3 loop) (no upstream fix).
+    #   - RUSTSEC-2026-0119 (`hickory-proto` O(n²) name compression), fix
     #     needs a `reqwest`->hickory 0.26 bump that only lands when upstream
     #     republishes; `hickory` is pulled transitively via `reqwest`.
     # A strict gate would block all PRs until upstream cuts fixes, so the
@@ -116,7 +116,7 @@ jobs:
     # advisory IS fixed at the source: wasmtime bumped 30->36.0.x clears
     # RUSTSEC-2026-0088/0089 (we use cranelift + no pooling, so neither was
     # exploitable, but the upgrade removes them durably). Pinned to 36.0.x
-    # (patched >=36.0.7) to keep MSRV at rustc 1.86 — wasmtime >=42 needs
+    # (patched >=36.0.7) to keep MSRV at rustc 1.86, wasmtime >=42 needs
     # rustc 1.91+ / 45 needs 1.93, which would break the 1.88 MSRV gate.
     continue-on-error: true
     steps:
@@ -145,13 +145,13 @@ jobs:
           tags: wafrift-ci-smoke:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Smoke test — wafrift --help
+      - name: Smoke test, wafrift --help
         run: docker run --rm wafrift-ci-smoke:latest wafrift --help
-      - name: Smoke test — wafrift evade
+      - name: Smoke test, wafrift evade
         run: docker run --rm wafrift-ci-smoke:latest wafrift evade --payload "' OR 1=1--" --level light
-      - name: Smoke test — wafrift-proxy --help
+      - name: Smoke test, wafrift-proxy --help
         run: docker run --rm wafrift-ci-smoke:latest wafrift-proxy --help
-      - name: Smoke test — wafrift man emits troff
+      - name: Smoke test, wafrift man emits troff
         run: |
           # Stage 1: emit, capture stdout, expect troff macros + non-empty.
           out=$(docker run --rm wafrift-ci-smoke:latest wafrift man)
@@ -193,7 +193,7 @@ jobs:
       - run: cargo test  -p wafrift-proxy   --features tls-impersonate
 
   legendary:
-    name: legendary (full wafmodel matrix — 10k props / 1000 configs)
+    name: legendary (full wafmodel matrix: 10k props / 1000 configs)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -208,7 +208,7 @@ jobs:
       - run: cargo test -p wafrift-wafmodel --release
 
   mutants:
-    name: mutants (E5 — anti-rig core mine.rs + sfa.rs + solve.rs; 0 missed)
+    name: mutants (E5, anti-rig core mine.rs + sfa.rs + solve.rs; 0 missed)
     runs-on: ubuntu-latest
     # Hard wall-clock cap: a mis-scoped or runtime-blown job must fail
     # FAST, never burn the runner for 85 min then die at exit 143.
@@ -225,7 +225,7 @@ jobs:
       # Mutation testing is the ground truth that the suite is not
       # decoration. Scoped to the *baselined & hardened* anti-rig core
       # (mine.rs + sfa.rs); the scope ratchets to more engine files as
-      # each is baselined in subsequent slices — we never claim a file
+      # each is baselined in subsequent slices, we never claim a file
       # is mutation-gated before it provably is. The handful of
       # provably-equivalent mutants are excluded WITH written
       # justifications in mutants.toml (item 40); `--config` is passed
@@ -233,12 +233,12 @@ jobs:
       # `.cargo/mutants.toml`, never `./mutants.toml`. The gate fails on
       # any surviving (MISSED) mutant. TIMEOUT mutants (arithmetic
       # corruptions that infinite-loop the KMP build) are a real
-      # detection signal — a hung test fails CI — so they are
+      # detection signal, a hung test fails CI, so they are
       # acceptable; only silent survivors are not.
       #
       # Robustness (this gate was a false-green once: cargo-mutants'
       # ANSI colour made `grep '^MISSED'` anchor on an ESC byte and the
-      # gate could never fire — fixed): force `CARGO_TERM_COLOR=never`
+      # gate could never fire, fixed): force `CARGO_TERM_COLOR=never`
       # AND assert the machine summary line reports exactly "0 missed".
       - name: cargo-mutants on the anti-rig core (mine.rs + sfa.rs)
         env:
@@ -247,7 +247,7 @@ jobs:
           CARGO_TERM_COLOR: "never"
         # GitHub's default `run:` shell is `bash -e -o pipefail`, which
         # ABORTS the script on the FIRST non-matching grep inside a
-        # command-substitution — that false-RED'd a genuinely clean run
+        # command-substitution: that false-RED'd a genuinely clean run
         # (0 missed but the summary omits the "missed" token, so the
         # extraction grep matched nothing → set -e killed the step).
         # Override to drop `-e`; keep `-u`/pipefail; extract with
@@ -259,7 +259,7 @@ jobs:
           # `--timeout 30`: hard per-mutant cap (the slower CI runner's
           # auto-timeout was 180s ⇒ ~30 timeout-mutants blew the job
           # budget). `--jobs 3`: parallelise across the runner's cores.
-          # A hung mutant is still DETECTED (TIMEOUT, not MISSED) — just
+          # A hung mutant is still DETECTED (TIMEOUT, not MISSED), just
           # in 30s instead of 180s.
           cargo mutants --config mutants.toml \
             --manifest-path crates/wafmodel/Cargo.toml --no-shuffle \
@@ -284,7 +284,7 @@ jobs:
           # fail.
           summary="$(grep -E '[0-9]+ mutants tested' mutants_run.log | tail -1)"
           if [ -z "$summary" ]; then
-            echo "::error::no cargo-mutants summary — the run did not complete"
+            echo "::error::no cargo-mutants summary, the run did not complete"
             exit 1
           fi
           echo "summary: $summary"
@@ -298,4 +298,4 @@ jobs:
             echo "::error::cargo-mutants reports ${missed} missed mutant(s)"
             exit 1
           fi
-          echo "0 missed — every non-equivalent mutant in mine.rs + sfa.rs + solve.rs is detected"
+          echo "0 missed, every non-equivalent mutant in mine.rs + sfa.rs + solve.rs is detected"

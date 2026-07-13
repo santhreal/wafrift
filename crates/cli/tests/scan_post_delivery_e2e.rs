@@ -1,4 +1,4 @@
-//! POST form injection delivery — variants fire as POST body (not ?param=).
+//! POST form injection delivery (variants fire as POST body (not ?param=)).
 
 use serial_test::serial;
 use std::sync::Arc;

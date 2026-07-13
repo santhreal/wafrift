@@ -1,4 +1,4 @@
-//! `wafrift trailer-diff` — HTTP/1.1 chunked-trailer field injection scanner.
+//! `wafrift trailer-diff`: HTTP/1.1 chunked-trailer field injection scanner.
 //!
 //! ## The attack surface
 //!
@@ -20,7 +20,7 @@
 //! ```
 //!
 //! WAFs typically inspect the initial header block (before the body).
-//! Many do NOT parse trailer fields that appear after the final chunk —
+//! Many do NOT parse trailer fields that appear after the final chunk 
 //! they simply pass the connection to the backend, which reassembles
 //! the trailer into its header set and acts on the injected value.
 //! This creates a seam: a WAF-blocked payload delivered through a
@@ -28,10 +28,10 @@
 //!
 //! ## Two-request differential
 //!
-//! 1. **Baseline** — chunked POST with `Trailer: <H>` declared in the
+//! 1. **Baseline**: chunked POST with `Trailer: <H>` declared in the
 //!    header block but the trailer is NOT sent (just the terminal chunk).
 //!    Establishes the reference response shape.
-//! 2. **Attack** — identical, but `<H>: <P>` is sent as a trailer after
+//! 2. **Attack**: identical, but `<H>: <P>` is sent as a trailer after
 //!    the terminal chunk. Any divergence in status or body length is
 //!    evidence the trailer was processed by the origin, bypassing the WAF.
 //!
@@ -61,7 +61,7 @@ use crate::parser_diff_common::{body_delta_pct, severity_of};
 #[derive(Args, Debug)]
 pub(crate) struct TrailerDiffArgs {
     /// Target URL. Must be an `http://` or `https://` URL. The probe
-    /// is a chunked POST to this exact path — no redirect following
+    /// is a chunked POST to this exact path, no redirect following
     /// (redirects would lose the chunked framing). Named flag (not
     /// positional) for consistency with every other parser-diff
     /// command (`header-diff`, `body-diff`, `query-diff`, etc.) so
@@ -80,7 +80,7 @@ pub(crate) struct TrailerDiffArgs {
     pub header_name: String,
 
     /// HTTP timeout per request (seconds). Both baseline and attack
-    /// respect this independently — the comparison is valid only when
+    /// respect this independently, the comparison is valid only when
     /// both succeed within budget.
     #[arg(long, default_value_t = 8)]
     pub timeout_secs: u64,
@@ -92,7 +92,7 @@ pub(crate) struct TrailerDiffArgs {
     pub insecure: bool,
 
     /// Output format: `text` (default, human-readable summary) or `json`
-    /// (structured — suitable for piping into `jq` or report tooling).
+    /// (structured (suitable for piping into `jq` or report tooling)).
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 }
@@ -243,7 +243,7 @@ fn parse_url(url: &str) -> Result<ParsedUrl, String> {
         (Scheme::Http, r)
     } else {
         return Err(format!(
-            "unsupported scheme in {url:?} — only http:// and https:// are accepted"
+            "unsupported scheme in {url:?}, only http:// and https:// are accepted"
         ));
     };
 
@@ -323,7 +323,7 @@ pub(crate) enum RequestKind {
 /// \r\n
 /// ```
 ///
-/// The baseline is identical but omits the `<H>: <payload>` trailer line —
+/// The baseline is identical but omits the `<H>: <payload>` trailer line 
 /// it terminates with `0\r\n\r\n`.
 pub(crate) fn build_chunked_request(
     parsed: &ParsedUrl,
@@ -436,7 +436,7 @@ async fn exchange_https(
     use tokio_rustls::rustls::ClientConfig;
 
     let config: ClientConfig = if insecure {
-        // Permissive verifier — accepts any cert chain (lab-only path).
+        // Permissive verifier (accepts any cert chain (lab-only path)).
         ClientConfig::builder()
             .dangerous()
             .with_custom_certificate_verifier(Arc::new(PermissiveCertVerifier))
@@ -486,7 +486,7 @@ async fn read_response_split<R: AsyncReadExt + Unpin>(mut reader: R) -> Result<V
             Ok(n) => buf.extend_from_slice(&chunk[..n]),
             Err(e) => {
                 // Connection reset after body is normal for HTTP/1.1
-                // `Connection: close` — treat as end of response if we
+                // `Connection: close`: treat as end of response if we
                 // already have a status line.
                 if buf.contains(&b'\n') {
                     break;
@@ -599,7 +599,7 @@ impl tokio_rustls::rustls::client::danger::ServerCertVerifier for PermissiveCert
 
 fn render_curl_repro(args: &TrailerDiffArgs) -> String {
     // The canonical reproducer is a netcat/openssl pipe because curl
-    // cannot emit raw trailers — we emit the `printf | nc` form.
+    // cannot emit raw trailers (we emit the `printf | nc` form).
     use crate::helpers::shell_single_quote;
     let parsed = match parse_url(&args.url) {
         Ok(p) => p,
@@ -688,7 +688,7 @@ fn emit_output(format: &str, result: &TrailerDiffResult) {
     if result.severity == "none" {
         println!();
         println!(
-            "  {} no significant divergence — WAF and origin may both ignore trailers, \
+            "  {} no significant divergence: WAF and origin may both ignore trailers, \
              or the backend rejected the trailer-injected request the same way it rejected \
              the baseline.",
             "note:".bright_black()
@@ -702,7 +702,7 @@ fn emit_output(format: &str, result: &TrailerDiffResult) {
 mod tests {
     use super::*;
 
-    // ── build_chunked_request — golden wire bytes ─────────────────
+    // ── build_chunked_request, golden wire bytes ─────────────────
 
     #[test]
     fn baseline_request_starts_with_post_and_http11() {
@@ -772,7 +772,7 @@ mod tests {
         let parsed = parse_url("http://example.com/").unwrap();
         let bytes = build_chunked_request(&parsed, "X-Foo", "v", RequestKind::Attack);
         let text = String::from_utf8(bytes).unwrap();
-        // Chunk line: `1\r\nX\r\n` — exactly one byte.
+        // Chunk line: `1\r\nX\r\n`: exactly one byte.
         assert!(
             text.contains("1\r\nX\r\n"),
             "first chunk must be 1-byte body X; got:\n{text}"

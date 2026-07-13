@@ -10,7 +10,7 @@
 //! Every fire reports against a baseline:
 //!
 //! - `canary-reflected` : a probe canary token appeared verbatim in the
-//!   probe response headers or body — STRONGEST signal. The smuggled marker
+//!   probe response headers or body. STRONGEST signal. The smuggled marker
 //!   reached a surface that echoed it back (Location, Set-Cookie, a debug
 //!   echo header, or the body), confirming the request was processed past
 //!   the WAF. Takes precedence over the divergence signals below. Only
@@ -29,7 +29,7 @@
 //!
 //! Response body reads are HARD-CAPPED at [`MAX_RESPONSE_BYTES`].
 //! A WAF-protected origin returning a multi-GB decompression bomb
-//! cannot OOM the operator's host — the stream is aborted once the
+//! cannot OOM the operator's host, the stream is aborted once the
 //! cap is exceeded and the error surfaces in the per-probe report.
 
 use std::io::Write;
@@ -42,7 +42,7 @@ use reqwest::redirect::Policy;
 
 use wafrift_types::probe::ComposedArtifact;
 
-/// Hard cap on response body bytes read per probe. Set to 4 MiB —
+/// Hard cap on response body bytes read per probe. Set to 4 MiB 
 /// well above any realistic WAF response page (Cloudflare's
 /// challenge page is ~32 KiB; ModSecurity blocks ~200 B). Anything
 /// beyond this size is almost certainly a decompression bomb or a
@@ -93,7 +93,7 @@ pub fn build_client_with_resolve(
 
 /// Read a response body up to [`MAX_RESPONSE_BYTES`]. Returns
 /// `Err` if the body exceeds the cap. This is the bounded-read
-/// primitive every fire subcommand uses — a single function so
+/// primitive every fire subcommand uses, a single function so
 /// raising or lowering the cap touches one place.
 pub async fn bounded_body_bytes(resp: reqwest::Response) -> Result<Vec<u8>, String> {
     let mut bytes = Vec::new();
@@ -102,7 +102,7 @@ pub async fn bounded_body_bytes(resp: reqwest::Response) -> Result<Vec<u8>, Stri
         let chunk = chunk.map_err(|e| e.to_string())?;
         if bytes.len() + chunk.len() > MAX_RESPONSE_BYTES {
             return Err(format!(
-                "response exceeded {MAX_RESPONSE_BYTES} byte cap — aborting (possible decompression bomb)"
+                "response exceeded {MAX_RESPONSE_BYTES} byte cap, aborting (possible decompression bomb)"
             ));
         }
         bytes.extend_from_slice(&chunk);
@@ -116,7 +116,7 @@ pub async fn bounded_body_bytes(resp: reqwest::Response) -> Result<Vec<u8>, Stri
 ///
 /// Bundled into a struct rather than a tuple so adding a future
 /// observation (response headers, timing breakdown, …) doesn't ripple
-/// through every caller's destructuring — LAW 4.
+/// through every caller's destructuring: LAW 4.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct FireOutcome {
     /// HTTP status code of the response.
@@ -135,7 +135,7 @@ pub struct FireOutcome {
 /// the origin confirms the smuggled marker was processed past the WAF.
 ///
 /// Empty needles are ignored (an empty string is a substring of
-/// everything — counting it would be a guaranteed false positive).
+/// everything (counting it would be a guaranteed false positive)).
 #[must_use]
 pub fn reflected_tokens(body: &[u8], needles: &[String]) -> Vec<String> {
     needles
@@ -146,7 +146,7 @@ pub fn reflected_tokens(body: &[u8], needles: &[String]) -> Vec<String> {
 }
 
 /// True when `needle` occurs as a contiguous run of bytes inside
-/// `haystack`. Linear-scan substring match — adequate for the
+/// `haystack`. Linear-scan substring match, adequate for the
 /// network-bound fire path (body is capped at [`MAX_RESPONSE_BYTES`]
 /// and needles are 16 bytes).
 #[must_use]
@@ -157,7 +157,7 @@ fn contains_subslice(haystack: &[u8], needle: &[u8]) -> bool {
     haystack.windows(needle.len()).any(|w| w == needle)
 }
 
-/// Fire ONE baseline request — `method` against `target` carrying
+/// Fire ONE baseline request: `method` against `target` carrying
 /// the supplied headers and (optional) body. Returns a
 /// [`FireOutcome`] whose `reflected_canaries` is always empty (the
 /// baseline carries no smuggle canaries). Body reads are bounded via
@@ -198,7 +198,7 @@ pub async fn fire_baseline(
 ///
 /// Returns a [`FireOutcome`] on success. When `canary_header_name`
 /// placed the canary tokens on the wire, the response headers AND
-/// body are scanned for verbatim reflection of those tokens —
+/// body are scanned for verbatim reflection of those tokens 
 /// populating `reflected_canaries`. Body reads are bounded.
 #[tracing::instrument(skip(client, headers, body, canaries), fields(target = %target, header_count = headers.len(), has_body = body.is_some()))]
 pub async fn fire_smuggle_request(
@@ -247,7 +247,7 @@ pub async fn fire_smuggle_request(
     let resp = rb.send().await.map_err(|e| e.to_string())?;
     let status = resp.status().as_u16();
     // Capture the response headers for reflection scanning BEFORE the
-    // body stream consumes `resp` — only when tokens were on the wire
+    // body stream consumes `resp`: only when tokens were on the wire
     // (otherwise nothing can reflect, so skip the work).
     let scan_reflection = canary_header_name.is_some();
     let header_blob = if scan_reflection {
@@ -256,7 +256,7 @@ pub async fn fire_smuggle_request(
         Vec::new()
     };
     let body = bounded_body_bytes(resp).await?;
-    // Reflection scan only when the tokens were actually sent — if
+    // Reflection scan only when the tokens were actually sent, if
     // `--canary-header` was unset the canaries never hit the wire and
     // can't reflect. The scan covers BOTH response headers (Location,
     // Set-Cookie, debug echoes) and the body.
@@ -288,7 +288,7 @@ fn response_header_blob(resp: &reqwest::Response) -> Vec<u8> {
 }
 
 /// Scan both the response header blob and the response body for
-/// canary reflection, returning the deduplicated union — header hits
+/// canary reflection, returning the deduplicated union, header hits
 /// first, then any tokens found only in the body, preserving
 /// discovery order. A token echoed in both places appears once.
 #[must_use]
@@ -304,7 +304,7 @@ pub fn reflected_in_response(header_blob: &[u8], body: &[u8], needles: &[String]
 
 /// Classify a probe response relative to baseline. The single
 /// source of truth for the `bypass_signal` field across every fire
-/// subcommand — if this function changes, the signal semantics
+/// subcommand, if this function changes, the signal semantics
 /// change everywhere.
 #[must_use]
 pub fn classify(
@@ -334,7 +334,7 @@ pub fn classify(
 
 /// Classify a probe response, treating in-band canary reflection as
 /// the strongest signal. When `canary_reflected` is true the verdict
-/// is `"canary-reflected"` regardless of status/body divergence — a
+/// is `"canary-reflected"` regardless of status/body divergence, a
 /// reflected marker is a confirmed smuggle, not a heuristic. Otherwise
 /// this delegates to [`classify`], so the divergence semantics stay
 /// in exactly one place.
@@ -377,7 +377,7 @@ pub struct ComposedFireReport {
     pub bypass_signal: String,
     /// Canary tokens that reflected verbatim in the response body.
     /// Omitted from JSON when empty so existing consumers keep
-    /// working — additive, backwards-compatible (LAW 2).
+    /// working (additive, backwards-compatible (LAW 2)).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub reflected_canaries: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -409,7 +409,7 @@ pub struct ComposedFireConfig<'a> {
 /// `no_summary` is set.
 ///
 /// Used by both `smuggle-cross-product --fire-target` and
-/// `smuggle-chain --fire-target` — single source of truth for the
+/// `smuggle-chain --fire-target`: single source of truth for the
 /// composed-fire pipeline.
 pub async fn fire_composed_pipeline(
     composed: &[ComposedArtifact],
@@ -442,7 +442,7 @@ pub async fn fire_composed_pipeline(
         }
     };
     // The composed fire path only needs the baseline's (status,
-    // body_len) for divergence classification — a Copy tuple that
+    // body_len) for divergence classification, a Copy tuple that
     // can be shared across every concurrent fire without cloning.
     let baseline_ref = (baseline.status, baseline.body_len);
 
@@ -559,7 +559,7 @@ async fn fire_one_composed(
             }
         }
         // Build a SmuggleArtifact wrapper so we can reuse the curl
-        // renderer. Headers-only OR body — frames are dropped (the
+        // renderer. Headers-only OR body, frames are dropped (the
         // composed artifact shouldn't contain frames in fire mode).
         let artifact = if let Some((ct, body)) = &c.body {
             wafrift_types::probe::SmuggleArtifact::BodyWithContentType {
@@ -660,7 +660,7 @@ mod tests {
     async fn build_client_sends_configured_user_agent_on_the_wire() {
         // Test truth, not shape (LAW 6): assert the BYTES on the wire carry a
         // non-empty User-Agent from the shared browser identity. Regression
-        // guard for the harvest 0/N false-negative — a no-UA client is 403'd
+        // guard for the harvest 0/N false-negative, a no-UA client is 403'd
         // outright by CumulusFire/Cloudflare, so record-vs-reverify MUST share
         // the same wire signature every other fire path already uses (§9).
         use wiremock::matchers::{method, path};
@@ -823,7 +823,7 @@ mod tests {
     #[test]
     fn classify_with_reflection_delegates_when_not_reflected() {
         // Without reflection, the verdict must match plain classify()
-        // exactly — the divergence semantics live in one place.
+        // exactly (the divergence semantics live in one place).
         for (ps, pb, bs, bb) in [
             (403u16, 100usize, 403u16, 100usize),
             (200, 100, 403, 100),
@@ -848,7 +848,7 @@ mod tests {
     #[test]
     fn reflected_in_response_finds_header_only_reflection() {
         // Token echoed into a response header (e.g. Location) but NOT
-        // the body — the header-reflection surface body-only scanning
+        // the body, the header-reflection surface body-only scanning
         // would miss.
         let header_blob = b"location:/next?id=ABCDEFGHIJKLMNOP\ncontent-type:text/html\n";
         let body = b"<html>nothing here</html>";
@@ -873,7 +873,7 @@ mod tests {
     #[test]
     fn reflected_in_response_dedups_token_in_both_header_and_body() {
         // A token present in BOTH header and body must appear exactly
-        // once — header-first ordering, no duplicate.
+        // once (header-first ordering, no duplicate).
         let header_blob = b"x-echo:ABCDEFGHIJKLMNOP\n";
         let body = b"body also has ABCDEFGHIJKLMNOP in it";
         let needles = vec!["ABCDEFGHIJKLMNOP".to_string()];

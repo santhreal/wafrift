@@ -1,4 +1,4 @@
-//! Timing oracle — confirms blind attacks via response-latency anomaly.
+//! Timing oracle (confirms blind attacks via response-latency anomaly).
 //!
 //! When a WAF blocks the DNS callback channel (no exfil) AND squashes
 //! the error oracle (every error → generic 403), the last remaining
@@ -6,7 +6,7 @@
 //! backend to wait on `pg_sleep(5)` / `WAITFOR DELAY '0:0:5'` /
 //! `DBMS_PIPE.RECEIVE_MESSAGE` / `; ping -c 10 127.0.0.1` produces a
 //! deterministic ~5–9 second response delay that the WAF cannot mask
-//! because the bytes never reach the rule engine — the delay happens at
+//! because the bytes never reach the rule engine, the delay happens at
 //! origin, after the WAF passed the request through.
 //!
 //! Unlike `signal_response_time.rs` (a 3x-ratio heuristic for live
@@ -16,14 +16,14 @@
 //! `mean + k * stdev` for `k = 3` by default (≈99.7% confidence).
 //!
 //! ```rust,ignore
-//! // `timing` is pub(crate) — use TimingOracle from within the oracle crate.
+//! // `timing` is pub(crate) (use TimingOracle from within the oracle crate).
 //! use wafrift_oracle::timing::TimingOracle;
 //!
 //! // 5 benign-request latencies (ms).
 //! let oracle = TimingOracle::from_calibration(&[120.0, 135.0, 128.0, 140.0, 130.0]);
-//! // Normal jitter — not confirmed.
+//! // Normal jitter (not confirmed).
 //! assert!(!oracle.is_anomalous(180.0));
-//! // 9-second delay from `; ping -c 10 127.0.0.1` — confirmed.
+//! // 9-second delay from `; ping -c 10 127.0.0.1`: confirmed.
 //! assert!(oracle.is_anomalous(9_200.0));
 //! ```
 //!
@@ -77,7 +77,7 @@ impl TimingOracle {
     /// representative (benign requests to the same endpoint, same
     /// session, same time of day). An empty slice yields a permissive
     /// oracle (`baseline = MIN_TIMING_ORACLE_BASELINE_MS`, `stdev = MIN_STDEV_MS`)
-    /// rather than panicking — caller can still query it but should
+    /// rather than panicking, caller can still query it but should
     /// log the missing calibration.
     #[must_use]
     pub fn from_calibration(latencies_ms: &[f64]) -> Self {
@@ -85,7 +85,7 @@ impl TimingOracle {
     }
 
     /// Same as [`from_calibration`] but with an explicit sigma
-    /// multiplier — use `k=2` for a permissive oracle (~95% one-sided)
+    /// multiplier, use `k=2` for a permissive oracle (~95% one-sided)
     /// or `k=4` for very strict (~99.99%).
     #[must_use]
     pub fn from_calibration_with_k(latencies_ms: &[f64], k_sigma: f64) -> Self {
@@ -126,7 +126,7 @@ impl TimingOracle {
     /// True if `observed_ms` exceeds the anomaly threshold.
     ///
     /// One-sided check by design: a faster-than-baseline response
-    /// (cache hit) is NOT confirmation of an attack — only a slower
+    /// (cache hit) is NOT confirmation of an attack, only a slower
     /// response can confirm a `WAITFOR` / `pg_sleep` / `; ping -c 10`
     /// fired at the backend.
     #[must_use]
@@ -142,7 +142,7 @@ impl TimingOracle {
     /// oracle and start using it for confirmation.
     pub fn observe_calibration(&mut self, sample_ms: f64, prior_count: usize) {
         // Welford incremental update. `prior_count` is the number of
-        // samples already absorbed (so the caller tracks it — keeps
+        // samples already absorbed (so the caller tracks it, keeps
         // TimingOracle a value type, no interior mutability).
         let n = (prior_count as f64) + 1.0;
         let delta = sample_ms - self.baseline_ms;
@@ -173,7 +173,7 @@ mod tests {
         assert!((o.baseline_ms - MIN_TIMING_ORACLE_BASELINE_MS).abs() < 1e-9);
         assert!((o.stdev_ms - MIN_STDEV_MS).abs() < 1e-9);
         // A 5-second delay still triggers anomaly even on a permissive
-        // oracle — caller can use the oracle even pre-calibration.
+        // oracle (caller can use the oracle even pre-calibration).
         assert!(o.is_anomalous(5_000.0));
     }
 
@@ -184,7 +184,7 @@ mod tests {
         assert!((o.baseline_ms - 120.0).abs() < 1e-9);
         // Sample stdev: sqrt(sum((x-mean)^2)/(n-1))
         // = sqrt((400+0+400+100+100)/4) = sqrt(250) ≈ 15.81
-        // MIN_STDEV_MS = 25 enforces a floor — actual stdev (15.81)
+        // MIN_STDEV_MS = 25 enforces a floor, actual stdev (15.81)
         // is below floor, so we expect stdev = 25.
         assert!((o.stdev_ms - MIN_STDEV_MS).abs() < 1e-9);
     }
@@ -207,14 +207,14 @@ mod tests {
     #[test]
     fn pg_sleep_5_confirmed_anomalous() {
         let o = TimingOracle::from_calibration(&[200.0, 210.0, 220.0, 215.0]);
-        // 5s pg_sleep — easily exceeds mean + 3σ.
+        // 5s pg_sleep (easily exceeds mean + 3σ).
         assert!(o.is_anomalous(5_200.0));
     }
 
     #[test]
     fn one_sided_no_anomaly_on_fast_response() {
         let o = TimingOracle::from_calibration(&[500.0, 550.0, 520.0, 540.0]);
-        // Cache hit at 50 ms is faster than baseline — NOT a positive
+        // Cache hit at 50 ms is faster than baseline. NOT a positive
         // confirmation of `pg_sleep` (the oracle is one-sided).
         assert!(!o.is_anomalous(50.0));
     }
@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn degenerate_zero_variance_calibration_uses_stdev_floor() {
         let o = TimingOracle::from_calibration(&[100.0, 100.0, 100.0, 100.0]);
-        // Real stdev is 0 — floor must apply, otherwise any > 100 ms
+        // Real stdev is 0, floor must apply, otherwise any > 100 ms
         // would be "anomalous" and false-positive every probe.
         assert!(o.stdev_ms >= MIN_STDEV_MS);
         assert!(!o.is_anomalous(120.0));
@@ -260,7 +260,7 @@ mod tests {
     #[test]
     fn exact_threshold_is_not_anomalous() {
         // The oracle uses `actual > threshold` (strict), not `>=`.
-        // A response at exactly the threshold must NOT fire — that is the
+        // A response at exactly the threshold must NOT fire, that is the
         // boundary invariant. One millisecond above it must fire.
         let o = TimingOracle::from_calibration(&[100.0, 120.0, 140.0, 110.0, 130.0]);
         let thresh = o.threshold_ms();

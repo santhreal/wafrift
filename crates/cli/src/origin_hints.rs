@@ -15,7 +15,7 @@ pub(crate) struct OriginHintsArgs {
     #[arg(value_name = "HOST")]
     pub host_positional: Option<String>,
 
-    /// Long-form alias for the positional hostname — kept so every
+    /// Long-form alias for the positional hostname, kept so every
     /// pre-existing `wafrift origin-hints --host <HOST>` invocation
     /// continues to parse. Mutually exclusive with the positional form.
     #[arg(
@@ -32,7 +32,7 @@ pub(crate) struct OriginHintsArgs {
 }
 
 impl OriginHintsArgs {
-    /// Resolved hostname — positional form first, then the
+    /// Resolved hostname, positional form first, then the
     /// long-form `--host` flag. clap's `required_unless_present`
     /// guarantees at least one is set.
     #[must_use]

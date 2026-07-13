@@ -4,10 +4,10 @@ Prereq: `wafrift-{types,grammar} = "=0.2.16"` published; scald
 `crates/scald-core/Cargo.toml` repinned to `=0.2.16`;
 `cargo update -p wafrift-grammar -p wafrift-types`.
 
-## 0.2.17 update — two more channels, ZERO scald code change
+## 0.2.17 update: two more channels, ZERO scald code change
 
 0.2.17 adds `DeliveryShape::HeaderValue` (e.g. `X-Forwarded-Host`) and
-`DeliveryShape::Cookie` — the reflected-XSS surface a CRS-class WAF
+`DeliveryShape::Cookie`: the reflected-XSS surface a CRS-class WAF
 covers more weakly in `REQUEST_HEADERS` / `REQUEST_COOKIES` than in
 ARGS at PL1. **`waf_delivery.rs` needs no change**: it already
 iterates `xss_delivered()` and renders each member via
@@ -22,7 +22,7 @@ encoding); the only lever that beats CRS = delivery shape
 (multipart-file / path-segment / JSON-no-CT) = 18.5 %. scald's
 escalation ladder ends at the double-URL tier and never tries it.
 
-## 1. New module — `crates/scald-core/src/waf_delivery.rs` (verbatim)
+## 1. New module: `crates/scald-core/src/waf_delivery.rs` (verbatim)
 
 ```rust
 //! Terminal WAF-evasion tier: re-deliver the SAME instrumented payload
@@ -112,7 +112,7 @@ a. Near `let mut double_url_pass = false;` (~L381) add
 
 b. Ladder: replace the final `} else { … break 'escalation }`
    (~L734) so the delivery tier runs AFTER double-URL is exhausted
-   (it must NOT be gated on `!is_json && !is_path` — exploring other
+   (it must NOT be gated on `!is_json && !is_path`: exploring other
    shapes is the entire point):
    ```rust
    } else if config.waf_evasion && !delivery_pass {
@@ -163,7 +163,7 @@ c. At the TOP of `for base_payload in &current_payloads {` (right
            waf_bypassed: true,
            fix_hint: format!(
                "Input reflected unsafely; the WAF was bypassed by \
-                delivering the payload via the `{}` transport shape — \
+                delivering the payload via the `{}` transport shape. \
                 inspect non-query request bodies/paths too.", hit.label),
            unverified: false,
        });

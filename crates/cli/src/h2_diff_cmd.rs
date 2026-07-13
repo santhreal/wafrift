@@ -1,4 +1,4 @@
-//! `wafrift h2-diff` — HTTP/1.1 vs HTTP/2 differential scanner.
+//! `wafrift h2-diff`: HTTP/1.1 vs HTTP/2 differential scanner.
 //!
 //! ## The innovation
 //!
@@ -9,29 +9,29 @@
 //! directly OR get H1 from the WAF over a back-channel. Three
 //! divergence opportunities:
 //!
-//! 1. **WAF H2 vs origin H2** — rare; both parsers see the same
+//! 1. **WAF H2 vs origin H2**: rare; both parsers see the same
 //!    binary frames, but pseudo-header handling can differ.
-//! 2. **WAF H2 → origin H1 (downgrade)** — common; the WAF
+//! 2. **WAF H2 → origin H1 (downgrade)**: common; the WAF
 //!    translates H2 pseudo-headers (`:path`, `:authority`) into
 //!    the H1 request line + Host header. Translation bugs let
 //!    smuggled state slip through.
-//! 3. **WAF rule corpus authored against H1 wire format** — the
+//! 3. **WAF rule corpus authored against H1 wire format**: the
 //!    WAF's CRS-style regex rules match on `\r\n` boundaries that
 //!    don't exist in H2 binary frames.
 //!
 //! Each is a SEAM. `h2-diff` fires the same logical request via
-//! H1 AND H2 and reports any response divergence — evidence the
+//! H1 AND H2 and reports any response divergence, evidence the
 //! WAF or origin treats them as different requests.
 //!
 //! ## Probes
 //!
-//! - **Plain GET** — baseline. Most WAFs handle this identically.
-//! - **GET with operator-supplied param + payload** — does the
+//! - **Plain GET**: baseline. Most WAFs handle this identically.
+//! - **GET with operator-supplied param + payload**: does the
 //!   WAF's H1 rule fire under H2?
-//! - **Mixed-case header name** — H2's HPACK lowercases everything;
+//! - **Mixed-case header name**: H2's HPACK lowercases everything;
 //!   H1 preserves case. If the origin checks case-sensitive headers,
 //!   divergence.
-//! - **Duplicate-header dispatch** — H2 sends two HEADERS frame
+//! - **Duplicate-header dispatch**: H2 sends two HEADERS frame
 //!   entries; H1 sends two header lines. Some parsers merge into
 //!   `value1, value2`; H2 frames remain distinct.
 //!
@@ -40,7 +40,7 @@
 //! Reqwest's high-level API doesn't expose raw H2 frame controls.
 //! What we CAN do: force `http1_only` or `http2_prior_knowledge`
 //! on a per-client basis. That's enough to detect the high-level
-//! "did the WAF/origin do something different under H2" — which is
+//! "did the WAF/origin do something different under H2", which is
 //! the practitioner's interesting question. Frame-level fuzzing
 //! belongs in a future module.
 
@@ -57,7 +57,7 @@ use crate::parser_diff_common::{body_delta_pct, severity_of};
 
 #[derive(Args, Debug)]
 pub(crate) struct H2DiffArgs {
-    /// Target URL — must be HTTPS to exercise H2 (cleartext H2
+    /// Target URL, must be HTTPS to exercise H2 (cleartext H2
     /// requires h2c upgrade which reqwest doesn't natively expose;
     /// HTTP URLs fall back to H1-only on both legs and are
     /// effectively a no-op).
@@ -69,7 +69,7 @@ pub(crate) struct H2DiffArgs {
     pub param: String,
 
     /// Optional payload to inject as `?<param>=<payload>` on every
-    /// probe. Default `safe` — pick something WAF-relevant for
+    /// probe. Default `safe`: pick something WAF-relevant for
     /// real engagements (e.g. `' OR 1=1--`).
     #[arg(long, default_value = "safe")]
     pub payload: String,
@@ -88,13 +88,13 @@ pub(crate) struct H2DiffArgs {
 
     /// HTTP proxy (Burp on `http://127.0.0.1:8080` is typical).
     /// h2-diff is the protocol-divergence cmd most likely to be
-    /// run mid-engagement against an internal target — the
+    /// run mid-engagement against an internal target, the
     /// corporate Burp proxy and operator auth headers are exactly
     /// what the operator needs to thread through.
     #[arg(long, value_name = "URL")]
     pub proxy: Option<String>,
 
-    /// Operator-supplied baseline headers — applied to BOTH the
+    /// Operator-supplied baseline headers, applied to BOTH the
     /// H1 and H2 client. Each `-H 'Name: Value'` is repeatable;
     /// `Authorization`, `Cookie`, `X-Forwarded-For`, custom CSRF
     /// tokens, etc. travel with every probe.
@@ -105,7 +105,7 @@ pub(crate) struct H2DiffArgs {
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
-    /// Quiet mode — suppress per-probe progress lines.
+    /// Quiet mode (suppress per-probe progress lines).
     #[arg(long, default_value_t = false)]
     pub quiet: bool,
 }
@@ -125,12 +125,12 @@ pub(crate) struct H2DiffResult {
     pub h1_curl_cmd: String,
     pub h2_curl_cmd: String,
     pub severity: &'static str,
-    /// Optional notes — e.g. when H2 probe failed to negotiate, we
+    /// Optional notes, e.g. when H2 probe failed to negotiate, we
     /// record the error here instead of treating it as a divergence.
     pub h2_error: Option<String>,
 }
 
-/// Entry point — runs the configured H1/H2 differential probes
+/// Entry point, runs the configured H1/H2 differential probes
 /// against `args.url`.
 pub(crate) async fn run_h2_diff(mut args: H2DiffArgs) -> ExitCode {
     args.url = crate::helpers::normalize_target_url(&args.url);
@@ -168,11 +168,11 @@ pub(crate) async fn run_h2_diff(mut args: H2DiffArgs) -> ExitCode {
     // F78 inconclusive-exit: when EVERY H2 probe failed to
     // negotiate (mock that only speaks H1, ALPN mismatch,
     // network drops the QUIC handshake, etc.) the diff result
-    // is structurally "no divergence" — but only because every
+    // is structurally "no divergence", but only because every
     // H2 measurement is missing. Pre-fix the command exit-0'd
     // with `divergences: {high: 0, medium: 0}` and a pentester
     // would silently conclude "no H2 gap" rather than "result
-    // inconclusive — H2 wasn't reachable". Emit the output as
+    // inconclusive: H2 wasn't reachable". Emit the output as
     // before, then return exit code 6 (distinct from 0=clean,
     // 1=transport, 2=invalid args) to signal "ran cleanly but
     // the H2 leg never produced any data".
@@ -182,7 +182,7 @@ pub(crate) async fn run_h2_diff(mut args: H2DiffArgs) -> ExitCode {
     if total > 0 && h2_errors == total {
         if !args.quiet && args.format == "text" {
             eprintln!(
-                "{} all H2 probes failed — exit 6 (inconclusive, not 0)",
+                "{} all H2 probes failed, exit 6 (inconclusive, not 0)",
                 "[wafrift h2-diff]".yellow().bold()
             );
         }
@@ -196,26 +196,26 @@ fn probe_shapes(param: &str, payload: &str) -> Vec<(&'static str, &'static str, 
     vec![
         (
             "baseline",
-            "Plain GET — same logical request via both protocols. \
+            "Plain GET, same logical request via both protocols. \
              Most WAFs handle identically.",
             String::new(),
         ),
         (
             "payload-in-query",
-            "Operator-supplied payload in the query string — does \
+            "Operator-supplied payload in the query string, does \
              the WAF's payload-matching rule fire under both protocols?",
             format!("{param}={payload}"),
         ),
         (
             "dup-param",
-            "Duplicate query parameter — H2's binary multi-value \
+            "Duplicate query parameter: H2's binary multi-value \
              encoding may differ from H1's textual `&param=` repeat \
              at WAF / origin parsing time.",
             format!("{param}=safe&{param}={payload}"),
         ),
         (
             "long-query",
-            "Long query string — H1 has practical request-line \
+            "Long query string: H1 has practical request-line \
              length limits (often 8KB); H2 has frame size limits \
              but a different boundary. WAFs that gate by H1 \
              request-line length miss long H2 queries.",
@@ -239,7 +239,7 @@ fn build_diff_result(
         Err(e) => (0, 0, Some(e)),
     };
     let delta = if h2_error.is_some() {
-        // When H2 errored, the divergence is "H2 not reachable" —
+        // When H2 errored, the divergence is "H2 not reachable" 
         // not a parser disagreement. Skip the body-delta math; set
         // severity by H2 status alone.
         0.0
@@ -291,7 +291,7 @@ fn build_client(want_h2: bool, args: &H2DiffArgs) -> Result<Client, ExitCode> {
             builder.http2_prior_knowledge()
         }
     } else {
-        // H1-only — disables ALPN h2 advertisement entirely.
+        // H1-only (disables ALPN h2 advertisement entirely).
         builder.http1_only()
     };
     // Burp / corporate proxy + operator headers MUST thread
@@ -361,7 +361,7 @@ fn emit_output(args: &H2DiffArgs, results: &[H2DiffResult]) {
         // do. Spell out the meaning + the actionable next step.
         if h2_errors == results.len() && !results.is_empty() {
             println!(
-                "  {} every H2 probe errored — the target likely does NOT speak HTTP/2 \
+                "  {} every H2 probe errored, the target likely does NOT speak HTTP/2 \
                  (no ALPN negotiation for `h2`, or HTTPS without TLS). This isn't a \
                  wafrift defect; the H1/H2 differential surface simply doesn't exist on \
                  this stack. Try `header-diff` or `query-diff` against the same URL.",
@@ -373,7 +373,7 @@ fn emit_output(args: &H2DiffArgs, results: &[H2DiffResult]) {
     for r in results.iter().filter(|r| r.severity != "none") {
         let badge = crate::parser_diff_common::severity_badge(r.severity);
         println!();
-        println!("  [{badge}] {} — {}", r.kind.bold(), r.description);
+        println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         println!(
             "    {} H1 {} ({} bytes) · H2 {} ({} bytes, Δ {:+.1}%)",
             "↘".bright_black(),
@@ -611,7 +611,7 @@ mod tests {
     async fn run_h2_diff_against_h1_only_mock_marks_inconclusive_with_exit_6() {
         // F78: when EVERY H2 probe fails to negotiate, exit 6
         // (inconclusive). Pre-fix this exited 0 with
-        // `divergences: {high: 0, medium: 0}` — silently false-
+        // `divergences: {high: 0, medium: 0}`: silently false-
         // negative on H1-only targets.
         let addr = spawn_mock().await;
         let args = H2DiffArgs {

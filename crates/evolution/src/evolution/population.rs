@@ -84,12 +84,12 @@ impl Chromosome {
     /// Compute a hash of this chromosome for deduplication.
     ///
     /// R48 pass-10 I4 (CLAUDE.md §15 AUDIT): pre-fix used
-    /// `DefaultHasher` which is non-collision-resistant — an adversary
+    /// `DefaultHasher` which is non-collision-resistant, an adversary
     /// controlling gene names (e.g. via crafted `--technique` flags or
     /// `.wafrift.toml`) could engineer collisions to silently dedupe
     /// distinct bypass discoveries from the corpus or mark live
     /// candidates as already-visited in tabu search. Switched to
-    /// SHA-256, truncated to u64 — matches the lineage.rs::BypassEntry
+    /// SHA-256, truncated to u64, matches the lineage.rs::BypassEntry
     /// collision-fix that the rest of the crate already adopted.
     #[must_use]
     pub fn hash(&self) -> u64 {

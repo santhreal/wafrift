@@ -1,4 +1,4 @@
-//! `wafrift smuggle-fire` — fire smuggle probes against a live target.
+//! `wafrift smuggle-fire`: fire smuggle probes against a live target.
 //!
 //! Takes the same seed flags as `smuggle-emit` but instead of emitting
 //! JSON artifacts, builds an HTTP request per probe and fires it at
@@ -9,12 +9,12 @@
 //! ## Bypass signal
 //!
 //! Every run fires ONE baseline request first (same shape as the
-//! probes — GET for header probes, POST for body probes — but with
+//! probes: GET for header probes, POST for body probes, but with
 //! no smuggle-specific bytes). Each probe is then compared against
 //! that baseline:
 //!
 //! - `canary-reflected`: a probe canary token (sent via `--canary-header`)
-//!   appeared verbatim in the response headers or body — the smuggled marker
+//!   appeared verbatim in the response headers or body, the smuggled marker
 //!   reached a reflecting surface. STRONGEST signal; precedes the rest.
 //! - `none`            : probe response matches baseline status + body length
 //! - `status-diverged` : probe status differs (e.g. 200 vs 403 baseline)
@@ -22,7 +22,7 @@
 //! - `both-diverged`   : both status AND body length diverged
 //!
 //! A `canary-reflected` verdict is the highest-confidence bypass
-//! signal — a 16-char random token can't reflect by chance. Absent
+//! signal, a 16-char random token can't reflect by chance. Absent
 //! reflection, a `status-diverged` to 200 against a baseline 403 is
 //! the next strongest. When reflection is in play the report also
 //! carries the reflected token(s) in `reflected_canaries`. Operators
@@ -31,7 +31,7 @@
 //! ## Frame probes
 //!
 //! Frame artifacts (HTTP/3 capsule, QUIC datagram, WebSocket
-//! compression) cannot ride a normal HTTP/1.1 / 2 request — they
+//! compression) cannot ride a normal HTTP/1.1 / 2 request, they
 //! live at a lower transport layer. They are SKIPPED with a stderr
 //! warning. To exercise them, use the wire-format dry-run via
 //! `wafrift smuggle-emit --family frames | jq` and feed into a raw
@@ -51,7 +51,7 @@ use crate::smuggle_transport;
 
 #[derive(Debug, Parser)]
 pub struct SmuggleFireArgs {
-    /// Target URL — every probe is fired at this exact URL. For
+    /// Target URL, every probe is fired at this exact URL. For
     /// HTTP/1.1 path-smuggle probes, the URL path is REPLACED by
     /// the artifact's `:path` value; for everything else, the URL
     /// is used verbatim. May be given POSITIONALLY
@@ -61,7 +61,7 @@ pub struct SmuggleFireArgs {
     #[arg(long, value_name = "URL", default_value = "")]
     pub target: String,
 
-    /// Positional target URL — the consistency alias for `--target`
+    /// Positional target URL, the consistency alias for `--target`
     /// (§13 dogfood round-2 DEFECT 4: every other network subcommand
     /// accepts the URL positionally, so `smuggle-fire` must too).
     /// Resolved into `target` at startup; explicit `--target` wins.
@@ -79,7 +79,7 @@ pub struct SmuggleFireArgs {
     #[arg(long, value_name = "IP")]
     pub origin_ip: Option<String>,
 
-    /// Optional family prefix to fire — e.g. `cookie`, `auth`,
+    /// Optional family prefix to fire, e.g. `cookie`, `auth`,
     /// `range`, `path`, `host`, `content-type`, `json`. Frame
     /// families (`capsule`, `quic-datagram`, `compression`) are
     /// always skipped (can't ride reqwest). Empty = every non-frame
@@ -153,7 +153,7 @@ pub struct SmuggleFireArgs {
     pub no_summary: bool,
 
     /// When set, every per-probe JSON report carries an extra
-    /// `reproducer_curl` field — a single-line, paste-into-bash
+    /// `reproducer_curl` field, a single-line, paste-into-bash
     /// curl command that reproduces the exact request that probe
     /// fired. Operators jq-filter on `bypass_signal != "none"` and
     /// `.reproducer_curl` is the pentest-report-ready reproducer.
@@ -172,7 +172,7 @@ pub struct SmuggleFireArgs {
     /// When set, append every bypassing probe (signal != "none")
     /// to the named NDJSON corpus file (one JSON report per line).
     /// Operators feed this back via `--prioritize-bypasses` on
-    /// future runs to fire known winners first — the wafrift
+    /// future runs to fire known winners first, the wafrift
     /// learning loop. Reproducer curl is included if the probe
     /// has one.
     #[arg(long, value_name = "FILE")]
@@ -202,7 +202,7 @@ pub struct SmuggleFireArgs {
     /// Baseline request header in `Name: Value` form, repeatable.
     /// Use for auth-required endpoints (e.g. a valid `Cookie` or
     /// `Authorization` header) so the baseline reflects the
-    /// authenticated normal response — divergence vs that baseline
+    /// authenticated normal response, divergence vs that baseline
     /// is then the bypass signal.
     #[arg(long, value_name = "HEADER", num_args = 0..)]
     pub baseline_header: Vec<String>,
@@ -219,7 +219,7 @@ struct FireReport {
     baseline_body_len: usize,
     bypass_signal: String,
     /// Canary token(s) reflected verbatim in the probe response body
-    /// — present (and non-empty) only when `--canary-header` placed
+    ///: present (and non-empty) only when `--canary-header` placed
     /// the token on the wire and the origin echoed it. Omitted from
     /// JSON when empty (additive, backwards-compatible).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -262,7 +262,7 @@ pub fn run_smuggle_fire(mut args: SmuggleFireArgs) -> ExitCode {
     }
     if args.target.trim().is_empty() {
         return crate::helpers::input_error(
-            "smuggle-fire needs a target URL — pass it positionally \
+            "smuggle-fire needs a target URL, pass it positionally \
              (`wafrift smuggle-fire https://example.com/ …`) or via --target",
         );
     }
@@ -290,7 +290,7 @@ async fn run_async(args: SmuggleFireArgs) -> ExitCode {
 
     // Optional: re-order so techniques listed in `--prioritize-bypasses`
     // corpus fire FIRST. Unlisted probes follow in their original
-    // aggregator order — preserves coverage while front-loading
+    // aggregator order, preserves coverage while front-loading
     // known winners.
     let probes = if let Some(corpus_path) = &args.prioritize_bypasses {
         match load_priority_techniques(corpus_path) {
@@ -332,7 +332,7 @@ async fn run_async(args: SmuggleFireArgs) -> ExitCode {
     if let Some((host, addr)) = &origin_resolve {
         let _ = writeln!(
             std::io::stderr(),
-            "wafrift smuggle-fire: origin-direct mode — connecting to {} for Host {host} (edge/WAF bypassed)",
+            "wafrift smuggle-fire: origin-direct mode, connecting to {} for Host {host} (edge/WAF bypassed)",
             addr.ip()
         );
     }
@@ -377,22 +377,22 @@ async fn run_async(args: SmuggleFireArgs) -> ExitCode {
         }
     };
     // Collapse the baseline FireOutcome to the (status, body_len)
-    // tuple the per-probe classification path consumes — the baseline
+    // tuple the per-probe classification path consumes, the baseline
     // never carries smuggle canaries, so its reflection set is empty.
     let baseline = (baseline.status, baseline.body_len);
 
     // §13 dogfood round-2 DEFECT 8: if the baseline request ITSELF was
-    // blocked (4xx/5xx — typically the default `--payload` tripping the WAF),
+    // blocked (4xx/5xx, typically the default `--payload` tripping the WAF),
     // every `*-diverged` signal below is measured against a BLOCKED page. A
     // probe returning 400 then reads as "WAF rejected the malformed header
-    // differently", NOT "smuggling bypass" — the comparison is muddied. Warn
+    // differently", NOT "smuggling bypass", the comparison is muddied. Warn
     // on stderr (JSON stdout stays clean) and point at the inert-baseline
     // knobs. Non-fatal: a blocked baseline is still a usable reference for
     // some differentials, but the operator must know it is blocked.
     if baseline.0 >= 400 {
         let _ = writeln!(
             std::io::stderr(),
-            "wafrift smuggle-fire: WARNING — baseline request returned status {} \
+            "wafrift smuggle-fire: WARNING, baseline request returned status {} \
              (the baseline is itself blocked, likely the default payload tripping \
              the WAF). Divergence signals are measured against this blocked page; \
              a probe diverging to another error is not necessarily a bypass. For a \
@@ -410,7 +410,7 @@ async fn run_async(args: SmuggleFireArgs) -> ExitCode {
         std::collections::BTreeMap::new();
 
     // Pre-filter the probe list to honour --limit. Sets the upper
-    // bound on what we fire — both sequential and parallel paths
+    // bound on what we fire, both sequential and parallel paths
     // operate on the same slice.
     let to_fire: Vec<_> = if args.limit > 0 {
         probes.into_iter().take(args.limit).collect()
@@ -419,7 +419,7 @@ async fn run_async(args: SmuggleFireArgs) -> ExitCode {
     };
 
     let reports: Vec<FireReport> = if args.parallel <= 1 {
-        // Sequential path — respects --delay-ms.
+        // Sequential path (respects --delay-ms).
         let mut acc = Vec::with_capacity(to_fire.len());
         for probe in to_fire {
             let report = run_one(&client, &args, baseline, probe.as_ref()).await;
@@ -430,7 +430,7 @@ async fn run_async(args: SmuggleFireArgs) -> ExitCode {
         }
         acc
     } else {
-        // Concurrent path — buffered up to args.parallel in-flight.
+        // Concurrent path (buffered up to args.parallel in-flight).
         // Reports come back in COMPLETION order.
         use futures_util::StreamExt;
         let parallel = args.parallel;
@@ -446,7 +446,7 @@ async fn run_async(args: SmuggleFireArgs) -> ExitCode {
             .await
     };
 
-    // Optional bypasses-corpus sink — opened lazily so a permission
+    // Optional bypasses-corpus sink, opened lazily so a permission
     // error surfaces with context instead of a generic IO panic.
     let mut bypasses_sink: Option<std::fs::File> = match &args.save_bypasses {
         Some(path) => match std::fs::OpenOptions::new()
@@ -534,7 +534,7 @@ async fn run_async(args: SmuggleFireArgs) -> ExitCode {
 /// techniques to front-load.
 ///
 /// §15 OOM / TOCTOU fix: the old unbounded `read_to_string` on the
-/// operator path had no size cap AND a stat()+open() TOCTOU race — a symlink swap between
+/// operator path had no size cap AND a stat()+open() TOCTOU race, a symlink swap between
 /// size check and read could redirect to `/dev/zero` or a multi-GB file.
 /// `safe_body::read_bounded_text_file` opens + reads in one fd with a
 /// hard byte cap, closing both gaps at once.
@@ -558,7 +558,7 @@ fn load_priority_techniques(
 }
 
 /// Re-order the probe list so techniques in `priority` fire FIRST.
-/// Within each group, the original aggregator order is preserved —
+/// Within each group, the original aggregator order is preserved 
 /// operators get reproducible iteration even after re-prioritisation.
 fn reorder_priority_first(
     probes: Vec<Box<dyn SmuggleProbe>>,
@@ -642,7 +642,7 @@ async fn run_one(
 /// Fire ONE smuggle probe via the shared transport. Converts a
 /// [`SmuggleArtifact`] into the (headers, body) shape that
 /// [`smuggle_transport::fire_smuggle_request`] expects. Frame
-/// artifacts are not transportable via reqwest — the caller filters
+/// artifacts are not transportable via reqwest, the caller filters
 /// those out before reaching this function.
 async fn fire_one(
     client: &reqwest::Client,
@@ -698,7 +698,7 @@ mod tests {
             origin_resolve_override("https://protected.example.com/admin", "203.0.113.7")
                 .expect("valid https target + IPv4 origin");
         // Anti-rig: the pinned Host MUST stay the real target, never the
-        // origin IP — keeping Host+SNI on the target while connecting to
+        // origin IP, keeping Host+SNI on the target while connecting to
         // the origin IS the WAF go-around. If this ever flips, the probe
         // would hit the origin's default vhost and silently stop testing
         // the intended host.
@@ -743,7 +743,7 @@ mod tests {
     #[test]
     fn origin_resolve_rejects_non_ip_origin() {
         let err = origin_resolve_override("https://example.com/", "origin.example.org")
-            .expect_err("a hostname is not an IP — must be resolved first");
+            .expect_err("a hostname is not an IP, must be resolved first");
         assert!(err.contains("valid IP address"), "{err}");
     }
 

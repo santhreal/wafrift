@@ -1,5 +1,5 @@
 //! Regression coverage for the 2026-05-10 `learning_cache` audit findings:
-//!   HIGH #1: `save()` was not atomic — kill-9 between write and rename
+//!   HIGH #1: `save()` was not atomic, kill-9 between write and rename
 //!     left a half-written JSON file that crashed every subsequent open.
 //!   HIGH #2: `open()` crashed on a corrupt file, losing ALL prior
 //!     learning across the strategy engine.
@@ -80,7 +80,7 @@ fn open_does_not_crash_on_corrupt_json() {
 fn open_does_not_crash_on_truncated_file() {
     let path = unique_tmp("truncated");
     let _ = fs::remove_file(&path);
-    // Write the first half of a valid pretty-printed JSON object —
+    // Write the first half of a valid pretty-printed JSON object 
     // exactly what kill-9 mid-`fs::write` would leave.
     fs::write(&path, b"{\n  \"entries\": {\n    \"key1\": {\n      \"pip").unwrap();
 
@@ -102,7 +102,7 @@ fn open_does_not_crash_on_truncated_file() {
 
 #[test]
 fn open_after_corrupt_file_can_save_again() {
-    // Defence-in-depth — the recovered cache must be usable.
+    // Defence-in-depth (the recovered cache must be usable).
     let path = unique_tmp("recover_save");
     let _ = fs::remove_file(&path);
     fs::write(&path, b"\x00\x00\x00garbage\x00\x00").unwrap();
@@ -146,7 +146,7 @@ fn save_does_not_leave_partial_file_visible() {
     //
     // Post-fix: write happens to a sibling tmp file and is then renamed
     // over the target path. The target either has the OLD content or
-    // the FULL new content — never partial.
+    // the FULL new content (never partial).
     //
     // This test exercises the contract by saving twice and verifying
     // that no `.tmp.*` orphan files are left behind in the steady state.

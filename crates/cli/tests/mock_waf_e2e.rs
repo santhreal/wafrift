@@ -11,12 +11,12 @@
 //!   "Apache" regardless of query (path-based block)
 //!
 //! Catches the kind of cross-command regression that ONLY surfaces
-//! when wafrift is exercised end-to-end — the exact pattern that
+//! when wafrift is exercised end-to-end, the exact pattern that
 //! turned up the equiv_engine missing-arm flaw + the differential-
 //! detect false-negative + the import-curl README example breakage
 //! in the dogfood session that motivated this harness.
 //!
-//! Runs on every `cargo test` regardless of docker availability —
+//! Runs on every `cargo test` regardless of docker availability 
 //! complements the docker-bench scoreboard, doesn't replace it.
 
 use std::sync::Arc;
@@ -92,7 +92,7 @@ async fn spawn_mock_modsec() -> (std::net::SocketAddr, Arc<AtomicUsize>) {
 
 /// Find the start index of the first occurrence of `needle` in
 /// `haystack`. Used to locate the `\r\n\r\n` end-of-headers
-/// marker. Trivial brute-force — request sizes here are tiny.
+/// marker. Trivial brute-force (request sizes here are tiny).
 fn find_subseq(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     if needle.is_empty() || haystack.len() < needle.len() {
         return None;
@@ -101,11 +101,11 @@ fn find_subseq(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 }
 
 /// Return the HTTP response for a request. Encodes the ModSec
-/// emulator's block logic — inspects both the URL path AND the
+/// emulator's block logic, inspects both the URL path AND the
 /// request body, but ONLY when the body is uncompressed (or
-/// gzip-encoded — the mock has a gzip decompressor, like ModSec
+/// gzip-encoded, the mock has a gzip decompressor, like ModSec
 /// itself). When `Content-Encoding: br` is set, the mock sees the
-/// raw brotli blob and cannot match attack markers in it — the
+/// raw brotli blob and cannot match attack markers in it, the
 /// compression-confusion bypass.
 fn classify_request_bytes(req: &[u8]) -> String {
     // Headers are guaranteed to be ASCII-only on the wire; the
@@ -142,7 +142,7 @@ fn classify_request_bytes(req: &[u8]) -> String {
     let decoded: Option<String> = match ct_enc.as_str() {
         "" | "identity" => Some(String::from_utf8_lossy(body_bytes).to_string()),
         "gzip" => decode_gzip(body_bytes).ok(),
-        "br" => None, // mock has no brotli decoder — the bypass
+        "br" => None, // mock has no brotli decoder, the bypass
         _ => None,
     };
     let Some(decoded_body) = decoded else {
@@ -154,7 +154,7 @@ fn classify_request_bytes(req: &[u8]) -> String {
     // processors on `application/x-www-form-urlencoded`. Anything
     // else (text/plain, octet-stream, etc.) falls through to a
     // raw-bytes scan that does NOT decode form-urlencoding or
-    // unwrap JSON quotes — so an attack marker hiding behind those
+    // unwrap JSON quotes, so an attack marker hiding behind those
     // wrappers escapes. This mirrors real-WAF behaviour for the
     // Content-Type-lying vectors.
     let ct = headers
@@ -194,7 +194,7 @@ fn classify_request_bytes(req: &[u8]) -> String {
         }
         return gunicorn_200();
     }
-    // Anything else (text/plain, octet-stream, ...) — raw scan,
+    // Anything else (text/plain, octet-stream, ...), raw scan,
     // no form decoding. The Content-Type-lying bypass.
     let lower = decoded_body.to_ascii_lowercase();
     if raw_bytes_match_strong_attack(&lower) {
@@ -205,7 +205,7 @@ fn classify_request_bytes(req: &[u8]) -> String {
 
 /// First-occurrence JSON-value view: extracts the value of each
 /// key in order, keeping only the FIRST value when a key repeats.
-/// Operates on the raw string — no JSON parser involved — to
+/// Operates on the raw string, no JSON parser involved, to
 /// match what ModSec's lightweight JSON walker actually does.
 fn json_first_occurrence_values(body: &str) -> String {
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -263,7 +263,7 @@ fn json_first_occurrence_values(body: &str) -> String {
 
 /// Attack markers strong enough to match in a raw-bytes (no decode)
 /// scan. Used for text/plain / octet-stream bodies where the WAF
-/// does not run a form or JSON body processor — only patterns
+/// does not run a form or JSON body processor, only patterns
 /// visible in the literal bytes will fire. Narrower than
 /// body_matches_attack on purpose (matches ModSec's reduced
 /// fallback rule set).
@@ -272,7 +272,7 @@ fn raw_bytes_match_strong_attack(lower: &str) -> bool {
     markers.iter().any(|m| lower.contains(m))
 }
 
-/// Attack-marker set used against the URL path. Kept narrow — must
+/// Attack-marker set used against the URL path. Kept narrow, must
 /// match what real ModSec CRS PL1 would block on a GET query.
 fn path_matches_attack(lower: &str) -> bool {
     let markers = [
@@ -341,7 +341,7 @@ fn apache_403() -> String {
 }
 
 fn gunicorn_200() -> String {
-    // Approximate httpbin /get response shape — what gunicorn returns
+    // Approximate httpbin /get response shape, what gunicorn returns
     // on a clean request behind the Apache+ModSec front.
     let body = r#"{"args":{},"headers":{"Host":"x"},"origin":"127.0.0.1","url":"http://x/get"}"#;
     format!(
@@ -434,8 +434,8 @@ async fn mock_modsec_path_traversal_returns_apache_403() {
 //
 // These tests exercise wafrift's INTERNAL APIs (the cli crate's
 // public-via-pub(crate) entry points) against the synthetic mock.
-// The cli binary itself isn't driven via subprocess — that'd add a
-// build step + slow tests — so we test the LOGIC that drives the
+// The cli binary itself isn't driven via subprocess, that'd add a
+// build step + slow tests, so we test the LOGIC that drives the
 // commands. The mock + the logic are the same components a real
 // `cargo run -- detect --url http://...` exercises.
 
@@ -447,7 +447,7 @@ async fn detect_against_mock_baseline_returns_gunicorn_marker() {
     let (addr, _) = spawn_mock_modsec().await;
     let (status, server, _) = fetch(&format!("http://{addr}/")).await;
     // This is the SAME response shape that surfaced the live
-    // 'no WAF detected' false-negative — the static-signature
+    // 'no WAF detected' false-negative, the static-signature
     // corpus has no marker for gunicorn. The downstream
     // differential probe is what catches the WAF.
     assert_eq!(status, 200);
@@ -492,7 +492,7 @@ async fn parser_diff_against_admin_path_completes_no_panic() {
     for v in &variants {
         let _ = fetch(&format!("http://{addr}{v}")).await;
     }
-    // Counter should have advanced by exactly N — proves the
+    // Counter should have advanced by exactly N, proves the
     // mock is processing each variant.
     let final_count = counter.load(Ordering::SeqCst);
     assert!(
@@ -526,11 +526,11 @@ async fn callback_substitution_round_trip_against_mock_listener() {
 // The mock above inspects request bodies WHEN the body is
 // uncompressed or gzip-encoded (it has a gzip decoder, like
 // ModSec). When the body is brotli-encoded, the mock cannot
-// decode it — so the attack marker is invisible to the WAF and
+// decode it, so the attack marker is invisible to the WAF and
 // the request flows through. This mirrors the real-world WAF
 // gap: ModSec / Cloudflare / AWS WAF all parse JSON and forms,
 // but their inspection pipeline doesn't run brotli decompression
-// by default — so a brotli-wrapped attack body sails through.
+// by default (so a brotli-wrapped attack body sails through).
 //
 // These tests prove the wafrift-encoding compression module
 // PRODUCES output that triggers this gap, and they pin the
@@ -573,7 +573,7 @@ async fn harvest_writes_verified_report_for_corpus_bypass() {
 
     // `1 OR 1=1 --` is oracle-valid SQL. Against the mock it is BLOCKED in
     // the form (` or 1=1`) and query (`or%201`) delivery shapes but PASSES
-    // as text/plain (the content-type-lying bypass — the raw scan only
+    // as text/plain (the content-type-lying bypass, the raw scan only
     // catches <script/${jndi}//etc/passwd). harvest must try the shapes,
     // find raw_body works, re-verify it live, and write the report.
     let (addr, _counter) = spawn_mock_modsec().await;
@@ -715,7 +715,7 @@ fn count_md_reports(dir: &std::path::Path) -> usize {
 
 /// #290 value proof: when the corpus records the delivery shape, harvest
 /// re-fires that EXACT shape (faithful re-fire) instead of guessing the
-/// standard shapes. Here the recorded shape is a request HEADER —
+/// standard shapes. Here the recorded shape is a request HEADER 
 /// `build_request_for_delivery` routes it to `/headers` with the payload
 /// in `X-Forwarded-Host`. With the shape recorded, the report's
 /// reproduction is that exact header request; without it, harvest falls
@@ -795,7 +795,7 @@ async fn harvest_faithful_delivery_re_fires_the_recorded_shape() {
     // (B) SAME bypass, NO recorded delivery → harvest can only guess the
     //     standard shapes. Whatever it reports, it is NEVER a faithful
     //     re-fire of the recorded shape (there was none) and never the
-    //     header channel — proving the recorded shape is what unlocks the
+    //     header channel, proving the recorded shape is what unlocks the
     //     faithful path.
     let corpus_b = dir.join("corpus_b.json");
     let out_b = dir.join("reports_b");
@@ -843,7 +843,7 @@ async fn mock_modsec_brotli_wrapped_sqli_body_bypasses() {
     // The headline result. Same attack payload, same Content-Type,
     // ONLY difference: body bytes are brotli-compressed and
     // Content-Encoding: br is set. Mock has no brotli decoder, so
-    // the body is opaque — attack marker invisible — request flows
+    // the body is opaque, attack marker invisible, request flows
     // through with 200 OK. This is exactly what wafrift's scan
     // multi-vector loop now exercises via the POST-form-br vector.
     use wafrift_encoding::compression::{Algorithm, compress};
@@ -901,7 +901,7 @@ async fn mock_modsec_gzip_wrapped_sqli_body_is_still_blocked() {
     assert_eq!(
         resp.status().as_u16(),
         403,
-        "gzip-wrapped SQLi body MUST be blocked — mock decodes gzip like real ModSec"
+        "gzip-wrapped SQLi body MUST be blocked, mock decodes gzip like real ModSec"
     );
 }
 
@@ -1000,7 +1000,7 @@ async fn mock_modsec_deflate_wrapped_sqli_json_body_bypasses() {
 async fn mock_modsec_application_yaml_body_bypasses() {
     // POST-yaml vector. application/yaml is not in the mock's
     // routed-body Content-Types, so it falls to raw-bytes scan,
-    // whose marker set excludes SQL UNION — the bypass.
+    // whose marker set excludes SQL UNION (the bypass).
     let (addr, _) = spawn_mock_modsec().await;
     let yaml = "q: \"' OR 1=1--\"\n";
     let client = reqwest::Client::builder()
@@ -1250,7 +1250,7 @@ async fn mock_modsec_deeply_nested_json_is_blocked_by_naive_walker() {
     assert_eq!(
         resp.status().as_u16(),
         403,
-        "mock's depth-unaware walker catches nested SQLi — \
+        "mock's depth-unaware walker catches nested SQLi: \
          real CRS PL4 with depth cap would let it bypass"
     );
 }
@@ -1308,7 +1308,7 @@ async fn mock_modsec_ndjson_body_bypasses() {
     // POST-ndjson vector. application/x-ndjson is outside the
     // mock's routed-body CT set, so it falls to raw-bytes scan,
     // whose marker set excludes SQL UNION. Decoy doc on line 1,
-    // attack on line 2 — a real WAF parsing only the first
+    // attack on line 2, a real WAF parsing only the first
     // top-level JSON misses the attack entirely.
     let (addr, _) = spawn_mock_modsec().await;
     let body = "{\"q\":\"harmless\"}\n{\"q\":\"' OR 1=1--\"}\n";
@@ -1377,7 +1377,7 @@ async fn mock_modsec_multipart_qp_sqli_bypasses() {
 #[tokio::test(flavor = "current_thread")]
 async fn mock_modsec_json5_comment_is_blocked_by_naive_walker() {
     // POST-json5-comment vector. Documents the mock's limitation
-    // honestly — the JSON walker is comment-unaware and extracts
+    // honestly, the JSON walker is comment-unaware and extracts
     // the post-comment key/value just like any plain JSON. A real
     // strict-JSON WAF (ModSec rejects on the `/*` parse error and
     // skips body inspection) would let this through; the mock
@@ -1407,7 +1407,7 @@ async fn mock_modsec_json5_comment_is_blocked_by_naive_walker() {
 async fn mock_modsec_json_as_form_is_blocked_by_lowercase_substring_scan() {
     // POST-json-as-form vector. Mock's form-body path lowercases
     // the entire decoded body and substring-matches attack markers
-    // — so a JSON body with form Content-Type still trips on the
+    //: so a JSON body with form Content-Type still trips on the
     // raw `' or 1=1` substring. A real WAF's form processor would
     // scan for key=value form pairs, find none, and skip body
     // inspection. This control test documents the gap so a fix to
@@ -1442,7 +1442,7 @@ mod wafrift_cli_test_harness {
     use std::time::Duration;
     use tokio::io::AsyncReadExt;
 
-    /// Mirror of `crate::callback_token::Substitution` shape — keeps
+    /// Mirror of `crate::callback_token::Substitution` shape, keeps
     /// the integration test independent of the cli crate's
     /// internal pub(crate) types.
     pub struct CallbackSubstitution {
@@ -1580,7 +1580,7 @@ mod wafrift_cli_test_harness {
                         body.len()
                     )
                 } else {
-                    // Simulated inbound — record that this token
+                    // Simulated inbound, record that this token
                     // was 'seen' by re-registering it (already in
                     // the registry, no-op for this test) and reply 200.
                     "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_string()

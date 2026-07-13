@@ -9,7 +9,7 @@
 //! - `len ≤ 2³²−1` → str32 (0xDB + 4-byte BE len)
 //!
 //! Pre-fix the str16 branch was the only fallback, with a silent
-//! `(len as u16)` truncation for any payload ≥ 65_536 bytes — the
+//! `(len as u16)` truncation for any payload ≥ 65_536 bytes, the
 //! deserializer would then read a wildly wrong byte range. str32
 //! coverage closes that hole; payloads above 4 GiB are rejected
 //! by emitting an empty vec (also serialised as fixstr(0)) since
@@ -28,7 +28,7 @@ pub fn serialize(payload: &str) -> Vec<u8> {
         out.push(0xDA); // str16
         out.extend_from_slice(&(len as u16).to_be_bytes());
     } else if let Ok(len32) = u32::try_from(len) {
-        // str32 — 0xDB + 4-byte BE length, covers up to ~4 GiB.
+        // str32: 0xDB + 4-byte BE length, covers up to ~4 GiB.
         out.push(0xDB);
         out.extend_from_slice(&len32.to_be_bytes());
     } else {
@@ -77,7 +77,7 @@ pub fn deserialize(bytes: &[u8]) -> String {
             u16::from_be_bytes([bytes[idx - 2], bytes[idx - 1]]) as usize
         }
         0xDB => {
-            // str32 — added to round-trip payloads above 65_535
+            // str32, added to round-trip payloads above 65_535
             // bytes that serialize() now encodes here. Without
             // this branch deserialize() would treat the 0xDB
             // marker as "unknown" and return empty.
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn deserialize_rejects_buffer_too_short_for_header() {
-        // Less than 9 bytes — short-circuit.
+        // Less than 9 bytes (short-circuit).
         assert_eq!(deserialize(b"x"), "");
         assert_eq!(deserialize(b""), "");
     }
@@ -218,7 +218,7 @@ mod tests {
         let mut bytes = vec![0x81, 0xA7];
         bytes.extend_from_slice(b"payload");
         bytes.push(0xDA);
-        // No len bytes — truncated.
+        // No len bytes (truncated).
         assert_eq!(deserialize(&bytes), "");
     }
 

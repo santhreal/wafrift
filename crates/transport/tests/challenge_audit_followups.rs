@@ -67,7 +67,7 @@ fn store_get_is_case_insensitive() {
     assert_eq!(
         s.get("example.com").as_deref(),
         Some("cf_clearance=abc"),
-        "DNS is case-insensitive — store_get must canonicalise"
+        "DNS is case-insensitive, store_get must canonicalise"
     );
 }
 
@@ -102,7 +102,7 @@ fn store_record_canonicalises_then_dedupes_on_re_insert() {
         ChallengeKind::CloudflareManaged,
         None,
     );
-    // Both should land in the same slot — the last write wins.
+    // Both should land in the same slot (the last write wins).
     assert_eq!(s.len(), 1, "case variants must collapse to one entry");
     assert_eq!(s.get("FOO.com").as_deref(), Some("cf_clearance=v2"));
 }
@@ -125,7 +125,7 @@ fn store_record_purges_expired_entries_on_insert() {
     thread::sleep(Duration::from_millis(50));
 
     // A new insert on a different host must trigger the opportunistic
-    // purge — the expired entry should NOT survive.
+    // purge (the expired entry should NOT survive).
     s.record(
         "fresh.live",
         "cf_clearance=fresh",
@@ -171,7 +171,7 @@ fn store_record_does_not_purge_live_entries() {
 #[test]
 fn classify_with_status_skips_body_scan_on_200_ok() {
     // A blog post about Cloudflare turnstile served with 200 OK
-    // must NOT be classified as a challenge — the upstream let
+    // must NOT be classified as a challenge, the upstream let
     // the request through, by definition.
     let body = b"<html><h1>Bypassing Turnstile in 2026</h1>";
     let kind = classify_with_status(body, &[], 200);
@@ -254,7 +254,7 @@ fn dispatch_wait_delay_has_jitter() {
     let mut delays_ms = std::collections::HashSet::new();
     for _ in 0..50 {
         // Tiny sleep so the per-call SystemTime nanos drift between
-        // calls — without this the loop runs faster than the system
+        // calls, without this the loop runs faster than the system
         // clock can deliver distinct nanos and we'd miss the jitter.
         thread::sleep(Duration::from_millis(2));
         match dispatch("h.test", ChallengeKind::CloudflareManaged, &s) {

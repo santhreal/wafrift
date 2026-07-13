@@ -1,8 +1,8 @@
-//! Filter characterization — learn WHICH attack tokens a live WAF actually
+//! Filter characterization, learn WHICH attack tokens a live WAF actually
 //! policies, by *differential* probing.
 //!
 //! The bypass-discovery method a human uses is not "encode everything and
-//! pray" — it is "find out what the filter blocks, then target the gap." A
+//! pray", it is "find out what the filter blocks, then target the gap." A
 //! solver that knows the WAF blocks `<script` but lets `<svg` through, or
 //! policies `onerror=` but not `onpointerenter=`, spends its (expensive,
 //! lossy) encoding budget only where it must and uses cheaper plaintext
@@ -14,20 +14,20 @@
 //! Sending one dangerous token and observing [`Outcome::Block`] proves
 //! nothing on its own: the carrier context, the special characters (`<`, `=`,
 //! `:`), or the value length could be the cause. Each probe therefore carries
-//! a **benign twin** — the same shape with the signature broken
-//! (`<script`→`<scrupt`, `onerror=`→`onerrxr=`) — and we compare the two:
+//! a **benign twin**: the same shape with the signature broken
+//! (`<script`→`<scrupt`, `onerror=`→`onerrxr=`), and we compare the two:
 //!
 //! | dangerous | benign twin | verdict          | meaning for the solver                       |
 //! |-----------|-------------|------------------|----------------------------------------------|
-//! | Block     | Pass        | `Policed`      | the rule keys on THIS token — must encode it  |
-//! | Pass      | Pass        | `Unpoliced`    | token reaches the sink raw — no work needed   |
+//! | Block     | Pass        | `Policed`      | the rule keys on THIS token, must encode it  |
+//! | Pass      | Pass        | `Unpoliced`    | token reaches the sink raw, no work needed   |
 //! | Block     | Block       | `CarrierGate`  | not the keyword; the chars/len/context gate   |
-//! | Pass      | Block       | `Inconclusive` | contradictory (oracle noise) — never guessed  |
+//! | Pass      | Block       | `Inconclusive` | contradictory (oracle noise), never guessed  |
 //!
 //! `Policed`(Verdict::Policed) and `CarrierGate`(Verdict::CarrierGate)
 //! both inform the solver; `Unpoliced`(Verdict::Unpoliced) is the prize
 //! (use the token in plaintext); `Inconclusive`(Verdict::Inconclusive) is
-//! discarded, never turned into a guess (anti-rig — the same discipline the
+//! discarded, never turned into a guess (anti-rig, the same discipline the
 //! learner applies to `ServerError`).
 //!
 //! Cost is exactly **two** membership queries per probe. The battery is
@@ -47,7 +47,7 @@ use wafrift_types::Request;
 ///
 /// Invariant the battery must uphold: `benign_twin` shares `token`'s length,
 /// leading/trailing structural punctuation, and character classes, but
-/// contains **no** rule-keyword substring — so any difference in the two
+/// contains **no** rule-keyword substring, so any difference in the two
 /// outcomes is attributable to the keyword alone, not to shape.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenProbe {
@@ -86,7 +86,7 @@ impl TokenProbe {
         for (i, (tb, wb)) in self.token.bytes().zip(self.benign_twin.bytes()).enumerate() {
             if tb != wb && !(tb.is_ascii_alphabetic() && wb.is_ascii_alphabetic()) {
                 return Err(format!(
-                    "at index {i}, twin {:?} differs from {:?} on a non-letter byte — that \
+                    "at index {i}, twin {:?} differs from {:?} on a non-letter byte, that \
                      perturbs the structural skeleton",
                     self.benign_twin, self.token
                 ));
@@ -106,10 +106,10 @@ pub enum Verdict {
     /// it in plaintext and spend no encoding budget on it. The prize.
     Unpoliced,
     /// Both blocked → the keyword is not the gate; the surrounding characters,
-    /// length, or context is. Encoding the keyword alone will not help — the
+    /// length, or context is. Encoding the keyword alone will not help, the
     /// solver must address the structural element instead.
     CarrierGate,
-    /// Dangerous passed while the (less-suspicious) twin blocked — a
+    /// Dangerous passed while the (less-suspicious) twin blocked, a
     /// contradiction that means oracle noise. Recorded, never acted on.
     Inconclusive,
 }
@@ -153,14 +153,14 @@ pub struct FilterProfile {
 }
 
 impl FilterProfile {
-    /// Tokens the WAF policies by keyword — the solver must transform these.
+    /// Tokens the WAF policies by keyword (the solver must transform these).
     pub fn policed(&self) -> impl Iterator<Item = &TokenFinding> {
         self.findings
             .iter()
             .filter(|f| f.verdict == Verdict::Policed)
     }
 
-    /// Tokens that reach the sink in plaintext — free for the solver to use.
+    /// Tokens that reach the sink in plaintext (free for the solver to use).
     pub fn unpoliced(&self) -> impl Iterator<Item = &TokenFinding> {
         self.findings
             .iter()
@@ -168,7 +168,7 @@ impl FilterProfile {
     }
 
     /// Tokens whose *carrier* (chars/length/context), not the keyword, is the
-    /// gate — encoding the keyword alone will not bypass these.
+    /// gate (encoding the keyword alone will not bypass these).
     pub fn carrier_gated(&self) -> impl Iterator<Item = &TokenFinding> {
         self.findings
             .iter()
@@ -186,12 +186,12 @@ impl FilterProfile {
 
 /// Characterize a live WAF's block surface by running each [`TokenProbe`] in
 /// `battery` through `oracle`, carrying the probe value into a request via
-/// `carrier` (the caller owns the injection point — query arg, body field,
-/// header — so this crate takes no HTTP stack).
+/// `carrier` (the caller owns the injection point, query arg, body field,
+/// header (so this crate takes no HTTP stack)).
 ///
 /// Best-effort and total: a transport error on either half of a probe yields
 /// an `Inconclusive`(Verdict::Inconclusive) finding (and increments
-/// [`FilterProfile::transport_errors`]) rather than aborting the whole sweep —
+/// [`FilterProfile::transport_errors`]) rather than aborting the whole sweep 
 /// one flaky probe must not discard the intelligence from the rest.
 pub fn characterize<O, F>(
     oracle: &mut O,
@@ -236,7 +236,7 @@ where
 ///
 /// This is **necessary but not sufficient** for a bypass: it proves only the
 /// WAF-side half (the WAF's literal match is defeated by this encoding). To
-/// *exploit* it the origin must actually apply the transform — confirm origin
+/// *exploit* it the origin must actually apply the transform, confirm origin
 /// behaviour with the reflection fingerprint ([`scan_origin`](crate::scan_origin)).
 /// Reported as a candidate, never as a confirmed bypass (no fabrication).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -251,7 +251,7 @@ pub struct DecodeGap {
 }
 
 /// The single-stage origin transforms a WAF may or may not replicate before
-/// matching. Each is probed as `preimage_for(token, [stage], encode_all)` —
+/// matching. Each is probed as `preimage_for(token, [stage], encode_all)` 
 /// reusing the canonical solver encoder, so no encoding logic is duplicated.
 fn decode_probe_stages() -> Vec<(&'static str, Stage)> {
     vec![
@@ -272,12 +272,12 @@ fn decode_probe_stages() -> Vec<(&'static str, Stage)> {
 
 /// For each **policed** token in `profile`, probe whether the structural
 /// preimage of each origin transform in `decode_probe_stages` passes the
-/// WAF — surfacing the specific encodings that defeat the WAF's literal match.
+/// WAF (surfacing the specific encodings that defeat the WAF's literal match).
 ///
 /// Sound by construction: every candidate preimage genuinely differs from the
 /// raw token (skipped otherwise) and is verified to *pass* the live oracle
 /// before being recorded; the raw token was already proven blocked (it is
-/// `Policed`). The result is the WAF-decode-gap set — the encodings a solver
+/// `Policed`). The result is the WAF-decode-gap set, the encodings a solver
 /// should try first against a confirmed-decoding origin. Cost is
 /// `|policed| × stages` membership queries; run after [`characterize`] so it
 /// probes only the (usually few) tokens worth deepening.
@@ -296,11 +296,11 @@ where
         for (label, stage) in &stages {
             let sink = Pipeline(vec![stage.clone()]);
             // encode_all: rewrite the WHOLE token so no literal substring of the
-            // WAF rule survives — a pass then unambiguously means "the WAF did
+            // WAF rule survives, a pass then unambiguously means "the WAF did
             // not apply this decode", not "the rule happened not to match".
             let encoded = preimage_for(finding.token.as_bytes(), &sink, true);
             if encoded == finding.token.as_bytes() {
-                continue; // transform is a no-op for this token — not a probe
+                continue; // transform is a no-op for this token, not a probe
             }
             let value = String::from_utf8_lossy(&encoded).into_owned();
             if matches!(oracle.classify(&carrier(&value))?, Outcome::Pass) {
@@ -315,14 +315,14 @@ where
     Ok(gaps)
 }
 
-/// The embedded Tier-B default battery — the single source of the default
+/// The embedded Tier-B default battery, the single source of the default
 /// probes is the data file, not a hardcoded `vec!`. Override per-run with
 /// [`battery_from_toml`].
 const DEFAULT_BATTERY_TOML: &str = include_str!("../rules/filter/tokens.toml");
 
 /// The default differential battery, parsed from the embedded Tier-B data file
 /// `DEFAULT_BATTERY_TOML`. Extend coverage by editing that file (or shipping
-/// your own and passing it to [`battery_from_toml`]) — never by branching in
+/// your own and passing it to [`battery_from_toml`]), never by branching in
 /// code. The embedded data is validated by the same loader and pinned by tests.
 #[must_use]
 pub fn default_battery() -> Vec<TokenProbe> {
@@ -334,7 +334,7 @@ pub fn default_battery() -> Vec<TokenProbe> {
 /// `[[probe]]` tables, each `{ token, benign_twin, class }` where `class` is one
 /// of the [`RuleGroup`] names (`xss`, `sqli`, `lfi_rfi`, `rce`, `protocol`,
 /// `scanner`). Every probe is validated against the structural twin invariant
-/// (`TokenProbe::validate`) at load — the loader **fails closed** on a
+/// (`TokenProbe::validate`) at load, the loader **fails closed** on a
 /// malformed twin, an unknown class, or an empty battery, so bad data can never
 /// silently weaken the differential.
 pub fn battery_from_toml(src: &str) -> Result<Vec<TokenProbe>> {
@@ -385,7 +385,7 @@ mod tests {
     use crate::oracle::FnOracle;
 
     /// An oracle that blocks any request whose URL contains one of `policed`
-    /// (case-sensitive substring) — a faithful stand-in for a literal-token
+    /// (case-sensitive substring), a faithful stand-in for a literal-token
     /// WAF rule. Everything else passes.
     fn literal_token_waf(
         policed: &'static [&'static str],
@@ -475,7 +475,7 @@ mod tests {
     #[test]
     fn transport_error_is_inconclusive_not_a_guess() {
         // An oracle that always errors must yield Inconclusive findings and a
-        // transport-error count — never a fabricated Pass/Block verdict.
+        // transport-error count (never a fabricated Pass/Block verdict).
         let mut waf =
             FnOracle::new(|_req: &Request| Err(crate::error::WafModelError::Oracle("down".into())));
         let battery = default_battery();
@@ -517,7 +517,7 @@ mod tests {
     #[test]
     fn default_battery_twins_preserve_structure_and_only_swap_letters() {
         // Tier-B integrity: a sound twin changes ONLY ASCII letters, never the
-        // length or the non-letter skeleton (punctuation, digits, spaces) — so
+        // length or the non-letter skeleton (punctuation, digits, spaces), so
         // any outcome difference between token and twin is attributable to the
         // keyword, not to length, character-class, or structural-byte filters.
         for p in default_battery() {
@@ -534,7 +534,7 @@ mod tests {
                     assert!(
                         tb.is_ascii_alphabetic() && wb.is_ascii_alphabetic(),
                         "at index {i}, twin {:?} differs from {:?} on a NON-letter byte \
-                         ({tb:#x} vs {wb:#x}) — that perturbs the structural skeleton",
+                         ({tb:#x} vs {wb:#x}), that perturbs the structural skeleton",
                         p.benign_twin,
                         p.token
                     );

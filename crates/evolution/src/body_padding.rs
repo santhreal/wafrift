@@ -4,19 +4,19 @@
 //! Cloudflare Pro 8 KB, Cloudflare Enterprise 128 KB, AWS WAF 8/16/64 KB
 //! depending on tier, Akamai 8 KB by default. If we prepend ≥ N bytes
 //! of inert junk in front of the real payload, the WAF rule engine
-//! never sees the malicious bytes — they're past its inspection window
-//! — and the origin still parses the body correctly.
+//! never sees the malicious bytes, they're past its inspection window
+//! (and the origin still parses the body correctly).
 //!
 //! This module produces structurally-valid padded bodies for the four
 //! content-types we routinely inject into:
 //!
-//! - `application/json` — wrap original in an object with a leading
+//! - `application/json`: wrap original in an object with a leading
 //!   junk field: `{"_w":"<N bytes>","payload":<original>}`.
-//! - `application/x-www-form-urlencoded` — prepend
+//! - `application/x-www-form-urlencoded`: prepend
 //!   `_w=<N bytes>&` to the original body.
-//! - `multipart/form-data` — prepend a junk part with the same
+//! - `multipart/form-data`: prepend a junk part with the same
 //!   boundary, before the real parts.
-//! - any other content-type (raw text, XML, etc.) — fall back to a
+//! - any other content-type (raw text, XML, etc.), fall back to a
 //!   `_w` query-style prefix only if the body is empty; otherwise
 //!   refuse and return the original. Padding inside an opaque body
 //!   would corrupt it; honesty over false-victory.
@@ -55,7 +55,7 @@ pub const MAX_USEFUL_PAD: usize = 8 * 1024 * 1024;
 /// output differs: at first call we OsRng-seed a process nonce,
 /// then mix it into the per-call state seed. Pre-fix every wafrift
 /// invocation worldwide produced the EXACT same 8 KiB padding for
-/// `n = 8192` — a WAF vendor that captured one padded request could
+/// `n = 8192`: a WAF vendor that captured one padded request could
 /// write a regex matching the verbatim prefix and block every
 /// future wafrift probe collectively. The per-process nonce
 /// scatters that fingerprint without breaking within-process
@@ -67,13 +67,13 @@ fn fill(n: usize) -> Vec<u8> {
 fn fill_with_seed(n: usize, extra_seed: u64) -> Vec<u8> {
     const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
     let mut v = Vec::with_capacity(n);
-    // xorshift64* — small, deterministic given (n, extra_seed).
+    // xorshift64* (small, deterministic given (n, extra_seed)).
     let mut state: u64 = 0x9E37_79B9_7F4A_7C15u64
         .wrapping_add(n as u64)
         .wrapping_add(extra_seed)
         .wrapping_mul(0xBF58_476D_1CE4_E5B9);
     if state == 0 {
-        // xorshift fixed-point — bump to a non-zero seed.
+        // xorshift fixed-point (bump to a non-zero seed).
         state = 0xDEAD_BEEF_CAFE_F00D;
     }
     for _ in 0..n {
@@ -85,7 +85,7 @@ fn fill_with_seed(n: usize, extra_seed: u64) -> Vec<u8> {
     v
 }
 
-/// Process-lifetime padding nonce — OsRng-seeded at first use.
+/// Process-lifetime padding nonce: OsRng-seeded at first use.
 /// Returns 0 in test builds so the existing test fixtures (which
 /// assert exact bytes) keep passing AND so cross-process variation
 /// only kicks in for real binaries.
@@ -113,7 +113,7 @@ pub enum PadOutcome {
     /// at least `requested_bytes` larger than the original.
     Padded { bytes: Vec<u8>, added: usize },
     /// Content-type was opaque (binary, unknown) and the original was
-    /// non-empty — padding would corrupt it. Original returned
+    /// non-empty, padding would corrupt it. Original returned
     /// unchanged.
     SkippedOpaque,
     /// The requested padding is below `MIN_USEFUL_PAD`; not worth doing.
@@ -127,7 +127,7 @@ pub enum PadOutcome {
 /// [`PadOutcome::SkippedTooSmall`].
 ///
 /// `content_type` matching is case-insensitive on the type/subtype and
-/// ignores parameters (`charset=utf-8`, `boundary=...`, …) — except for
+/// ignores parameters (`charset=utf-8`, `boundary=...`, …), except for
 /// `multipart/form-data`, where the `boundary=` parameter is required
 /// to splice in the junk part.
 pub fn pad(body: &[u8], content_type: &str, requested_bytes: usize) -> PadOutcome {
@@ -149,13 +149,13 @@ pub fn pad(body: &[u8], content_type: &str, requested_bytes: usize) -> PadOutcom
         return pad_form(body, requested_bytes);
     }
     if main_type == "multipart/form-data" {
-        // Boundary VALUES are case-sensitive (RFC 2046 §5.1.1) — extract
+        // Boundary VALUES are case-sensitive (RFC 2046 §5.1.1), extract
         // from the original `content_type`, not the lowercased copy.
         // Only the `boundary=` parameter NAME is case-insensitive.
         if let Some(boundary) = extract_boundary(content_type) {
             return pad_multipart(body, &boundary, requested_bytes);
         }
-        // Multipart without a boundary param — body is already
+        // Multipart without a boundary param, body is already
         // malformed; don't compound the problem.
         return PadOutcome::SkippedOpaque;
     }
@@ -176,7 +176,7 @@ pub fn pad(body: &[u8], content_type: &str, requested_bytes: usize) -> PadOutcom
 fn pad_json(body: &[u8], requested_bytes: usize) -> PadOutcome {
     // Hard guard: a body larger than MAX_USEFUL_PAD is never useful
     // to feed through serde_json::from_slice OR through the
-    // "treat as opaque text and embed as a string" fallback below —
+    // "treat as opaque text and embed as a string" fallback below 
     // both paths would allocate at least body.len() bytes a second
     // time. Skip-and-pass-through is correct: cloud-WAF inspection
     // bypasses target SMALL bodies (the WAF inspects the first 8KB or
@@ -195,7 +195,7 @@ fn pad_json(body: &[u8], requested_bytes: usize) -> PadOutcome {
     //    `{"_wafrift_pad":"…","payload":<original>}`.
     //
     // The wrapping in case 3 changes the JSON shape. That's OK for a
-    // proxy that's evading a WAF — the origin sees a top-level object
+    // proxy that's evading a WAF, the origin sees a top-level object
     // with the original payload nested under `payload`, which most
     // permissive APIs ignore as an unknown extra field. If your origin
     // requires a non-object JSON root, prefer form/multipart.
@@ -223,7 +223,7 @@ fn pad_json(body: &[u8], requested_bytes: usize) -> PadOutcome {
             // Collision guard: the user-controlled body may
             // already carry our PAD_KEY. JSON objects with
             // duplicate keys aren't strictly forbidden by RFC 8259
-            // §4 but most parsers keep the LAST one — our injected
+            // §4 but most parsers keep the LAST one, our injected
             // pad would be silently dropped at the origin and the
             // WAF bypass is lost. Worse, an attacker who knows
             // wafrift is in front could pre-set _wafrift_pad to a
@@ -265,7 +265,7 @@ fn pad_json(body: &[u8], requested_bytes: usize) -> PadOutcome {
             };
         }
     }
-    // Non-object JSON (array/string/number) or malformed — wrap.
+    // Non-object JSON (array/string/number) or malformed (wrap).
     let Ok(original) = std::str::from_utf8(body) else {
         return PadOutcome::SkippedOpaque;
     };
@@ -313,7 +313,7 @@ fn pad_multipart(body: &[u8], boundary: &str, requested_bytes: usize) -> PadOutc
     // so we splice ours in front and let the original's first line
     // continue as the second part's separator.
     //
-    // If the body doesn't start with `--<boundary>` it's malformed —
+    // If the body doesn't start with `--<boundary>` it's malformed 
     // skip rather than corrupt further.
     let prefix = format!("--{boundary}");
     let body_str = std::str::from_utf8(body).unwrap_or("");
@@ -424,7 +424,7 @@ mod tests {
     fn fill_is_deterministic_and_inert() {
         let v = fill(8 * 1024);
         assert_eq!(v.len(), 8 * 1024);
-        // Lowercase alphanumeric only — no SQL/XSS/shell metacharacters.
+        // Lowercase alphanumeric only (no SQL/XSS/shell metacharacters).
         for &b in &v {
             assert!(
                 (b.is_ascii_lowercase() || b.is_ascii_digit()),
@@ -441,7 +441,7 @@ mod tests {
         // The whole point of switching from 'A'*N to xorshift is that
         // RX-based WAFs (naxsi BIG_REQUEST, modsec REQUEST_BODY runs)
         // flag long single-character sequences. Verify no run of the
-        // same byte exceeds 6 (a defensive ceiling — true xorshift
+        // same byte exceeds 6 (a defensive ceiling, true xorshift
         // sometimes produces short repeats but never long ones).
         let v = fill(64 * 1024);
         let mut max_run = 1usize;
@@ -456,7 +456,7 @@ mod tests {
         }
         assert!(
             max_run <= 6,
-            "filler has a run of {max_run} same bytes — would trigger WAF run-detection"
+            "filler has a run of {max_run} same bytes, would trigger WAF run-detection"
         );
     }
 
@@ -490,7 +490,7 @@ mod tests {
 
     #[test]
     fn empty_input_with_huge_size() {
-        // Empty body + very large pad (but not pathological) — must
+        // Empty body + very large pad (but not pathological), must
         // still produce structurally-valid output.
         let out = pad(b"", "application/json", 1024 * 1024);
         let PadOutcome::Padded { bytes, .. } = out else {
@@ -526,7 +526,7 @@ mod tests {
             panic!("expected padded, got {out:?}");
         };
         assert!(added >= 8 * 1024, "added={added}");
-        // Round-trips through serde — structurally valid JSON.
+        // Round-trips through serde (structurally valid JSON).
         let v: serde_json::Value = serde_json::from_slice(&bytes).expect("valid json");
         assert_eq!(v["_wafrift_pad"].as_str().map(str::len), Some(8 * 1024));
         assert_eq!(v["q"].as_str(), Some("' OR 1=1--"));
@@ -671,7 +671,7 @@ mod tests {
         // Regression for the empty-`if` collision-detection branch:
         // pre-fix the JSON arm noticed the existing PAD_KEY but did
         // nothing about it, so the output had two `_wafrift_pad`
-        // keys. Most parsers keep the LAST key — our padding got
+        // keys. Most parsers keep the LAST key, our padding got
         // dropped at the origin and the bypass was lost.
         // Post-fix the injected key suffixes (_wafrift_pad_1) so
         // both survive parsing.
@@ -741,7 +741,7 @@ mod tests {
         assert_eq!(
             out,
             PadOutcome::SkippedOpaque,
-            "non-empty text/xml body must not be padded — would corrupt XML structure"
+            "non-empty text/xml body must not be padded, would corrupt XML structure"
         );
     }
 
@@ -837,7 +837,7 @@ mod tests {
         let ct = "multipart/form-data; \u{2261}boundary=abc"; // ≡ before "boundary"
         let boundary = extract_boundary(ct);
         // This particular input won't match any prefix, but must not panic.
-        let _ = boundary; // either Some or None — we only care it doesn't panic.
+        let _ = boundary; // either Some or None (we only care it doesn't panic).
 
         // Also test a real multibyte in the boundary= value position.
         let ct2 = "multipart/form-data; boundary=\u{2261}abc"; // ≡ in boundary value
@@ -853,7 +853,7 @@ mod tests {
     fn extract_boundary_with_unicode_before_byte_9_does_not_panic() {
         // A multi-byte char (3 bytes) placed at byte 6 of the param name
         // would cause `p.get(..9)` to return None safely (non-char boundary).
-        // "bound\u{2261}y=" — "bound" = 5 bytes, ≡ = 3 bytes (bytes 5-7), "y=" starts at 8.
+        // "bound\u{2261}y=": "bound" = 5 bytes, ≡ = 3 bytes (bytes 5-7), "y=" starts at 8.
         let ct = "multipart/form-data; bound\u{2261}y=myfence";
         let _ = extract_boundary(ct); // must not panic
     }

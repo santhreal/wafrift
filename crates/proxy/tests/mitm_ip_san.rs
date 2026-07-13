@@ -109,7 +109,7 @@ async fn mitm_leaf_cert_ipv6_loopback_validates_with_rustls() {
 #[tokio::test]
 async fn mitm_leaf_cert_dns_name_still_validates() {
     // Negative twin: DNS names must still produce dNSName SANs and
-    // validate normally — the IP-literal fix must not break the
+    // validate normally, the IP-literal fix must not break the
     // common case.
     ensure_rustls_provider();
     let host = "example.com";

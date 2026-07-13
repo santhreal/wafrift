@@ -10,13 +10,13 @@ Fire evasion variants against a live target and report bypass results
 .SH OPTIONS
 .TP
 \fB\-\-target\fR \fI<URL>\fR
-Long\-form alias for the positional target URL — kept so every pre\-existing `wafrift scan \-\-target <URL>` invocation continues to parse. Mutually exclusive with the positional form
+Long\-form alias for the positional target URL, kept so every pre\-existing `wafrift scan \-\-target <URL>` invocation continues to parse. Mutually exclusive with the positional form
 .TP
 \fB\-\-from\-discovery\fR \fI<FROM_DISCOVERY>\fR
 Ingest a `wafrift discover` JSON report (file, or `\-` for stdin) and scan every discovered endpoint × injection point with `\-\-payload`. This is the gossan/recon → wafrift pipe the docs promised but never actually wired: `wafrift discover ... | wafrift scan \-\-from\-discovery \- \-\-payload \*(Aq<x>\*(Aq`
 .TP
 \fB\-\-corpus\fR \fI<CORPUS>\fR
-Run a corpus\-wide bench measurement instead of a single\-payload scan: fire every payload in this corpus directory/file at the target and report the block\-rate + verified bypass\-rate — the same measurement `bench\-waf` performs ("scan pointed at bench"). `\-\-payload` is ignored in this mode. Metric\-safe: delegates to the unchanged bench engine
+Run a corpus\-wide bench measurement instead of a single\-payload scan: fire every payload in this corpus directory/file at the target and report the block\-rate + verified bypass\-rate, the same measurement `bench\-waf` performs ("scan pointed at bench"). `\-\-payload` is ignored in this mode. Metric\-safe: delegates to the unchanged bench engine
 .TP
 \fB\-\-payload\fR \fI<PAYLOAD>\fR [default: ]
 Payload to mutate and test. Empty/omitted is an input error in single\-payload mode; ignored when `\-\-corpus` is set
@@ -25,7 +25,7 @@ Payload to mutate and test. Empty/omitted is an input error in single\-payload m
 Query parameter name to inject into
 .TP
 \fB\-\-payload\-class\fR \fI<CLASS>\fR
-Payload class label (`sql`, `xss`, `cmdi`, `ssti`, `path`, `ldap`, `xxe`, `ssrf`, `nosql`, `log4shell`) used for the per\-class warm\-start in the gene bank. When set, the pre\-scan winner pool is biased toward techniques that historically beat THIS WAF on THIS payload class — a SQLi scan against Cloudflare starts from "what beat CF on SQLi yesterday", not "what beat anything on anything". When unset, the global warm\-start path runs (unchanged behaviour). The post\-scan merge also records the per\-class breakdown so subsequent scans benefit.
+Payload class label (`sql`, `xss`, `cmdi`, `ssti`, `path`, `ldap`, `xxe`, `ssrf`, `nosql`, `log4shell`) used for the per\-class warm\-start in the gene bank. When set, the pre\-scan winner pool is biased toward techniques that historically beat THIS WAF on THIS payload class, a SQLi scan against Cloudflare starts from "what beat CF on SQLi yesterday", not "what beat anything on anything". When unset, the global warm\-start path runs (unchanged behaviour). The post\-scan merge also records the per\-class breakdown so subsequent scans benefit.
 
 Unknown values are rejected at parse time (exit 2) so a typo (`\-\-payload\-class slq`) is caught immediately instead of silently falling through to the unclassed warm\-start path.
 .br
@@ -56,13 +56,13 @@ log4shell
 .RE
 .TP
 \fB\-\-callback\-url\fR \fI<URL>\fR
-Out\-of\-band callback URL — the base address of a `wafrift listener` instance. When set, every occurrence of `{{CALLBACK}}` in the payload is replaced per\-variant with `<URL>/<unique\-token>`. The operator then correlates any inbound callback at the listener back to a specific variant by token — the oracle for blind SQLi (time\-based), stored XSS, blind SSRF, OOB command injection. The token is also surfaced in each variant\*(Aqs scan report
+Out\-of\-band callback URL, the base address of a `wafrift listener` instance. When set, every occurrence of `{{CALLBACK}}` in the payload is replaced per\-variant with `<URL>/<unique\-token>`. The operator then correlates any inbound callback at the listener back to a specific variant by token, the oracle for blind SQLi (time\-based), stored XSS, blind SSRF, OOB command injection. The token is also surfaced in each variant\*(Aqs scan report
 .TP
 \fB\-\-session\-init\fR \fI<CURL_FILE>\fR
-Stateful chain mode — fire this curl\-format request FIRST, capture cookies + Authorization, then re\-use them on every variant. The file format is identical to `wafrift import\-curl`\*(Aqs input (Burp / Chromium "Copy as cURL" pastes work verbatim). Defeats WAFs that scrutinise unauthenticated traffic more — most do, by a wide margin
+Stateful chain mode, fire this curl\-format request FIRST, capture cookies + Authorization, then re\-use them on every variant. The file format is identical to `wafrift import\-curl`\*(Aqs input (Burp / Chromium "Copy as cURL" pastes work verbatim). Defeats WAFs that scrutinise unauthenticated traffic more, most do, by a wide margin
 .TP
 \fB\-\-level\fR \fI<LEVEL>\fR [default: heavy]
-Evasion intensity. Approximate variant counts on an XSS payload to set expectations: light ~12, medium ~58, heavy ~1500. Heavy can produce 100x the variants of light — pair with `\-\-dry\-run` to preview the firing budget before committing to a rate\-limited target. Heavy also triples the wall\-clock at a fixed `\-\-delay\-ms`; use `\-\-concurrency` to amortise
+Evasion intensity. Approximate variant counts on an XSS payload to set expectations: light ~12, medium ~58, heavy ~1500. Heavy can produce 100x the variants of light, pair with `\-\-dry\-run` to preview the firing budget before committing to a rate\-limited target. Heavy also triples the wall\-clock at a fixed `\-\-delay\-ms`; use `\-\-concurrency` to amortise
 .br
 
 .br
@@ -99,7 +99,7 @@ json
 .RE
 .TP
 \fB\-\-stealth\-browser\fR \fI<STEALTH_BROWSER>\fR
-**CLI no\-op** — accepted for backwards\-compatibility but does NOT engage TLS\-level browser impersonation in `wafrift scan` (the CLI uses reqwest/rustls; TLS\-impersonation lives only in `wafrift\-proxy \-\-tls\-impersonate <profile>`, built with the `tls\-impersonate` cargo feature). When set, scan emits a warning pointing operators at the proxy. Wiring real impersonation into the scan loop is the open task that would close this gap
+**CLI no\-op**, accepted for backwards\-compatibility but does NOT engage TLS\-level browser impersonation in `wafrift scan` (the CLI uses reqwest/rustls; TLS\-impersonation lives only in `wafrift\-proxy \-\-tls\-impersonate <profile>`, built with the `tls\-impersonate` cargo feature). When set, scan emits a warning pointing operators at the proxy. Wiring real impersonation into the scan loop is the open task that would close this gap
 .TP
 \fB\-\-insecure\fR
 Disable TLS verification
@@ -117,33 +117,33 @@ Drop listed technique paths (comma\-separated)
 Write JSON output to a file instead of stdout
 .TP
 \fB\-\-proxy\fR \fI<URL>\fR
-HTTP proxy to route every wafrift request through. Typical pentest setup: point at Burp Suite on `http://127.0.0.1:8080` so every probe and bypass attempt lands in Burp\*(Aqs request history — copy\-pasteable into Repeater, recordable into Scanner / Intruder, exportable into the final report. The proxy applies to HTTPS targets too (CONNECT tunnelling)
+HTTP proxy to route every wafrift request through. Typical pentest setup: point at Burp Suite on `http://127.0.0.1:8080` so every probe and bypass attempt lands in Burp\*(Aqs request history, copy\-pasteable into Repeater, recordable into Scanner / Intruder, exportable into the final report. The proxy applies to HTTPS targets too (CONNECT tunnelling)
 .TP
 \fB\-H\fR, \fB\-\-header\fR [\fI<HEADER>...\fR]
-Extra request header in `Name: Value` form, repeatable. Equivalent to `curl \-H` — applied to every probe wafrift fires. Use for bearer tokens, X\-Real\-User impersonation, or any custom header your target expects: `\-H \*(AqAuthorization: Bearer …\*(Aq \-H \*(AqX\-Real\-User: admin\*(Aq`
+Extra request header in `Name: Value` form, repeatable. Equivalent to `curl \-H`: applied to every probe wafrift fires. Use for bearer tokens, X\-Real\-User impersonation, or any custom header your target expects: `\-H \*(AqAuthorization: Bearer …\*(Aq \-H \*(AqX\-Real\-User: admin\*(Aq`
 .TP
 \fB\-r\fR, \fB\-\-raw\-request\fR \fI<FILE>\fR
-Path to a Burp\-style raw HTTP request file (the bytes from *Copy → Save raw → File* in Burp Repeater / Proxy). When set, wafrift loads the file as the request TEMPLATE and substitutes each candidate payload at every `§§` marker before firing — instead of building requests from `\-\-target` / `\-\-param`.
+Path to a Burp\-style raw HTTP request file (the bytes from *Copy → Save raw → File* in Burp Repeater / Proxy). When set, wafrift loads the file as the request TEMPLATE and substitutes each candidate payload at every `§§` marker before firing (instead of building requests from `\-\-target` / `\-\-param`).
 
 Pentester workflow: intercept the real target request in Burp, save it, mark the value\-to\-fuzz with `§§`, then `wafrift scan \-r req.txt \-\-payload "\*(Aq OR 1=1\-\-"`. Bypasses surface with per\-bypass `curl \-i` reproducers in the JSON output (`bypass_variants[i].repro_curl`).
 
-The template must contain at least one `§§` marker; otherwise every variant fires the same un\-mutated request (operator mistake — wafrift rejects early with an actionable error).
+The template must contain at least one `§§` marker; otherwise every variant fires the same un\-mutated request (operator mistake (wafrift rejects early with an actionable error)).
 .TP
 \fB\-\-raw\-request\-scheme\fR \fI<SCHEME>\fR [default: http]
-URL scheme to assume when reconstructing the target URL from the raw request file\*(Aqs `Host:` header (the on\-the\-wire bytes don\*(Aqt record TLS state). `http` by default — pass `https` for TLS targets. Ignored unless `\-\-raw\-request` is set
+URL scheme to assume when reconstructing the target URL from the raw request file\*(Aqs `Host:` header (the on\-the\-wire bytes don\*(Aqt record TLS state). `http` by default, pass `https` for TLS targets. Ignored unless `\-\-raw\-request` is set
 .TP
 \fB\-\-auto\-distill\fR
 After the scan finds bypasses, automatically run Zeller\*(Aqs ddmin distillation on each one to surface the minimum\-edit\- distance payload that STILL bypasses. The minimum form is emitted in the JSON output as `bypass_variants[i].minimal_payload` alongside the original.
 
 Cost: each distillation runs O(N log N) extra HTTP fires where N = payload length. Off by default. Capped at `\-\-auto\-distill\-max\-fires` per bypass to defend against pathological payloads.
 
-Useful for pentest reports — shorter payloads are easier for the client to reproduce and easier for defenders to understand. Mirrors the standalone `wafrift distill` subcommand but applies to every bypass automatically.
+Useful for pentest reports, shorter payloads are easier for the client to reproduce and easier for defenders to understand. Mirrors the standalone `wafrift distill` subcommand but applies to every bypass automatically.
 .TP
 \fB\-\-auto\-distill\-max\-fires\fR \fI<AUTO_DISTILL_MAX_FIRES>\fR [default: 200]
 Per\-bypass cap on the number of HTTP fires the auto\-distill pass is allowed to make. Defends against pathological inputs + rate\-limiting WAFs that would otherwise drag a scan into the ground. Ignored unless `\-\-auto\-distill` is set
 .TP
 \fB\-\-concurrency\fR \fI<CONCURRENCY>\fR [default: 0]
-Concurrent in\-flight variants per batch. 0 = use the dynamic default (8 with no delay, 4 with a delay) — matches every pre\-flag invocation byte\-for\-byte. Useful when the operator\*(Aqs `.wafrift.toml` sets `scan.concurrency = N` to tune throughput for a slow / stable target
+Concurrent in\-flight variants per batch. 0 = use the dynamic default (8 with no delay, 4 with a delay), matches every pre\-flag invocation byte\-for\-byte. Useful when the operator\*(Aqs `.wafrift.toml` sets `scan.concurrency = N` to tune throughput for a slow / stable target
 .TP
 \fB\-\-timeout\-secs\fR \fI<TIMEOUT_SECS>\fR [default: 0]
 **Per\-request** HTTP timeout in seconds. Controls how long wafrift waits for a single HTTP response before giving up on that request. Large values let slow origins finish; small ones cut through faster against unresponsive targets. 0 = use the workspace default (`DEFAULT_REQUEST_TIMEOUT_SECS`). `.wafrift.toml`\*(Aqs `http.timeout_secs` overrides this when the operator hasn\*(Aqt passed the flag explicitly.
@@ -157,20 +157,20 @@ Suppress the human\-readable banner + per\-variant progress pretty\-print. `\-\-
 Seconds to wait for an OOB callback to land at the listener before reporting `NotObserved`. Only relevant with `\-\-callback\-url`. Tor / corporate\-proxy / DNS\-relayed callbacks can take 10–30+ s; the pre\-flag default of 5 s consistently reported false\-negative for those transports. Default 5 s preserves the prior behaviour
 .TP
 \fB\-\-exploit\-cap\fR \fI<EXPLOIT_CAP>\fR [default: 500]
-Maximum extra HTTP fires the EXPLOIT\-CHAIN phase is allowed to make after the initial scan loop completes. The exploit phase chains successful bypasses into compound attacks (auth\-bypass header + path\-traversal + tamper) — useful but unbounded by default. Pre\-flag the cap was hardcoded `500`, which at `\-\-delay\-ms 500` could silently add 250 s to a scan against a rate\-limited target. Operators tuning for slow / strict targets can now lower this; aggressive pentests against fast targets can raise it
+Maximum extra HTTP fires the EXPLOIT\-CHAIN phase is allowed to make after the initial scan loop completes. The exploit phase chains successful bypasses into compound attacks (auth\-bypass header + path\-traversal + tamper), useful but unbounded by default. Pre\-flag the cap was hardcoded `500`, which at `\-\-delay\-ms 500` could silently add 250 s to a scan against a rate\-limited target. Operators tuning for slow / strict targets can now lower this; aggressive pentests against fast targets can raise it
 .TP
 \fB\-\-variants\-cap\fR \fI<VARIANTS_CAP>\fR [default: 0]
 Hard cap on the INITIAL variant set passed into the fire loop. 0 = no cap (use the level\-derived count, unchanged historical behaviour). When set, the variant list is truncated AFTER the gene\-bank winner re\-order, so the highest\-confidence variants are preserved.
 
-Note: subsequent post\-fire phases (multi\-vector, header\- obfuscation, intelligence loop) may add MORE fires beyond the cap — they expand from successful bypasses, not from the initial pool. Use `\-\-exploit\-cap` to bound those, and check `explore_variants` (not `total_variants`) in the JSON output to see the cap took effect.
+Note: subsequent post\-fire phases (multi\-vector, header\- obfuscation, intelligence loop) may add MORE fires beyond the cap, they expand from successful bypasses, not from the initial pool. Use `\-\-exploit\-cap` to bound those, and check `explore_variants` (not `total_variants`) in the JSON output to see the cap took effect.
 .TP
 \fB\-\-i\-have\-permission\fR \fI<REASON>\fR
-Explicit authorization statement for this scan target. Required for any target that is NOT on wafrift\*(Aqs built\-in allowlist (localhost, 127.0.0.1, ::1, waf.cumulusfire.net, testing.santh.dev, ginandjuice.shop) and NOT in the operator\*(Aqs `~/.wafrift/permission.toml`. Supply any non\-empty justification string — e.g. `\-\-i\-have\-permission "HackerOne #12345 pentest scope"`.
+Explicit authorization statement for this scan target. Required for any target that is NOT on wafrift\*(Aqs built\-in allowlist (localhost, 127.0.0.1, ::1, waf.cumulusfire.net, testing.santh.dev, ginandjuice.shop) and NOT in the operator\*(Aqs `~/.wafrift/permission.toml`. Supply any non\-empty justification string (e.g. `\-\-i\-have\-permission "HackerOne #12345 pentest scope"`).
 
 This guard is wafrift\*(Aqs refuse\-by\-default posture: the tool is a real attack engine and the operator must assert authorization explicitly for each non\-lab target. Private/RFC1918 targets are always allowed (your own Docker bench, internal pentest target).
 .TP
 \fB\-\-graphql\fR
-Force GraphQL evasion probing — inject the full `wafrift\-graphql` payload battery (alias\-flood, introspection, op\-name\-mismatch, depth\-bomb, batch) into the scan regardless of whether auto\-detection identifies a GraphQL endpoint.
+Force GraphQL evasion probing, inject the full `wafrift\-graphql` payload battery (alias\-flood, introspection, op\-name\-mismatch, depth\-bomb, batch) into the scan regardless of whether auto\-detection identifies a GraphQL endpoint.
 
 Without this flag, wafrift probes `/graphql`, `/api/graphql`, and `/v1/graphql` automatically; if a GraphQL response is detected there the payload battery is injected for that path automatically. Use `\-\-graphql` to override when the endpoint lives at a non\-standard path or behind a redirect.
 .TP
@@ -193,9 +193,9 @@ Consecutive challenges before cooling an egress entry. Default: 3
 Seconds a cooled egress entry stays out of rotation. Default: 300
 .TP
 \fB\-\-scan\-timeout\-secs\fR \fI<SECS>\fR [default: 0]
-**Wall\-clock budget for the WHOLE scan loop** in seconds.  When the budget expires, wafrift breaks out of the probe loop, emits whatever partial results it has, and exits with code **7** ("scan\-timeout\-secs budget exceeded — partial results emitted").
+**Wall\-clock budget for the WHOLE scan loop** in seconds.  When the budget expires, wafrift breaks out of the probe loop, emits whatever partial results it has, and exits with code **7** ("scan\-timeout\-secs budget exceeded (partial results emitted")).
 
-This is a cap on TOTAL scan runtime, distinct from `\-\-timeout\-secs` which is a per\-request HTTP timeout.  Use `\-\-scan\-timeout\-secs` to hard\-bound a CI job that runs against a rate\-limited target — e.g. `\-\-scan\-timeout\-secs 120` caps the scan at 2 minutes and guarantees the CI step exits cleanly regardless of WAF latency.
+This is a cap on TOTAL scan runtime, distinct from `\-\-timeout\-secs` which is a per\-request HTTP timeout.  Use `\-\-scan\-timeout\-secs` to hard\-bound a CI job that runs against a rate\-limited target, e.g. `\-\-scan\-timeout\-secs 120` caps the scan at 2 minutes and guarantees the CI step exits cleanly regardless of WAF latency.
 
 Default: no wall\-clock cap (0 = unlimited).
 .TP
@@ -204,7 +204,7 @@ Hard cap on TOTAL HTTP fires across ALL phases (explore + differential + equival
 
 Use this to bound request volume against strict rate\-limit targets where `\-\-variants\-cap` and `\-\-exploit\-cap` alone are insufficient (those only cap individual phase pools, not the global total).
 
-Default: 10 000 — a generous ceiling that leaves normal scans entirely unaffected while preventing runaway fires on deeply recursive payloads. Special value 0 = unlimited (preserves pre\-flag behaviour byte\-identical to omitting the flag; backward\-compatible).
+Default: 10 000, a generous ceiling that leaves normal scans entirely unaffected while preventing runaway fires on deeply recursive payloads. Special value 0 = unlimited (preserves pre\-flag behaviour byte\-identical to omitting the flag; backward\-compatible).
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help (see a summary with \*(Aq\-h\*(Aq)

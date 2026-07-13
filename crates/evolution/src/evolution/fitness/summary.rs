@@ -30,7 +30,7 @@ pub fn fitness_statistics(population: &[Chromosome]) -> FitnessStats {
         };
     }
 
-    // Filter non-finite values before computing statistics — NaN/Inf
+    // Filter non-finite values before computing statistics. NaN/Inf
     // would corrupt min/max/median and make comparisons nonsensical.
     let finite: Vec<f64> = evaluated
         .iter()

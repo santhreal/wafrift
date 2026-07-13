@@ -21,7 +21,7 @@ async fn spawn_cache_mock() -> std::net::SocketAddr {
                 let mut buf = vec![0u8; 8 * 1024];
                 let _ = sock.read(&mut buf).await;
                 // Identical body + identical cache signal on EVERY
-                // request — simulates an aggressive cache where many
+                // request, simulates an aggressive cache where many
                 // variants map to one key.
                 let body = "<html>cached static asset</html>";
                 let resp = format!(
@@ -59,11 +59,11 @@ fn cache_diff_flags_cache_key_collisions_on_aggressive_cache_mock() {
         "--timeout-secs",
         "30",
     ]);
-    assert_eq!(code, 0, "cache-diff should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "cache-diff should exit 0, stderr:\n{stderr}");
 
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     assert_eq!(parsed["baseline_status"], 200);
-    // Cache signal should be picked up — mock emits CF-Cache-Status + Age.
+    // Cache signal should be picked up (mock emits CF-Cache-Status + Age).
     let sig = parsed["baseline_cache_signal"]
         .as_str()
         .expect("baseline_cache_signal string");
@@ -101,7 +101,7 @@ fn cache_diff_against_unreachable_target_exits_1() {
     ]);
     assert_eq!(
         code, 1,
-        "unreachable target must exit 1 — stderr:\n{stderr}"
+        "unreachable target must exit 1, stderr:\n{stderr}"
     );
 }
 
@@ -129,13 +129,13 @@ fn cache_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "cache", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff cache --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff cache --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["cache-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift cache-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift cache-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }

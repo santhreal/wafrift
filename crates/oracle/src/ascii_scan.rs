@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn contains_ascii_insensitive_overlapping_potential_matches() {
-        // "aaab" contains "aab" — verify the search continues
+        // "aaab" contains "aab", verify the search continues
         // past failed prefix matches without skipping valid ones.
         assert!(contains_ascii_insensitive("aaab", "AAB"));
     }
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn starts_with_ascii_insensitive_exact_match() {
-        // Prefix == haystack — should match (every char of prefix
+        // Prefix == haystack, should match (every char of prefix
         // consumed before haystack exhausts).
         assert!(starts_with_ascii_insensitive("HELLO", "hello"));
         assert!(starts_with_ascii_insensitive("hello", "HELLO"));
@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn ascii_helpers_treat_digits_and_punctuation_as_case_invariant() {
         // Non-alphabetic bytes compare equal regardless of case
-        // folding — `1=1` matches itself, `?` matches itself.
+        // folding: `1=1` matches itself, `?` matches itself.
         assert!(contains_ascii_insensitive("foo?1=1!bar", "?1=1!"));
         assert!(starts_with_ascii_insensitive("?123", "?123"));
     }

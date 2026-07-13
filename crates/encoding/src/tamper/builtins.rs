@@ -34,7 +34,7 @@ impl TamperStrategy for DoubleUrlEncodeTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Double URL encoding (%25XX) — bypasses WAFs that decode once"
+        "Double URL encoding (%25XX), bypasses WAFs that decode once"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -96,7 +96,7 @@ pub struct CaseAlternationTamper;
 /// Sibling to `sql_char_decompose` (MySQL/MSSQL variadic `CHAR()`); this
 /// one targets Postgres + Oracle by producing `(CHR(N)||CHR(N)||...)` per
 /// literal. Pipe-concat operator is SQL-standard but blocked by some
-/// over-eager WAFs — this tamper is the lever for Postgres/Oracle
+/// over-eager WAFs, this tamper is the lever for Postgres/Oracle
 /// payloads where `||` is the canonical concat.
 pub struct PgChrDecomposeTamper;
 
@@ -106,7 +106,7 @@ impl TamperStrategy for PgChrDecomposeTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Convert 'admin' → (CHR(97)||CHR(100)||...) — Postgres/Oracle pipe-concat form"
+        "Convert 'admin' → (CHR(97)||CHR(100)||...). Postgres/Oracle pipe-concat form"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -118,7 +118,7 @@ impl TamperStrategy for PgChrDecomposeTamper {
     }
 }
 
-/// SQL adjacent-string-literal concatenation tamper — rewrites every
+/// SQL adjacent-string-literal concatenation tamper, rewrites every
 /// `'string'` literal of length ≥ 2 as a sequence of single-character
 /// adjacent literals (`'admin'` → `'a' 'd' 'm' 'i' 'n'`). The ANSI
 /// SQL-92 §5.3 specification requires the parser to concatenate
@@ -126,7 +126,7 @@ impl TamperStrategy for PgChrDecomposeTamper {
 /// Postgres, SQLite, Oracle, DB2 all implement it. WAFs matching the
 /// LITERAL substring of well-known credentials/paths (`'admin'`,
 /// `'/etc/passwd'`, `'root'`) see N unrelated single-character strings
-/// instead. Pure SQL semantics — no comments, no CONCAT(), no special
+/// instead. Pure SQL semantics, no comments, no CONCAT(), no special
 /// functions.
 pub struct SqlAdjacentStringConcatTamper;
 
@@ -136,7 +136,7 @@ impl TamperStrategy for SqlAdjacentStringConcatTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Split 'string' → 'a' 'b' 'c' … via ANSI SQL adjacent-literal concat — defeats literal-substring rules with zero special characters"
+        "Split 'string' → 'a' 'b' 'c' … via ANSI SQL adjacent-literal concat, defeats literal-substring rules with zero special characters"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -148,7 +148,7 @@ impl TamperStrategy for SqlAdjacentStringConcatTamper {
     }
 }
 
-/// Partial JSON Unicode-escape tamper — encodes ASCII alphanumeric chars
+/// Partial JSON Unicode-escape tamper, encodes ASCII alphanumeric chars
 /// as `\uXXXX` while leaving structural punctuation (quotes, operators,
 /// whitespace, `<`, `>`, `(`, `)`) bare. The keyword fingerprint
 /// ("UNION", "SELECT", "script", "alert") never appears in the wire
@@ -163,7 +163,7 @@ impl TamperStrategy for JsonUnicodeAlnumTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Encode ASCII alphanumeric chars as `\\uXXXX`, leave punctuation bare — shatters keyword fingerprints inside JSON/JS contexts"
+        "Encode ASCII alphanumeric chars as `\\uXXXX`, leave punctuation bare, shatters keyword fingerprints inside JSON/JS contexts"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -175,7 +175,7 @@ impl TamperStrategy for JsonUnicodeAlnumTamper {
     }
 }
 
-/// SQL CHAR() decomposition tamper — every single-quoted string literal
+/// SQL CHAR() decomposition tamper, every single-quoted string literal
 /// becomes `CHAR(N1,N2,...)` with one codepoint per arg. Defeats both
 /// literal-substring AND CONCAT-shaped blocklists (the payload contains
 /// NO single-quoted ASCII tokens at all).
@@ -187,7 +187,7 @@ impl TamperStrategy for SqlCharDecomposeTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Convert 'admin' → CHAR(97,100,109,105,110) — int codepoints, no quoted tokens"
+        "Convert 'admin' → CHAR(97,100,109,105,110), int codepoints, no quoted tokens"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -199,7 +199,7 @@ impl TamperStrategy for SqlCharDecomposeTamper {
     }
 }
 
-/// SQL CONCAT split tamper — every single-quoted string literal becomes
+/// SQL CONCAT split tamper, every single-quoted string literal becomes
 /// `CONCAT('a','b','c',...)`. Defeats blocklists scanning for literal
 /// substrings like `'admin'` / `'password'` / `'/etc/passwd'` because the
 /// substring no longer appears contiguously. The DB evaluates CONCAT() to
@@ -212,7 +212,7 @@ impl TamperStrategy for SqlConcatSplitTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Convert 'admin' → CONCAT('a','d','m','i','n') — splits literal substrings"
+        "Convert 'admin' → CONCAT('a','d','m','i','n'), splits literal substrings"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -224,14 +224,14 @@ impl TamperStrategy for SqlConcatSplitTamper {
     }
 }
 
-/// Mathematical Alphanumeric Symbols tamper — replaces ASCII letters/digits
+/// Mathematical Alphanumeric Symbols tamper, replaces ASCII letters/digits
 /// with their `U+1D400`-block Math Bold counterparts. Both NFKC-normalise
 /// back to ASCII, so backends that normalise (Postgres ICU, MySQL
 /// `utf8mb4_0900_ai_ci`, Java/.NET/Python/Go NFKC) execute the original
 /// keyword while WAF byte-regex sees `U+1D4xx` codepoints and misses.
 ///
 /// Distinct from `bracket_confusable` / `fullwidth`: those use the
-/// `U+FF00` block. Math Bold lives in `U+1D400` — different range,
+/// `U+FF00` block. Math Bold lives in `U+1D400`: different range,
 /// different blocklist coverage gap.
 pub struct MathBoldTamper;
 
@@ -253,7 +253,7 @@ impl TamperStrategy for MathBoldTamper {
     }
 }
 
-/// HTML entity variants tamper — rotates each char through 4 browser-tolerant
+/// HTML entity variants tamper, rotates each char through 4 browser-tolerant
 /// forms (lowercase-x hex, uppercase-X hex, decimal, zero-padded decimal).
 /// Defeats WAF regexes that anchor on the canonical `&#xHH;` form only.
 pub struct HtmlEntityVariantsTamper;
@@ -455,7 +455,7 @@ impl TamperStrategy for HexEncodeTamper {
 ///
 /// U+FEFF (ZWNBSP / BOM) was historically in the rotation but
 /// caused PostgreSQL + many DB connectors to 500 the entire
-/// query as "invalid byte sequence" mid-literal — defeating the
+/// query as "invalid byte sequence" mid-literal, defeating the
 /// bypass. Replaced with U+180E which is universally tolerated.
 ///
 /// Frontier research (Black Hat 2025, "Zero-Width WAF Bypass"):
@@ -471,7 +471,7 @@ impl TamperStrategy for ZeroWidthInjectTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Inject zero-width Unicode chars between keyword bytes — bypasses WAFs that don't normalize Unicode"
+        "Inject zero-width Unicode chars between keyword bytes, bypasses WAFs that don't normalize Unicode"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -483,10 +483,10 @@ impl TamperStrategy for ZeroWidthInjectTamper {
         // database connectors (psycopg2, MySQL Connector/J, SQLite
         // default) and PostgreSQL itself reject mid-string BOM
         // bytes as an "invalid sequence" and 500 the entire query
-        // — the payload fails outright rather than bypass. The
+        //: the payload fails outright rather than bypass. The
         // remaining three (200B/C/D) are universally tolerated.
         // U+180E (MONGOLIAN VOWEL SEPARATOR) is added as the
-        // fourth slot — also zero-width, also widely tolerated.
+        // fourth slot (also zero-width, also widely tolerated).
         const ZW: [char; 4] = ['\u{200B}', '\u{200C}', '\u{200D}', '\u{180E}'];
         let mut out = String::with_capacity(payload.len() * 4);
         for (i, ch) in payload.chars().enumerate() {
@@ -523,7 +523,7 @@ impl TamperStrategy for PostgresDollarQuoteTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Wrap single-quoted SQL string literals in `$tag$...$tag$` — Postgres-only, bypasses quote-pattern WAFs"
+        "Wrap single-quoted SQL string literals in `$tag$...$tag$`: Postgres-only, bypasses quote-pattern WAFs"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -532,10 +532,10 @@ impl TamperStrategy for PostgresDollarQuoteTamper {
         // determinism).  Hash-based identifier; 4 lowercase letters.
         //
         // F138: pre-fix used `& 25` (bitmask 0b11001) thinking it
-        // collapsed to the range 0..26. It doesn't — `& 25` admits
+        // collapsed to the range 0..26. It doesn't: `& 25` admits
         // only the 8 values {0,1,8,9,16,17,24,25}, so the tag
         // alphabet shrank to {a,b,i,j,q,r,y,z} and the tag space
-        // collapsed from 26^4 = 456,976 to 8^4 = 4,096 — a 111×
+        // collapsed from 26^4 = 456,976 to 8^4 = 4,096, a 111×
         // reduction that makes operator-side tag enumeration easier
         // (the whole point of a random tag is to defeat WAFs that
         // pattern-match a small known set). Use `% 26` so every
@@ -560,7 +560,7 @@ impl TamperStrategy for PostgresDollarQuoteTamper {
                 // Consume until the next non-escaped quote.
                 while let Some(inner) = chars.next() {
                     if inner == '\'' {
-                        // Handle SQL '' escape — keep as-is in dollar quote.
+                        // Handle SQL '' escape (keep as-is in dollar quote).
                         if chars.peek() == Some(&'\'') {
                             out.push('\'');
                             out.push('\'');
@@ -608,7 +608,7 @@ impl TamperStrategy for MysqlVersionedCommentWrapTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Wrap payload in /*!50000 ... */ — MySQL executes, WAFs that strip comments see nothing"
+        "Wrap payload in /*!50000 ... */: MySQL executes, WAFs that strip comments see nothing"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -646,7 +646,7 @@ impl TamperStrategy for HexLiteralKeywordTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Convert SQL `'string'` literals to `0xHHHH…` form — MySQL/Postgres execute identically, WAFs don't"
+        "Convert SQL `'string'` literals to `0xHHHH…` form. MySQL/Postgres execute identically, WAFs don't"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -658,7 +658,7 @@ impl TamperStrategy for HexLiteralKeywordTamper {
                 let mut content = String::new();
                 while let Some(inner) = chars.next() {
                     if inner == '\'' {
-                        // SQL '' escape — treat as literal '.
+                        // SQL '' escape (treat as literal ').
                         if chars.peek() == Some(&'\'') {
                             content.push('\'');
                             chars.next();
@@ -696,7 +696,7 @@ impl TamperStrategy for HexLiteralKeywordTamper {
 /// the canonical ` `, `\t`, `\r`, `\n` quartet.  BEL bypasses
 /// pattern matches like `UNION\s+SELECT`.
 ///
-/// Out of `[\t\n\v\f\r ]`, BEL (`\x07`) is the least-handled —
+/// Out of `[\t\n\v\f\r ]`, BEL (`\x07`) is the least-handled 
 /// I tested against ModSec, Coraza, AWS WAF, and Cloudflare's
 /// CRS as of 2026-05; only ModSec PL4 catches it consistently.
 pub struct BellSeparatorTamper;
@@ -707,7 +707,7 @@ impl TamperStrategy for BellSeparatorTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Replace ASCII space with BEL (U+0007) — SQL parsers tokenise, WAFs that only recognise canonical whitespace miss"
+        "Replace ASCII space with BEL (U+0007). SQL parsers tokenise, WAFs that only recognise canonical whitespace miss"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
@@ -738,12 +738,12 @@ impl TamperStrategy for BracketConfusableTamper {
     }
 
     fn description(&self) -> &'static str {
-        "Replace `<` / `>` with Unicode angle-bracket confusables — bypasses WAFs that pattern-match literal `<script>`"
+        "Replace `<` / `>` with Unicode angle-bracket confusables, bypasses WAFs that pattern-match literal `<script>`"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
         // U+FF1C / U+FF1E are FULLWIDTH LESS-THAN / GREATER-THAN
-        // — visually identical, distinct codepoints from ASCII.
+        //: visually identical, distinct codepoints from ASCII.
         payload
             .chars()
             .map(|c| match c {
@@ -785,12 +785,12 @@ impl TamperStrategy for MxssNamespaceWrapTamper {
     }
 
     fn description(&self) -> &'static str {
-        "MathML-namespace mutation-XSS harness (DOMPurify ≤3.2.4 / CVE-2025-26791 bypass) — defeats sanitizers that namespace-aware-process the input but byte-serialise the output"
+        "MathML-namespace mutation-XSS harness (DOMPurify ≤3.2.4 / CVE-2025-26791 bypass), defeats sanitizers that namespace-aware-process the input but byte-serialise the output"
     }
 
     fn tamper(&self, payload: &str, _context: Option<&str>) -> String {
         // The payload is treated as the EVENT-HANDLER FRAGMENT that
-        // would normally sit inside an `<img>` tag — e.g. just
+        // would normally sit inside an `<img>` tag, e.g. just
         // `onerror=alert(1)`. If the operator gave us a fuller form
         // (`<img src=x onerror=alert(1)>`), we still wrap; the
         // browser tolerates the redundant `<img>` inside the
@@ -813,10 +813,10 @@ impl TamperStrategy for MxssNamespaceWrapTamper {
 /// duplicate; the backend's deserialiser consumes the LAST
 /// (PHP/Apache/Rails) or merges (ASP.NET) and unwraps the attack
 /// payload. Confirmed against all five major WAFs (AWS / Azure /
-/// Cloudflare / Cloud Armor / ModSec) by the WAFFLED 2025 study —
+/// Cloudflare / Cloud Armor / ModSec) by the WAFFLED 2025 study 
 /// 557 JSON bypasses across the corpus.
 ///
-/// The harness uses param `"q"` as the colliding key — the same
+/// The harness uses param `"q"` as the colliding key, the same
 /// default param wafrift's scan loop uses for URL-query carriers,
 /// so a SQL/XSS/SSTI payload that already works as `?q=<P>` lands
 /// in the JSON-body channel via the same key name. When the
@@ -857,7 +857,7 @@ impl TamperStrategy for JsonDupKeyTamper {
 
     fn aggressiveness(&self) -> f64 {
         // Mid-low aggression: the bytes themselves are clearly JSON,
-        // but the duplicate-key trick is the entire bypass — many WAFs
+        // but the duplicate-key trick is the entire bypass, many WAFs
         // pass it because the first key matches their inspector's
         // sentinel. Not as aggressive as e.g. mxss_namespace_wrap
         // because the channel-shift is JSON-body, not browser-side.
@@ -867,7 +867,7 @@ impl TamperStrategy for JsonDupKeyTamper {
 
 /// Content-Type starvation (frontier 2026, WAFFLED / windshock
 /// 2026-03 detection-gap analysis). The WAF dispatches to a body
-/// inspector based on Content-Type — a JSON inspector for
+/// inspector based on Content-Type, a JSON inspector for
 /// `application/json`, a form inspector for `application/x-www-form-
 /// urlencoded`, multipart for `multipart/form-data`, etc. When the
 /// Content-Type is absent, case-shuffled (`Application/JSON`), or
@@ -881,8 +881,8 @@ impl TamperStrategy for JsonDupKeyTamper {
 /// payload bytes, it transforms the WIRE shape the request advertises
 /// itself with. The actual body must be set separately by the
 /// caller (scan / import-curl pass it through to the HTTP client).
-/// What we emit IS the payload — keeping the contract that every
-/// tamper returns a single payload string — and the orchestrator
+/// What we emit IS the payload, keeping the contract that every
+/// tamper returns a single payload string, and the orchestrator
 /// is expected to pair the output with the matching `Content-Type`
 /// header from the helper below.
 ///
@@ -903,7 +903,7 @@ impl TamperStrategy for CtStarvationTamper {
 
     fn tamper(&self, payload: &str, context: Option<&str>) -> String {
         // When the carrier is body-shaped (form/json/multipart),
-        // wrap the payload in a minimal `q=<payload>` form pair —
+        // wrap the payload in a minimal `q=<payload>` form pair 
         // the same shape `wafrift scan` uses by default. The
         // operator pairs this with the non-canonical Content-Type
         // via `ct_starvation_header_for`. For header/cookie
@@ -934,7 +934,7 @@ impl TamperStrategy for CtStarvationTamper {
 /// [`CtStarvationTamper`]. Rotates through a small set of confirmed-
 /// effective variants (case-shuffled, charset-suffixed,
 /// camelCase) so consecutive variants in a scan run exercise
-/// different dispatch failures. Pure — operator can call it
+/// different dispatch failures. Pure, operator can call it
 /// independently when constructing manual repros.
 #[must_use]
 pub fn ct_starvation_header_for(payload: &str) -> &'static str {
@@ -943,19 +943,19 @@ pub fn ct_starvation_header_for(payload: &str) -> &'static str {
     // same Content-Type within a run (debugging-friendly) but a
     // diverse set across payloads.
     const VARIANTS: &[&str] = &[
-        // (1) UPPERCASE — WAF dispatchers that lower-case the value
+        // (1) UPPERCASE: WAF dispatchers that lower-case the value
         // before lookup match; ones that string-compare don't.
         "APPLICATION/JSON",
-        // (2) Mixed-case — same trick at a different inflection.
+        // (2) Mixed-case (same trick at a different inflection).
         "Application/Json",
-        // (3) Non-canonical charset — WAFs that filter on
+        // (3) Non-canonical charset: WAFs that filter on
         // `application/json` (exact prefix) drop this; backends
         // accept any charset.
         "application/json; charset=ibm037",
-        // (4) Text-plain wrap — body is valid JSON but advertised
+        // (4) Text-plain wrap, body is valid JSON but advertised
         // as plain text; WAF's JSON inspector NEVER fires.
         "text/plain",
-        // (5) Form-encoded label with JSON body — common ASP.NET
+        // (5) Form-encoded label with JSON body, common ASP.NET
         // pattern, defeats Cloudflare's JSON inspector outright.
         "application/x-www-form-urlencoded",
     ];
@@ -1084,7 +1084,7 @@ mod tests {
     //
     // Each tamper had one happy-path test.  These add the
     // robustness coverage that turns a "feature" into a "trusted
-    // building block" — empty inputs, multibyte inputs, control
+    // building block", empty inputs, multibyte inputs, control
     // chars, idempotency, aggressiveness sanity.
 
     #[test]
@@ -1133,7 +1133,7 @@ mod tests {
     fn double_url_encode_idempotent_on_already_encoded() {
         let strategy = DoubleUrlEncodeTamper;
         // The encoder treats `%` itself as a byte and encodes it
-        // — `%20` becomes `%2520` (single layer applied), and
+        //: `%20` becomes `%2520` (single layer applied), and
         // applying again gives a third layer.
         let once = strategy.tamper("%20", None);
         let twice = strategy.tamper(&once, None);
@@ -1165,7 +1165,7 @@ mod tests {
     fn case_alternation_handles_unicode_alpha() {
         let strategy = CaseAlternationTamper;
         // Non-ASCII characters get pass-through (no `to_uppercase`
-        // semantics enforced — that's a separate `unicode_case`
+        // semantics enforced, that's a separate `unicode_case`
         // tamper if needed).
         let _ = strategy.tamper("αβγ", None);
         // No panic = pass.
@@ -1175,7 +1175,7 @@ mod tests {
     fn case_alternation_lowercase_keyword_becomes_mixed_case() {
         let strategy = CaseAlternationTamper;
         // Documented behaviour: the alternation index advances on
-        // every input character — spaces don't reset the index.
+        // every input character (spaces don't reset the index).
         // So `union select` yields `UnIoN sElEcT` (5 alpha →
         // index 5 is odd → 's' stays lowercase, 'e' goes upper).
         let out = strategy.tamper("union select", None);
@@ -1226,7 +1226,7 @@ mod tests {
     fn null_byte_empty_input() {
         let strategy = NullByteTamper;
         let out = strategy.tamper("", None);
-        // Empty input still gets a null suffix (defensive — the
+        // Empty input still gets a null suffix (defensive, the
         // operator usually has something to inject).
         assert_eq!(out, "%00");
     }
@@ -1279,7 +1279,7 @@ mod tests {
         // returns the original bytes.
         let strategy = Base64Tamper;
         let encoded = strategy.tamper("hello world", None);
-        // base64::decode round-trip — we can't import base64 in
+        // base64::decode round-trip, we can't import base64 in
         // tests directly without adding a dep, so check the
         // structural property: only base64 alphabet chars.
         for c in encoded.chars() {
@@ -1333,7 +1333,7 @@ mod tests {
     #[test]
     fn unicode_escape_handles_non_bmp_chars() {
         let strategy = UnicodeEscapeTamper;
-        // U+1F600 is outside BMP — encoders typically emit a
+        // U+1F600 is outside BMP, encoders typically emit a
         // surrogate pair or extended escape.  Must not panic.
         let _ = strategy.tamper("\u{1F600}", None);
     }
@@ -1577,7 +1577,7 @@ mod tests {
     #[test]
     fn zero_width_inject_skips_non_alpha_chars() {
         let strategy = ZeroWidthInjectTamper;
-        // Spaces and quotes do NOT get zero-width followers —
+        // Spaces and quotes do NOT get zero-width followers 
         // injecting them would break SQL parsing.
         let out = strategy.tamper("a 1 ' \"", None);
         // Only the alphabetic `a` should produce an injection.
@@ -1610,7 +1610,7 @@ mod tests {
         // through all four zero-width codepoints twice. U+FEFF
         // was historically the fourth slot but causes PostgreSQL
         // + many DB connectors to 500 the query as invalid byte
-        // sequence — replaced with U+180E (F61).
+        // sequence (replaced with U+180E (F61)).
         let zw_chars: Vec<char> = out
             .chars()
             .filter(|c| matches!(*c, '\u{200B}' | '\u{200C}' | '\u{200D}' | '\u{180E}'))
@@ -1697,7 +1697,7 @@ mod tests {
     #[test]
     fn postgres_dollar_quote_handles_escaped_quote() {
         let strategy = PostgresDollarQuoteTamper;
-        // SQL '' inside a literal — the encoder keeps them inside
+        // SQL '' inside a literal, the encoder keeps them inside
         // the dollar-quoted block.
         let out = strategy.tamper("'a''b'", None);
         assert!(out.contains("a''b"), "got: {out}");
@@ -1732,7 +1732,7 @@ mod tests {
     fn postgres_dollar_quote_tag_uses_full_az_alphabet() {
         // F138 regression: pre-fix `& 25` (mask 0b11001) admitted only
         // {0,1,8,9,16,17,24,25} so the tag alphabet collapsed to
-        // {a,b,i,j,q,r,y,z} — 8 letters, 8^4 = 4,096 tag space.
+        // {a,b,i,j,q,r,y,z}: 8 letters, 8^4 = 4,096 tag space.
         // Post-fix `% 26` spans every letter a-z. Fire 200 distinct
         // payloads at the strategy, collect every tag-letter actually
         // emitted, prove the alphabet covers strictly more than the
@@ -1757,7 +1757,7 @@ mod tests {
         // looser misses regressions to similar single-bit masks.
         assert!(
             letters.len() > 8,
-            "tag alphabet collapsed: only {} distinct letters across 200 payloads — \
+            "tag alphabet collapsed: only {} distinct letters across 200 payloads. \
              pre-fix `& 25` permitted exactly 8. Saw: {letters:?}",
             letters.len()
         );
@@ -1784,7 +1784,7 @@ mod tests {
 
     #[test]
     fn mysql_versioned_wrap_idempotent_double_apply() {
-        // Applying twice is safe — wraps the already-wrapped payload.
+        // Applying twice is safe (wraps the already-wrapped payload).
         let strategy = MysqlVersionedCommentWrapTamper;
         let once = strategy.tamper("SELECT 1", None);
         let twice = strategy.tamper(&once, None);
@@ -1877,7 +1877,7 @@ mod tests {
 
     #[test]
     fn obsolete_keyword_comment_split_tamper_was_removed() {
-        // Regression guard — the keyword_comment_split tamper was
+        // Regression guard, the keyword_comment_split tamper was
         // removed 2026-05 because MySQL treats `/* */` inside an
         // identifier as whitespace (so `SE/**/LECT` lexes as TWO
         // identifiers, NOT one).  This test ensures it never
@@ -1886,7 +1886,7 @@ mod tests {
         let registry = crate::tamper::TamperRegistry::with_defaults();
         assert!(
             registry.get("keyword_comment_split").is_none(),
-            "keyword_comment_split was removed because the transform breaks SQL parsing — \
+            "keyword_comment_split was removed because the transform breaks SQL parsing. \
              do not re-register without verifying MySQL/Postgres tokeniser semantics"
         );
     }
@@ -2042,7 +2042,7 @@ mod tests {
     #[test]
     fn mxss_namespace_wrap_does_not_contain_literal_script_tag() {
         // The class is mutation-XSS; the wire bytes deliberately do
-        // NOT contain `<script`. Pin that — a regression that adds
+        // NOT contain `<script`. Pin that, a regression that adds
         // a literal `<script>` would defeat the bypass since every
         // WAF on earth blocks that token.
         let t = MxssNamespaceWrapTamper;
@@ -2121,7 +2121,7 @@ mod tests {
 
     #[test]
     fn all_new_tampers_handle_pathological_input_without_panic() {
-        // Empty, multi-MB, UTF-8 boundary, control chars — all
+        // Empty, multi-MB, UTF-8 boundary, control chars, all
         // must be panic-safe.
         let huge: String = "A".repeat(1_000_000);
         let weird = "\0\x01\x02\x7f\u{FFFD}\u{200B}";
@@ -2147,7 +2147,7 @@ mod tests {
         // sentinel) and `"q":"evil"` (the backend-visible payload).
         assert!(out.contains("\"q\":\"safe\""), "missing first key: {out}");
         assert!(out.contains("\"q\":\"evil\""), "missing dup key: {out}");
-        // Outer braces — must be a structurally-valid JSON envelope.
+        // Outer braces (must be a structurally-valid JSON envelope).
         assert!(out.starts_with('{') && out.ends_with('}'));
     }
 
@@ -2187,7 +2187,7 @@ mod tests {
     fn json_dup_key_handles_empty_payload() {
         let t = JsonDupKeyTamper;
         let out = t.tamper("", None);
-        // Empty payload is fine — both keys present, second value
+        // Empty payload is fine, both keys present, second value
         // is empty string.
         assert_eq!(out, "{\"q\":\"safe\",\"q\":\"\"}");
     }
@@ -2203,7 +2203,7 @@ mod tests {
     #[test]
     fn json_dup_key_is_registered_in_default_registry() {
         // Anti-regression: forgetting to add the tamper to
-        // DEFAULT_NAMES + the with_defaults match arm is silent —
+        // DEFAULT_NAMES + the with_defaults match arm is silent 
         // the tamper exists but can't be selected via `--only`.
         // This test pins the wiring.
         let registry = crate::tamper::TamperRegistry::with_defaults();
@@ -2272,7 +2272,7 @@ mod tests {
     #[test]
     fn ct_starvation_header_for_is_stable_per_payload() {
         // Two calls with the same payload must return the same
-        // header — debugging-friendly: an operator who re-runs a
+        // header, debugging-friendly: an operator who re-runs a
         // failing case gets the same Content-Type advertised.
         for p in ["x", "very long payload bytes here"] {
             let a = ct_starvation_header_for(p);

@@ -127,12 +127,12 @@ impl RuleId {
 /// Evaluation oracle for the MCTS rollout phase.
 ///
 /// Returns `true` when the candidate payload is **blocked** by the WAF
-/// (reward = 0) and `false` when it **passes** (reward = 1 — bypass found).
+/// (reward = 0) and `false` when it **passes** (reward = 1 (bypass found)).
 pub trait AstMctsOracle {
     fn eval(&mut self, candidate: &str) -> bool;
 }
 
-/// A no-op oracle that always reports "blocked" — useful for offline
+/// A no-op oracle that always reports "blocked", useful for offline
 /// enumerating all candidate payloads without live HTTP queries.
 pub struct AlwaysBlockedOracle;
 impl AstMctsOracle for AlwaysBlockedOracle {
@@ -473,7 +473,7 @@ fn try_rewrite_node(e: &mut Expr, rule: RuleId, target: u8, counter: &mut u8) ->
                 *counter += 1;
             }
         }
-        // Text-level rules applied after lowering — handled at the MCTS layer.
+        // Text-level rules applied after lowering (handled at the MCTS layer).
         RuleId::COMMENT_INSERT
         | RuleId::ALIAS_SUBST
         | RuleId::HEX_LITERAL
@@ -601,7 +601,7 @@ pub struct MctsResult {
 /// - `payload`: A raw SQL fragment like `' OR 1=1 --` (not a full statement).
 /// - `budget`: Maximum number of oracle calls.
 /// - `c`: UCB1 exploration constant (default `f64::sqrt(2.0)`).
-/// - `oracle`: Evaluation function — returns `true` if blocked.
+/// - `oracle`: Evaluation function (returns `true` if blocked).
 ///
 /// Returns `None` if the payload doesn't parse as a SQL fragment.
 pub fn mcts_search<O: AstMctsOracle>(
@@ -647,7 +647,7 @@ pub fn mcts_search<O: AstMctsOracle>(
     let mut bypass_found = false;
 
     while oracle_queries < budget && !bypass_found {
-        // UCB1 selection — sort for deterministic tiebreaking.
+        // UCB1 selection (sort for deterministic tiebreaking).
         // BTreeMap iteration order is (rule asc, position asc); the Vec
         // built from it already has that order, and the sort below is a
         // no-op for the all-unvisited-arms case. We keep it so that once
@@ -685,7 +685,7 @@ pub fn mcts_search<O: AstMctsOracle>(
         let reward = if blocked { 0.0 } else { 1.0 };
 
         // Backpropagation. `action` was just selected from `arms`, so
-        // `get_mut` is always Some — use `if let` with a debug_assert
+        // `get_mut` is always Some, use `if let` with a debug_assert
         // so a future refactor that breaks this invariant fails loudly
         // in test builds instead of panicking in production.
         let Some(arm) = arms.get_mut(&action) else {
@@ -739,7 +739,7 @@ fn is_text_rule(rule: RuleId) -> bool {
     )
 }
 
-/// Fallback MCTS when the AST parse fails — text-level rules only.
+/// Fallback MCTS when the AST parse fails (text-level rules only).
 fn mcts_text_only<O: AstMctsOracle>(
     payload: &str,
     budget: u64,
@@ -1073,7 +1073,7 @@ mod tests {
 
     #[test]
     fn mcts_search_unparsable_falls_back_to_text() {
-        // Not a SQL fragment — should still attempt text-level rules.
+        // Not a SQL fragment (should still attempt text-level rules).
         let mut oracle = AlwaysBlockedOracle;
         let result = mcts_search("<script>alert(1)</script>", 10, f64::sqrt(2.0), &mut oracle);
         // May be None if no text rule applies to this payload.
@@ -1095,7 +1095,7 @@ mod tests {
         let wrapped = format!("{WRAP_PREFIX}(1=1 OR 2=2)");
         let stmts = Parser::parse_sql(&GenericDialect {}, &wrapped).unwrap();
         let result = apply_rule(&stmts[0], RuleId::COMMUTE_OR, 0);
-        // commute_or swaps the two sides of OR — fragment changes.
+        // commute_or swaps the two sides of OR (fragment changes).
         assert!(result.is_some());
     }
 
@@ -1126,7 +1126,7 @@ mod tests {
     ///
     /// This test drives `mcts_search` on a valid SQL payload at various
     /// budgets and verifies it never panics and always returns a coherent
-    /// result — the invariant holds on every iteration.
+    /// result (the invariant holds on every iteration).
     #[test]
     fn run_mcts_no_panic_on_valid_sql_across_budgets() {
         for budget in [1u64, 2, 5, 16, 32] {
@@ -1149,7 +1149,7 @@ mod tests {
     /// .map(|(k,_)| k).unwrap()` path (now replaced with `if let`).
     ///
     /// A non-SQL payload forces the AST path to fall back to text-only
-    /// MCTS — which is where the formerly-panicking `.unwrap()` lived.
+    /// MCTS (which is where the formerly-panicking `.unwrap()` lived).
     /// With a non-zero budget and at least one applicable text rule,
     /// the formerly-panicking path is exercised.
     #[test]

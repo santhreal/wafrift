@@ -7,15 +7,15 @@
 //!
 //! # Technique depth
 //!
-//! 1. **Tag/event substitution** — 15+ tag/event combinations
-//! 2. **Execution function rotation** — 15 alternative JS exec paths
-//! 3. **URI scheme payloads** — javascript:, data:, blob:
-//! 4. **DOM clobbering** — Override named properties via DOM nodes
-//! 5. **Polyglot XSS** — Payloads valid in multiple injection contexts
-//! 6. **Mutation XSS** — Exploit HTML parser differentials
-//! 7. **Context-aware generation** — HTML attr, JS string, URL contexts
-//! 8. **Prototype chain execution** — constructor.constructor chains
-//! 9. **Iframe srcdoc smuggling** — Nested HTML via srcdoc attribute
+//! 1. **Tag/event substitution**: 15+ tag/event combinations
+//! 2. **Execution function rotation**: 15 alternative JS exec paths
+//! 3. **URI scheme payloads**: javascript:, data:, blob:
+//! 4. **DOM clobbering**: Override named properties via DOM nodes
+//! 5. **Polyglot XSS**: Payloads valid in multiple injection contexts
+//! 6. **Mutation XSS**: Exploit HTML parser differentials
+//! 7. **Context-aware generation**: HTML attr, JS string, URL contexts
+//! 8. **Prototype chain execution**: constructor.constructor chains
+//! 9. **Iframe srcdoc smuggling**: Nested HTML via srcdoc attribute
 
 /// A single XSS mutation with metadata.
 #[derive(Debug, Clone)]
@@ -36,11 +36,11 @@ pub struct XssMutation {
 ///
 /// Audit (2026-05-10): removed dead vectors that don't actually fire
 /// in any modern browser. Shipping a "grammar-aware XSS mutator" that
-/// emits payloads which never execute is a credibility hit — the
+/// emits payloads which never execute is a credibility hit, the
 /// scanner reports a probe sent and the user assumes it represents a
 /// real test, when it's just noise the WAF correctly ignores.
-///   * `<object data=javascript:>` — disabled in all browsers ~2012
-///   * `<isindex>` — obsolete since HTML5; not implemented anywhere
+///   * `<object data=javascript:>`: disabled in all browsers ~2012
+///   * `<isindex>`: obsolete since HTML5; not implemented anywhere
 const TAG_EVENT_COMBOS: &[(&str, &str, &str)] = &[
     ("<img src=x onerror=", ">", ""),
     ("<svg onload=", ">", ""),
@@ -73,7 +73,7 @@ const TAG_EVENT_COMBOS: &[(&str, &str, &str)] = &[
 // ──────────────────────────────────────────────
 //  JavaScript execution functions
 // ──────────────────────────────────────────────
-//  XSS payload corpus — loaded from rules/xss/payloads.toml.
+//  XSS payload corpus (loaded from rules/xss/payloads.toml).
 //
 // Tier-B community-extensible: append a new `[[exec_function]]` /
 // `[[uri_scheme]]` / `[[svg]]` / `[[mathml]]` / `[[markdown]]` row in
@@ -109,13 +109,13 @@ fn xss_payload_rules() -> &'static XssPayloadRules {
         // tightening (stricter validation, schema change) could
         // surface one. A panic in the initializer permanently
         // breaks every XSS mutation call for the lifetime of the
-        // process — and inside the proxy, that's an unhandled
+        // process, and inside the proxy, that's an unhandled
         // crash on every request that reaches the mutator. Degrade
         // to "no XSS mutations" with a logged error instead.
         toml::from_str(raw).unwrap_or_else(|e| {
             tracing::error!(
                 error = %e,
-                "rules/xss/payloads.toml failed to parse — XSS grammar mutations disabled"
+                "rules/xss/payloads.toml failed to parse. XSS grammar mutations disabled"
             );
             XssPayloadRules {
                 exec_function: Vec::new(),
@@ -153,7 +153,7 @@ fn markdown_payloads() -> &'static [PayloadEntry] {
 /// Audit (2026-05-10): pre-fix this fired on benign substrings like
 /// `window.onerror` in code documentation, `confirm(...)` in API
 /// docs, or HTML tag names in security-write-ups. The mutator then
-/// emitted XSS variants from non-XSS input — wasted work the
+/// emitted XSS variants from non-XSS input, wasted work the
 /// scanner reported as if it were a real probe. Now we score
 /// signals: STRONG (a real `<tag attr=` or `javascript:` URL) is
 /// worth 2 points, WEAK (bare exec function name without
@@ -165,7 +165,7 @@ fn has_xss_signals(payload: &str) -> bool {
 
     let mut score = 0u32;
 
-    // STRONG signals — anything that requires a markup or JS-URL
+    // STRONG signals, anything that requires a markup or JS-URL
     // context to appear in source text. Two points each.
     let strong = [
         "<script",
@@ -207,7 +207,7 @@ fn has_xss_signals(payload: &str) -> bool {
         }
     }
 
-    // WEAK signals — function-name substrings that show up in
+    // WEAK signals, function-name substrings that show up in
     // perfectly innocent contexts (API docs, security write-ups,
     // log lines). One point each. On their own, NOT enough; combine
     // with a strong signal or each other to cross the threshold.
@@ -234,7 +234,7 @@ fn has_xss_signals(payload: &str) -> bool {
 // Instead of a fixed catalogue of canned payloads every WAF already
 // signatures, this rewrites the OPERATOR'S OWN payload through an
 // effectively-infinite space of browser-parser-equivalent, WAF-opaque
-// forms — and self-verifies every member with the independent XSS
+// forms, and self-verifies every member with the independent XSS
 // soundness oracle so it can never emit a non-attack (anti-rig).
 // ─────────────────────────────────────────────────────────────────────
 
@@ -242,7 +242,7 @@ use crate::grammar::equiv::Rng;
 use crate::grammar::equiv::xss::still_executes_xss;
 use wafrift_types::hash::{FNV_OFFSET_64, FNV_PRIME_64};
 
-/// Deterministic per-payload seed (FNV-1a) — identical input ⇒
+/// Deterministic per-payload seed (FNV-1a), identical input ⇒
 /// identical variant stream (reproducible, regression-pinnable).
 fn payload_seed(p: &str) -> u64 {
     let mut h: u64 = FNV_OFFSET_64;
@@ -254,7 +254,7 @@ fn payload_seed(p: &str) -> u64 {
 }
 
 /// Byte ranges that the HTML parser entity-decodes (or the URL parser
-/// canonicalises) BEFORE the script/URL runs — so encoding bytes here
+/// canonicalises) BEFORE the script/URL runs, so encoding bytes here
 /// is transparent to execution but opaque to a WAF signature:
 ///   * an `on…=` event-handler attribute value,
 ///   * a `javascript:`/`data:` scheme body,
@@ -307,7 +307,7 @@ fn exec_spans(p: &str) -> Vec<(usize, usize)> {
             }
         }
         // scheme body: javascript: / data:text/html, … (to quote/>/space).
-        // Byte-slice only — `lb[i..]` is always valid; a `&str[i..]`
+        // Byte-slice only: `lb[i..]` is always valid; a `&str[i..]`
         // here panics when hostile multibyte input puts `i` mid-codepoint.
         for sch in [
             b"javascript:".as_slice(),
@@ -452,7 +452,7 @@ fn rw_js_unicode_ident(p: &str, rng: &mut Rng) -> String {
     p.to_string()
 }
 
-/// Whitespace/slash between the tag name and its first attribute — the
+/// Whitespace/slash between the tag name and its first attribute, the
 /// HTML tokeniser treats `/`, TAB, LF, FF, CR identically to a space.
 fn rw_tag_separator(p: &str, rng: &mut Rng) -> String {
     let b = p.as_bytes();
@@ -498,7 +498,7 @@ fn rw_case(p: &str, rng: &mut Rng) -> String {
 }
 
 /// Interleave control whitespace / a NUL into the `javascript:` scheme
-/// — the URL parser strips `\x00-\x20` before the scheme check, so the
+///: the URL parser strips `\x00-\x20` before the scheme check, so the
 /// navigation still executes while a `javascript:` signature misses.
 fn rw_scheme_break(p: &str, rng: &mut Rng) -> String {
     let lc = p.to_ascii_lowercase();
@@ -665,7 +665,7 @@ fn systematic_variants(payload: &str, budget: usize) -> Vec<XssMutation> {
         }
         // ANTI-RIG: the independent soundness oracle must still see the
         // original script executing. A transform that broke it is
-        // dropped — never shipped as a "bypass".
+        // dropped (never shipped as a "bypass").
         if !still_executes_xss(payload, &s) {
             continue;
         }
@@ -680,7 +680,7 @@ fn systematic_variants(payload: &str, budget: usize) -> Vec<XssMutation> {
 
 /// One vetted, real XSS vector per evasion FAMILY. Guaranteed present
 /// (within budget) so a WAF that signatures one family is still beaten
-/// by an orthogonal one — the cross-WAF moat. Every entry is a genuine
+/// by an orthogonal one, the cross-WAF moat. Every entry is a genuine
 /// executing vector (anti-rig: no decoy filler), the canonical
 /// semantically-equivalent product for a bare PoC.
 fn diversity_sampler() -> Vec<XssMutation> {
@@ -735,7 +735,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
     // ANTI-RIG: a payload carrying a concrete exfil target, transport
     // sink, obfuscated delivery, or remote host is a STRUCTURED attack.
     // Swapping the canned `alert(1)` library in for it ships a
-    // different, weaker payload that steals nothing — and the
+    // different, weaker payload that steals nothing, and the
     // de-rigged bench would score the non-attack as a "bypass". For
     // those we re-template the operator's ACTUAL JavaScript into the
     // evasion arsenal instead. A bare `alert(1)` /
@@ -745,7 +745,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
     if is_structured_xss(payload) {
         // Both axes, neither starving the other:
         //  - systematic equivalence of the operator's REAL payload
-        //    (~60% — entity/JS-encoded depth on the same element), and
+        //    (~60%, entity/JS-encoded depth on the same element), and
         //  - structured_mutate, which re-templates that SAME exfil JS
         //    into ALTERNATIVE elements/events/schemes (the cross-WAF
         //    spread: a WAF blocking `<img onerror>` structurally still
@@ -783,12 +783,12 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
     }
     // Non-structured PoC. Composition:
     //   1. a compact family DIVERSITY SAMPLER (one vetted real vector
-    //      per evasion family) — guaranteed present so a WAF that
+    //      per evasion family), guaranteed present so a WAF that
     //      signatures the systematic family is still beaten by an
     //      orthogonal one (cross-WAF moat),
     //   2. the SYSTEMATIC equivalence engine on the operator's actual
-    //      payload — the bulk depth (an infinite self-verified space),
-    //   3. the legacy canned arsenal — extra fill only.
+    //      payload, the bulk depth (an infinite self-verified space),
+    //   3. the legacy canned arsenal (extra fill only).
     let mut results = diversity_sampler();
     results.truncate(max_mutations);
     if results.len() < max_mutations {
@@ -880,13 +880,13 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
         });
     }
 
-    // Strategy 3: Null byte injection — REMOVED (audit 2026-05-10).
+    // Strategy 3: Null byte injection: REMOVED (audit 2026-05-10).
     // Modern HTML parsers (whatwg algorithm) treat `\0` inside a tag
     // name as U+FFFD or simply terminate the tag. The vector never
     // executes; shipping it as a "valid XSS variant" was a credibility
     // lie. If a WAF really does drop the NUL and the upstream then
     // accepts the truncated `<scr` as `<script`, that's a
-    // WAF-specific bug — handle it via a per-WAF profile, not a
+    // WAF-specific bug, handle it via a per-WAF profile, not a
     // global default mutation.
 
     // Strategy 4: URI scheme payloads
@@ -1015,7 +1015,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
         });
     }
 
-    // Strategy 12: Prototype chain override — REMOVED (audit 2026-05-10).
+    // Strategy 12: Prototype chain override: REMOVED (audit 2026-05-10).
     // The classic `this.onerror=null;{}.valueOf=alert;throw 1` doesn't
     // reliably trigger alert(): `throw` propagates to window.onerror,
     // not the element handler, so the assigned `valueOf` is never
@@ -1062,7 +1062,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
     //
     // Audit (2026-05-10): removed `<div style=background-image:url(
     // javascript:alert(1))>`. CSS `url()` has NEVER executed JavaScript
-    // — that vector is from before CSS3 and was killed by every browser
+    //: that vector is from before CSS3 and was killed by every browser
     // implementation. The other three are real exfil channels (CSS
     // imports, request leakage, external stylesheet) and stay.
     let css_payloads = [
@@ -1134,7 +1134,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
     // ANTI-RIG (end to end): the legacy canned arsenal is NOT
     // oracle-gated and can append a vector that is not THIS attack
     // (e.g. a paren-free `location=document.cookie` against an
-    // `alert(1)` PoC). scald — and the de-rigged bench — must never
+    // `alert(1)` PoC). scald, and the de-rigged bench, must never
     // receive a non-attack. Drop anything the independent soundness
     // oracle cannot confirm still executes the original.
     results.retain(|m| still_executes_xss(payload, &m.payload));
@@ -1143,7 +1143,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
 }
 
 /// True when the payload carries a concrete data-exfiltration target,
-/// transport sink, obfuscated delivery, or remote host — i.e. its
+/// transport sink, obfuscated delivery, or remote host, i.e. its
 /// value is NOT "pop an alert" but "steal X / call out to Y". For
 /// those, the fixed `alert(1)` library is a *different* payload, never
 /// a mutation. A bare `alert(1)` / `confirm(1)` /
@@ -1216,7 +1216,7 @@ fn structured_xss_markers(payload: &str) -> Vec<String> {
             markers.push((*t).to_string());
         }
     }
-    // Operator's exfil host — the single most attack-defining token; a
+    // Operator's exfil host, the single most attack-defining token; a
     // canned variant will never reproduce it.
     let b = lc.as_bytes();
     let mut i = 0;
@@ -1340,7 +1340,7 @@ fn extract_exec_body(payload: &str) -> Option<String> {
 /// into the full tag/event/scheme/breakout arsenal, then enforce that
 /// every surviving variant still carries the attack's defining
 /// construct. This is the XSS analogue of the SQL `is_structured_attack`
-/// chokepoint — it makes the variants genuine evasions of THIS attack
+/// chokepoint, it makes the variants genuine evasions of THIS attack
 /// instead of a canned `alert(1)` the de-rigged bench would reject.
 fn structured_mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
     let mut results: Vec<XssMutation> = Vec::new();
@@ -1405,7 +1405,7 @@ fn structured_mutate(payload: &str, max_mutations: usize) -> Vec<XssMutation> {
 
     // Chokepoint: every surviving variant MUST still carry the attack's
     // defining construct (exfil host / cookie read / transport sink).
-    // A variant that lost all of them is not this attack any more — the
+    // A variant that lost all of them is not this attack any more, the
     // exact failure mode the rig exploited.
     let markers = structured_xss_markers(payload);
     if !markers.is_empty() {
@@ -1555,7 +1555,7 @@ mod tests {
     fn systematic_actually_evades_the_literal_token() {
         // PROVING the point: at least one sound variant carries NO raw
         // `alert(` / `onerror=` literal (the WAF signature) yet the
-        // oracle still confirms execution — that is a real evasion, not
+        // oracle still confirms execution, that is a real evasion, not
         // a cosmetic reshuffle.
         let atk = "<img src=x onerror=alert(1)>";
         let v = systematic_variants(atk, 80);

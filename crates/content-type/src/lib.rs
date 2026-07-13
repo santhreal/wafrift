@@ -1,4 +1,4 @@
-//! wafrift-content-type — WAFFLED Content-Type switching.
+//! wafrift-content-type: WAFFLED Content-Type switching.
 //!
 //! Exploits parsing discrepancies between WAFs and web servers
 //! by reformatting request bodies in different Content-Type formats.
@@ -24,7 +24,7 @@
 //!
 //! `unique_boundary` takes the user-controlled values to be embedded
 //! and returns a random boundary that does not appear inside any of
-//! them — preventing the body from looking like its own delimiter
+//! them, preventing the body from looking like its own delimiter
 //! and protecting against attacker-supplied boundary collision:
 //!
 //! ```

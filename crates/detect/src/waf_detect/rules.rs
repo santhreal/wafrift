@@ -4,7 +4,7 @@
 //!
 //! All body-regex patterns from all 160+ WAFs are compiled into a single
 //! [`regex::RegexSet`].  When a response arrives, the body is scanned
-//! **once** against the entire set — O(n) in body length regardless of
+//! **once** against the entire set. O(n) in body length regardless of
 //! pattern count.  The set returns which pattern indices matched, and
 //! we map those back to their owning WAF rules to accumulate scores.
 //!
@@ -49,17 +49,17 @@ const BODY_ONLY_MIN_CONFIDENCE: f64 = 0.5;
 /// never panic.
 ///
 /// `Regex::find` returns char-boundary-aligned `start`/`end`, but the
-/// previous code computed the end as `m.end().min(m.start() + 40)` —
+/// previous code computed the end as `m.end().min(m.start() + 40)` 
 /// `m.start() + 40` is an arbitrary byte offset that lands mid-codepoint
 /// whenever a multibyte character (any non-ASCII byte in a WAF block
-/// page or header value — `é`, `”`, `→`, NBSP, …) straddles it. That
+/// page or header value: `é`, `”`, `→`, NBSP, …) straddles it. That
 /// slice panicked the whole detector on attacker-influenced response
 /// text. This helper is the bounded, boundary-safe replacement.
 /// Compile a WAF-detection regex with case-insensitive matching forced
 /// on by default. Detection patterns come from a heterogenous catalog
 /// (wafw00f, identYwaf, locally researched) and authors routinely write
-/// the literal vendor banner they see — `Cloudflare`, `BinarySec`,
-/// `KEMP-LM`, `cache-[a-z]{3}[0-9]+-[A-Z]{3}` — without an explicit
+/// the literal vendor banner they see. `Cloudflare`, `BinarySec`,
+/// `KEMP-LM`, `cache-[a-z]{3}[0-9]+-[A-Z]{3}`: without an explicit
 /// `(?i)` flag.  Meanwhile the public CLI entry point
 /// (`classifier::detect`) historically lowercased every header value
 /// before passing it to the engine, so any uppercase character class
@@ -67,9 +67,9 @@ const BODY_ONLY_MIN_CONFIDENCE: f64 = 0.5;
 /// traffic.  Forcing `(?i)` at compile time means the rule body says
 /// what the author meant ("match this token") and case is irrelevant.
 /// Authors who genuinely need case-sensitive matching can opt out with
-/// an inline `(?-i)` flag — preserved verbatim because we only prepend
+/// an inline `(?-i)` flag, preserved verbatim because we only prepend
 /// when the pattern doesn't already declare an outer case flag.
-/// Compilation size cap — workspace-canonical value from
+/// Compilation size cap, workspace-canonical value from
 /// [`wafrift_types::REGEX_NFA_SIZE_LIMIT`].
 ///
 /// `Regex::new` (and `RegexSet::new`) are linear-time at *match* time but
@@ -84,14 +84,14 @@ fn compile_ci_regex(pattern: &str, kind: &str) -> Result<Regex, String> {
     // Look for an `i` flag (positive or negated) anywhere in the
     // first `(?FLAGS)` or `(?FLAGS:...)` group, not just at exact
     // prefix positions. Pre-fix this only matched the four exact
-    // strings `(?i)`, `(?-i)`, `(?i-`, `(?-i-` — a rule author
+    // strings `(?i)`, `(?-i)`, `(?i-`, `(?-i-`: a rule author
     // writing `(?si)` (dotall + case-insensitive), `(?mi)`, or
     // `(?-si)` (which EXPLICITLY disables `i`) tripped the wrap.
     // The `(?-si)` case was the worst: the engine prepended `(?i)`
     // over the author's explicit case-sensitive intent.
     //
     // Important: the flag chars are between `(?` and the FIRST
-    // `:` or `)` — not just up to the first `)`. A non-capturing
+    // `:` or `)`: not just up to the first `)`. A non-capturing
     // group like `(?:F5\-TrafficShield)` has no flags; the colon
     // delimits the "flags" from the pattern body, and anything
     // after the `:` (even a literal `i`) is regex syntax, not a
@@ -120,7 +120,7 @@ fn compile_ci_regex(pattern: &str, kind: &str) -> Result<Regex, String> {
 /// Used by catalog-walking tests that need to see the author's
 /// LITERAL pattern after the engine's auto-`(?i)` wrap.  Returns the
 /// original string when no outer flag group is present.  Does not
-/// attempt to parse nested flag groups — only the outermost one.
+/// attempt to parse nested flag groups (only the outermost one).
 #[cfg(test)]
 fn strip_outer_flag_group(src: &str) -> &str {
     if !src.starts_with("(?") {
@@ -133,7 +133,7 @@ fn strip_outer_flag_group(src: &str) -> &str {
     let mut i = 2;
     while i < bytes.len() && bytes[i] != b')' {
         // A `:` inside the flag group means it's a NON-capturing
-        // group with flag scope (e.g. `(?i:foo)`) — we don't want
+        // group with flag scope (e.g. `(?i:foo)`), we don't want
         // to strip the inner content.
         if bytes[i] == b':' {
             return src;
@@ -220,7 +220,7 @@ pub struct CompiledWafRule {
 
 /// A compiled signature ready for matching.
 ///
-/// `body_regex` is `None` after engine finalization — body matching is
+/// `body_regex` is `None` after engine finalization, body matching is
 /// delegated to the global `RegexSet`.  The field is kept for the
 /// compilation phase only.
 #[derive(Debug, Clone)]
@@ -290,10 +290,10 @@ impl RuleEngine {
     ///
     /// **Loading order** (first success wins):
     ///
-    /// 1. **Compile-time embedded** — `build.rs` concatenates all
+    /// 1. **Compile-time embedded**: `build.rs` concatenates all
     ///    `rules/detect/*.toml` into the binary.  This is the
     ///    production path for `cargo install` users.
-    /// 2. **Filesystem fallback** — walks `rules/detect/` at relative
+    /// 2. **Filesystem fallback**: walks `rules/detect/` at relative
     ///    paths.  Used during development when you want hot-reload
     ///    via [`reload`].
     pub fn load_embedded() -> Result<Self, DetectRulesError> {
@@ -474,7 +474,7 @@ impl RuleEngine {
                     if patterns.len() >= MAX_BODY_REGEX_PATTERNS {
                         // Name the WAF being truncated so the
                         // operator can see exactly which family
-                        // lost coverage — pre-fix this was a
+                        // lost coverage, pre-fix this was a
                         // bare "some signatures will not match"
                         // warning with no indication of which.
                         tracing::warn!(
@@ -564,7 +564,7 @@ impl RuleEngine {
         for name in &self.names {
             let rule = &self.rules[name];
             for sig in &rule.signatures {
-                // Skip body-only signatures — already handled by RegexSet.
+                // Skip body-only signatures (already handled by RegexSet).
                 if sig.header_regex.is_none()
                     && sig.cookie_regex.is_none()
                     && sig.status_code.is_none()
@@ -722,7 +722,7 @@ pub fn supported_wafs() -> Vec<String> {
 ///
 /// Returns owned `String`s so callers can keep them past the engine's
 /// `RwLock` guard. The previous version returned `&'static str` via
-/// `Box::leak` on every call — at sustained proxy traffic that leaked
+/// `Box::leak` on every call, at sustained proxy traffic that leaked
 /// ~100 KB/sec (4 strings × ~25 chars × 1000 req/s) and ~360 MB/hour.
 /// The leaked-string optimisation was wrong: `suggest_evasion` runs in
 /// the per-response hot path, not once at startup.
@@ -945,12 +945,12 @@ weight = 0.4
         assert_eq!(results[0].name, "TestWAF");
     }
 
-    // ── Case-insensitive regex wrapper — stress tests ───────────
+    // ── Case-insensitive regex wrapper, stress tests ───────────
     //
     // The wrapper is the single most important correctness lever in
     // detection: every rule in the catalog flows through it. These
     // tests stress the wrapper against the pathological patterns
-    // authors actually write in the wild — explicit flag opt-outs,
+    // authors actually write in the wild, explicit flag opt-outs,
     // multi-flag groups, escape sequences, character classes, raw
     // brackets, Unicode, anchored expressions, and the empty pattern.
     // If any of these break, EVERY downstream rule breaks too.
@@ -1046,23 +1046,23 @@ weight = 0.4
     #[test]
     fn ci_wrapper_respects_multi_letter_flag_groups() {
         // Pre-fix the prefix-only check missed `(?si)` and friends
-        // — the engine prepended `(?i)` and the resulting
+        //: the engine prepended `(?i)` and the resulting
         // `(?i)(?si)pattern` was redundant but harmless. Worse:
         // `(?-si)` (explicit case-SENSITIVE + dotall off) got
         // wrapped too, NEGATING the author's intent.
         // F58 fix: detect `i` anywhere in the leading flag group.
 
-        // (?si) — both flags on, case-insensitive.
+        // (?si) (both flags on, case-insensitive).
         let re = compile_ci_regex("(?si)Cloudflare", "header").expect("compile");
         assert!(re.is_match("CLOUDFLARE"));
 
-        // (?-si) — explicit case-SENSITIVE. Must NOT match
+        // (?-si), explicit case-SENSITIVE. Must NOT match
         // lower-case after the fix.
         let re = compile_ci_regex("(?-si)Cloudflare", "header").expect("compile");
         assert!(re.is_match("Cloudflare"));
         assert!(
             !re.is_match("cloudflare"),
-            "(?-si) author intent: case-sensitive — must not match lowercase"
+            "(?-si) author intent: case-sensitive, must not match lowercase"
         );
 
         // (?:non-capturing) with literal `i` in the body must
@@ -1110,7 +1110,7 @@ weight = 0.4
 
     // ── Catalog-wide invariants ──────────────────────────────────
     //
-    // These don't hardcode any specific vendor — they prove
+    // These don't hardcode any specific vendor, they prove
     // properties that MUST hold for the whole rule catalog. If they
     // pass, the case-bug class cannot regress for any future rule.
 
@@ -1129,7 +1129,7 @@ weight = 0.4
         // sampling every compiled header regex and asserting that
         // for any pattern containing an ASCII letter, both the
         // upper- and lower-case form of that letter participates in
-        // a match — i.e. the (?i) flag is active.  Patterns with
+        // a match, i.e. the (?i) flag is active.  Patterns with
         // explicit `(?-i)` opt-out skip the check.
         let engine = RuleEngine::load_embedded().expect("load");
         let mut checked = 0;
@@ -1153,7 +1153,7 @@ weight = 0.4
                             // inline are preserved verbatim.
                             || src.contains("(?i)")
                             || src.contains("(?i:"),
-                        "header regex `{src}` in rule `{}` is NOT case-insensitive — that's the lower-cased-value bug class waiting to happen",
+                        "header regex `{src}` in rule `{}` is NOT case-insensitive, that's the lower-cased-value bug class waiting to happen",
                         rule.name
                     );
                     checked += 1;
@@ -1171,7 +1171,7 @@ weight = 0.4
         // For every compiled header regex, take the literal portion
         // of its source pattern, lowercase it, and verify the regex
         // still matches.  This is the EXACT failure mode that
-        // pre-fix nuked Fastly on nytimes — and it must never
+        // pre-fix nuked Fastly on nytimes, and it must never
         // silently regress for any rule, present or future.
         let engine = RuleEngine::load_embedded().expect("load");
         let mut tested = 0;
@@ -1200,7 +1200,7 @@ weight = 0.4
                     continue;
                 }
                 // Some patterns are wrapped in groups or have outer
-                // anchors — the literal extraction is a best-effort
+                // anchors, the literal extraction is a best-effort
                 // heuristic, not a parser.  Treat a non-match as
                 // "literal extraction failed" rather than a bug.
                 if re.is_match(&lowered) {
@@ -1212,11 +1212,11 @@ weight = 0.4
         // crashes to zero, the CI wrapper has stopped working.
         assert!(
             tested >= 20,
-            "lowercase round-trip succeeded for only {tested} rules ({not_applicable} skipped) — CI wrapper likely broken"
+            "lowercase round-trip succeeded for only {tested} rules ({not_applicable} skipped). CI wrapper likely broken"
         );
     }
 
-    // ── Real-traffic shape regression — no hardcoded site names ──
+    // ── Real-traffic shape regression, no hardcoded site names ──
     //
     // Each scenario describes the SHAPE of a real edge-case (CSV
     // multi-value header, capitalized vendor banner, multi-WAF
@@ -1243,7 +1243,7 @@ weight = 0.4
 
     #[test]
     fn every_literal_header_rule_in_catalog_matches_capitalized_value() {
-        // Property derived from the catalog itself — no hardcoded
+        // Property derived from the catalog itself, no hardcoded
         // vendor names. For each rule whose header_regex source is
         // a pure literal (after stripping the auto-prepended (?i)
         // flag), synthesize the corresponding header with the
@@ -1385,7 +1385,7 @@ weight = 0.4
     #[test]
     fn body_regex_with_capitalized_literal_matches_lowercased_body() {
         // The body lowercasing in classifier.rs lives ALONGSIDE the
-        // header lowercasing — the (?i) auto-wrap must fix both.
+        // header lowercasing (the (?i) auto-wrap must fix both).
         // Author writes body literal "BLOCKED BY WAF" expecting it
         // to match; classifier lowercases body to "blocked by waf"
         // before matching. Wrap must bridge.
@@ -1440,7 +1440,7 @@ weight = 0.6
 
     #[test]
     fn repeated_header_values_in_chain_both_get_scanned() {
-        // HTTP/1.1 allows repeated header names — reqwest exposes
+        // HTTP/1.1 allows repeated header names, reqwest exposes
         // each repetition as a separate (k, v) tuple.  The detect
         // loop iterates ALL pairs, so each repetition gets a
         // chance to match.
@@ -1469,12 +1469,12 @@ weight = 0.6
         let detected = classifier::detect(
             200,
             &[
-                ("Server".into(), "Cloudflåre — €dge".into()),
+                ("Server".into(), "Cloudflåre: €dge".into()),
                 ("X-Block-Reason".into(), "→ denied".into()),
             ],
             b"blocked by \xe2\x86\x92 firewall",
         );
-        // We don't assert SPECIFIC detection here — we assert no panic.
+        // We don't assert SPECIFIC detection here (we assert no panic).
         let _ = detected;
     }
 
@@ -1500,7 +1500,7 @@ weight = 0.6
         // A 100 KiB header value should be scanned without blowing
         // up the regex engine (the bounded MAX_REGEX_PATTERN_LEN
         // covers the PATTERN side; the VALUE side relies on the
-        // regex engine being O(n) — which it is, by design).
+        // regex engine being O(n) (which it is, by design)).
         use crate::waf_detect::classifier;
         let value = "a".repeat(100 * 1024);
         let detected = classifier::detect(200, &[("X-Junk".into(), value)], b"");
@@ -1542,23 +1542,23 @@ weight = 0.6
     // 4096) but requires the regex NFA to track an exponential number of
     // positions, blowing past the 4 MiB NFA-byte cap in REGEX_COMPILE_SIZE_LIMIT.
     //
-    // These tests pin the size_limit guard — if someone reverts
+    // These tests pin the size_limit guard, if someone reverts
     // compile_ci_regex to bare `Regex::new`, the explosion test will
     // either hang indefinitely or compile without error (disabling the
     // protection), and the error-not-panic tests will then falsely pass.
     //
     // Verified empirically: `(.{1,100}){50}` returns Err with size_limit=4MB,
-    // and compiles successfully with size_limit=usize::MAX (no hang — the regex
+    // and compiles successfully with size_limit=usize::MAX (no hang, the regex
     // crate uses a lazy DFA, so match time is safe; only compile time blows up).
 
     #[test]
     fn redos_explosion_pattern_is_rejected_not_hung() {
         // `(.{1,100}){50}` is the NFA-explosion pattern verified against
-        // REGEX_COMPILE_SIZE_LIMIT (4 MiB). It is 14 bytes — well within
-        // MAX_REGEX_PATTERN_LEN — but creates an NFA that exceeds the cap.
+        // REGEX_COMPILE_SIZE_LIMIT (4 MiB). It is 14 bytes, well within
+        // MAX_REGEX_PATTERN_LEN (but creates an NFA that exceeds the cap).
         // With size_limit enforced: returns Err in microseconds.
         // Without size_limit: compiles successfully (lazy DFA; no hang at
-        // match time) — which is exactly the unguarded case we're sealing.
+        // match time) (which is exactly the unguarded case we're sealing).
         let pat = r"(.{1,100}){50}";
         let result = compile_ci_regex(pat, "header");
         // Must be an error (size_limit exceeded).
@@ -1576,7 +1576,7 @@ weight = 0.6
     #[test]
     fn redos_explosion_in_rule_file_is_rejected_with_error() {
         // A rule file containing a NFA-explosion header_regex must produce
-        // a compile error from load_from_str — not silent success.
+        // a compile error from load_from_str (not silent success).
         let toml = r#"
 [[waf]]
 name = "ExplosionWAF"
@@ -1601,7 +1601,7 @@ weight = 0.5
         // the per-rule compile step OR compile_body_regex_set.
         // The per-rule step uses compile_ci_regex (has size_limit);
         // compile_body_regex_set uses RegexSetBuilder (also has size_limit).
-        // Both paths must reject the pattern — neither may silently succeed.
+        // Both paths must reject the pattern (neither may silently succeed).
         let toml = r#"
 [[waf]]
 name = "BodyExplosionWAF"
@@ -1625,7 +1625,7 @@ weight = 0.5
                 "NFA-explosion body_regex must surface as error from compile_body_regex_set"
             );
         }
-        // Either path produces an error — the load_from_str path should fire first.
+        // Either path produces an error (the load_from_str path should fire first).
         assert!(
             load_result.is_err(),
             "NFA-explosion body_regex must be caught by per-rule compile step"

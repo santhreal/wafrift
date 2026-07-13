@@ -34,7 +34,7 @@ pub const MAX_HEX_LEN: usize = 256;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Genome {
-    /// Stable, human-readable identifier — e.g. `akamai-bm-bypass-jul24`.
+    /// Stable, human-readable identifier (e.g. `akamai-bm-bypass-jul24`).
     pub name: String,
     /// Free-form recipe payload. The wafrift gene-bank already has
     /// its own structured shape; we treat it as opaque bytes here so
@@ -85,7 +85,7 @@ impl GenomeBundle {
     /// Deterministic JSON for the inner bundle.
     ///
     /// Sort key is `(name, payload, description, targets)` rather than
-    /// `name` alone — two genomes with the same name but different
+    /// `name` alone, two genomes with the same name but different
     /// payloads would otherwise preserve their input order and produce
     /// different canonical bytes (and therefore different signatures)
     /// for the same logical bundle.
@@ -114,7 +114,7 @@ impl GenomeBundle {
     }
 }
 
-/// Signed bundle — the wire payload distributed to consumers.
+/// Signed bundle (the wire payload distributed to consumers).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SignedBundle {
@@ -140,7 +140,7 @@ impl SignedBundle {
     /// - excessive hex (`MAX_HEX_LEN`) on signature / `public_key`
     /// - unknown fields (`#[serde(deny_unknown_fields)]`)
     ///
-    /// All limits are conservative — legitimate bundles fit comfortably.
+    /// All limits are conservative (legitimate bundles fit comfortably).
     /// A malicious feed that tries to OOM the registry hits the input
     /// cap *before* serde allocates any backing buffers.
     pub fn from_json(s: &str) -> Result<Self, RegistryError> {
@@ -249,7 +249,7 @@ impl SignedBundle {
 
     /// Verify signature + trust + freshness window.
     ///
-    /// Rejects bundles older than `max_age_secs` (replay defence —
+    /// Rejects bundles older than `max_age_secs` (replay defence 
     /// a captured bundle from a key that has since been revoked
     /// cannot be re-imported indefinitely) AND bundles dated more
     /// than `future_skew_secs` ahead of the local clock (defends
@@ -264,7 +264,7 @@ impl SignedBundle {
         max_age_secs: u64,
         future_skew_secs: u64,
     ) -> Result<GenomeBundle, RegistryError> {
-        // Signature + trust first — never reveal anything about
+        // Signature + trust first, never reveal anything about
         // freshness for unsigned / untrusted input.
         let bundle = self.verify(trust)?;
         let now = std::time::SystemTime::now()
@@ -421,7 +421,7 @@ mod tests {
         let bundle = GenomeBundle::new("pack", three_genomes());
         let signed = bundle.sign(&key).unwrap();
         let trust = trust_with(&key);
-        // 30-day window, recent bundle — Ok.
+        // 30-day window, recent bundle: Ok.
         assert!(
             signed.verify_fresh(&trust, 30 * 86_400, 300).is_ok(),
             "fresh bundle within window must verify"
@@ -436,7 +436,7 @@ mod tests {
         bundle.created_unix = now_unix().saturating_sub(60 * 86_400);
         let signed = bundle.sign(&key).unwrap();
         let trust = trust_with(&key);
-        // 30-day window — must reject.
+        // 30-day window (must reject).
         let err = signed
             .verify_fresh(&trust, 30 * 86_400, 300)
             .expect_err("60-day-old bundle must not verify with 30-day window");
@@ -447,7 +447,7 @@ mod tests {
     fn verify_fresh_rejects_far_future_bundle() {
         let key = SigningKey::generate();
         let mut bundle = GenomeBundle::new("pack", three_genomes());
-        // Date the bundle 1 hour in the future — well past the 5-min
+        // Date the bundle 1 hour in the future, well past the 5-min
         // skew tolerance.
         bundle.created_unix = now_unix().saturating_add(3600);
         let signed = bundle.sign(&key).unwrap();
@@ -462,7 +462,7 @@ mod tests {
     fn verify_fresh_tolerates_small_clock_skew() {
         let key = SigningKey::generate();
         let mut bundle = GenomeBundle::new("pack", three_genomes());
-        // 30 seconds in the future — within the 300s skew window.
+        // 30 seconds in the future (within the 300s skew window).
         bundle.created_unix = now_unix().saturating_add(30);
         let signed = bundle.sign(&key).unwrap();
         let trust = trust_with(&key);

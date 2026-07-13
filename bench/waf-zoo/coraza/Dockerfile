@@ -1,4 +1,4 @@
-# Coraza + Caddy — build from source.
+# Coraza + Caddy (build from source).
 #
 # Caddy does not ship a coraza_waf module in its official binary. We use
 # xcaddy to compile a custom Caddy binary with the coraza-caddy plugin and
@@ -26,7 +26,7 @@ RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.4.2
 # Build Caddy at the pinned version with the coraza-caddy plugin.
 # coraza-caddy pulls OWASP CRS (corazawaf/coraza-coreruleset) as a Go module
 # at build time so no network access is needed at runtime.
-# The module path is github.com/corazawaf/coraza-caddy/v2 — the /v2 suffix
+# The module path is github.com/corazawaf/coraza-caddy/v2, the /v2 suffix
 # is the Go major version path for v2.x releases (not v0.3.x).
 RUN xcaddy build "${CADDY_VERSION}" \
     --with "github.com/corazawaf/coraza-caddy/v2@${CORAZA_CADDY_VERSION}"

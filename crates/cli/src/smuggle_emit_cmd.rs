@@ -1,4 +1,4 @@
-//! `wafrift smuggle-emit` — JSON probe artifact emitter.
+//! `wafrift smuggle-emit`: JSON probe artifact emitter.
 //!
 //! Lists every wafrift smuggle probe (across the 11 families covered by
 //! the workspace-wide `SmuggleProbe` trait) as JSON, one per line.
@@ -11,7 +11,7 @@
 //! {
 //!   "canary": "abc123XYZ...",
 //!   "technique": "cookie.duplicate-name-last-wins",
-//!   "description": "Duplicate-name cookie pair — first/last resolution differential",
+//!   "description": "Duplicate-name cookie pair, first/last resolution differential",
 //!   "artifact": {"kind":"headers","Headers":[["Cookie","name=safe; name=evil"]]}
 //! }
 //! ```
@@ -29,7 +29,7 @@ use wafrift_core::probe_aggregator::{ProbeSeeds, all_probes};
 
 #[derive(Debug, Parser)]
 pub struct SmuggleEmitArgs {
-    /// Optional family prefix to filter probes — e.g. `cookie`,
+    /// Optional family prefix to filter probes, e.g. `cookie`,
     /// `auth`, `range`, `path`, `host`, `jwt`, `content-type`,
     /// `json`, `capsule`, `quic-datagram`, `compression`. Empty
     /// (default) emits every probe across every family.
@@ -69,7 +69,7 @@ pub struct SmuggleEmitArgs {
     pub protected_host: String,
 
     /// Pretty-print each JSON object on multiple lines (default
-    /// is one compact JSON per line — friendly to `jq -c` and
+    /// is one compact JSON per line, friendly to `jq -c` and
     /// streaming consumers).
     #[arg(long)]
     pub pretty: bool,
@@ -91,7 +91,7 @@ pub struct SmuggleEmitArgs {
     pub canary_header: String,
 
     /// Maximum probes to emit after filtering. 0 = unlimited.
-    /// Useful when sampling against a rate-limited target —
+    /// Useful when sampling against a rate-limited target 
     /// `--limit 10` gives an operator a small representative
     /// sweep without firing the full 78-probe corpus.
     #[arg(long, default_value_t = 0)]
@@ -110,7 +110,7 @@ pub struct SmuggleEmitArgs {
     /// Emit a ready-to-fire `curl` command per probe (one per
     /// line) targeting the supplied URL instead of JSON. Splices
     /// headers via `-H`, body via `-d`. Frame artifacts (HTTP/3
-    /// capsule, QUIC datagram, WS compression) can't ride curl —
+    /// capsule, QUIC datagram, WS compression) can't ride curl 
     /// they're skipped with a stderr warning. Operators pipe to
     /// `bash`, paste into Repeater, or `xargs -I{}` for a quick
     /// dogfood sweep.
@@ -149,7 +149,7 @@ pub fn run_smuggle_emit(args: SmuggleEmitArgs) -> ExitCode {
     let mut probes = all_probes(&seeds);
 
     // Apply --sort-by-bytes ordering AFTER family/kind filtering
-    // happens in the loop below — but the sort must be globally
+    // happens in the loop below, but the sort must be globally
     // visible, so we filter pre-sort here and emit in the sorted
     // order. We pre-filter so the sort operates only on the
     // probes that will actually emit.
@@ -271,7 +271,7 @@ pub fn run_smuggle_emit(args: SmuggleEmitArgs) -> ExitCode {
 /// Reasons why curl rendering can fail for a given probe.
 enum CurlRenderError {
     /// Frame artifacts (HTTP/3 capsule, QUIC datagram, WS
-    /// compression) can't be expressed as a curl command line —
+    /// compression) can't be expressed as a curl command line 
     /// they live at a lower transport layer than HTTP/1.1 / 2.
     FramesNotSupported,
 }

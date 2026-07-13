@@ -1,11 +1,11 @@
-//! Path-prefix mutations — restructure the URI path so the WAF's
+//! Path-prefix mutations, restructure the URI path so the WAF's
 //! prefix-match ACL sees a different shape than the origin parser
 //! eventually serves.
 //!
 //! ## Why this is a distinct module from [`crate::url_mutate`]
 //!
 //! `url_mutate` operates on path SEGMENT bytes and on QUERY VALUE
-//! bytes. The mutations here operate on path STRUCTURE — they change
+//! bytes. The mutations here operate on path STRUCTURE, they change
 //! how the path is delimited, not what's inside it. Lumping them into
 //! `UrlStrategy` would force a value-byte mutator and a path-shape
 //! mutator into one enum and produce category errors at the call
@@ -13,10 +13,10 @@
 //!
 //! ## What's here
 //!
-//! ### `PathPrefixStrategy::DoubleSlash` — CVE-2025-29914 (Coraza WAF < 3.3.3)
+//! ### `PathPrefixStrategy::DoubleSlash`: CVE-2025-29914 (Coraza WAF < 3.3.3)
 //!
 //! Coraza historically used Go's `net/url::Parse()` which treats URIs
-//! starting with `//` as protocol-relative — `//admin` is parsed as
+//! starting with `//` as protocol-relative: `//admin` is parsed as
 //! `Host = "admin"`, `Path = ""`. A Coraza ACL of the form
 //! `SecRule REQUEST_URI "@beginsWith /admin"` does not fire because
 //! `REQUEST_URI` was populated from the parsed `Path` field, which is
@@ -31,7 +31,7 @@
 //!
 //! ### `PathPrefixStrategy::TripleSlash`
 //!
-//! Stretches `DoubleSlash` further — some normalisers collapse `///` →
+//! Stretches `DoubleSlash` further, some normalisers collapse `///` →
 //! `/` only after the first decode, so an origin that decodes once and
 //! a WAF that decodes zero times see different forms. Useful when a
 //! WAF normalises `//` but not `///`.
@@ -50,7 +50,7 @@
 //! parser-diff `path` family probes each variant in turn against the
 //! authorised target.
 //!
-//! Pass 21 R62 — frontier technique #4 per the 2025 research scan.
+//! Pass 21 R62 (frontier technique #4 per the 2025 research scan).
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PathPrefixStrategy {
@@ -62,13 +62,13 @@ pub enum PathPrefixStrategy {
     /// raw-prefix WAFs ignore.
     SlashDot,
     /// `/admin` → `/.//admin`. Combines dot-segment with the
-    /// protocol-relative trick — bypasses WAFs that strip only the
+    /// protocol-relative trick, bypasses WAFs that strip only the
     /// `/.` form OR only the `//` form.
     SlashDotSlash,
 }
 
 impl PathPrefixStrategy {
-    /// Stable technique label — what the gene-bank stores and what
+    /// Stable technique label, what the gene-bank stores and what
     /// shows up in `--techniques` output. Pre-fix mutations that
     /// shipped without a label silently merged into the catch-all
     /// `url:path` bucket and the bandit couldn't tell them apart.
@@ -88,7 +88,7 @@ impl PathPrefixStrategy {
     ///
     /// `path_and_query` must start with `/`. If it does not (the input
     /// is a relative or empty path), the function returns the input
-    /// unchanged — silently doing nothing is the same contract
+    /// unchanged, silently doing nothing is the same contract
     /// `url_mutate::mutate_url` uses for non-conforming inputs.
     #[must_use]
     pub fn apply(self, path_and_query: &str) -> String {
@@ -101,7 +101,7 @@ impl PathPrefixStrategy {
             Self::SlashDot => "/./",
             Self::SlashDotSlash => "/.//",
         };
-        // Strip the existing leading slash before prepending — pre-fix
+        // Strip the existing leading slash before prepending, pre-fix
         // `/admin` → `///admin` for DoubleSlash because the leading `/`
         // was retained, accidentally producing the next mutation up.
         // Always normalise to: prefix + path-without-leading-slash.
@@ -109,7 +109,7 @@ impl PathPrefixStrategy {
         format!("{prefix}{rest}")
     }
 
-    /// Every strategy in canonical order — drives the technique-rotation
+    /// Every strategy in canonical order, drives the technique-rotation
     /// path in the strategy engine.
     pub const fn all() -> [Self; 4] {
         [
@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn non_root_relative_input_passes_through() {
-        // Path that doesn't start with `/` is a contract violation —
+        // Path that doesn't start with `/` is a contract violation 
         // return unchanged rather than producing a malformed mutation.
         // Matches `mutate_url`'s "doesn't look like a path" guard.
         assert_eq!(PathPrefixStrategy::DoubleSlash.apply("admin"), "admin");
@@ -224,7 +224,7 @@ mod tests {
     #[test]
     fn mutate_path_prefix_returns_label_matching_strategy() {
         // Anti-rig: the label returned by the public helper must
-        // match the strategy's own label — pre-fix a refactor that
+        // match the strategy's own label, pre-fix a refactor that
         // wired the wrong label through silently shipped.
         for s in PathPrefixStrategy::all() {
             let (_, label) = mutate_path_prefix("/admin", s);

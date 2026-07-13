@@ -1,16 +1,16 @@
-//! Gene-bank persistence — load / save / restore the proxy's
+//! Gene-bank persistence, load / save / restore the proxy's
 //! per-host discovery state to disk across restarts.
 //!
 //! The proxy accumulates valuable discovery signal as it forwards
 //! traffic: proven evasion winners per host, blocklisted techniques
 //! the WAF reliably catches, identified WAF vendor names. Losing
 //! that on every restart would force the operator to re-pay the
-//! discovery cost every session — instead this module persists it
+//! discovery cost every session, instead this module persists it
 //! to `~/.wafrift/gene-bank.json` (or the operator-supplied path).
 //!
 //! Crash-safe writes via tempfile + fsync + rename + parent-dir
 //! fsync. Concurrent writers from two proxy instances are handled
-//! by per-writer PID + nanosecond tempfile names — the last rename
+//! by per-writer PID + nanosecond tempfile names, the last rename
 //! wins, matching the existing single-writer semantics.
 //!
 //! Schema-versioned for forward / backward compat: a v0.1 flat
@@ -29,7 +29,7 @@ use crate::ProxyState;
 /// ~thousands of hosts × handful of per-host fields is well under
 /// 1 MiB; 64 MiB is generous head-room and small enough that a
 /// pathological / adversarial / corrupted multi-GB file won't OOM
-/// the proxy on startup. F141 — same hazard class as the strategy
+/// the proxy on startup. F141, same hazard class as the strategy
 /// crate's gene-bank cap.
 pub const MAX_GENE_BANK_BYTES: u64 = 64 * 1024 * 1024;
 
@@ -55,7 +55,7 @@ pub use wafrift_types::gene_bank_io::{PersistedGeneBank, PersistedHostState};
 #[must_use]
 pub fn default_gene_bank_path(supplied: &str) -> Option<PathBuf> {
     if supplied.is_empty() {
-        // F98: was `HOME`-only — on Windows `HOME` is typically unset
+        // F98: was `HOME`-only, on Windows `HOME` is typically unset
         // and the function silently returned `None`, disabling gene-bank
         // persistence for every Windows user with no warning. The
         // sibling `trust.rs::default_path()` already falls back to
@@ -70,7 +70,7 @@ pub fn default_gene_bank_path(supplied: &str) -> Option<PathBuf> {
     }
 }
 
-/// Load the persisted gene bank from disk. Never errors — a missing
+/// Load the persisted gene bank from disk. Never errors, a missing
 /// file returns an empty bank, a malformed file gets logged + a
 /// fresh bank returned, an old v0.1 flat-HashMap file is auto-
 /// migrated to schema 1. The "always succeed" contract is
@@ -82,7 +82,7 @@ pub fn load(path: &Path) -> PersistedGeneBank {
     // pointing at a tarball) can't OOM the proxy at startup.
     // Pre-fix `std::fs::read_to_string(path)` would happily slurp
     // any file the OS would let it allocate for. The "always
-    // succeed" contract is preserved — an oversized file logs a
+    // succeed" contract is preserved, an oversized file logs a
     // warning and returns the default empty bank, matching the
     // malformed-JSON branch behavior.
     match std::fs::metadata(path) {
@@ -92,7 +92,7 @@ pub fn load(path: &Path) -> PersistedGeneBank {
                 size = meta.len(),
                 cap = MAX_GENE_BANK_BYTES,
                 "gene bank file exceeds {MAX_GENE_BANK_BYTES}-byte cap; starting fresh. \
-                 Fix: this file is far larger than any real bank — inspect for corruption \
+                 Fix: this file is far larger than any real bank, inspect for corruption \
                  or remove it. If a legitimate operator workflow needs more, raise \
                  MAX_GENE_BANK_BYTES rather than disabling the guard."
             );
@@ -104,7 +104,7 @@ pub fn load(path: &Path) -> PersistedGeneBank {
             // "not found = fresh bank" branch handles the log.
         }
         Err(_) => {
-            // Same — read_to_string will surface the same error.
+            // Same (read_to_string will surface the same error).
         }
     }
     match std::fs::read_to_string(path) {
@@ -119,7 +119,7 @@ pub fn load(path: &Path) -> PersistedGeneBank {
             // `PersistedGeneBank` carries `#[serde(default)]` on every
             // field, so a permissive parse would silently accept a
             // v0.1 flat-HashMap blob as a schema-0 empty bank and drop
-            // every host — see the `unknown_fields_are_ignored`
+            // every host, see the `unknown_fields_are_ignored`
             // contract in `wafrift_types::gene_bank_io::tests`.
             //
             // Numeric-typed check (not just key presence) is load-
@@ -157,7 +157,7 @@ pub fn load(path: &Path) -> PersistedGeneBank {
                         // v0.1 flat HashMap: no `schema` wrapper, every
                         // top-level key is a host. Migrate to schema 1.
                         // An empty `{}` still counts as a v0.1 bank with
-                        // zero hosts, not a schema-0 bank — the test
+                        // zero hosts, not a schema-0 bank, the test
                         // contract `load_gene_bank_v0_1_empty_object_migrates`
                         // pins schema=1 here.
                         let value = serde_json::Value::Object(map);
@@ -222,7 +222,7 @@ pub fn save(state: &ProxyState, path: &Path) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         // Propagate rather than swallow: if the parent can't be created
         // (permissions, a file in the way), the atomic write below would
-        // fail anyway — surfacing the actual `create_dir_all` error with
+        // fail anyway, surfacing the actual `create_dir_all` error with
         // its path is more actionable than a downstream "no such file".
         // `create_dir_all` is idempotent (Ok when the dir already exists),
         // so this never regresses the common path.
@@ -234,7 +234,7 @@ pub fn save(state: &ProxyState, path: &Path) -> std::io::Result<()> {
     };
     for (host, hs) in &state.hosts {
         // Persist any host where the proxy has accumulated discovery
-        // signal — proven winners, blocklisted techniques, identified
+        // signal, proven winners, blocklisted techniques, identified
         // WAF, OR observed blocks. The earlier "skip empty hosts to
         // keep the file small" rule dropped hosts with only
         // block-count telemetry, so a practitioner who left the proxy
@@ -246,7 +246,7 @@ pub fn save(state: &ProxyState, path: &Path) -> std::io::Result<()> {
             && hs.waf_name.is_none()
             && hs.blocks == 0
         {
-            continue; // truly empty — skip
+            continue; // truly empty, skip
         }
         bank.hosts.insert(
             host.clone(),
@@ -259,7 +259,7 @@ pub fn save(state: &ProxyState, path: &Path) -> std::io::Result<()> {
     }
     let json = serde_json::to_string_pretty(&bank)?;
     // Atomic, durable write (tempfile + fsync + rename + parent
-    // fsync) via the shared helper — same dance as
+    // fsync) via the shared helper, same dance as
     // `strategy::gene_bank::write_genome` and `cli::seed`, lifted
     // to wafrift_types so the multi-writer tmp-suffix policy stays
     // in lock-step.
@@ -280,7 +280,7 @@ pub fn save(state: &ProxyState, path: &Path) -> std::io::Result<()> {
 /// under the lock matters.
 pub fn restore(state: &mut ProxyState, bank: PersistedGeneBank) -> usize {
     let mut restored = 0usize;
-    // Track FIFO membership in a HashSet — pre-fix this used
+    // Track FIFO membership in a HashSet, pre-fix this used
     // `host_fifo.contains(&host)` which is O(n) on VecDeque, so a
     // gene-bank with N hosts forced N² scans during restore. For
     // a corrupted-or-large bank (millions of hosts) the proxy
@@ -292,12 +292,12 @@ pub fn restore(state: &mut ProxyState, bank: PersistedGeneBank) -> usize {
     for (host, persisted) in bank.hosts {
         // F141: stop accepting new hosts once we hit the runtime
         // cap. Pre-fix this loop inserted EVERY host first and then
-        // popped down to 10_000 at the end — a corrupted /
+        // popped down to 10_000 at the end, a corrupted /
         // adversarial gene-bank with a million hosts allocated a
         // million HostState entries before the cap kicked in,
         // briefly spiking proxy RAM by ~GBs during startup.
         // Skipping new entries (vs. evicting one to make room) is
-        // the bounded-work choice — the persisted set is already
+        // the bounded-work choice, the persisted set is already
         // truncated by the time the cap fires, and the proxy will
         // discover the missing hosts on first request.
         if !state.hosts.contains_key(&host) && state.hosts.len() >= MAX_RESTORED_HOSTS {
@@ -377,7 +377,7 @@ mod tests {
     fn load_v01_flat_format_migrates_to_schema_1() {
         let path =
             std::env::temp_dir().join(format!("wafrift-genebank-load-v01-{}", std::process::id()));
-        // Pre-schema flat HashMap format — no `schema` field, no
+        // Pre-schema flat HashMap format, no `schema` field, no
         // `hosts` wrapper. The auto-migration must recognise this
         // shape and convert without dropping any host.
         let legacy = r#"{
@@ -401,7 +401,7 @@ mod tests {
         // Adversarial backwards-compat: a v0.1 bank where the operator
         // had genuine discovery state for a host whose DNS label is
         // literally `schema`. The migration must NOT mistake the
-        // top-level `schema` key for a schema version tag — that would
+        // top-level `schema` key for a schema version tag, that would
         // drop the host's data on load. Reading the value's type (must
         // be numeric for v1) is what discriminates the two cases.
         let path = std::env::temp_dir().join(format!(
@@ -458,7 +458,7 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        // Write a sparse-feeling file just past the cap — we don't
+        // Write a sparse-feeling file just past the cap, we don't
         // actually need every byte, set_len is enough on most
         // filesystems and the metadata().len() check catches it.
         let f = std::fs::File::create(&path).unwrap();
@@ -478,7 +478,7 @@ mod tests {
         // F141 regression: pre-fix restore() inserted every host
         // first and only popped down at the end. For a million-host
         // bank that briefly allocated a million HostState entries
-        // — gigabytes of transient RAM during startup. Synthesize a
+        //: gigabytes of transient RAM during startup. Synthesize a
         // bank with cap + 50 hosts and verify the final state.hosts
         // length never exceeds the cap (the in-loop guard fires).
         let mut bank = PersistedGeneBank {

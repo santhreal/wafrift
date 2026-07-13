@@ -15,7 +15,7 @@ use tokio::net::TcpStream;
 
 /// Cap on bytes transferred per direction per CONNECT tunnel.
 /// Prevents a client from streaming gigabytes through the proxy
-/// under a single CONNECT — without this, the bidirectional copy
+/// under a single CONNECT, without this, the bidirectional copy
 /// runs unbounded and `MAX_PROXY_BODY_BYTES` /
 /// `max_upstream_response_bytes` (which guard the HTTP-mode paths)
 /// do not apply. 2 GiB is generous for legitimate long-lived TLS
@@ -105,7 +105,7 @@ mod tests {
     #[test]
     fn host_addr_extracts_authority_without_explicit_port() {
         let uri: hyper::Uri = "https://example.com/path".parse().unwrap();
-        // No explicit port — authority returns just the host.
+        // No explicit port (authority returns just the host).
         assert_eq!(host_addr(&uri).as_deref(), Some("example.com"));
     }
 
@@ -136,7 +136,7 @@ mod tests {
     fn max_tunnel_bytes_per_direction_is_under_u64_max() {
         // Sanity: cap is far below u64::MAX so the saturating_add
         // in the read loop never wraps anywhere near the limit.
-        // Constant assertion is intentional — build-time regression
+        // Constant assertion is intentional, build-time regression
         // gate, not a runtime check.
         #[allow(clippy::assertions_on_constants)]
         {

@@ -16,7 +16,7 @@ use crate::ProxyState;
 use wafrift_strategy::HostState;
 
 /// Render the current proxy state as a markdown findings page.
-/// Always returns a non-empty string — the "no requests yet" /
+/// Always returns a non-empty string, the "no requests yet" /
 /// "no bypasses yet" cases produce a sensible explanation instead
 /// of a blank document.
 #[must_use]
@@ -43,13 +43,13 @@ pub fn render_live_findings(state: &ProxyState) -> String {
     hosts_with_winners.sort_by(|a, b| a.0.cmp(b.0));
 
     if hosts_with_winners.is_empty() {
-        out.push_str("_No bypasses discovered yet — keep traffic flowing through the proxy. Blocks are being recorded and will inform technique selection._\n");
+        out.push_str("_No bypasses discovered yet, keep traffic flowing through the proxy. Blocks are being recorded and will inform technique selection._\n");
         return out;
     }
 
     out.push_str("## Hosts with proven bypasses\n\n");
     for (host, hs) in hosts_with_winners {
-        // Hostnames come from Host headers — attacker-controllable in
+        // Hostnames come from Host headers, attacker-controllable in
         // every relevant threat model. If a host contains backticks,
         // pipes, or asterisks, they'd be interpreted as markdown
         // formatting (or worse, raw HTML in renderers that allow it)
@@ -112,7 +112,7 @@ mod tests {
     fn sanitize_preserves_canonical_host_chars() {
         // RFC 1035 host chars: A-Za-z0-9.- plus colons for IPv6
         // (which get replaced with `_` since we don't permit `:` in
-        // the bare alphabet wait — we DO permit colon, for port
+        // the bare alphabet wait, we DO permit colon, for port
         // separators). The host `[::1]:8080` becomes
         // `__::1__:8080` because `[` and `]` are dropped, but
         // `:` and digits survive. Sanity-check that.
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn sanitize_unicode_replaced_with_underscore() {
-        // Non-ASCII (homoglyphs, RTL marks) must be replaced — they
+        // Non-ASCII (homoglyphs, RTL marks) must be replaced, they
         // can rewrite a markdown render in ways the operator can't
         // see in the raw source.
         let result = sanitize_for_markdown("paypaⅼ.com"); // l = U+217C (small l)
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn sanitize_injection_control_chars_replaced() {
-        // Null byte, tab, newline — any control char that could inject into markdown.
+        // Null byte, tab, newline (any control char that could inject into markdown).
         let with_null = "host\x00name";
         assert_eq!(sanitize_for_markdown(with_null), "host_name");
         let with_newline = "host\nname";
@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn sanitize_angle_brackets_replaced() {
-        // `<script>` must not survive — HTML injection in markdown renderers.
+        // `<script>` must not survive: HTML injection in markdown renderers.
         assert_eq!(sanitize_for_markdown("<script>"), "_script_");
     }
 
@@ -169,7 +169,7 @@ mod tests {
     fn render_no_bypasses_yet_branch_reached() {
         // Simulate: requests were proxied, but none bypassed.
         // We need to manually increment the counter via total_scanned.
-        // ProxyState tracks scans through `record_scan` — if not exposed,
+        // ProxyState tracks scans through `record_scan`: if not exposed,
         // test that the "no bypasses" text appears for a fresh ProxyState
         // when scanning counter remains 0 (which hits the no-requests path).
         // The branch "no bypasses yet" is only reachable when total_scanned > 0

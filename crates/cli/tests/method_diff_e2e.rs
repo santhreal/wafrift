@@ -21,7 +21,7 @@ async fn spawn_method_mock() -> std::net::SocketAddr {
                 // Everything else returns the short baseline.
                 let propfind = req.starts_with("PROPFIND ");
                 let body = if propfind {
-                    "<html>WebDAV property listing — long response distinguishable from GET baseline</html>"
+                    "<html>WebDAV property listing, long response distinguishable from GET baseline</html>"
                 } else {
                     "<html>ok</html>"
                 };
@@ -58,7 +58,7 @@ fn method_diff_finds_propfind_divergence_on_mod_dav_mock() {
         "--timeout-secs",
         "30",
     ]);
-    assert_eq!(code, 0, "method-diff exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "method-diff exit 0, stderr:\n{stderr}");
     let p: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     let total_div = p["divergences"]["high"].as_u64().unwrap_or(0)
         + p["divergences"]["medium"].as_u64().unwrap_or(0);
@@ -113,13 +113,13 @@ fn method_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "method", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff method --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff method --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["method-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift method-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift method-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }

@@ -32,7 +32,7 @@ pub enum WafModelError {
     },
 
     /// The equivalence oracle's UCB bandit was asked to draw a
-    /// counterexample word but the search space was empty — the
+    /// counterexample word but the search space was empty, the
     /// hypothesis has zero states, or the alphabet has zero symbols.
     /// Neither is a valid input; the caller must supply a non-trivial
     /// automaton and a non-empty alphabet.
@@ -52,7 +52,7 @@ pub enum WafModelError {
     /// rows and trip this invariant. R51 pass-13 I3 (CLAUDE.md §15).
     #[error(
         "L* observation table is not closed at hypothesis-build time \
-         — likely caused by a non-deterministic oracle (WAF cluster, \
+Likely caused by a non-deterministic oracle (WAF cluster, \
          mid-scan rule reload). Retry with a stable target or raise \
          the query budget."
     )]

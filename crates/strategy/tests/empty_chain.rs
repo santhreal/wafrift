@@ -1,4 +1,4 @@
-//! Empty chain — when the evasion plan has zero encoders and all config
+//! Empty chain, when the evasion plan has zero encoders and all config
 //! layers are disabled, `evade_adaptive` must return the input unchanged
 //! and report that no evasion was applied.
 

@@ -3,7 +3,7 @@
 //! All tests except the unreachable-target case run a minimal TCP mock that
 //! simulates WAF/origin parser disagreement.  The mock routes requests with
 //! a semicolon path-parameter (`/admin;x=y`, `/admin;JSESSIONID=…`) as 200
-//! while the baseline `/admin` path returns 403 — exactly the Tomcat-class
+//! while the baseline `/admin` path returns 403, exactly the Tomcat-class
 //! disagreement `parser-diff` was designed to surface.
 //!
 //! Tests verify:
@@ -89,7 +89,7 @@ async fn spawn_semicolon_mock() -> std::net::SocketAddr {
 
 /// Mock where the baseline `/admin` serves normally (200) but EVERY
 /// mutated variant path is rate-limited (429). A correct parser-diff
-/// must treat 429 as throttle noise and emit ZERO divergences — the
+/// must treat 429 as throttle noise and emit ZERO divergences, the
 /// same gate bypass_probe applies.
 async fn spawn_throttle_mock() -> std::net::SocketAddr {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -156,14 +156,14 @@ fn parser_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "path", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff path --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff path --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["parser-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift parser-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift parser-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }
 
@@ -265,7 +265,7 @@ fn parser_diff_detects_semicolon_strip_divergence() {
 fn parser_diff_suppresses_throttle_status_variants() {
     // Regression: every mutated variant returns HTTP 429 (rate limited).
     // A 200→429 flip is the target throttling us, NOT a parser
-    // disagreement — parser-diff must gate it as noise (the same gate
+    // disagreement, parser-diff must gate it as noise (the same gate
     // bypass_probe applies) and emit ZERO divergences. Pre-fix it
     // surfaced each 429 as a LOW divergence and buried real findings.
     let rt = tokio::runtime::Builder::new_multi_thread()

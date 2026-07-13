@@ -1,11 +1,11 @@
-//! `wafrift parser-diff` — WAF / origin parser-disagreement scanner.
+//! `wafrift parser-diff`: WAF / origin parser-disagreement scanner.
 //!
 //! ## The innovation
 //!
 //! Most WAF-bypass tools mutate the **payload string** and hope the
 //! mutated form survives the WAF rule corpus. That's a losing game
 //! long-term: every rule update closes a tamper. `parser-diff`
-//! attacks a different surface entirely — the seam between the WAF's
+//! attacks a different surface entirely, the seam between the WAF's
 //! URL/path parser and the origin server's URL/path parser.
 //!
 //! WAFs and origin servers (Tomcat, nginx, IIS, Apache, Express,
@@ -16,7 +16,7 @@
 //!   in front of Tomcat almost always sees the full `/admin;x=y`
 //!   string and matches a rule that fires on `/admin` only.
 //! - **IIS treats backslash as a path separator**
-//!   (`/api\\admin`). nginx / Apache / WAFs typically don't —
+//!   (`/api\\admin`). nginx / Apache / WAFs typically don't 
 //!   so the WAF sees `/api\admin` (whole component, no match);
 //!   IIS sees `/api/admin`.
 //! - **Java truncates strings at NUL**. A `/admin%00.jpg` is
@@ -36,7 +36,7 @@
 //! set of these seams, fires both the baseline path and each
 //! variant, and reports which ones produce a divergent response. A
 //! divergence is evidence the WAF and the origin disagree on what
-//! the URL means — and the operator now has a vector that doesn't
+//! the URL means, and the operator now has a vector that doesn't
 //! require any payload mutation.
 //!
 //! ## Why this makes the WAF "near irrelevant"
@@ -44,7 +44,7 @@
 //! A WAF tuned against payload-string evasion cannot stop something
 //! it cannot match. If the parser disagreement turns `/admin` into
 //! `/admin;x=y` (which the WAF doesn't recognise as the protected
-//! route), the WAF was never the relevant control — the route
+//! route), the WAF was never the relevant control, the route
 //! authorisation in the origin was. `parser-diff` finds those
 //! disagreements deterministically; the operator gets a list of
 //! confirmed seams in seconds, no payload mutation needed.
@@ -62,7 +62,7 @@ pub(crate) struct ParserDiffArgs {
     /// path that exercise known WAF↔origin disagreements.
     pub url: String,
 
-    /// Inter-request delay (ms) — honour rate limits.
+    /// Inter-request delay (ms) (honour rate limits).
     #[arg(long, default_value_t = 25)]
     pub delay_ms: u64,
 
@@ -94,7 +94,7 @@ pub(crate) struct ParserDiffArgs {
     #[arg(long)]
     pub show_equal: bool,
 
-    /// Suppress all human-readable output — emit only structured
+    /// Suppress all human-readable output, emit only structured
     /// JSON. Implies `--format json`.
     #[arg(short, long)]
     pub quiet: bool,
@@ -133,7 +133,7 @@ pub(crate) struct DiffResult {
 }
 
 /// Generate the full parser-disagreement variant set for a given
-/// path. Pure function — no I/O, deterministic, testable in
+/// path. Pure function, no I/O, deterministic, testable in
 /// isolation. The variant ordering is stable across runs so an
 /// operator who pins a specific variant by index will get the same
 /// one tomorrow.
@@ -188,7 +188,7 @@ pub(crate) fn generate_variants(path: &str) -> Vec<ParserDisagreement> {
     });
     out.push(ParserDisagreement {
         kind: "nul-truncate",
-        description: "NUL between segments — Java truncates path at the first segment",
+        description: "NUL between segments: Java truncates path at the first segment",
         variant_path: if segments.len() >= 2 {
             let head = format!("/{}", segments[0]);
             let tail: String = segments[1..].iter().map(|s| format!("/{s}")).collect();
@@ -226,7 +226,7 @@ pub(crate) fn generate_variants(path: &str) -> Vec<ParserDisagreement> {
     // ── 6. Dot-segment normalisation ──
     out.push(ParserDisagreement {
         kind: "dot-segment",
-        description: "`/./` inserted — RFC 3986 says remove, some routers don't",
+        description: "`/./` inserted: RFC 3986 says remove, some routers don't",
         variant_path: trimmed
             .replace('/', "/./")
             .trim_end_matches("/./")
@@ -234,7 +234,7 @@ pub(crate) fn generate_variants(path: &str) -> Vec<ParserDisagreement> {
     });
     out.push(ParserDisagreement {
         kind: "dot-segment",
-        description: "`/../` round-trip — `/x/../admin` ≡ `/admin` after normalisation",
+        description: "`/../` round-trip: `/x/../admin` ≡ `/admin` after normalisation",
         variant_path: format!("/decoy/..{trimmed}"),
     });
 
@@ -271,24 +271,24 @@ pub(crate) fn generate_variants(path: &str) -> Vec<ParserDisagreement> {
     // ── 8. Empty segments (collapse vs preserve) ──
     out.push(ParserDisagreement {
         kind: "empty-segment",
-        description: "Doubled slash — some routers collapse `//`, some preserve",
+        description: "Doubled slash, some routers collapse `//`, some preserve",
         variant_path: trimmed.replace('/', "//"),
     });
     out.push(ParserDisagreement {
         kind: "empty-segment",
-        description: "Triple slash variant — IIS / nginx differ on collapse",
+        description: "Triple slash variant: IIS / nginx differ on collapse",
         variant_path: trimmed.replacen('/', "///", 1),
     });
 
     // ── 9. Trailing dot / space (Windows-class file system) ──
     out.push(ParserDisagreement {
         kind: "trailing-dot",
-        description: "Trailing dot — Windows treats as empty extension",
+        description: "Trailing dot: Windows treats as empty extension",
         variant_path: format!("{trimmed}."),
     });
     out.push(ParserDisagreement {
         kind: "trailing-dot",
-        description: "Trailing space (percent-encoded) — Windows strips",
+        description: "Trailing space (percent-encoded). Windows strips",
         variant_path: format!("{trimmed}%20"),
     });
 
@@ -296,7 +296,7 @@ pub(crate) fn generate_variants(path: &str) -> Vec<ParserDisagreement> {
     // and no two variants may share the same path (which would
     // shadow a parser disagreement under another's evidence). The
     // degenerate root-path input ("/") produces many transformations
-    // that collapse to "" — we either turn them into something
+    // that collapse to "", we either turn them into something
     // meaningful or drop them.
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut normalized: Vec<ParserDisagreement> = Vec::new();
@@ -356,7 +356,7 @@ async fn run_async(args: ParserDiffArgs) -> Result<(), String> {
         .timeout(Duration::from_secs(args.timeout_secs))
         .redirect(reqwest::redirect::Policy::none());
     if args.insecure {
-        // Align with scan / detect / replay / bypass-probe — only
+        // Align with scan / detect / replay / bypass-probe, only
         // accept_invalid_certs. `danger_accept_invalid_hostnames`
         // would also accept an evil.com cert authenticating a
         // probe to target.example.com, which is NOT what an
@@ -394,7 +394,7 @@ async fn run_async(args: ParserDiffArgs) -> Result<(), String> {
     // If the baseline body exceeds the cap, baseline_len becomes 0.
     // The delta formula uses `if baseline_len == 0 { 100.0 }` for any
     // non-empty probe, so every probe fires as a high-severity divergence
-    // — a perfect false-positive storm with no warning, identical in
+    //: a perfect false-positive storm with no warning, identical in
     // structure to the bypass_probe baseline bug fixed in F136.
     let baseline_body = match crate::safe_body::read_bounded(
         baseline_resp,
@@ -450,7 +450,7 @@ async fn run_async(args: ParserDiffArgs) -> Result<(), String> {
             let probe_status = resp.status().as_u16();
             // Throttle / origin-unavailable (429, 503, Cloudflare 52x, …)
             // is the target rate-limiting the probe, NOT a parser
-            // disagreement. Skip it as noise — the same gate bypass_probe
+            // disagreement. Skip it as noise, the same gate bypass_probe
             // applies at probe_classify::is_throttle_or_unavailable, so the
             // whole parser-diff family suppresses rate-limit findings
             // consistently. Pre-fix `wafrift parser-diff` surfaced a
@@ -533,7 +533,7 @@ async fn run_async(args: ParserDiffArgs) -> Result<(), String> {
     if json_only {
         // R71 pass-21 §10 COHERENCE: parser-diff JSON was the only
         // diff-family output without a `schema_version`. CI consumers
-        // parsing this surface had no forward-compat signal — a future
+        // parsing this surface had no forward-compat signal, a future
         // field rename or restructure would silently break their
         // pipelines. Also renames the baseline's inner `status` to
         // `baseline_status` to match the per-probe `DiffResult` naming
@@ -545,7 +545,7 @@ async fn run_async(args: ParserDiffArgs) -> Result<(), String> {
                 "url": args.url,
                 "baseline_status": baseline_status,
                 // `status` kept as an alias for one release per LAW 2
-                // backwards-compat — remove no earlier than next minor.
+                // backwards-compat (remove no earlier than next minor).
                 "status": baseline_status,
                 "body_len": baseline_len,
             },
@@ -563,7 +563,7 @@ async fn run_async(args: ParserDiffArgs) -> Result<(), String> {
         );
         if divergences.is_empty() {
             println!(
-                "no parser disagreements detected — the WAF and origin agree on this URL surface"
+                "no parser disagreements detected, the WAF and origin agree on this URL surface"
             );
         } else {
             println!("{} parser disagreement(s):", divergences.len());
@@ -588,7 +588,7 @@ async fn run_async(args: ParserDiffArgs) -> Result<(), String> {
     Ok(())
 }
 
-// `severity_rank` lives in `crate::probe_classify` — shared with
+// `severity_rank` lives in `crate::probe_classify`: shared with
 // `bypass_probe` so the rank table stays in sync across consumers.
 use crate::probe_classify::severity_rank;
 
@@ -659,7 +659,7 @@ mod tests {
 
     #[test]
     fn generate_variants_semicolon_strip_includes_jsessionid() {
-        // The well-known cookie-as-path-param attack — the
+        // The well-known cookie-as-path-param attack, the
         // semicolon-strip family should include a JSESSIONID variant
         // because that's the realistic shape Tomcat / Jetty
         // applications see in the wild.
@@ -720,7 +720,7 @@ mod tests {
 
     #[test]
     fn generate_variants_handles_root_path() {
-        // Root path "/" is a degenerate input — generator must not
+        // Root path "/" is a degenerate input, generator must not
         // produce nonsense like "" or panic on the segment split.
         let v = generate_variants("/");
         assert!(!v.is_empty(), "even root path should produce some variants");
@@ -742,7 +742,7 @@ mod tests {
     #[test]
     fn generate_variants_is_deterministic() {
         // Same input must produce same output in the same order across
-        // runs — operators pin specific variants by index in CI.
+        // runs (operators pin specific variants by index in CI).
         let a = generate_variants("/admin/api");
         let b = generate_variants("/admin/api");
         assert_eq!(a.len(), b.len());
@@ -773,7 +773,7 @@ mod tests {
 
     #[test]
     fn severity_body_shrank_is_low_not_high() {
-        // Anti-rig: a shrunk body is NOT a bypass — most often it
+        // Anti-rig: a shrunk body is NOT a bypass, most often it
         // means we hit an error page. Severity should not inflate.
         assert_eq!(severity_of(200, 200, -50.0), "LOW");
     }
@@ -944,14 +944,14 @@ mod tests {
         addr
     }
 
-    /// A baseline body at exactly the cap is NOT an overrun — the run
+    /// A baseline body at exactly the cap is NOT an overrun, the run
     /// must complete normally and produce correct zero-delta results.
     #[tokio::test(flavor = "current_thread")]
     async fn baseline_exactly_at_cap_is_not_an_overrun() {
         // A body of DEFAULT_MAX_RESPONSE_BYTES is at the boundary:
         // `acc.len() + chunk.len() > max_bytes` with chunk_len = 0
         // at the trailing read is false, so it PASSES. Use a small body
-        // to keep the test fast — what matters is that a non-overrun
+        // to keep the test fast, what matters is that a non-overrun
         // baseline doesn't cause the run to error.
         let addr = spawn_fixed_size_server(100).await;
         let args = ParserDiffArgs {
@@ -973,7 +973,7 @@ mod tests {
     }
 
     /// With a zero baseline (simulated by an empty-body server), the
-    /// inline delta formula uses `100.0` for any non-empty probe —
+    /// inline delta formula uses `100.0` for any non-empty probe 
     /// before F139 this produced a false-positive storm with no warning
     /// because the overrun case silently returned `Vec::new()`.
     /// Post-F139, an actual overrun returns `Err`, but a legitimately
@@ -1014,7 +1014,7 @@ mod tests {
     #[test]
     fn run_parser_diff_returns_result_string_on_error() {
         // The public `run_parser_diff` returns `Result<(), String>`.
-        // Verify the type is preserved — callers (main.rs) depend on
+        // Verify the type is preserved, callers (main.rs) depend on
         // it to print the error and exit nonzero.
         let _: fn(ParserDiffArgs) -> Result<(), String> = run_parser_diff;
     }

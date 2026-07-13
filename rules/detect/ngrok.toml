@@ -8,7 +8,7 @@ source = "frontier-2026:ngrok-blog"
 # ngrok introduced WAF actions in 2024 and broadly rolled them out
 # through 2025; it ships Coraza + OWASP CRS under the hood. The
 # block path emits a specific JSON body and the `ngrok-error-code`
-# response header — both load-bearing fingerprints not covered by
+# response header, both load-bearing fingerprints not covered by
 # the existing Coraza or CRS detection rules.
 
 [[waf.signature]]

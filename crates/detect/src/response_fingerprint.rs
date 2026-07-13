@@ -1,6 +1,6 @@
 //! Response fingerprinting for silent-block detection.
 //!
-//! Many WAFs perform "silent blocking" — returning HTTP 200 with a
+//! Many WAFs perform "silent blocking", returning HTTP 200 with a
 //! modified response body instead of an obvious 403. This module
 //! creates compact fingerprints of HTTP responses that enable the
 //! strategy engine to detect when a response differs from a known
@@ -10,7 +10,7 @@
 //!
 //! 1. Send a benign "baseline" request and fingerprint the response.
 //! 2. Send attack payloads and fingerprint each response.
-//! 3. Compare fingerprints — a large drift indicates silent blocking.
+//! 3. Compare fingerprints (a large drift indicates silent blocking).
 //!
 //! # Fingerprint components
 //!
@@ -24,7 +24,7 @@ use once_cell::sync::Lazy;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-/// Lazily-compiled `<title>` extractor. Was being compiled per call —
+/// Lazily-compiled `<title>` extractor. Was being compiled per call 
 /// hot path runs once per upstream response, so the per-call cost
 /// scaled linearly with traffic.
 static TITLE_RE: Lazy<regex::Regex> = Lazy::new(|| {
@@ -231,7 +231,7 @@ fn check_block_markers(body: &str) -> bool {
                 "suspicious activity",
                 // F95: bare 3-char "waf" matched "wafer", "WAFER",
                 // and any case-insensitive substring with those
-                // three letters in sequence — flipped likely_blocked
+                // three letters in sequence, flipped likely_blocked
                 // to true on completely benign pages. The "web
                 // application firewall" pattern above covers the
                 // intended phrase; drop the 3-char form.
@@ -510,7 +510,7 @@ mod tests {
         );
     }
 
-    /// Both block-markers present in baseline and sample — no new marker drift.
+    /// Both block-markers present in baseline and sample (no new marker drift).
     #[test]
     fn compare_block_markers_both_present_no_marker_drift() {
         let body = "access denied by firewall";
@@ -520,7 +520,7 @@ mod tests {
         assert!(!drift.changed.contains(&"block_markers_appeared"));
     }
 
-    /// Neither baseline nor sample has block markers — no marker signal.
+    /// Neither baseline nor sample has block markers (no marker signal).
     #[test]
     fn compare_no_block_markers_in_either_no_marker_drift() {
         let a = html_response(200, "welcome to my site");
@@ -649,7 +649,7 @@ mod tests {
     }
 
     /// Anti-rig: bare "waf" (3-letter substring) must NOT trigger detection.
-    /// This was fixed in F95 — revert would cause false positives on words
+    /// This was fixed in F95, revert would cause false positives on words
     /// like "wafer", "wafting", "WAFER-cookie", etc.
     #[test]
     fn bare_waf_substring_does_not_trigger_block_marker() {
@@ -668,7 +668,7 @@ mod tests {
 
     // ── Concurrent fingerprinting ─────────────────────────────────────────
 
-    /// `fingerprint()` is stateless — same input from N threads must
+    /// `fingerprint()` is stateless, same input from N threads must
     /// produce identical output.
     #[test]
     fn concurrent_fingerprint_is_deterministic() {

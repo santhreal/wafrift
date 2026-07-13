@@ -1,4 +1,4 @@
-//! CNAME-rule engine — compiles the TOML catalog into regexes and
+//! CNAME-rule engine, compiles the TOML catalog into regexes and
 //! scores `DnsProbe`s against the rules.
 //!
 //! Rule format mirrors `waf_detect`'s schema for consistency:
@@ -15,7 +15,7 @@
 //!   weight = 0.7
 //! ```
 //!
-//! Every `host_regex` is wrapped `(?i)` at compile time — DNS is
+//! Every `host_regex` is wrapped `(?i)` at compile time. DNS is
 //! case-insensitive per RFC 1035 §2.3.3 and matching `Cloudflare`
 //! against `cloudflare` (or vice versa) should always succeed.
 
@@ -23,7 +23,7 @@ use crate::waf_detect::DetectedWaf;
 use regex::Regex;
 use serde::Deserialize;
 
-/// NFA compile-size limit — workspace-canonical value from
+/// NFA compile-size limit, workspace-canonical value from
 /// [`wafrift_types::REGEX_NFA_SIZE_LIMIT`].  Mirrors `waf_detect/rules.rs`.
 /// Caps compile-time NFA explosion so a crafted TOML with a pattern like
 /// `(a?){200}` returns a fast `Err` instead of hanging.  Even though the
@@ -105,7 +105,7 @@ impl CnameRuleEngine {
             for s in r.signature {
                 // CNAME hostnames are case-insensitive per RFC 1035
                 // §2.3.3, so every signature regex is wrapped (?i)
-                // automatically — same convention as waf_detect.
+                // automatically (same convention as waf_detect).
                 let full = if s.host_regex.starts_with("(?i)") || s.host_regex.starts_with("(?-i)")
                 {
                     s.host_regex.clone()
@@ -140,7 +140,7 @@ impl CnameRuleEngine {
 
     /// Score a CNAME chain against every rule.  Multiple WAF/CDN
     /// vendors can fire when the chain layers them (e.g. Cloudflare
-    /// in front of Cloudfront) — every layer surfaces in the
+    /// in front of Cloudfront), every layer surfaces in the
     /// returned vector, sorted by confidence descending.
     pub fn detect(&self, probe: &DnsProbe) -> Vec<DetectedWaf> {
         let tagged = probe.tagged_hosts();
@@ -185,12 +185,12 @@ impl CnameRuleEngine {
         out
     }
 
-    /// Number of compiled rules — for diagnostics.
+    /// Number of compiled rules (for diagnostics).
     pub fn len(&self) -> usize {
         self.rules.len()
     }
 
-    /// True when no rules are loaded — for diagnostics.
+    /// True when no rules are loaded (for diagnostics).
     pub fn is_empty(&self) -> bool {
         self.rules.is_empty()
     }

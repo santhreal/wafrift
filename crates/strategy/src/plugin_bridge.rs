@@ -1,4 +1,4 @@
-//! Plugin bridge — integrates [`wafrift_plugin_api`] external tampers into
+//! Plugin bridge, integrates [`wafrift_plugin_api`] external tampers into
 //! the strategy pipeline alongside built-in tampers.
 //!
 //! # Usage

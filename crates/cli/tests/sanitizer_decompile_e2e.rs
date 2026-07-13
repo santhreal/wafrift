@@ -1,7 +1,7 @@
 //! End-to-end dogfood of the shipped `wafrift sanitizer-decompile` binary.
 //!
 //! Drives the full operator path through the compiled binary: source-map
-//! recovery, sanitizer extraction, L*/SFA mining, and both output formats —
+//! recovery, sanitizer extraction, L*/SFA mining, and both output formats 
 //! against fixtures that exercise a bypassable config, a strict config, and a
 //! file with no sanitizer. Sends nothing (the sanitizer oracle is in-process),
 //! so no mock server is needed.
@@ -21,7 +21,7 @@ fn temp_file(tag: &str, content: &str) -> std::path::PathBuf {
 }
 
 /// A source map whose `sourcesContent` carries a DOMPurify config that forbids
-/// `<script>` but does NOT strip event handlers — so `<svg onload=>` survives.
+/// `<script>` but does NOT strip event handlers (so `<svg onload=>` survives).
 fn bypassable_source_map() -> String {
     let sanitizer_src = r#"
         import DOMPurify from 'dompurify';
@@ -83,7 +83,7 @@ fn decompiles_bypassable_dompurify_and_mines_a_surviving_vector() {
 #[test]
 fn bypassable_config_also_flags_reachable_mxss_candidates() {
     // The bypassable fixture forbids only `script` and `style`, leaving foreign
-    // roots (`svg`, `math`) and their re-parse children reachable — so the
+    // roots (`svg`, `math`) and their re-parse children reachable, so the
     // decompiler must surface mXSS candidates (which the in-model executability
     // check cannot prove) AND must never flag a pair touching the forbidden
     // `style` tag.
@@ -121,7 +121,7 @@ fn bypassable_config_also_flags_reachable_mxss_candidates() {
 #[test]
 fn strict_config_has_no_mxss_candidates() {
     // A DOMPurify ALLOWED_TAGS allowlist of only inert tags makes every
-    // foreign-content root unreachable, so the mXSS advisory must be empty —
+    // foreign-content root unreachable, so the mXSS advisory must be empty 
     // precise, not noise. (Uses DOMPurify's own key so the allowlist is parsed.)
     let js = temp_file(
         "mxss_strict_js",
@@ -165,7 +165,7 @@ fn raw_js_input_path_works_too() {
 
 #[test]
 fn strict_sanitizer_reports_no_bypass_with_exit_4() {
-    // Allowlist only inert tags AND forbid the dangerous ones — model-proven safe.
+    // Allowlist only inert tags AND forbid the dangerous ones (model-proven safe).
     let js = temp_file(
         "strict_js",
         r#"sanitizeHtml(x, { allowedTags: ['b','i','em','p'] });

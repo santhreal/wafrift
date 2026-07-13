@@ -1,4 +1,4 @@
-//! Bounded file readers — defence against decompression-bomb-style
+//! Bounded file readers, defence against decompression-bomb-style
 //! attacks on operator-supplied paths.
 //!
 //! These are thin aliases over the canonical [`boundedio`] crate, which
@@ -18,7 +18,7 @@ pub(crate) fn read_capped_text(path: &Path, max_bytes: usize) -> io::Result<Stri
     boundedio::read_file_capped_string(path, max_bytes)
 }
 
-/// Bytes variant — used by `edge_pop_coverage::load_or_default`,
+/// Bytes variant, used by `edge_pop_coverage::load_or_default`,
 /// which deserialises via `from_slice`.
 pub(crate) fn read_capped_bytes(path: &Path, max_bytes: usize) -> io::Result<Vec<u8>> {
     boundedio::read_file_capped(path, max_bytes)

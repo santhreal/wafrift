@@ -1,11 +1,11 @@
-//! Stateful chain mode — establish a session BEFORE the attack phase.
+//! Stateful chain mode (establish a session BEFORE the attack phase).
 //!
 //! Most real exploits are two-phase:
 //!
 //! 1. **Auth phase.** Hit a login or CSRF endpoint, get cookies +
 //!    bearer tokens + anti-CSRF nonces.
-//! 2. **Attack phase.** Use that established session — which the
-//!    backend trusts more than an anonymous request — to fire the
+//! 2. **Attack phase.** Use that established session, which the
+//!    backend trusts more than an anonymous request, to fire the
 //!    actual payload.
 //!
 //! Wafrift's scan path is one-shot today: every variant goes out
@@ -15,11 +15,11 @@
 //! session, fire it once, capture the resulting cookies (and any
 //! Authorization header from the curl itself), and hand back a
 //! `reqwest::header::HeaderMap` that scan plugs into
-//! `Client::builder().default_headers(...)` — every subsequent
+//! `Client::builder().default_headers(...)`: every subsequent
 //! variant request then carries the session for free.
 //!
 //! Re-uses `crate::import_curl::{parse_curl, shell_tokenize}` so the
-//! curl-file format here is identical to `wafrift import-curl` — the
+//! curl-file format here is identical to `wafrift import-curl`: the
 //! operator has one mental model for curl syntax across the CLI.
 
 use std::fmt;
@@ -40,7 +40,7 @@ fn origin_triple(u: &reqwest::Url) -> Option<(String, String, u16)> {
     Some((u.scheme().to_string(), host, port))
 }
 
-/// Captured session state — the headers (cookies + auth + any
+/// Captured session state, the headers (cookies + auth + any
 /// caller-pinned values from the init curl) that should be carried
 /// on every subsequent request in the scan loop.
 #[derive(Debug, Clone, Default)]
@@ -89,7 +89,7 @@ impl std::error::Error for SessionInitError {
 
 /// Convert a parsed curl into a SessionState by firing the request
 /// and collecting cookies. The fired request uses the curl's exact
-/// method / headers / body / Cookie — wafrift does not mutate the
+/// method / headers / body / Cookie, wafrift does not mutate the
 /// auth request, that's the operator's job to script correctly. We
 /// only act as the cookie jar + header carrier.
 #[cfg(test)]
@@ -151,7 +151,7 @@ pub(crate) async fn establish_from_curl_with_headers(
             }
             // reqwest's Attempt API doesn't let us mutate the
             // outgoing headers, so on a cross-origin hop we STOP
-            // rather than follow — the captured `Authorization` /
+            // rather than follow, the captured `Authorization` /
             // `Cookie` would otherwise replay to the new origin.
             // Stop returns whatever response we already have (the
             // 302 itself, including any Set-Cookie). Callers can
@@ -192,11 +192,11 @@ pub(crate) async fn establish_from_curl_with_headers(
 
     // Collect every Set-Cookie from the response (and from every
     // redirect hop reqwest followed; reqwest exposes only the FINAL
-    // Set-Cookie set per its API, which is the typical case — the
+    // Set-Cookie set per its API, which is the typical case, the
     // login chain's intermediate 302s carry the same cookies forward
     // and the final response repeats the durable set).
     let mut cookie_pairs: Vec<(String, String)> = Vec::new();
-    // Curl-supplied cookies survive — the operator may need them
+    // Curl-supplied cookies survive, the operator may need them
     // (e.g. a long-lived refresh-token cookie not in the response).
     if let Some(cookie) = parsed.cookie.as_ref() {
         for pair in cookie.split(';') {
@@ -241,7 +241,7 @@ pub(crate) async fn establish_from_curl_with_headers(
     }
 
     // An Authorization header explicitly set in the curl carries
-    // forward — bearer tokens / basic-auth need to be replayed on
+    // forward, bearer tokens / basic-auth need to be replayed on
     // every attack request the same way they were set on the init.
     // Routed through the shared parse_header_kv so the
     // HeaderName/HeaderValue conversion policy stays in lock-step
@@ -286,7 +286,7 @@ pub(crate) async fn establish_from_file_with_headers(
     insecure: bool,
     default_headers: HeaderMap,
 ) -> Result<SessionState, SessionInitError> {
-    // Bounded read — operator-supplied curl file. Defends against
+    // Bounded read, operator-supplied curl file. Defends against
     // `/dev/zero` typo and hostile symlink. Real "Copy as cURL"
     // pastes are < 16 KiB; cap at 1 MiB is generous.
     let raw = match crate::safe_body::read_bounded_text_file(
@@ -306,7 +306,7 @@ pub(crate) async fn establish_from_file_with_headers(
         }) => {
             return Err(SessionInitError::Parse(format!(
                 "session-init file exceeded {cap_bytes}-byte cap ({observed_bytes} bytes \
-                 seen) — a real `Copy as cURL` paste is < 16 KiB; check the path"
+                 seen), a real `Copy as cURL` paste is < 16 KiB; check the path"
             )));
         }
     };
@@ -485,7 +485,7 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn establish_carries_curl_cookie_forward() {
         // Curl-supplied cookies that the server does NOT echo back via
-        // Set-Cookie must still appear in the captured state — operator
+        // Set-Cookie must still appear in the captured state, operator
         // may have set them manually (refresh tokens etc.).
         let addr = spawn_session_server(|_| ok_with_setcookie("ok", &[])).await;
         let mut parsed = curl_from_url(&format!("http://{addr}/"));
@@ -536,7 +536,7 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn establish_carries_authorization_header_forward() {
         // Bearer tokens / basic-auth on the init curl must replay on
-        // every attack request — the captured state carries the
+        // every attack request, the captured state carries the
         // Authorization header verbatim.
         let addr = spawn_session_server(|_| ok_with_setcookie("ok", &[])).await;
         let mut parsed = curl_from_url(&format!("http://{addr}/"));
@@ -613,7 +613,7 @@ mod tests {
     // that the operator's flow actually takes. These tests prove
     // the WHOLE chain works against a real temp file on disk and
     // the captured state is plug-and-play with reqwest's
-    // `default_headers` — the exact wiring scan/mod.rs takes.
+    // `default_headers`: the exact wiring scan/mod.rs takes.
 
     fn write_curl_to_temp(text: &str) -> std::path::PathBuf {
         let path = std::env::temp_dir().join(format!(
@@ -689,7 +689,7 @@ mod tests {
         // depends on whether shell_tokenize rejects the input outright
         // (Parse) or whether it produces a "plausible" URL that
         // then fails at the request layer (Request). Both are
-        // acceptable — the bar is "no panic, structured error."
+        // acceptable (the bar is "no panic, structured error)."
         let path = write_curl_to_temp("curl 'http://x.example/x");
         let err = establish_from_file(&path, Duration::from_secs(2), false)
             .await
@@ -709,7 +709,7 @@ mod tests {
             .await
             .expect_err("empty must error");
         // An empty token list -> ParsedCurl with no URL -> NoUrl.
-        // (The Parse path could also reach this; either is fine —
+        // (The Parse path could also reach this; either is fine 
         // both are typed, neither panics.)
         match err {
             SessionInitError::NoUrl | SessionInitError::Parse(_) => {}

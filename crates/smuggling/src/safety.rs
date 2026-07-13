@@ -181,7 +181,7 @@ pub fn guard_prefix_len(prefix: &str, max: usize) -> Result<(), SafetyError> {
 /// Safety-related errors.
 #[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
 pub enum SafetyError {
-    #[error("input contains CRLF — possible accidental header injection")]
+    #[error("input contains CRLF, possible accidental header injection")]
     HeaderInjection,
     #[error("prefix length {len} exceeds maximum {max}")]
     PrefixTooLong { len: usize, max: usize },

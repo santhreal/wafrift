@@ -1,4 +1,4 @@
-//! CRS input transformations — the decoding a ModSecurity/Coraza-class
+//! CRS input transformations, the decoding a ModSecurity/Coraza-class
 //! WAF applies to a variable *before* matching a rule against it
 //! (`t:urlDecodeUni`, `t:htmlEntityDecode`, `t:lowercase`, …).
 //!
@@ -13,22 +13,22 @@
 /// One ModSecurity-style transformation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Transform {
-    /// `t:urlDecodeUni` — decode `%XX` and `%uXXXX`. Invalid escapes
+    /// `t:urlDecodeUni`: decode `%XX` and `%uXXXX`. Invalid escapes
     /// are left literally (ModSecurity behaviour: a lone `%` or a
     /// short/invalid sequence is not consumed).
     UrlDecodeUni,
-    /// `t:htmlEntityDecode` — decode `&#DD;`, `&#xHH;`, and the named
+    /// `t:htmlEntityDecode`: decode `&#DD;`, `&#xHH;`, and the named
     /// entities ModSecurity recognises (`lt gt amp quot nbsp`). The
     /// trailing `;` is optional for numeric forms, matching libmodsec.
     HtmlEntityDecode,
     /// `t:lowercase`.
     Lowercase,
-    /// `t:removeNulls` — drop NUL bytes.
+    /// `t:removeNulls`: drop NUL bytes.
     RemoveNulls,
-    /// `t:compressWhitespace` — collapse runs of ASCII whitespace to a
+    /// `t:compressWhitespace`: collapse runs of ASCII whitespace to a
     /// single space.
     CompressWhitespace,
-    /// `t:removeWhitespace` — drop all ASCII whitespace.
+    /// `t:removeWhitespace`: drop all ASCII whitespace.
     RemoveWhitespace,
 }
 
@@ -102,7 +102,7 @@ fn url_decode_uni(input: &[u8]) -> Vec<u8> {
                 i += 3;
                 continue;
             }
-            // Invalid — literal `%`.
+            // Invalid (literal `%`).
             out.push(b'%');
             i += 1;
         } else {
@@ -180,7 +180,7 @@ fn html_entity_decode(input: &[u8]) -> Vec<u8> {
                 continue;
             }
         }
-        // Not an entity — literal `&`.
+        // Not an entity (literal `&`).
         out.push(b'&');
         i += 1;
     }

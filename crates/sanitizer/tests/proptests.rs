@@ -1,12 +1,12 @@
-//! Property tests for the client-sanitizer decompiler — public-API surface.
+//! Property tests for the client-sanitizer decompiler (public-API surface).
 //!
 //! Three fronts, thousands of cases each:
-//! 1. **Parser robustness** — the source-map / VLQ / extractor parsers consume a
+//! 1. **Parser robustness**: the source-map / VLQ / extractor parsers consume a
 //!    target's untrusted JS and must never panic on any input, only return
 //!    `Ok`/`Err`.
-//! 2. **Codec faithfulness** — `encode_vlq` round-trips through the public
+//! 2. **Codec faithfulness**: `encode_vlq` round-trips through the public
 //!    mappings decoder.
-//! 3. **Mining soundness** — every bypass `decompile_and_mine` reports genuinely
+//! 3. **Mining soundness**: every bypass `decompile_and_mine` reports genuinely
 //!    survives the model (the CEGIS gate), the run is bounded (no hang), and it
 //!    is deterministic.
 
@@ -20,13 +20,13 @@ use wafrift_sanitizer::sourcemap::{SourceMap, encode_vlq};
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(5000))]
 
-    /// `SourceMap::parse` returns Ok or Err for ANY input — never panics.
+    /// `SourceMap::parse` returns Ok or Err for ANY input (never panics).
     #[test]
     fn prop_parse_never_panics(s in ".{0,400}") {
         let _ = SourceMap::parse(&s);
     }
 
-    /// A v3 map with an arbitrary `mappings` string decodes or errors — never
+    /// A v3 map with an arbitrary `mappings` string decodes or errors, never
     /// panics (fuzzes the Base64-VLQ decoder, including overflow/truncation).
     #[test]
     fn prop_decode_mappings_never_panics(mappings in "[A-Za-z0-9+/,;]{0,200}") {
@@ -51,7 +51,7 @@ proptest! {
         }
     }
 
-    /// `extract_sanitizer` is total over arbitrary JS source — never panics.
+    /// `extract_sanitizer` is total over arbitrary JS source (never panics).
     #[test]
     fn prop_extract_never_panics(src in ".{0,400}") {
         let _ = extract_sanitizer(&src);
@@ -98,7 +98,7 @@ prop_compose! {
         schemes in proptest::collection::vec(0usize..SCHEMES.len(), 0..SCHEMES.len()),
         with_strip in any::<bool>(),
     ) -> SanitizerModel {
-        // The canonical on-handler strip regex — exercises the precompiled
+        // The canonical on-handler strip regex, exercises the precompiled
         // hot path that once caused the per-query-recompile hang.
         let strip_patterns = if with_strip {
             vec![r#"\son\w+=("[^"]*"|'[^']*'|[^\s>]*)"#.to_string()]
@@ -119,14 +119,14 @@ prop_compose! {
 proptest! {
     // Mining runs the L* learner (the expensive path). The MAX_EQ_ROUNDS round
     // cap bounds each mine() to ~1.2M membership queries, so even pathological
-    // models finish fast — but to keep the SUITE quick the case count is modest
+    // models finish fast, but to keep the SUITE quick the case count is modest
     // and the depth small. The cheap codec / parser properties above carry the
     // high-volume load; these assert the expensive invariants over ~100 models.
     #![proptest_config(ProptestConfig::with_cases(48))]
 
     /// SOUNDNESS + BOUNDEDNESS in one mine() call per case: every reported bypass
     /// genuinely survives the model (the CEGIS gate never emits a sanitized
-    /// payload) AND the membership-query count is bounded by the round cap — no
+    /// payload) AND the membership-query count is bounded by the round cap, no
     /// model can drive the unbounded sweep that once pegged the decompiler.
     #[test]
     fn prop_mining_is_sound_and_bounded(model in arb_model()) {
@@ -159,7 +159,7 @@ proptest! {
     }
 
     /// A model that forbids every dangerous tag, strips handlers, blocks the
-    /// dangerous schemes AND allowlists only inert tags admits NO bypass — the
+    /// dangerous schemes AND allowlists only inert tags admits NO bypass, the
     /// strict-model anti-rig at the CLI defaults (the exact hang-regression shape).
     #[test]
     fn prop_maximally_strict_model_admits_no_bypass(

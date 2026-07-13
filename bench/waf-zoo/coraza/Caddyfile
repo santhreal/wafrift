@@ -1,5 +1,5 @@
 {
-    # Disable automatic HTTPS — the bench talks plain HTTP.
+    # Disable automatic HTTPS (the bench talks plain HTTP).
     auto_https off
 
     # coraza_waf must run before the reverse_proxy so it can inspect and
@@ -22,7 +22,7 @@
             SecRuleEngine On
 
             # CRS setup: use CRS defaults (PL1). Extend this block to test
-            # Coraza at higher paranoia levels — add:
+            # Coraza at higher paranoia levels, add:
             #   SecAction "id:900000,phase:1,nolog,pass,t:none,setvar:tx.paranoia_level=2"
             Include @crs-setup.conf.example
             Include @owasp_crs/*.conf

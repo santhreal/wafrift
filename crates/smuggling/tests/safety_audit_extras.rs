@@ -2,7 +2,7 @@
 //! smuggling/safety.rs:
 //!   CRITICAL: `sanitize_input` + `guard_no_crlf` only checked CR/LF.
 //!     NULL bytes were allowed, but HTTP/1 stacks truncate header
-//!     values at the first NUL — turning benign-looking detection
+//!     values at the first NUL, turning benign-looking detection
 //!     probes into active header-injection / smuggling vectors.
 //!   HIGH: `ScanPolicy::backoff_delay` computed `ms + jitter_ms` with
 //!     plain addition; near `u64::MAX` `max_delay` this panics in debug
@@ -36,7 +36,7 @@ fn guard_no_crlf_also_rejects_null_byte() {
 
 #[test]
 fn sanitize_input_still_rejects_crlf() {
-    // Negative twin — adding NUL must not regress CRLF coverage.
+    // Negative twin (adding NUL must not regress CRLF coverage).
     assert!(sanitize_input("a\r\nb").is_err());
     assert!(sanitize_input("a\nb").is_err());
     assert!(sanitize_input("a\rb").is_err());
@@ -89,7 +89,7 @@ fn circuit_breaker_record_failure_saturates() {
 
 #[test]
 fn circuit_breaker_normal_path_unchanged() {
-    // Negative twin — saturating_add must not change normal behavior
+    // Negative twin, saturating_add must not change normal behavior
     // for small failure counts.
     let mut cb = CircuitBreaker::new(2, 100);
     assert_eq!(cb.consecutive_failures, 0);

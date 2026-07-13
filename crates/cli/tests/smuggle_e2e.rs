@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift smuggle`.
 //!
-//! All tests are purely offline — no HTTP, no mock server.
+//! All tests are purely offline (no HTTP, no mock server).
 //! `smuggle list` enumerates variants; `smuggle dry-run` renders raw wire
 //! bytes without sending anything.
 //!
@@ -103,7 +103,7 @@ fn smuggle_list_distinguishes_detection_from_exploit_tier() {
     );
 }
 
-// ── `smuggle dry-run` — raw format ───────────────────────────────────────
+// ── `smuggle dry-run`: raw format ───────────────────────────────────────
 
 #[test]
 fn smuggle_dry_run_cl_te_emits_transfer_encoding_header() {
@@ -202,7 +202,7 @@ fn smuggle_dry_run_meta_comment_contains_variant_key() {
     );
 }
 
-// ── `smuggle dry-run` — hex format ───────────────────────────────────────
+// ── `smuggle dry-run`: hex format ───────────────────────────────────────
 
 #[test]
 fn smuggle_dry_run_hex_format_emits_space_separated_octets() {

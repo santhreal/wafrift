@@ -139,7 +139,7 @@ fn scan_help_documents_graphql_flag() {
     );
 }
 
-/// Test 2: Auto-detection — when a target has `/graphql` that returns GraphQL
+/// Test 2: Auto-detection, when a target has `/graphql` that returns GraphQL
 /// responses, the scan must find it and fire GraphQL payloads.
 #[test]
 fn auto_detection_fires_graphql_payloads_when_endpoint_found() {
@@ -173,7 +173,7 @@ fn auto_detection_fires_graphql_payloads_when_endpoint_found() {
     ]);
 
     // The scan must have reached the GraphQL detection phase.
-    // Check the request log — the probe body `{"query":"{__typename}"}` must appear.
+    // Check the request log (the probe body `{"query":"{__typename}"}` must appear).
     let received = rt.block_on(async { log.lock().await.clone() });
     let has_typename_probe = received.iter().any(|b| b.contains(r#"__typename"#));
     assert!(
@@ -226,7 +226,7 @@ fn graphql_flag_forces_injection_at_base_url() {
     );
 }
 
-/// Test 4: All three payload classes — alias-flood, introspection, op-name-mismatch —
+/// Test 4: All three payload classes, alias-flood, introspection, op-name-mismatch 
 /// appear in the bodies logged by the mock when `--graphql` is active.
 #[test]
 fn graphql_payload_set_covers_all_three_classes() {
@@ -278,7 +278,7 @@ fn graphql_payload_set_covers_all_three_classes() {
 /// `application/graphql` is recognised as a GraphQL request.
 #[test]
 fn strategy_content_type_routing_application_graphql() {
-    // This is a pure-logic unit test — no network.
+    // This is a pure-logic unit test (no network).
     use wafrift_strategy::{graphql_payloads_for_request, is_graphql_request};
     use wafrift_types::Request;
 

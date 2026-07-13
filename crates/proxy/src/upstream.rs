@@ -15,7 +15,7 @@
 //! depend on: SSRF-safe DNS resolver (custom bogon-checking resolver
 //! re-runs the policy at connection time), redirect policy, cookie
 //! jar, proxy pool, MITM cert handling. None of that is part of the
-//! "stealth" goal — JA3 parity only matters for the upstream TLS
+//! "stealth" goal: JA3 parity only matters for the upstream TLS
 //! handshake bytes. So `reqwest` stays as the default; stealth gets
 //! plumbed alongside as an alternative *for the upstream-fetch step
 //! only*, when the practitioner has explicitly opted in.
@@ -92,7 +92,7 @@ pub enum UpstreamClient {
         /// `cursor` below.
         clients: std::sync::Arc<Vec<std::sync::Arc<StealthClient>>>,
         /// Round-robin counter. `AtomicUsize` so `send()` stays `&self`
-        /// — the proxy holds the pool inside an `Arc` and dispatches
+        ///: the proxy holds the pool inside an `Arc` and dispatches
         /// from many concurrent tasks.
         cursor: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     },
@@ -132,7 +132,7 @@ impl UpstreamClient {
     pub fn stealth(_profile: ImpersonateProfile) -> Result<Self, UpstreamError> {
         #[cfg(feature = "tls-impersonate")]
         {
-            // R56 pass-21: was hardcoded 60s — diverged from the canonical
+            // R56 pass-21: was hardcoded 60s, diverged from the canonical
             // `wafrift_types::DEFAULT_REQUEST_TIMEOUT_SECS` (30) used by every
             // other client in this binary. Operators saw different timeout
             // behaviour depending on whether the request went through
@@ -190,14 +190,14 @@ impl UpstreamClient {
 
     /// Send a request and read the response (with body bounded by
     /// `max_body`). Method/URL/headers/body shape mirrors what
-    /// `forward_wafrift_request` already builds — the migration is just
+    /// `forward_wafrift_request` already builds, the migration is just
     /// "stop calling `client.request(method, url).send()` directly,
     /// call this instead".
     ///
     /// # Body bounding
     ///
     /// Bodies are truncated at `max_body` bytes (no error, the
-    /// truncated content is still useful for WAF-block detection —
+    /// truncated content is still useful for WAF-block detection 
     /// matches `forward_wafrift_request`'s existing semantics).
     pub async fn send(
         &self,
@@ -229,7 +229,7 @@ impl UpstreamClient {
                 let headers = resp.headers().clone();
                 // Bound body read.
                 // Previously the loop silently truncated at max_body bytes and
-                // returned Ok(truncated_body) — UpstreamError::BodyTooLarge was
+                // returned Ok(truncated_body). UpstreamError::BodyTooLarge was
                 // defined but never emitted, making it impossible for callers to
                 // distinguish a complete response from a truncated one. A WAF
                 // block that happens to produce a large body would be silently
@@ -443,7 +443,7 @@ mod tests {
         assert_eq!(
             buf_len + chunk_len,
             cap,
-            "buf+chunk exactly equals cap — must not trigger BodyTooLarge"
+            "buf+chunk exactly equals cap, must not trigger BodyTooLarge"
         );
         // Would trigger:
         let over = buf_len + chunk_len + 1;
@@ -499,7 +499,7 @@ mod tests {
         // got > cap is the trigger. This test verifies the condition semantics.
         let cap = 1024usize;
         let at_cap = UpstreamError::BodyTooLarge { got: cap, cap };
-        // Just to exercise the Display — must not panic.
+        // Just to exercise the Display (must not panic).
         let _ = at_cap.to_string();
     }
 

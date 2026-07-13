@@ -75,7 +75,7 @@ impl ResponseOracle {
         // blocks … even when the status is 200"), must count toward the block
         // signal even on an allowed status. Plain `header:<vendor>` markers are
         // mere vendor-ID (every Cloudflare 200 carries cf-ray) and must NOT be
-        // treated as a block — so we key strictly on the waf_block_header prefix.
+        // treated as a block (so we key strictly on the waf_block_header prefix).
         let has_header_block = header_signals
             .iter()
             .any(|s| matches!(s, Signal::BodyMarker(m) if m.starts_with("waf_block_header:")));
@@ -167,7 +167,7 @@ impl ResponseOracle {
             .iter()
             .any(|s| matches!(s, Signal::BodyMarker(m) if m.contains("rate-limit")));
         // A block can be signalled by the body OR by an explicit waf_block_header
-        // (the latter holds even on a 200 status — see has_header_block above).
+        // (the latter holds even on a 200 status (see has_header_block above)).
         let has_block_marker = has_header_block
             || body_signals
                 .iter()
@@ -222,7 +222,7 @@ impl ResponseOracle {
             ));
         }
 
-        // ChallengeRequired regardless of status — pre-fix this was
+        // ChallengeRequired regardless of status, pre-fix this was
         // gated on `ctx.status == 503`, which missed Cloudflare
         // challenges served on 403, Akamai _abck challenges on
         // 200/403, and AWS WAF Challenge action on 202/401. The
@@ -403,7 +403,7 @@ mod tests {
     /// "successfully" (e.g. "successfully blocked") must classify as Blocked,
     /// NOT Ambiguous. Pre-fix the loose "success" success-marker matched the
     /// substring and the status-blocked-vs-success conflict rule produced a
-    /// false Ambiguous — derailing the evade loop's verdict.
+    /// false Ambiguous (derailing the evade loop's verdict).
     #[test]
     fn block_page_saying_successfully_blocked_is_blocked_not_ambiguous() {
         let oracle = ResponseOracle::new();
@@ -434,7 +434,7 @@ mod tests {
         );
     }
 
-    /// §6: a benign 200 with a "press F5 to refresh" hint must stay Allowed —
+    /// §6: a benign 200 with a "press F5 to refresh" hint must stay Allowed 
     /// the old bare "f5" block marker matched the refresh-key text and forced
     /// a false Ambiguous via the allowed-vs-block conflict rule.
     #[test]
@@ -473,7 +473,7 @@ mod tests {
     /// §5 false-NEGATIVE fix: signal_headers + block_headers.toml document that
     /// a waf-block HEADER is a block signal "even with 200 status", but classify()
     /// previously scanned only body_signals for the block-conflict, so a 200 +
-    /// `x-amzn-waf-action: block` was reported a clean Allowed — a PHANTOM BYPASS
+    /// `x-amzn-waf-action: block` was reported a clean Allowed, a PHANTOM BYPASS
     /// (the worst error for an evasion tool: the WAF blocked, the tool says it got
     /// through). The explicit waf_block_header must now surface the conflict.
     #[test]
@@ -493,7 +493,7 @@ mod tests {
     }
 
     /// Guard the other side (no over-firing): a plain vendor-ID header (cf-ray on
-    /// a normal 200) must NOT be treated as a block — every Cloudflare-fronted 200
+    /// a normal 200) must NOT be treated as a block, every Cloudflare-fronted 200
     /// carries cf-ray, so counting it would flag the entire internet as blocked.
     #[test]
     fn vendor_id_header_on_200_stays_allowed() {

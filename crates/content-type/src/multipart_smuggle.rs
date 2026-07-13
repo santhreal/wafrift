@@ -4,7 +4,7 @@
 //! parsers MUST discard: the **preamble** (everything before the first
 //! `--<boundary>` delimiter line) and the **epilogue** (everything
 //! after the closing `--<boundary>--` line). The standard frames them
-//! as "to be ignored" — and that "to be ignored" is exactly the seam
+//! as "to be ignored", and that "to be ignored" is exactly the seam
 //! WAFs and application servers disagree on.
 //!
 //! Two parser-divergence families emerge:
@@ -58,7 +58,7 @@
 //! # Safety
 //!
 //! Every variant is a **probe**, not an exploit. The smuggled content
-//! is the operator's own param set re-formatted — these shapes do not
+//! is the operator's own param set re-formatted, these shapes do not
 //! create payloads, they only re-frame what the caller already passed
 //! in. The probe value comes from observing the WAF/origin divergence,
 //! not from any payload smuggling beyond what the caller authorised.
@@ -72,7 +72,7 @@ use rand::Rng;
 /// parts (e.g. the second envelope of a partial-close-reopen probe,
 /// the outer wrapper of a nested envelope). The originals
 /// `_wafrift_smuggle_part` and `_wafrift_outer` were trivial
-/// signature fingerprints — a WAF rule keyed on
+/// signature fingerprints, a WAF rule keyed on
 /// `name="_wafrift_*"` would block every multipart smuggle wafrift
 /// emits. These names mimic real form-field names found in the wild:
 /// CSRF tokens, file inputs, hidden state fields.
@@ -94,7 +94,7 @@ fn random_field_name() -> String {
 }
 
 fn random_field_value() -> String {
-    // 16-hex-char correlation token — looks like a CSRF/session
+    // 16-hex-char correlation token, looks like a CSRF/session
     // value to a casual observer; opaque to WAF rules; useful to
     // operators correlating probe responses without leaking
     // wafrift's brand.
@@ -120,7 +120,7 @@ pub(crate) const MAX_SMUGGLE_REGION_BYTES: usize = 4 * 1024;
 /// LDAPi, etc.) can substitute the relevant fingerprint without
 /// duplicating the rest of the smuggle pipeline.
 ///
-/// Empty regions are valid — passing `b""` produces a structural
+/// Empty regions are valid, passing `b""` produces a structural
 /// probe with no signature payload, useful for measuring the
 /// pure framing-divergence signal independently of any signature.
 #[derive(Debug, Clone)]
@@ -203,7 +203,7 @@ pub fn generate_smuggle_variants(params: &[(String, String)]) -> Vec<ContentType
 
 /// Body-level version of [`generate_smuggle_variants`] that takes a
 /// caller-supplied [`SmuggleProbeConfig`]. Use this when surveying a
-/// specific WAF rule class (CMDi, SSTI, LDAPi) — substitute the
+/// specific WAF rule class (CMDi, SSTI, LDAPi), substitute the
 /// appropriate signature bytes for `preamble_signature` /
 /// `epilogue_signature` and the rest of the smuggle pipeline (partial
 /// close, nested envelope, LF-only delimiters, empty boundary) runs
@@ -227,7 +227,7 @@ pub fn generate_smuggle_variants_with_config(
             content_type: format!("multipart/form-data; boundary={boundary}"),
             body,
             technique: ContentTypeTechnique::MultipartPreambleSmuggle,
-            description: "Preamble before first boundary — WAF flat-scans, origin discards".into(),
+            description: "Preamble before first boundary. WAF flat-scans, origin discards".into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
     }
@@ -246,12 +246,12 @@ pub fn generate_smuggle_variants_with_config(
             body,
             technique: ContentTypeTechnique::MultipartEpilogueSmuggle,
             description:
-                "Epilogue after closing boundary — RFC says discard; lenient parsers don't".into(),
+                "Epilogue after closing boundary: RFC says discard; lenient parsers don't".into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
     }
 
-    // 3. Partial close — terminate the first envelope with the
+    // 3. Partial close, terminate the first envelope with the
     //    `--<boundary>--` closer, then immediately open a SECOND copy
     //    of the same boundary as if there were more parts. RFC says
     //    everything past `--boundary--` is epilogue and discarded; a
@@ -276,7 +276,7 @@ pub fn generate_smuggle_variants_with_config(
             body,
             technique: ContentTypeTechnique::MultipartPartialCloseReopen,
             description:
-                "Closing boundary then reopened envelope — re-entrant parsers see two messages"
+                "Closing boundary then reopened envelope, re-entrant parsers see two messages"
                     .into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
@@ -319,7 +319,7 @@ pub fn generate_smuggle_variants_with_config(
             body,
             technique: ContentTypeTechnique::MultipartNestedEnvelope,
             description:
-                "Nested multipart inside a part — non-recursive WAFs miss the inner envelope"
+                "Nested multipart inside a part, non-recursive WAFs miss the inner envelope"
                     .into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
@@ -334,12 +334,12 @@ pub fn generate_smuggle_variants_with_config(
         let boundary = unique_boundary(&value_refs);
         let mut body = String::new();
         for (key, value) in params {
-            // Bare LF separators throughout the part — not just at the
+            // Bare LF separators throughout the part, not just at the
             // delimiter line. Route key/value through the SAME canonical
             // sanitisers the CRLF builder uses (§7 dedup): the name strip
             // removes CR/LF *and* backslash-escapes `\`/`"` per RFC 7578
             // §4.2 so a key containing a quote can't terminate the
-            // `name="..."` value early and forge the part header — the
+            // `name="..."` value early and forge the part header, the
             // earlier hand-rolled `replace(['\r','\n'], "")` here missed
             // the quote-escape the shared builder already performs. The
             // value sanitiser strips CR/LF only (body section is
@@ -358,7 +358,7 @@ pub fn generate_smuggle_variants_with_config(
             content_type: format!("multipart/form-data; boundary={boundary}"),
             body: body.into_bytes(),
             technique: ContentTypeTechnique::MultipartLfOnlyDelimiters,
-            description: "LF-only delimiters — non-CRLF framing splits WAF vs Unix-tolerant origin"
+            description: "LF-only delimiters, non-CRLF framing splits WAF vs Unix-tolerant origin"
                 .into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
@@ -368,7 +368,7 @@ pub fn generate_smuggle_variants_with_config(
     //    some parsers accept the empty string and fall back to a
     //    parser-internal default; others reject the whole header. The
     //    probe carries a *real* boundary in the body and the empty one
-    //    in the Content-Type header — the WAF takes the empty default,
+    //    in the Content-Type header, the WAF takes the empty default,
     //    sees no parts, lets the request through. Origin sees the
     //    intended frame because it auto-detected the real boundary.
     {
@@ -378,7 +378,7 @@ pub fn generate_smuggle_variants_with_config(
             content_type: "multipart/form-data; boundary=".into(),
             body,
             technique: ContentTypeTechnique::MultipartEmptyBoundaryParam,
-            description: "Empty boundary parameter — WAF fails parse, lenient origin auto-detects"
+            description: "Empty boundary parameter: WAF fails parse, lenient origin auto-detects"
                 .into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
@@ -401,7 +401,7 @@ mod tests {
 
     #[test]
     fn generate_emits_six_distinct_variants() {
-        // §12 TESTING — pin the variant count so any silent re-tuning
+        // §12 TESTING, pin the variant count so any silent re-tuning
         // (a technique removed during refactor) breaks the build.
         // Anti-rig: if someone "shrinks" the set without updating this
         // assertion, the test surfaces the change immediately.
@@ -509,7 +509,7 @@ mod tests {
         // the framing leaked CRLF and the divergence probe is muted.
         assert!(
             !lf.body.contains(&b'\r'),
-            "LF-only variant must contain zero CR bytes — found in framing"
+            "LF-only variant must contain zero CR bytes, found in framing"
         );
     }
 
@@ -540,7 +540,7 @@ mod tests {
 
     #[test]
     fn empty_param_list_does_not_panic() {
-        // Boundary: empty input. RFC §12 — every behaviour gets a test.
+        // Boundary: empty input. RFC §12 (every behaviour gets a test).
         let v = generate_smuggle_variants(&[]);
         assert_eq!(
             v.len(),
@@ -578,7 +578,7 @@ mod tests {
     #[test]
     fn build_with_regions_zero_regions_produces_pure_multipart() {
         // The wrapper must reduce to plain build_multipart_body when
-        // both regions are empty — otherwise downstream callers that
+        // both regions are empty, otherwise downstream callers that
         // share a code path with the plain builder see surprise bytes.
         let core = build_multipart_body(&sample_params(), "x");
         let wrapped = build_with_regions(&sample_params(), "x", b"", b"");
@@ -643,7 +643,7 @@ mod tests {
             .find(|x| x.technique == ContentTypeTechnique::MultipartPreambleSmuggle)
             .unwrap();
         // With empty signature, the preamble variant reduces to a
-        // plain multipart body — no `<script>`, no `union select`.
+        // plain multipart body (no `<script>`, no `union select`).
         assert!(!preamble.body.windows(8).any(|w| w == b"<script>"));
     }
 
@@ -708,7 +708,7 @@ mod tests {
 
     #[test]
     fn default_config_matches_documented_signature_constants() {
-        // §10 COHERENCE — the published `DEFAULT_PREAMBLE_SIGNATURE`
+        // §10 COHERENCE, the published `DEFAULT_PREAMBLE_SIGNATURE`
         // and `DEFAULT_EPILOGUE_SIGNATURE` constants ARE what
         // `SmuggleProbeConfig::default()` emits. A regression that
         // forgets to keep them in sync would silently fork the
@@ -771,7 +771,7 @@ mod tests {
 
     #[test]
     fn generate_all_variants_preserves_full_cardinality() {
-        // Interleaving must not lose variants — the union of the two
+        // Interleaving must not lose variants, the union of the two
         // sets must equal the count of generate_all_variants. Anti-rig
         // for any future "dedup by technique" that silently drops one.
         let primary_len = crate::generate_variants(&sample_params()).len();
@@ -797,7 +797,7 @@ mod tests {
         let v = generate_smuggle_variants(&params);
         for variant in &v {
             // Extract every boundary= occurrence from the CT header
-            // (there may be one or zero — empty-boundary-param variant
+            // (there may be one or zero, empty-boundary-param variant
             // has the empty form).
             for token in variant.content_type.split(';') {
                 let token = token.trim();
@@ -869,7 +869,7 @@ mod tests {
 
     #[test]
     fn concurrent_generation_no_panics_and_distinct_bodies() {
-        // §12 TESTING — concurrent: 50 threads each call
+        // §12 TESTING, concurrent: 50 threads each call
         // generate_smuggle_variants independently; all must succeed and
         // no two preamble-variant bodies must be identical (the
         // per-call boundary RNG guarantees this property).
@@ -897,7 +897,7 @@ mod tests {
         for t in threads {
             t.join().expect("thread panicked");
         }
-        // Each call uses unique_boundary() — all 50 bodies must differ
+        // Each call uses unique_boundary(), all 50 bodies must differ
         // because the boundary is part of the body content.
         assert_eq!(
             bodies.lock().unwrap().len(),
@@ -919,7 +919,7 @@ mod tests {
             .iter()
             .find(|x| x.technique == ContentTypeTechnique::MultipartPreambleSmuggle)
             .unwrap();
-        // Preamble is empty — no script tag
+        // Preamble is empty, no script tag
         assert!(!pre.body.windows(8).any(|w| w == b"<script>"));
         // Epilogue must still carry its default signature
         let epi = v
@@ -971,7 +971,7 @@ mod tests {
 
     #[test]
     fn nested_envelope_inner_boundary_present_even_with_empty_params() {
-        // Boundary: empty params — the nested variant must still produce
+        // Boundary: empty params, the nested variant must still produce
         // a structurally valid outer/inner frame. The fallback path in the
         // from_utf8 fix must not silently drop the inner part.
         let v = generate_smuggle_variants(&[]);
@@ -999,7 +999,7 @@ mod tests {
         // CRLF injection: param values containing CR or LF must be stripped
         // in the LF-only delimiter variant so the intentional bare-LF
         // framing isn't polluted by stray newlines from attacker-supplied data.
-        // The sanitisation removes CR and LF chars from values — it does NOT
+        // The sanitisation removes CR and LF chars from values, it does NOT
         // blank non-CRLF characters. What must not survive is a header-injection
         // sequence: the CRLF prefix needed to inject an extra header line.
         let params = vec![("k".to_string(), "val\r\nevil_header: injected".to_string())];

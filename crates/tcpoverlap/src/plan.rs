@@ -3,7 +3,7 @@
 //! The payoff: emit a set of overlapping TCP segments that a WAF (under its
 //! reassembly policy) reads as **benign** while the origin (under a *different*
 //! policy) reads as the **attack**. Every plan this module returns is verified by
-//! simulating both policies before it is handed back — a returned plan is, by
+//! simulating both policies before it is handed back, a returned plan is, by
 //! construction, a working differential.
 
 use crate::policy::ReassemblyPolicy;
@@ -41,7 +41,7 @@ pub fn full_overlap(arrives_first: &[u8], arrives_second: &[u8]) -> Vec<Segment>
 /// policy pair that cannot be made to disagree on this input).
 ///
 /// **Sound by construction**: the returned plan is verified by simulating both
-/// policies — `reassemble(plan, waf) == benign` and `reassemble(plan, origin) ==
+/// policies: `reassemble(plan, waf) == benign` and `reassemble(plan, origin) ==
 /// attack` both hold, or `None` is returned. It never claims an unverified
 /// differential.
 #[must_use]
@@ -51,7 +51,7 @@ pub fn differential_plan(
     waf_policy: ReassemblyPolicy,
     origin_policy: ReassemblyPolicy,
 ) -> Option<DifferentialPlan> {
-    // Identical views are not a differential — there is nothing to hide, and a
+    // Identical views are not a differential, there is nothing to hide, and a
     // "split" would be vacuous (both sides read the same bytes).
     if benign == attack {
         return None;
@@ -177,7 +177,7 @@ mod tests {
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(2000))]
 
-        /// Any differential plan this module returns ACTUALLY splits — re-simulate
+        /// Any differential plan this module returns ACTUALLY splits, re-simulate
         /// both policies and confirm. The soundness contract, over random inputs.
         #[test]
         fn prop_returned_plans_are_genuine_differentials(

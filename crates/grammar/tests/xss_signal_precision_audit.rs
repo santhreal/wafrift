@@ -1,8 +1,8 @@
 //! Regression coverage for the 2026-05-10 swarm-audit HIGH:
 //!   `xss::mutate` had a `has_xss_signals` gate that fired on benign
-//!   substrings — `confirm(...)` in API docs, `window.onerror` in
+//!   substrings: `confirm(...)` in API docs, `window.onerror` in
 //!   security write-ups, `<select>` HTML dropdowns. The mutator then
-//!   emitted XSS variants from non-XSS input — wasted work the
+//!   emitted XSS variants from non-XSS input, wasted work the
 //!   scanner reported as a real probe.
 //!
 //! Replaced with a 2-point threshold scoring scheme. Bare `confirm(`
@@ -42,7 +42,7 @@ fn does_not_fire_on_window_onerror_in_writeup() {
 fn does_not_fire_on_html_dropdown_select() {
     // `<select>` is a real HTML element, not an XSS payload.
     let out = xss::mutate("<select><option>foo</option></select>", 10);
-    // (select is not in the strong list — no JS context — so this
+    // (select is not in the strong list, no JS context, so this
     // scores 0 and emits nothing.)
     assert!(out.is_empty());
 }

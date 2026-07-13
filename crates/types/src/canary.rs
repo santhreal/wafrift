@@ -5,7 +5,7 @@
 //! here 2026-05-27 so the new content-type / http3-evasion smuggle
 //! modules can carry the same correlation surface without a
 //! cross-crate dependency on `wafrift-smuggling` (which would be a
-//! LAW 8 layering violation — smuggling is a leaf crate, not a
+//! LAW 8 layering violation, smuggling is a leaf crate, not a
 //! workspace primitive).
 //!
 //! ## What a Canary is for
@@ -17,7 +17,7 @@
 //!
 //! - **High-entropy** (128 bits is more than enough)
 //! - **URL-safe + header-safe** (alphanumeric only, no escape worries)
-//! - **Caller-opaque** (no brand, no semantic structure — anything
+//! - **Caller-opaque** (no brand, no semantic structure, anything
 //!   structured would be a fingerprint surface)
 //!
 //! The 16-character base62 token below satisfies all three.
@@ -30,7 +30,7 @@ use crate::pick::pick_from_rng;
 /// produced it.
 ///
 /// The token is opaque to WAFs (no brand) and high-entropy (≈ 95
-/// bits drawn from the 62-symbol alphabet) — high enough that no
+/// bits drawn from the 62-symbol alphabet), high enough that no
 /// two probes in any plausible scan campaign collide.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Canary {
@@ -97,7 +97,7 @@ mod tests {
         }
         assert!(
             seen.len() >= 999,
-            "1000 canaries collapsed to {} unique — RNG seeded constant?",
+            "1000 canaries collapsed to {} unique: RNG seeded constant?",
             seen.len()
         );
     }

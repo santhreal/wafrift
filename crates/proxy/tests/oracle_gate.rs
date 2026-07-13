@@ -17,7 +17,7 @@ fn oracle() -> ResponseOracle {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// True bypasses — oracle must NOT classify these as blocks
+// True bypasses, oracle must NOT classify these as blocks
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
@@ -62,7 +62,7 @@ fn oracle_allows_200_with_empty_body() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 200-cosplay blocks — oracle must flag these
+// 200-cosplay blocks, oracle must flag these
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
@@ -150,7 +150,7 @@ fn oracle_classifies_429_as_rate_limited() {
 fn oracle_gate_predicate_covers_all_soft_block_classes() {
     let o = oracle();
 
-    // 200 + block body → Ambiguous or Blocked — gate triggers.
+    // 200 + block body → Ambiguous or Blocked (gate triggers).
     let v = o.classify(&ResponseContext {
         status: 200,
         body: b"access denied".to_vec(),
@@ -162,7 +162,7 @@ fn oracle_gate_predicate_covers_all_soft_block_classes() {
         "200 + block body: gate must trigger (is_blocked||is_challenge||is_ambiguous), got: {v:?}"
     );
 
-    // Clean 200 → Allowed — gate must NOT trigger.
+    // Clean 200 → Allowed (gate must NOT trigger).
     let v_clean = o.classify(&ResponseContext {
         status: 200,
         body: b"success".to_vec(),
@@ -222,7 +222,7 @@ fn oracle_gate_skips_non_2xx_status() {
         // The oracle classifies these as blocked (which is correct), but in
         // the proxy, the profile classifier already handles them. We verify
         // the oracle would produce a valid (non-panicking) verdict for any
-        // status code — this is the "does not crash on attacker input" test.
+        // status code (this is the "does not crash on attacker input" test).
         // Any valid Verdict variant is acceptable.
         let is_valid = v.is_blocked()
             || v.is_challenge()

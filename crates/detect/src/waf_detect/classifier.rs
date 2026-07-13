@@ -26,7 +26,7 @@ impl fmt::Display for DetectedWaf {
 /// body-regex signatures.
 ///
 /// WAF block pages, EULA-style "powered by" footers, and CDN
-/// branding strings often live well past the first kilobyte —
+/// branding strings often live well past the first kilobyte 
 /// Imperva's `imperva_incident_id` line was the most-cited
 /// historical miss when this cap was 4 KiB.  The bench corpus's
 /// largest interesting body is ~24 KiB; 64 KiB matches the cap

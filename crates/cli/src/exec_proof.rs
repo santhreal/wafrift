@@ -1,6 +1,6 @@
 //! Out-of-process execution proof via the `detonate` CLI.
 //!
-//! Elevates a reflected WAF-bypass to a **proven exploit** — confirming the
+//! Elevates a reflected WAF-bypass to a **proven exploit**: confirming the
 //! injected payload's JavaScript actually executes (`alert(1)` fires), not
 //! merely that the bytes reflected. The classic gap behind "a payload can pass
 //! the WAF and echo back yet never reach an executable context."
@@ -8,7 +8,7 @@
 //! Runs the `detonate` tool as a subprocess so the heavy jsdet / wasmtime
 //! sandbox never links into the wafrift binary (and the two trees' wasmtime
 //! versions can't collide). Best-effort by design: when the tool is absent or
-//! errors, execution proof is skipped — never fatal.
+//! errors, execution proof is skipped (never fatal).
 
 use std::ffi::OsStr;
 use std::io::Write;
@@ -25,7 +25,7 @@ pub(crate) struct ExecutionProof {
     /// Which sink fired, if any.
     #[serde(default)]
     pub sink: Option<String>,
-    /// The argument the sink was called with — `"1"` for `alert(1)`.
+    /// The argument the sink was called with: `"1"` for `alert(1)`.
     #[serde(default)]
     pub message: Option<String>,
 }
@@ -36,13 +36,13 @@ fn detonate_bin() -> std::ffi::OsString {
 }
 
 /// The detonation engine wafrift requests of the `detonate` subprocess for this
-/// run — `jsdet` (default) or `chrome` (real browser; also catches mutation-XSS
+/// run: `jsdet` (default) or `chrome` (real browser; also catches mutation-XSS
 /// and browser-only handlers). Sourced from the global `--detonate-engine` flag.
 fn detonate_engine() -> &'static str {
     crate::config::detonate_engine()
 }
 
-/// Whether a `detonate` binary is invokable — a cheap `--help` probe. Used to
+/// Whether a `detonate` binary is invokable, a cheap `--help` probe. Used to
 /// warn ONCE when `--prove-execution` is requested but the tool is missing,
 /// rather than silently producing no proofs.
 #[must_use]
@@ -62,13 +62,13 @@ fn available_with(bin: &OsStr) -> bool {
 
 /// Prove whether `body` (an HTML response served from `url`) executes injected
 /// JavaScript. Returns `None` when the detonate tool is unavailable or errored
-/// — callers degrade gracefully (no proof attached, not a failure).
+///: callers degrade gracefully (no proof attached, not a failure).
 #[must_use]
 pub(crate) fn prove_execution(body: &str, url: &str) -> Option<ExecutionProof> {
     prove_execution_with(&detonate_bin(), body, url)
 }
 
-/// Inner form parameterized by the binary path — keeps the public API thin and
+/// Inner form parameterized by the binary path, keeps the public API thin and
 /// lets tests exercise the missing-binary degradation without mutating the
 /// process environment.
 fn prove_execution_with(bin: &OsStr, body: &str, url: &str) -> Option<ExecutionProof> {
@@ -90,7 +90,7 @@ fn prove_execution_with(bin: &OsStr, body: &str, url: &str) -> Option<ExecutionP
 /// Fetch the self-validated execution-PRESERVING XSS vectors from the detonate
 /// tool (`detonate vectors --marker <marker>`, one per line). These are forms
 /// proven (by detonate's own tests) to bypass-and-EXECUTE, unlike generic
-/// evasion that often reflects inert. Empty when the tool is absent — the
+/// evasion that often reflects inert. Empty when the tool is absent, the
 /// caller falls back to its built-in templates.
 #[must_use]
 pub(crate) fn exec_preserving_vectors(marker: &str) -> Vec<String> {
@@ -109,8 +109,8 @@ pub(crate) fn mutation_vectors(marker: &str) -> Vec<String> {
 
 /// Fetch the **context-breakout** catalog from the detonate tool
 /// (`detonate vectors --breakout --marker <marker>`). These escape the non-body
-/// reflection contexts a real app exposes — quoted attribute, JS string literal,
-/// `javascript:` URI — including JS-level alert obfuscation that carries no
+/// reflection contexts a real app exposes, quoted attribute, JS string literal,
+/// `javascript:` URI, including JS-level alert obfuscation that carries no
 /// literal `alert(` for a signature WAF. Unlike body/markup breakouts (which CRS
 /// reflects inert), these EXECUTE once they bypass into their context. Empty when
 /// the tool is absent.
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn missing_binary_degrades_to_none() {
-        // A definitely-absent binary must yield None / false, never panic —
+        // A definitely-absent binary must yield None / false, never panic 
         // no env mutation needed (the _with form takes the path directly).
         let bogus = OsStr::new("/nonexistent/detonate-xyz-should-not-exist");
         assert!(prove_execution_with(bogus, "<script>alert(1)</script>", "https://x/").is_none());
@@ -178,7 +178,7 @@ mod tests {
 
     #[test]
     fn deserialize_missing_optional_fields_default_to_none() {
-        // sink/message are `#[serde(default)]` — absent ⇒ None, not an error.
+        // sink/message are `#[serde(default)]`: absent ⇒ None, not an error.
         let j = r#"{"executed":true}"#;
         let p: ExecutionProof = serde_json::from_str(j).unwrap();
         assert!(p.executed);
@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn deserialize_partial_sink_present_message_absent() {
-        // Only one optional field present — the other still defaults None.
+        // Only one optional field present (the other still defaults None).
         let j = r#"{"executed":true,"sink":"confirm"}"#;
         let p: ExecutionProof = serde_json::from_str(j).unwrap();
         assert!(p.executed);
@@ -219,7 +219,7 @@ mod tests {
     #[test]
     fn deserialize_malformed_json_is_error() {
         // Truncated / syntactically-broken JSON must fail to parse, never
-        // panic — the call layer turns the Err into None via `.ok()`.
+        // panic (the call layer turns the Err into None via `.ok()`).
         assert!(serde_json::from_str::<ExecutionProof>(r#"{"executed":tru"#).is_err());
         assert!(serde_json::from_str::<ExecutionProof>("{not json").is_err());
     }
@@ -234,7 +234,7 @@ mod tests {
     #[test]
     fn deserialize_non_object_json_is_error() {
         // A bare array / string / number is valid JSON but not an
-        // ExecutionProof — must be rejected at the type boundary.
+        // ExecutionProof (must be rejected at the type boundary).
         assert!(serde_json::from_str::<ExecutionProof>("[]").is_err());
         assert!(serde_json::from_str::<ExecutionProof>(r#""executed""#).is_err());
         assert!(serde_json::from_str::<ExecutionProof>("42").is_err());
@@ -244,15 +244,15 @@ mod tests {
 
     #[test]
     fn deserialize_wrong_field_type_is_error() {
-        // `executed` is a bool — a string there must NOT coerce silently.
+        // `executed` is a bool (a string there must NOT coerce silently).
         assert!(serde_json::from_str::<ExecutionProof>(r#"{"executed":"yes"}"#).is_err());
-        // sink is Option<String> — a number is the wrong type.
+        // sink is Option<String> (a number is the wrong type).
         assert!(serde_json::from_str::<ExecutionProof>(r#"{"executed":true,"sink":3}"#).is_err());
     }
 
     #[test]
     fn deserialize_missing_required_executed_is_error() {
-        // `executed` has no default — an object lacking it cannot parse.
+        // `executed` has no default (an object lacking it cannot parse).
         assert!(serde_json::from_str::<ExecutionProof>(r#"{"sink":"alert"}"#).is_err());
         assert!(serde_json::from_str::<ExecutionProof>("{}").is_err());
     }
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn prove_execution_with_non_json_stdout_is_none() {
         // A binary that prints plain (non-JSON) text to stdout: parse fails ⇒
-        // None. `echo` writes its args then exits 0 — its output is not JSON.
+        // None. `echo` writes its args then exits 0 (its output is not JSON).
         if available_with(OsStr::new("echo")) {
             let r = prove_execution_with(OsStr::new("echo"), "body", "https://x/");
             assert!(r.is_none(), "non-JSON stdout must yield None, got {r:?}");

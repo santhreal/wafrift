@@ -1,7 +1,7 @@
 //! Regression coverage for the 2026-05-10 swarm-audit findings on
 //! transport/challenge.rs:
 //!   HIGH: `AwsWaf.is_cookie_solvable()` was false but `extract_clearance`
-//!     stored aws-waf-token cookies — the captured cookie was never
+//!     stored aws-waf-token cookies, the captured cookie was never
 //!     replayed.
 //!   HIGH: Akamai/AWS server-header alone (no body keyword) classified
 //!     every CDN-served 200 as a challenge, parking dispatch in Wait.
@@ -54,7 +54,7 @@ fn aws_server_header_alone_does_not_classify_as_challenge() {
 
 #[test]
 fn akamai_with_body_marker_still_classifies() {
-    // Negative twin — the precision fix must not regress recall.
+    // Negative twin (the precision fix must not regress recall).
     let headers = vec![("Server".to_string(), "AkamaiGHost".to_string())];
     let kind = classify_with_status(b"<html>_abck challenge here</html>", &headers, 403);
     assert_eq!(kind, ChallengeKind::AkamaiBmp);
@@ -76,7 +76,7 @@ fn cookie_domain_with_port_is_rejected() {
     let (_, _, scope) = res.expect("cookie with port-in-Domain still parses but Domain is dropped");
     assert!(
         scope.domain.is_none(),
-        "Domain with port must be rejected — pre-fix it was silently kept as evil.com:8080 \
+        "Domain with port must be rejected, pre-fix it was silently kept as evil.com:8080 \
          which then matched bare evil.com (domain-confusion bypass)"
     );
 }
@@ -111,7 +111,7 @@ fn get_purges_expired_entry_inline() {
     std::thread::sleep(Duration::from_millis(80));
     // First get returns None (expired) AND should remove the entry.
     assert!(store.get("victim.example.com").is_none());
-    // Second get must still return None — and the inner table should
+    // Second get must still return None, and the inner table should
     // not still hold the entry. We can't peek directly, but a fresh
     // record afterwards must still work.
     store.record_scoped(

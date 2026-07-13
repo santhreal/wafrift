@@ -1,4 +1,4 @@
-//! Integration tests for #129 — ML-WAF routing through `evade_ml`.
+//! Integration tests for #129: ML-WAF routing through `evade_ml`.
 //!
 //! Covers: AwsBotControl routes through evade_ml, PlainModSec does not,
 //! ML evader output preserves payload semantics, backwards-compat
@@ -12,12 +12,12 @@ use wafrift_types::{EvasionConfig, Request, Technique, WafClass};
 #[test]
 fn aws_bot_control_routes_through_ml_evasion() {
     // evade_ml_backed returns Some for ML-backed WAFs (or None if no
-    // manifold-valid mutation found — both are acceptable; must not panic).
+    // manifold-valid mutation found (both are acceptable; must not panic)).
     let req = Request::post("https://example.com/search", b"q=' OR 1=1--".to_vec())
         .header("Content-Type", "application/x-www-form-urlencoded");
 
     // Routing check (not outcome): an ML-backed WAF either yields techniques
-    // (carrying MlEvasion) or none — never panics.
+    // (carrying MlEvasion) or none (never panics).
     let (_mutated, techniques) = apply_ml_evasion_if_applicable(&req, "AWS Bot Control", 64, 1);
 
     if !techniques.is_empty() {
@@ -69,10 +69,10 @@ fn ml_evader_output_preserves_attack_tokens() {
             "ML evader must preserve attack semantics; got body: {body_lower:?}"
         );
     }
-    // Empty techniques means no mutation was found within budget — acceptable.
+    // Empty techniques means no mutation was found within budget (acceptable).
 }
 
-// ── Test 4: Backwards-compat — existing strategy paths untouched ──────────────
+// ── Test 4: Backwards-compat, existing strategy paths untouched ──────────────
 
 #[test]
 fn existing_evade_path_unchanged_for_non_ml_waf() {
@@ -117,7 +117,7 @@ fn ml_evasion_technique_carries_metadata() {
         })
         .expect("result must carry an MlEvasion technique");
 
-    // Contract: the strategy layer is I/O-free, so it queries NO live oracle —
+    // Contract: the strategy layer is I/O-free, so it queries NO live oracle 
     // `queries` is 0 by design (the live queries belong to the scan/bench
     // layer that fires the mutated candidate). Pins the new semantics and
     // guards against a regression to the old fake-oracle query counter.

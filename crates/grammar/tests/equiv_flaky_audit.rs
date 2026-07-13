@@ -12,7 +12,7 @@
 use proptest::prelude::*;
 use wafrift_grammar::grammar::equiv::{self, EquivConfig};
 // `equiv::xss` holds the soundness oracle; the grammar XSS *mutator*
-// (`mutate`, scald's surface) is a different module — keep them
+// (`mutate`, scald's surface) is a different module, keep them
 // distinct or `gxss::mutate` fails to resolve.
 use wafrift_grammar::grammar::equiv::{log4shell, nosql, ssrf, xss as eqxss, xxe};
 use wafrift_grammar::grammar::xss as gxss;
@@ -55,8 +55,8 @@ const CORPUS: &[(&str, &str)] = &[
 
 /// THE flaky-bug detector: a generator must be a pure function of
 /// `(payload, cfg)`. If its output (membership OR order) depends on
-/// `HashSet`/`HashMap` iteration, two threads — which get *different*
-/// `RandomState` seeds — produce different `Vec`s. A single-process
+/// `HashSet`/`HashMap` iteration, two threads, which get *different*
+/// `RandomState` seeds, produce different `Vec`s. A single-process
 /// repeat would hide that; cross-thread exposes it deterministically.
 #[test]
 fn generators_are_pure_not_hashset_order_dependent() {
@@ -77,7 +77,7 @@ fn generators_are_pure_not_hashset_order_dependent() {
         let other = t1.join().expect("generator thread panicked");
         assert_eq!(
             main, other,
-            "{class} generator is NOT deterministic across threads — \
+            "{class} generator is NOT deterministic across threads. \
              output depends on HashSet iteration order (flaky bug)"
         );
         assert!(
@@ -85,7 +85,7 @@ fn generators_are_pure_not_hashset_order_dependent() {
             "{class}: empty for a real attack {payload:?}"
         );
     }
-    // The XSS grammar mutator (scald's surface) — same contract.
+    // The XSS grammar mutator (scald's surface) (same contract).
     for &(class, payload) in CORPUS.iter().filter(|(c, _)| *c == "xss") {
         let _ = class;
         let p = payload.to_string();
@@ -113,12 +113,12 @@ fn generators_are_pure_not_hashset_order_dependent() {
 fn seed_determinism_and_sensitivity() {
     // (1) PER-CLASS: same seed ⇒ byte-identical stream (the property
     //     that actually matters for reproducible bypasses).
-    // (2) GLOBAL: the seed is genuinely wired — at least one corpus
+    // (2) GLOBAL: the seed is genuinely wired, at least one corpus
     //     payload's stream (order or content) changes with the seed.
     //     A per-class `seed1 != seed2` set check is UNSOUND: a small
     //     equivalence class (e.g. ldap `*)(|(uid=*` → ~9 case/OID
     //     forms) is fully exhausted when `max` ≥ |class|, so every
-    //     seed yields the same SET by construction — that is correct
+    //     seed yields the same SET by construction, that is correct
     //     exhaustive behaviour, not an ignored RNG.
     let mut seed_moved_somewhere = false;
     for &(class, payload) in CORPUS {
@@ -141,11 +141,11 @@ fn seed_determinism_and_sensitivity() {
     }
     assert!(
         seed_moved_somewhere,
-        "seed is INERT across the entire corpus — the RNG is ignored"
+        "seed is INERT across the entire corpus, the RNG is ignored"
     );
 }
 
-/// Output is bounded by `cfg.max` for every class — no unbounded
+/// Output is bounded by `cfg.max` for every class, no unbounded
 /// amplification (a proxy-scale DoS otherwise).
 #[test]
 fn output_is_bounded_by_max() {
@@ -158,8 +158,8 @@ fn output_is_bounded_by_max() {
 }
 
 /// CROSS-CLASS DELIVERY SOUNDNESS: adding the raw `HeaderValue`/
-/// `Cookie` shapes to the *shared* `delivery_set` means EVERY class —
-/// not just XSS — could otherwise pair a CR/LF/`;`/space-bearing
+/// `Cookie` shapes to the *shared* `delivery_set` means EVERY class 
+/// not just XSS, could otherwise pair a CR/LF/`;`/space-bearing
 /// payload with a raw channel whose `to_request` strips those bytes,
 /// making `member.payload` differ from what reaches the backend (an
 /// unsound, rigged member). The shared `enforce_transport_legal`
@@ -178,7 +178,7 @@ fn every_emitted_member_is_transport_legal_for_its_delivery() {
                     assert!(
                         m.delivery.transport_legal(&m.payload),
                         "{class}: emitted {} member whose payload {:?} is \
-                         ILLEGAL for that channel — to_request would strip \
+                         ILLEGAL for that channel, to_request would strip \
                          bytes, so the delivered attack ≠ member.payload",
                         m.delivery.label(),
                         m.payload
@@ -207,7 +207,7 @@ proptest! {
     }
 
     /// SOUNDNESS AT SCALE: a member the generator emits must pass that
-    /// class's INDEPENDENT soundness oracle — it never ships a
+    /// class's INDEPENDENT soundness oracle, it never ships a
     /// non-attack (anti-rig), on thousands of seeds/payloads.
     #[test]
     fn every_emitted_member_is_oracle_sound(seed in any::<u64>(), pick in 0usize..12) {

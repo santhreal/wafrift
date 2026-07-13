@@ -52,7 +52,7 @@ fn diversity_in_unit_interval_under_random_population() {
     let d = engine.diversity_score();
     assert!(
         (0.0..=1.0).contains(&d),
-        "diversity must lie in [0, 1] — got {d}"
+        "diversity must lie in [0, 1], got {d}"
     );
 }
 
@@ -60,7 +60,7 @@ fn diversity_in_unit_interval_under_random_population() {
 fn fresh_engine_returns_one_as_safe_default() {
     // No population has been initialised, no in-flight, no gene_stats.
     // Returning 1.0 keeps adaptive_mutation_rate's diversity_factor
-    // at its conservative end (0.7) — we don't want a fresh engine
+    // at its conservative end (0.7), we don't want a fresh engine
     // to over-mutate before it has any signal.
     let engine = engine_with("hill_climbing", 0);
     let d = engine.diversity_score();
@@ -75,7 +75,7 @@ fn identical_population_scores_zero_diversity() {
     let same = mk_chromosome_uniform(&pool, "0");
     inject_population(&mut engine, vec![same.clone(), same.clone(), same]);
     let d = engine.diversity_score();
-    assert_eq!(d, 0.0, "identical population must score 0.0 — got {d}");
+    assert_eq!(d, 0.0, "identical population must score 0.0, got {d}");
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn fully_disjoint_population_scores_one() {
     let b = mk_chromosome_uniform(&pool, "beta");
     inject_population(&mut engine, vec![a, b]);
     let d = engine.diversity_score();
-    assert_eq!(d, 1.0, "fully-disjoint pair must score 1.0 — got {d}");
+    assert_eq!(d, 1.0, "fully-disjoint pair must score 1.0, got {d}");
 }
 
 #[test]
@@ -125,8 +125,8 @@ fn diversity_monotone_in_pairwise_disagreement() {
     let d0 = e0.diversity_score();
     let d1 = e1.diversity_score();
     let d2 = e2.diversity_score();
-    assert!(d0 < d1, "1 disagreement must beat 0 — d0={d0} d1={d1}");
-    assert!(d1 < d2, "3 disagreements must beat 1 — d1={d1} d2={d2}");
+    assert!(d0 < d1, "1 disagreement must beat 0, d0={d0} d1={d1}");
+    assert!(d1 < d2, "3 disagreements must beat 1, d1={d1} d2={d2}");
     assert!(d2 <= 1.0);
 }
 
@@ -158,13 +158,13 @@ fn map_elites_grid_drives_diversity_via_population_snapshot() {
     let d = engine.diversity_score();
     assert!(
         (0.0..=1.0).contains(&d),
-        "map_elites diversity must be valid — got {d}"
+        "map_elites diversity must be valid, got {d}"
     );
 }
 
 #[test]
 fn single_state_algorithm_falls_back_to_safe_default() {
-    // hill_climbing has no real population — only `current` (which
+    // hill_climbing has no real population, only `current` (which
     // it returns as best). After initialise with a single chromosome
     // the snapshot has len == 1 and we hit the gene-stats fallback,
     // which is empty, so the floor is 1.0.
@@ -186,7 +186,7 @@ fn in_flight_chromosomes_lift_diversity_for_single_state_algos() {
     let pool = engine.gene_pool.clone();
     let baseline = baseline_chromosome(&pool);
     inject_population(&mut engine, vec![baseline.clone()]);
-    // Inject distinct in-flight chromosomes — these must be unioned
+    // Inject distinct in-flight chromosomes, these must be unioned
     // into the diversity snapshot.
     let distinct = mk_chromosome_uniform(&pool, "Z");
     engine
@@ -195,7 +195,7 @@ fn in_flight_chromosomes_lift_diversity_for_single_state_algos() {
     let d = engine.diversity_score();
     assert!(
         d > 0.0,
-        "in_flight chromosomes must contribute to diversity — got {d}"
+        "in_flight chromosomes must contribute to diversity, got {d}"
     );
 }
 
@@ -209,7 +209,7 @@ fn gene_stats_diversity_zero_when_only_one_value_per_gene() {
         ("padding".into(), "off".into(), 3, 6),
     ];
     let g = engine.gene_stats_diversity();
-    assert_eq!(g, 0.0, "all genes have a single value tried — entropy 0");
+    assert_eq!(g, 0.0, "all genes have a single value tried, entropy 0");
 }
 
 #[test]

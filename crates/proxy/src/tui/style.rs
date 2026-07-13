@@ -2,7 +2,7 @@
 //!
 //! Pre-extract, every `render_*.rs` file open-coded
 //! `Style::default().fg(Color::DarkGray)` for separators, borders,
-//! placeholders, and the "trailing-space dim label" pattern — 42 sites
+//! placeholders, and the "trailing-space dim label" pattern: 42 sites
 //! across 6 files. A future palette change (e.g. moving the dim
 //! colour from `DarkGray` to a theme-controlled value) would need to
 //! touch each one independently. Lifting the trio (`DIM`, `dim_span`,
@@ -24,7 +24,7 @@ pub fn dim_span<'a>(text: impl Into<std::borrow::Cow<'a, str>>) -> Span<'a> {
     Span::styled(text, DIM)
 }
 
-/// Same as [`dim_span`] but adds a trailing space — used by the
+/// Same as [`dim_span`] but adds a trailing space, used by the
 /// `render_chrome`/`render_flow`/`render_overview` "label · value"
 /// status-bar pattern where the label name is dim and immediately
 /// followed by a space before the value span.

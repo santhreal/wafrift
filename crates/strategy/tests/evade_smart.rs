@@ -1,4 +1,4 @@
-//! Tests for `wafrift_strategy::strategy::evade_smart` — the active-loop
+//! Tests for `wafrift_strategy::strategy::evade_smart`: the active-loop
 //! evade that switches between MCTS and the classic pipeline based on
 //! per-host block telemetry.
 
@@ -12,7 +12,7 @@ fn sample_request() -> Request {
 #[test]
 fn evade_smart_with_zero_blocks_uses_classic_pipeline() {
     // Zero block telemetry -> falls through to classic evade(). The
-    // result should still be an EvasionResult (not None) — classic
+    // result should still be an EvasionResult (not None), classic
     // evade() always returns Some.
     let req = sample_request();
     let state = HostState::default();

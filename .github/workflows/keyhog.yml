@@ -97,7 +97,7 @@ jobs:
           echo "keyhog scan exited with ${{ steps.scan.outputs.scan_exit }}"
           echo "  exit 1 = findings present (see SARIF + Code Scanning)"
           echo "  exit 2 = runtime error (check logs)"
-          # Runtime errors (exit 2+) always fail CI — they indicate the
+          # Runtime errors (exit 2+) always fail CI, they indicate the
           # scanner itself broke, not a finding. Only exit 1 (findings)
           # is gated on the repo opt-in marker.
           if [ "${{ steps.scan.outputs.scan_exit }}" != "1" ]; then

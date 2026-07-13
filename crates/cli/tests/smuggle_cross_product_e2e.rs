@@ -113,7 +113,7 @@ fn cross_product_zero_match_on_either_side_exits_2() {
 
 #[test]
 fn cross_product_cap_zero_means_unlimited_emission() {
-    // cap=0 should emit every composed artifact — pin this so a
+    // cap=0 should emit every composed artifact, pin this so a
     // regression that treats 0 as "emit nothing" surfaces here.
     let (code, stdout, _stderr) = wafrift(&[
         "smuggle-cross-product",

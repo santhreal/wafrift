@@ -1,4 +1,4 @@
-//! WAF calibration — detect whether a target has a WAF at all.
+//! WAF calibration (detect whether a target has a WAF at all).
 //!
 //! One job: send known-bad payloads, observe the response, decide if
 //! evasion is necessary.  If the target has no WAF, evasion is wasted
@@ -22,7 +22,7 @@ pub const CALIBRATION_PAYLOADS: &[&str] = &[
 // to a const assertion so the build breaks instead.
 const _: () = assert!(
     !CALIBRATION_PAYLOADS.is_empty(),
-    "CALIBRATION_PAYLOADS must contain at least one payload — \
+    "CALIBRATION_PAYLOADS must contain at least one payload: \
      calibration_request indexes [0]"
 );
 
@@ -30,17 +30,17 @@ const _: () = assert!(
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum CalibrationResult {
-    /// WAF is present and blocking — use evasion.
+    /// WAF is present and blocking (use evasion).
     WafPresent,
-    /// No WAF detected — skip evasion (faster scanning).
+    /// No WAF detected (skip evasion (faster scanning)).
     NoWaf,
-    /// Uncertain — use evasion as a precaution.
+    /// Uncertain (use evasion as a precaution).
     Uncertain,
 }
 
 /// Generate a calibration request to test if a WAF is present.
 ///
-/// Send this request first — if it goes through unblocked, no WAF
+/// Send this request first, if it goes through unblocked, no WAF
 /// exists and evasion is unnecessary.
 #[must_use]
 pub fn calibration_request(base_url: &str) -> Request {
@@ -51,7 +51,7 @@ pub fn calibration_request(base_url: &str) -> Request {
     ))
 }
 
-/// Analyze a calibration response to determine if WAF is present —
+/// Analyze a calibration response to determine if WAF is present 
 /// **broad, FN-expensive** classifier.
 ///
 /// Used by the one-shot calibration probe to decide "should I turn evasion
@@ -59,14 +59,14 @@ pub fn calibration_request(base_url: &str) -> Request {
 /// a false negative here means wafrift scans a real WAF with evasion OFF
 /// and gets 100% blocked. A false positive only wastes some CPU. So the
 /// indicator list is **deliberately broad** (bare vendor names like
-/// `cloudflare`/`akamai`/`incapsula` ARE wanted) — do **not** apply the
+/// `cloudflare`/`akamai`/`incapsula` ARE wanted), do **not** apply the
 /// 2026-05-10 `transport::is_waf_block` audit here.
 ///
 /// **Do not unify** with the other two classifiers. See the doc comments
 /// on [`crate::Request`]-adjacent siblings:
-/// - `wafrift_transport::response::is_waf_block` — strict post-request
+/// - `wafrift_transport::response::is_waf_block`: strict post-request
 ///   retry-loop classifier (FN-cheap, NO bare vendor names).
-/// - `wafrift_detect::waf_detect::is_blocked_response` — broad learning-
+/// - `wafrift_detect::waf_detect::is_blocked_response`: broad learning-
 ///   phase classifier (TOML-driven, FN-balanced).
 ///
 /// # Decision logic
@@ -82,7 +82,7 @@ pub fn analyze_calibration(status: u16, body: &[u8]) -> CalibrationResult {
         return CalibrationResult::WafPresent;
     }
 
-    // Redirect statuses are ambiguous — they frequently contain WAF-like
+    // Redirect statuses are ambiguous, they frequently contain WAF-like
     // keywords as informational text without actually indicating blocking.
     if matches!(status, 301 | 302 | 307 | 308) {
         return CalibrationResult::Uncertain;
@@ -176,7 +176,7 @@ mod tests {
     /// 403 from the documented `403 | 406 | 429 | 503` block-code arm.
     /// A refactor that accidentally narrowed the match (e.g. dropped
     /// 429 in a "tidy" pass) would silently regress every rate-limited
-    /// target into the `Uncertain` arm — wafrift would stop applying
+    /// target into the `Uncertain` arm, wafrift would stop applying
     /// evasion against the very WAFs that throttle the hardest. This
     /// test pins every code in the arm individually.
     #[test]
@@ -185,13 +185,13 @@ mod tests {
             assert_eq!(
                 analyze_calibration(status, b""),
                 CalibrationResult::WafPresent,
-                "status {status} must be WafPresent — block-code contract violation"
+                "status {status} must be WafPresent, block-code contract violation"
             );
         }
     }
 
     /// Anti-rig boundary pair: 425 (one below 429) and 430 (one above
-    /// 429) must NOT be WafPresent — confirms the match is the exact
+    /// 429) must NOT be WafPresent, confirms the match is the exact
     /// documented set, not a range. Catches a future refactor that
     /// switches to `(403..=503).contains(&status)`.
     #[test]
@@ -199,12 +199,12 @@ mod tests {
         assert_ne!(
             analyze_calibration(425, b""),
             CalibrationResult::WafPresent,
-            "425 must not trigger WafPresent — boundary anti-rig"
+            "425 must not trigger WafPresent, boundary anti-rig"
         );
         assert_ne!(
             analyze_calibration(430, b""),
             CalibrationResult::WafPresent,
-            "430 must not trigger WafPresent — boundary anti-rig"
+            "430 must not trigger WafPresent, boundary anti-rig"
         );
     }
 }

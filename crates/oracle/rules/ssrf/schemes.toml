@@ -1,4 +1,4 @@
-# URL schemes that indicate a network request — used by the SSRF
+# URL schemes that indicate a network request, used by the SSRF
 # oracle to qualify a payload as making an outbound call. New
 # fetcher-supporting schemes get added here without code changes.
 

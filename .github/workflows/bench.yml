@@ -22,7 +22,7 @@ on:
         # per-(WAF × class) coverage on the public scoreboard.
         default: '20'
   schedule:
-    # 02:00 UTC daily — only fires from main branch.
+    # 02:00 UTC daily (only fires from main branch).
     - cron: '0 2 * * *'
 
 jobs:
@@ -89,7 +89,7 @@ jobs:
   # markdown table at docs/SCOREBOARD.md. On the scheduled (nightly)
   # run from `main`, commits the refreshed scoreboard so the public
   # facing dashboard tracks the latest verified numbers. On manual
-  # dispatch the rendered file is uploaded as a build artifact only —
+  # dispatch the rendered file is uploaded as a build artifact only 
   # no commit, no race with maintainer pushes.
   scoreboard:
     name: Scoreboard
@@ -136,7 +136,7 @@ jobs:
           git config user.name "wafrift-bot"
           git config user.email "wafrift-bot@users.noreply.github.com"
           if git diff --quiet docs/SCOREBOARD.md; then
-            echo "scoreboard unchanged — no commit"
+            echo "scoreboard unchanged, no commit"
             exit 0
           fi
           git add docs/SCOREBOARD.md

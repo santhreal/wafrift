@@ -4,7 +4,7 @@
 //!
 //! All tests in this file must run sequentially (intercept state is
 //! process-global). The shared `TEST_INTERCEPT_LOCK` from
-//! `intercept_rendezvous.rs` is the model — we replicate it here so we
+//! `intercept_rendezvous.rs` is the model, we replicate it here so we
 //! don't share static state across files.
 
 use std::sync::OnceLock;
@@ -36,13 +36,13 @@ async fn cancel_removes_sender_and_pending() {
     // before the operator decides.
     drop(rx);
 
-    // The store doesn't know the rx is dead — the proxy must call
+    // The store doesn't know the rx is dead, the proxy must call
     // cancel(id) to clean up. Without this API, sender + pending
     // would remain in the maps forever (audit HIGH #3).
     assert!(store.cancel(id), "cancel must remove the entry");
     assert_eq!(store.snapshot().len(), 0, "after cancel → 0 pending");
 
-    // Idempotent — second cancel returns false but doesn't panic.
+    // Idempotent (second cancel returns false but doesn't panic).
     assert!(!store.cancel(id), "second cancel must be a no-op");
 }
 
@@ -63,7 +63,7 @@ async fn cancel_then_resolve_is_a_no_op() {
 
 #[tokio::test]
 async fn resolve_still_cleans_up_normally() {
-    // Negative twin — the cancel API didn't break the resolve path.
+    // Negative twin (the cancel API didn't break the resolve path).
     let _g = serial().lock().await;
     reset();
 
@@ -91,7 +91,7 @@ async fn concurrent_toggles_do_not_release_under_intercept_on() {
 
     let store = intercept::global_store();
 
-    // Register one intercept and hold its receiver — must NEVER be
+    // Register one intercept and hold its receiver, must NEVER be
     // released while mode is ON.
     intercept::set_intercept_mode(true);
     let (_id, mut rx) = store.register("a.com", "GET", "/sentinel");
@@ -116,7 +116,7 @@ async fn concurrent_toggles_do_not_release_under_intercept_on() {
     let got = (&mut rx).await.expect("sentinel must receive a decision");
     assert_eq!(got, InterceptDecision::Release);
 
-    // After the explicit OFF, the store must be empty — no leftover
+    // After the explicit OFF, the store must be empty, no leftover
     // entries from the toggle race.
     assert_eq!(store.snapshot().len(), 0);
 }
@@ -143,7 +143,7 @@ async fn concurrent_set_mode_does_not_panic_or_double_send() {
     intercept::set_intercept_mode(false);
     // Sentinel must receive exactly one decision (the Release). A
     // second send via oneshot would panic the channel and tx.send
-    // returns Err — so we just assert receive succeeds.
+    // returns Err (so we just assert receive succeeds).
     let got = (&mut rx).await.expect("sentinel must receive");
     assert_eq!(got, InterceptDecision::Release);
 }

@@ -1,5 +1,5 @@
 //! Regression test for the 2026-05-10 audit finding:
-//! "Stagnation termination is completely dead — `evolve()` updates
+//! "Stagnation termination is completely dead: `evolve()` updates
 //!  `self.stagnation_counter`, but `should_terminate()` reads
 //!  `self.stats.stagnation_counter` which is initialized to 0 and never
 //!  written again. `budget.stagnation_limit` is therefore never enforced."
@@ -42,7 +42,7 @@ fn stagnation_counter_is_mirrored_into_stats() {
     );
     assert_eq!(
         engine.stats.stagnation_counter, engine.stagnation_counter,
-        "stats.stagnation_counter must mirror engine.stagnation_counter — \
+        "stats.stagnation_counter must mirror engine.stagnation_counter. \
          without this sync should_terminate() never sees stagnation"
     );
 }

@@ -53,14 +53,14 @@ http = { workspace = true }
 thiserror = { workspace = true }
 # Terminal dashboard (--tui). ratatui + crossterm are workspace deps,
 # already pulled in by wafrift-cli, so we don't add a new transitive
-# tree — just turn them on for the proxy binary.
+# tree: just turn them on for the proxy binary.
 ratatui = { workspace = true }
 crossterm = { workspace = true }
 # Best-effort clipboard for the TUI's curl-yank action; default-features
 # off so headless servers (no X11/wayland) still build. The yank action
 # falls back to writing /tmp/wafrift-yank-N.curl when arboard fails.
 arboard = { workspace = true, optional = true }
-# Optional captchaforge bridge — pulls chromiumoxide. Default builds
+# Optional captchaforge bridge, pulls chromiumoxide. Default builds
 # do NOT include this; opt in with `--features captchaforge`. Without it the
 # flag is rejected at clap-parse time with an actionable hint.
 wafrift-captchaforge-bridge = { workspace = true, optional = true }
@@ -76,7 +76,7 @@ wafrift-oracle = { workspace = true }
 axum = { version = "0.7", default-features = false, features = ["tokio", "http1", "http2"] }
 base64 = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "cookies", "gzip", "brotli", "stream", "json", "system-proxy"] }
-# Dev-only — used by tests/bogon_scanclient_parity.rs to assert
+# Dev-only: used by tests/bogon_scanclient_parity.rs to assert
 # wafrift_types::bogon and scanclient::bogon agree byte-for-byte on
 # every IP they classify. Drift fails CI here.
 scanclient = { workspace = true }

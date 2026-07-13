@@ -1,4 +1,4 @@
-//! FAILURE TESTS — Designed to expose bugs in wafrift-core
+//! FAILURE TESTS: Designed to expose bugs in wafrift-core
 //!
 //! These tests target edge cases, boundary conditions, and logic flaws
 //! that may cause incorrect behavior. Each test documents the expected
@@ -304,7 +304,7 @@ fn content_type_10kb_param_value_is_bounded_not_unbounded() {
 
     // The fix: the value is capped (8 KiB), so the JSON variant body is
     // far below an unbounded JSON-escape of 10 KB (which would be
-    // 10 KB × up-to-6 for \uXXXX ≈ 60 KB). Assert it stayed bounded —
+    // 10 KB × up-to-6 for \uXXXX ≈ 60 KB). Assert it stayed bounded 
     // i.e. the amplification DoS is gone.
     if let Some(jv) = variants
         .iter()
@@ -312,13 +312,13 @@ fn content_type_10kb_param_value_is_bounded_not_unbounded() {
     {
         assert!(
             jv.body.len() < huge_value.len(),
-            "JSON variant body ({}) is NOT bounded below the 10 KB input — \
+            "JSON variant body ({}) is NOT bounded below the 10 KB input. \
              the value cap regressed and the amplification DoS is back",
             jv.body.len()
         );
     }
     // No single variant may exceed a sane absolute ceiling regardless
-    // of input — the actual contract of the fix.
+    // of input (the actual contract of the fix).
     for v in &variants {
         assert!(
             v.body.len() <= 256 * 1024,
@@ -363,7 +363,7 @@ fn content_type_boundary_in_payload() {
         // The boundary appears in:
         // 1. Body (before each part)
         // 2. Body (closing)
-        // 3. INSIDE the payload value itself (the bug — the payload
+        // 3. INSIDE the payload value itself (the bug, the payload
         //    contains the legacy `------WafriftBoundary` literal as
         //    test fixture content, but the actual random boundary
         //    will not match it unless the pool drew Wafrift; either
@@ -506,7 +506,7 @@ fn content_type_param_name_starting_number() {
 /// (not key=value format at all) produces empty variants without warning
 #[test]
 fn content_type_malformed_body_no_params() {
-    // Body with NO equals sign — genuinely not key=value format
+    // Body with NO equals sign, genuinely not key=value format
     let body = b"this is just text with no params at all";
     let variants = generate_variants_from_body(body);
 

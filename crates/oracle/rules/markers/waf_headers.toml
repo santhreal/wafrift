@@ -5,7 +5,7 @@
 # matches" (i.e. presence-only).
 #
 # `description` is what gets emitted as the signal name (e.g. signal
-# `header:cloudflare_ray_id`). Keep it stable across releases — gene-banks
+# `header:cloudflare_ray_id`). Keep it stable across releases, gene-banks
 # reference these strings.
 
 # ── Cloudflare ──

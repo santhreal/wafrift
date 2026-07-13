@@ -1,18 +1,18 @@
 //! HTTP Capsule Protocol (RFC 9297) smuggling primitives.
 //!
 //! Capsules are a wire-format that runs **inside** HTTP message
-//! bodies — HTTP/3 DATA frames, HTTP/2 DATA frames, or HTTP/1.1
+//! bodies: HTTP/3 DATA frames, HTTP/2 DATA frames, or HTTP/1.1
 //! chunked bodies. They give applications a way to multiplex
 //! arbitrary framed data on a single HTTP exchange after the headers
 //! have been processed. Three IETF protocols use them in production
 //! today:
 //!
-//! - **CONNECT-UDP** (RFC 9298) — UDP packets wrapped in DATAGRAM
+//! - **CONNECT-UDP** (RFC 9298). UDP packets wrapped in DATAGRAM
 //!   capsules (type 0x00) so a client can tunnel UDP traffic over a
 //!   firewall that only permits HTTPS.
-//! - **CONNECT-IP** (RFC 9484) — IP-level VPN tunnels wrapped in
+//! - **CONNECT-IP** (RFC 9484). IP-level VPN tunnels wrapped in
 //!   ADDRESS_ASSIGN / ADDRESS_REQUEST / ROUTE_ADVERTISEMENT capsules.
-//! - **WebTransport over HTTP/3** — uses capsules for the per-session
+//! - **WebTransport over HTTP/3**: uses capsules for the per-session
 //!   handshake metadata (sessionEstablished, fin signals, etc.).
 //!
 //! The relevant property for WAF evasion is that a WAF deployed at the
@@ -34,14 +34,14 @@
 //! ```text
 //! Capsule {
 //!   Type   (i),                 # QUIC varint
-//!   Length (i),                 # QUIC varint — length of Value
+//!   Length (i),                 # QUIC varint, length of Value
 //!   Value  (..Length * 8),      # opaque application bytes
 //! }
 //! ```
 //!
 //! Multiple capsules are concatenated back-to-back inside the HTTP
 //! body. Receivers MUST skip unknown capsule types per RFC 9297
-//! §3.2 — that "must skip" is the bypass surface this module
+//! §3.2, that "must skip" is the bypass surface this module
 //! exercises.
 //!
 //! ## GREASE values
@@ -60,7 +60,7 @@
 //! (DATA frame for HTTP/3, chunked body for HTTP/1.1, etc.) and for
 //! ensuring the surrounding HTTP semantic layer allows capsule
 //! transport (typically by setting `Capsule-Protocol: ?1` per RFC
-//! 9297 §3.3 — caller's responsibility, not ours).
+//! 9297 §3.3 (caller's responsibility, not ours)).
 
 use crate::EvasionFrame;
 use crate::EvasionFrameSet;
@@ -72,30 +72,30 @@ use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 /// Known capsule type registrations from RFC 9297 / 9298 / 9484.
 /// Numbers come from the IANA "HTTP Capsule Types" registry.
 pub mod capsule_type {
-    /// DATAGRAM capsule — RFC 9297 §3.5 / RFC 9298 §5.2.
+    /// DATAGRAM capsule: RFC 9297 §3.5 / RFC 9298 §5.2.
     /// Carries an opaque UDP-style payload over an HTTP CONNECT-UDP
     /// tunnel.
     pub const DATAGRAM: u64 = 0x00;
-    /// ADDRESS_ASSIGN — RFC 9484 §4.1. Server tells client the IP
+    /// ADDRESS_ASSIGN: RFC 9484 §4.1. Server tells client the IP
     /// addresses bound to its tunnel endpoint.
     pub const ADDRESS_ASSIGN: u64 = 0x01;
-    /// ADDRESS_REQUEST — RFC 9484 §4.2. Client requests an address
+    /// ADDRESS_REQUEST: RFC 9484 §4.2. Client requests an address
     /// assignment.
     pub const ADDRESS_REQUEST: u64 = 0x02;
-    /// ROUTE_ADVERTISEMENT — RFC 9484 §4.3. Either side advertises
+    /// ROUTE_ADVERTISEMENT: RFC 9484 §4.3. Either side advertises
     /// the routes it's willing to forward.
     pub const ROUTE_ADVERTISEMENT: u64 = 0x03;
-    /// WT_RESET_STREAM — WebTransport over H3 (draft).
+    /// WT_RESET_STREAM: WebTransport over H3 (draft).
     pub const WT_RESET_STREAM: u64 = 0x190b4d39;
-    /// WT_STOP_SENDING — WebTransport over H3 (draft).
+    /// WT_STOP_SENDING: WebTransport over H3 (draft).
     pub const WT_STOP_SENDING: u64 = 0x190b4d3a;
-    /// WT_STREAM — WebTransport over H3 (draft, type for
+    /// WT_STREAM: WebTransport over H3 (draft, type for
     /// unidirectional opening).
     pub const WT_STREAM: u64 = 0x190b4d3b;
 }
 
 /// Maximum byte length we'll emit for a single capsule value. The
-/// probe value is structural — a few KB exercises every parser
+/// probe value is structural, a few KB exercises every parser
 /// state-machine corner that matters. Capping protects callers from
 /// being abused as a megabyte-amplifier downstream of `frames()`.
 pub const MAX_CAPSULE_VALUE_BYTES: usize = 8 * 1024;
@@ -103,16 +103,16 @@ pub const MAX_CAPSULE_VALUE_BYTES: usize = 8 * 1024;
 /// A single RFC 9297 capsule on the wire.
 #[derive(Debug, Clone)]
 pub struct CapsuleFrame {
-    /// Capsule Type — RFC 9297 §3.2 varint.
+    /// Capsule Type: RFC 9297 §3.2 varint.
     pub capsule_type: u64,
-    /// Capsule Value — opaque bytes. The Length varint is computed
+    /// Capsule Value, opaque bytes. The Length varint is computed
     /// from `value.len()` at serialization time unless
     /// [`overdeclared_length`](Self::overdeclared_length) is set.
     pub value: Vec<u8>,
     /// If `Some(n)`, the serialized Length varint declares `n` bytes
     /// of value, regardless of `value.len()`. Used to construct the
     /// over-declared-length and truncated-value probes. The caller
-    /// guarantees `n` is reachable on the wire — we do not pad.
+    /// guarantees `n` is reachable on the wire (we do not pad).
     pub overdeclared_length: Option<u64>,
 }
 
@@ -172,7 +172,7 @@ pub enum CapsuleSmuggleVariant {
     OpaqueDatagramPayload,
     /// Use a capsule type that's syntactically valid (varint-encoded)
     /// but unknown to the IANA registry. RFC 9297 §3.2 says receivers
-    /// MUST skip — divergent behavior between WAF and origin surfaces
+    /// MUST skip, divergent behavior between WAF and origin surfaces
     /// here.
     UnknownTypeSmuggle,
     /// Use a GREASE capsule type (`0x1f*N + 0x21`). All conforming
@@ -223,7 +223,7 @@ impl CapsuleSmuggleAttack {
             variant: CapsuleSmuggleVariant::OpaqueDatagramPayload,
             capsules: vec![cap],
             description:
-                "DATAGRAM capsule wraps payload — WAF sees opaque body, origin sees UDP-style frame"
+                "DATAGRAM capsule wraps payload: WAF sees opaque body, origin sees UDP-style frame"
                     .into(),
             canary: Canary::generate(),
         }
@@ -240,13 +240,13 @@ impl CapsuleSmuggleAttack {
             variant: CapsuleSmuggleVariant::UnknownTypeSmuggle,
             capsules: vec![cap],
             description: format!(
-                "Unknown capsule type 0x{unknown_type:x} — RFC 9297 §3.2 says skip; divergence likely"
+                "Unknown capsule type 0x{unknown_type:x}. RFC 9297 §3.2 says skip; divergence likely"
             ),
             canary: Canary::generate(),
         }
     }
 
-    /// Build a GREASE-type probe. `n` selects which GREASE slot —
+    /// Build a GREASE-type probe. `n` selects which GREASE slot 
     /// the type is computed as `0x1f * n + 0x21` per RFC 9297 §3.4.
     /// `n` is clamped to a sane range so the resulting type still
     /// fits in a 4-byte varint (i.e. `< 2^30`).
@@ -262,7 +262,7 @@ impl CapsuleSmuggleAttack {
             variant: CapsuleSmuggleVariant::GreaseTypeProbe,
             capsules: vec![cap],
             description: format!(
-                "GREASE capsule type 0x{grease_type:x} (n={clamped_n}) — must-skip per RFC 9297 §3.4"
+                "GREASE capsule type 0x{grease_type:x} (n={clamped_n}), must-skip per RFC 9297 §3.4"
             ),
             canary: Canary::generate(),
         }
@@ -282,7 +282,7 @@ impl CapsuleSmuggleAttack {
             variant: CapsuleSmuggleVariant::OverdeclaredLength,
             capsules: vec![cap],
             description: format!(
-                "Length varint declares {declared} bytes; only {actual} emitted — receiver state-machine probe"
+                "Length varint declares {declared} bytes; only {actual} emitted, receiver state-machine probe"
             ),
             canary: Canary::generate(),
         }
@@ -301,7 +301,7 @@ impl CapsuleSmuggleAttack {
             variant: CapsuleSmuggleVariant::NestedCapsule,
             capsules: vec![outer],
             description: format!(
-                "Outer DATAGRAM wraps inner capsule type 0x{inner_type:x} — recursive parsers diverge from flat"
+                "Outer DATAGRAM wraps inner capsule type 0x{inner_type:x}, recursive parsers diverge from flat"
             ),
             canary: Canary::generate(),
         }
@@ -309,7 +309,7 @@ impl CapsuleSmuggleAttack {
 
     /// Build a CONNECT-IP metadata-channel probe. ADDRESS_ASSIGN
     /// capsule's Value field carries the attacker's bytes shaped as
-    /// HTTP request-line text — never inspected by HTTP-semantic
+    /// HTTP request-line text, never inspected by HTTP-semantic
     /// WAFs because they don't speak CONNECT-IP metadata.
     #[must_use]
     pub fn connect_ip_metadata_channel(payload: Vec<u8>) -> Self {
@@ -389,7 +389,7 @@ impl SmuggleProbe for CapsuleSmuggleAttack {
 ///
 /// **Type-value randomisation.** The `UnknownTypeSmuggle` and inner-
 /// capsule type of `NestedCapsule` are drawn from
-/// `UNALLOCATED_TYPE_POOL` per call rather than hardcoded — a WAF
+/// `UNALLOCATED_TYPE_POOL` per call rather than hardcoded, a WAF
 /// that learns "block any capsule with type 0x2fffff" would otherwise
 /// pin wafrift's signature after one observed run. The pool entries
 /// all sit in the unallocated IANA capsule-type range and all fit
@@ -561,7 +561,7 @@ mod tests {
     #[test]
     fn varint_boundary_capsule_type_round_trips() {
         // Test every QUIC varint length boundary as a capsule type
-        // — 1-byte (63), 2-byte (16383), 4-byte (1073741823),
+        //: 1-byte (63), 2-byte (16383), 4-byte (1073741823),
         // 8-byte. Anti-rig: a regression in varint encoding/decoding
         // would silently mis-frame every capsule.
         for &t in &[63_u64, 16_383, 1_073_741_823, 4_611_686_018_427_387_903] {
@@ -578,7 +578,7 @@ mod tests {
     #[test]
     fn opaque_datagram_value_bytes_are_preserved_verbatim() {
         // Payload bytes including control chars must reach the
-        // serialized output unaltered — otherwise the smuggle is
+        // serialized output unaltered, otherwise the smuggle is
         // useless. Caller-supplied payload is the *whole* point.
         let payload: Vec<u8> = (0..=255_u8).collect();
         let attack = CapsuleSmuggleAttack::opaque_datagram_payload(payload.clone());
@@ -735,7 +735,7 @@ mod tests {
 
     #[test]
     fn concurrent_construction_no_panics_and_all_canaries_unique() {
-        // §12 TESTING — concurrent: 50 threads each construct an
+        // §12 TESTING, concurrent: 50 threads each construct an
         // opaque_datagram_payload; canaries must all be distinct.
         use std::sync::{Arc, Mutex};
         use std::thread;
@@ -794,7 +794,7 @@ mod tests {
             value: big_value.clone(),
             overdeclared_length: None,
         };
-        // Must not panic — capacity hint overflow was the old bug.
+        // Must not panic (capacity hint overflow was the old bug).
         let bytes = frame.to_bytes();
         // Type + length varints must precede the value bytes.
         let (t, n1) = quic_varint_decode(&bytes, 0).expect("type varint");
@@ -881,7 +881,7 @@ mod tests {
         /// An over-declared-length capsule is the smuggle: the wire `length`
         /// varint asserts MORE bytes than are present. The decoded length must
         /// equal the declared lie, while the real trailing bytes equal the
-        /// (smaller) value — that gap is the attack and must be preserved exactly.
+        /// (smaller) value (that gap is the attack and must be preserved exactly).
         #[test]
         fn prop_capsule_overdeclared_length_lies_on_the_wire(
             value in proptest::collection::vec(any::<u8>(), 0..512),

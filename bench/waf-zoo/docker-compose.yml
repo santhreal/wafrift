@@ -1,4 +1,4 @@
-# waf-zoo/docker-compose.yml — bring up ALL zoo stacks in one command.
+# waf-zoo/docker-compose.yml: bring up ALL zoo stacks in one command.
 #
 # Usage:
 #   docker compose -f bench/waf-zoo/docker-compose.yml up -d

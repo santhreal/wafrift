@@ -34,20 +34,20 @@
 //!   samples_8  ~2.7–4.8 µs   samples_32  ~10–16 µs   samples_128  ~42–72 µs
 //!
 //! Hot paths targeted:
-//!   1. `grammar::sql::mutate` — full mutation pass over SQL payloads at various
+//!   1. `grammar::sql::mutate`: full mutation pass over SQL payloads at various
 //!      `max_mutations` budgets.  Calls strip_sql_comments_ws + is_structured_attack
 //!      + significant_tokens + retain inside the anti-rig gate on every call.
-//!   2. `strip_sql_comments_ws` (indirectly via mutate) — two-pass impl:
+//!   2. `strip_sql_comments_ws` (indirectly via mutate), two-pass impl:
 //!      builds String byte-by-byte, then calls to_ascii_lowercase() as second pass.
 //!      Optimized to single-pass with inline lowercase.
-//!   3. `is_structured_attack` — called once per mutate() for the anti-rig gate.
-//!      + `significant_tokens` — old code called strip_sql_comments_ws(payload) twice.
+//!   3. `is_structured_attack`: called once per mutate() for the anti-rig gate.
+//!      + `significant_tokens`: old code called strip_sql_comments_ws(payload) twice.
 //!      After opt: single strip, result shared between the two callers.
-//!   4. `featurize` — CEGIS inner loop: called per candidate × per sort/synthesize.
+//!   4. `featurize`: CEGIS inner loop: called per candidate × per sort/synthesize.
 //!      Old: `set(name)` did FEATURES.iter().position() (O(37)) × ~20 calls = ~740
 //!      string comparisons per featurize. Optimized to direct compile-time index writes.
 //!      Also: two String allocations (lowercase + block-comment strip) collapsed to one.
-//!   5. `WafModel::learn` — perceptron fitting over (features, blocked) samples.
+//!   5. `WafModel::learn`: perceptron fitting over (features, blocked) samples.
 //!      Benchmarked to validate no regression from code changes. No net optimization
 //!      applied (pre-pad approach had +2.5% overhead for small sample counts).
 

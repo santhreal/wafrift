@@ -1,4 +1,4 @@
-//! `wafrift tmin` — corpus minimization alias for `wafrift distill`.
+//! `wafrift tmin`: corpus minimization alias for `wafrift distill`.
 //!
 //! Given a KNOWN-working bypass payload, apply Zeller's ddmin to find the
 //! minimum-edit-distance substring that STILL bypasses. The full algorithm
@@ -11,7 +11,7 @@
 //! LAW 2 (backwards-compatible, complete modularity): duplicating the ddmin
 //! logic into a second command buys nothing and creates a maintenance split.
 //! `tmin` re-exports `DistillArgs` verbatim and delegates to `run_distill`
-//! — the two commands are indistinguishable at runtime. The only user-visible
+//!, the two commands are indistinguishable at runtime. The only user-visible
 //! difference is the name: `distill` comes from the pentest vocabulary,
 //! `tmin` comes from fuzzing tooling. Both are valid entry points.
 //!
@@ -28,7 +28,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::distill_cmd::{DistillArgs, run_distill};
 
-/// Arguments for `wafrift tmin` — identical to `wafrift distill` by design
+/// Arguments for `wafrift tmin`: identical to `wafrift distill` by design
 /// (same algorithm, different entry-point name for AFL/fuzzer-familiar users).
 ///
 /// Every flag documented here is forwarded verbatim to the ddmin engine in
@@ -44,7 +44,7 @@ pub(crate) struct TminArgs {
     pub param: String,
 
     /// The KNOWN-working bypass payload to minimize. Must actually bypass the
-    /// WAF — `tmin` exits 2 if the payload is blocked on the first probe.
+    /// WAF: `tmin` exits 2 if the payload is blocked on the first probe.
     /// Typically the `bypass_variants[i].payload` field from
     /// `wafrift scan --format json` output. Reads from stdin when omitted
     /// and stdin is not a tty.
@@ -65,7 +65,7 @@ pub(crate) struct TminArgs {
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
-    /// Inter-fire delay (ms) — useful against rate-limited targets.
+    /// Inter-fire delay (ms) (useful against rate-limited targets).
     #[arg(long, default_value_t = 0)]
     pub delay_ms: u64,
 
@@ -97,7 +97,7 @@ impl TminArgs {
     /// Convert into the canonical `DistillArgs` that `run_distill` accepts.
     ///
     /// `--payload` is required for `distill`. If the caller omitted it and
-    /// stdin is a tty we cannot recover — return `None` and the caller
+    /// stdin is a tty we cannot recover, return `None` and the caller
     /// prints the usage error.
     fn into_distill_args(self) -> Option<DistillArgs> {
         let payload = match self.payload {
@@ -110,7 +110,7 @@ impl TminArgs {
                 }
                 // Bounded read: `tmin --payload -` piped from /dev/zero
                 // would OOM with an unbounded read_to_string. Payloads
-                // are attack strings — kilobytes at most. 1 MiB cap
+                // are attack strings, kilobytes at most. 1 MiB cap
                 // matches MAX_OPERATOR_INPUT_BYTES from safe_body.
                 let buf = crate::safe_body::read_bounded_text_stdin(
                     crate::safe_body::MAX_OPERATOR_INPUT_BYTES,
@@ -135,7 +135,7 @@ impl TminArgs {
     }
 }
 
-/// Entry point — dispatched from `main::Commands::Tmin`.
+/// Entry point (dispatched from `main::Commands::Tmin`).
 ///
 /// Delegates entirely to `distill_cmd::run_distill`. See that module for
 /// the full ddmin algorithm documentation.
@@ -232,7 +232,7 @@ mod tests {
             timeout_secs: 0,
         };
         // In a test harness stdin is a tty, so this should be None.
-        // (If the test harness pipes stdin, the read would succeed — that
+        // (If the test harness pipes stdin, the read would succeed, that
         //  is also correct behaviour and the assertion would not fire.)
         let result = tmin.into_distill_args();
         // We cannot assert None because CI may pipe stdin. Just confirm
@@ -378,7 +378,7 @@ mod tests {
             timeout_secs: 0,
         };
         let da = tmin.into_distill_args().unwrap();
-        // The empty proxy string is forwarded — the transport layer decides
+        // The empty proxy string is forwarded, the transport layer decides
         // what to do with it (likely errors, which is also correct).
         assert_eq!(da.proxy, Some(String::new()));
     }
@@ -391,7 +391,7 @@ mod tests {
     #[test]
     fn bounded_stdin_read_at_cap_and_over() {
         // stdin cannot be injected in a unit test, so we test the boundary
-        // predicate via read_bounded_text_file — it uses the identical
+        // predicate via read_bounded_text_file, it uses the identical
         // chunk-loop with the same cap guard. Covers the tmin stdin path.
         let cap: usize = 64; // tiny cap for test speed
         let dir = std::env::temp_dir();

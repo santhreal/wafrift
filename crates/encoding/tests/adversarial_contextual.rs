@@ -1,4 +1,4 @@
-//! Adversarial tests for context-aware encoding — edge cases, injections, boundaries.
+//! Adversarial tests for context-aware encoding (edge cases, injections, boundaries).
 
 use wafrift_encoding::Strategy;
 use wafrift_encoding::contextual::encode_in_context;
@@ -248,7 +248,7 @@ fn base64_in_json_string_produces_valid_json() {
         InjectionContext::JsonString,
     )
     .unwrap();
-    // Base64 output is alphanumeric + / + = — all valid in JSON strings
+    // Base64 output is alphanumeric + / + =, all valid in JSON strings
     assert!(!out.contains('"'));
     assert!(!out.contains('\\'));
 }
@@ -268,7 +268,7 @@ fn html_entity_encode_in_xml_attribute_double_escapes() {
 
 #[test]
 fn chunked_split_in_header_value_rejected() {
-    // Chunked split introduces CR/LF — must be rejected in header context
+    // Chunked split introduces CR/LF, must be rejected in header context
     let err = encode_in_context(
         b"payload",
         Strategy::ChunkedSplit,

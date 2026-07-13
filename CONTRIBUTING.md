@@ -13,7 +13,7 @@
 
 ## Code Standards
 
-- Zero `unwrap()` / `expect()` in non-test code — return typed errors
+- Zero `unwrap()` / `expect()` in non-test code, return typed errors
 - `#![warn(clippy::pedantic)]`
 - Doc comments on all public types
 - Actionable error messages with `Fix: ...` guidance
@@ -44,7 +44,7 @@ pattern = "(?i)request blocked by MyWAF"
 code = 403
 # only fires when accompanied by another body/header signal
 
-# Active probe signal (optional — drift-based detection)
+# Active probe signal (optional, drift-based detection)
 [[active_probes]]
 payload_type = "xss"
 expected_response_delta = { status_changes = true, body_contains = "security rule" }
@@ -84,7 +84,7 @@ Smuggling probe templates live in `rules/smuggling/*.toml`. See existing entries
 
 When you encounter a new WAF and find its block page contains a distinctive
 substring, header, or rule-ID prefix, add it to one of the community-contributed
-TOML tables. Each is a flat data file — append a line, rebuild, done.
+TOML tables. Each is a flat data file (append a line, rebuild, done).
 
 | File                                                | What it is                                          |
 |-----------------------------------------------------|-----------------------------------------------------|
@@ -109,7 +109,7 @@ case-insensitive substring.
 
 If you `git mv`, symlink, or otherwise relocate the workspace directory after
 having built it once, the e2e CLI tests will fail with `failed to execute
-wafrift binary: NotFound` — `CARGO_BIN_EXE_wafrift` is baked into the
+wafrift binary: NotFound`: `CARGO_BIN_EXE_wafrift` is baked into the
 incremental cache with the old absolute path. Fix:
 
 ```bash

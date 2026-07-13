@@ -1,4 +1,4 @@
-//! Intercept tab — operator control surface for paused requests.
+//! Intercept tab (operator control surface for paused requests).
 //!
 //! Layout:
 //!   ┌─ Intercept · 3 pending · MODE: ON ─────────┐
@@ -46,9 +46,9 @@ pub fn draw(f: &mut Frame, area: Rect, _state: &State) {
         let inner = block.inner(area);
         f.render_widget(block, area);
         let p = Paragraph::new(if mode_on {
-            "(no requests parked yet — proxy something through this address)"
+            "(no requests parked yet, proxy something through this address)"
         } else {
-            "(intercept mode is OFF — press `i` to toggle ON)"
+            "(intercept mode is OFF, press `i` to toggle ON)"
         })
         .style(crate::tui::style::DIM);
         f.render_widget(p, inner);
@@ -133,7 +133,7 @@ mod tests {
     // ── Render-output tests (added 2026-05) ───────────────
     //
     // The Intercept tab reads from the GLOBAL intercept store
-    // singleton — tests that need to control "pending count" can't
+    // singleton, tests that need to control "pending count" can't
     // do so without polluting global state across parallel tests.
     // We focus the render tests on the EMPTY-state path (which is
     // a stable global behaviour) and on the mode-toggle visuals.
@@ -283,7 +283,7 @@ mod tests {
     #[test]
     fn mode_toggle_initial_round_trip_preserves_invariant() {
         let _g = serial_guard();
-        // Capture, set OFF, set ON, set OFF — each transition
+        // Capture, set OFF, set ON, set OFF, each transition
         // must be observable via the getter.
         let initial = intercept::intercept_mode_enabled();
         for value in [false, true, false, true] {

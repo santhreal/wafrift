@@ -41,7 +41,7 @@ fn cooldown_after_threshold_challenges() {
         pool.record_challenge(&entry_a, target);
     }
 
-    // Now next_for(target) must rotate to the other entry — entry_a
+    // Now next_for(target) must rotate to the other entry, entry_a
     // is in cooldown.
     let entry_b = pool.next_for(target).expect("rotated entry");
     let second_label = entry_b.backend.label().to_string();
@@ -63,11 +63,11 @@ fn cooldown_is_per_target_not_global() {
     }
 
     // entry_a is cooled for target-x. But against target-y it should
-    // still be eligible — cooldown is per (entry, target_host) so an
+    // still be eligible, cooldown is per (entry, target_host) so an
     // IP cooled by CF in one zone isn't held back from other zones.
     let entry_for_y = pool.next_for("target-y.com").expect("y");
     // Could be either entry, but at minimum BOTH should be available
-    // for target-y — no IndexOutOfRange / cooled-pool error.
+    // for target-y (no IndexOutOfRange / cooled-pool error).
     let _ = entry_for_y;
 }
 
@@ -82,12 +82,12 @@ fn record_pass_resets_counter() {
     pool.record_challenge(&entry, target);
     // A pass resets the counter.
     pool.record_pass(&entry, target);
-    // Two more challenges — still below threshold (because counter
+    // Two more challenges, still below threshold (because counter
     // was reset). No cooldown should fire.
     pool.record_challenge(&entry, target);
     pool.record_challenge(&entry, target);
 
-    // next_for should still return the same entry (or another — the
+    // next_for should still return the same entry (or another, the
     // important invariant is that NO entry is cooled, so the pool
     // doesn't degrade to "entire pool cooled" error).
     let _ = pool
@@ -122,7 +122,7 @@ fn entire_pool_cooled_returns_error() {
 #[test]
 fn rotation_distributes_load_across_pool() {
     let pool = two_entry_pool(100, 1); // Very tolerant threshold,
-    // very short cooldown — focus
+    // very short cooldown, focus
     // is on rotation order, not
     // cooldown.
     let target = "round-robin.example";
@@ -143,7 +143,7 @@ fn rotation_distributes_load_across_pool() {
 
 #[test]
 fn empty_pool_builder_rejects_at_build_time() {
-    // The builder refuses to construct an empty pool — the
+    // The builder refuses to construct an empty pool, the
     // operator's misuse is caught before any probe is sent, not at
     // first `next_for` deep in the hunt loop.
     let result = EgressPoolBuilder::default().build();

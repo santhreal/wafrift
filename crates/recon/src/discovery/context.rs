@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn json_without_schema_falls_back_to_plain_body() {
         // Important behavior: JSON without a schema hint doesn't
-        // get classified as either JsonString or JsonNumber — the
+        // get classified as either JsonString or JsonNumber, the
         // injector would otherwise pick the wrong escape grammar.
         assert_eq!(
             auto_detect_context(Some("application/json"), ParameterLocation::Body, None),
@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn multipart_with_file_schema_is_file_name() {
-        // Test the upload-shaped injection — schema="file" steers
+        // Test the upload-shaped injection, schema="file" steers
         // toward the filename slot, not the field value.
         assert_eq!(
             auto_detect_context(
@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn content_type_only_consulted_for_body_location() {
-        // Repeats the Query test with content-type — the
+        // Repeats the Query test with content-type, the
         // content-type must NOT leak into a Query/Path/Header
         // classification.
         for loc in &[

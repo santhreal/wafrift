@@ -1,6 +1,6 @@
-//! E10/77 — coverage as contract: **every** `WafModelError` variant is
+//! E10/77, coverage as contract: **every** `WafModelError` variant is
 //! produced by a REAL engine path (not hand-constructed) and its
-//! `Display` message — itself a claim — is asserted exactly. If a
+//! `Display` message, itself a claim, is asserted exactly. If a
 //! variant has no producer it is a dead contract; this test is what
 //! forces it to be real (it exposed F3: `BudgetExhausted` had zero
 //! producers until `l_star_budgeted` was wired).
@@ -47,7 +47,7 @@ fn budget_exhausted_variant_is_produced_by_the_budgeted_learner() {
     // F3 regression: this variant was previously unproducible. A cap of
     // 1 query against a target that needs many ⇒ BudgetExhausted with
     // the real spend; the SAME target with an unbounded budget learns
-    // fine (anti-vacuous — the budget is the cause, not the target).
+    // fine (anti-vacuous (the budget is the cause, not the target)).
     let alpha = Alphabet::new(vec![b'<', b's', b'/'], b'A');
     let mk = || {
         SimRegexWaf::new(
@@ -90,7 +90,7 @@ fn budget_exhausted_variant_is_produced_by_the_budgeted_learner() {
     };
     assert!(
         l_star_budgeted(&mut w2, &body, &alpha, &mut eq2, u64::MAX).is_ok(),
-        "the target IS learnable — only the budget caused the failure"
+        "the target IS learnable, only the budget caused the failure"
     );
 }
 

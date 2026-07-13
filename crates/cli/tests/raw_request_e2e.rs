@@ -85,7 +85,7 @@ fn write_get_template(addr: std::net::SocketAddr) -> std::path::PathBuf {
     path
 }
 
-/// Same shape but for a POST template — marker lives in the body.
+/// Same shape but for a POST template (marker lives in the body).
 fn write_post_template(addr: std::net::SocketAddr) -> std::path::PathBuf {
     let path = std::env::temp_dir().join(format!(
         "wafrift-raw-post-{}-{}.req",
@@ -134,10 +134,10 @@ fn raw_request_get_template_e2e_emits_repro_curl_per_bypass() {
         "json",
     ]);
     let _ = std::fs::remove_file(&path);
-    assert_eq!(code, 0, "scan -r should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "scan -r should exit 0, stderr:\n{stderr}");
 
     let parsed: serde_json::Value =
-        serde_json::from_str(stdout.trim()).expect("JSON parse — stdout was:\n{stdout}");
+        serde_json::from_str(stdout.trim()).expect("JSON parse, stdout was:\n{stdout}");
     assert_eq!(parsed["mode"], "raw-request");
     assert_eq!(parsed["template"]["method"], "GET");
     // Template URL was reconstructed from Host header.
@@ -158,7 +158,7 @@ fn raw_request_get_template_e2e_emits_repro_curl_per_bypass() {
         .expect("bypass_variants array");
     assert!(
         !bypasses.is_empty(),
-        "must have at least one bypass — counter fired {} requests",
+        "must have at least one bypass, counter fired {} requests",
         counter.load(Ordering::SeqCst)
     );
 
@@ -182,7 +182,7 @@ fn raw_request_get_template_e2e_emits_repro_curl_per_bypass() {
             curl.contains(&addr.to_string()),
             "repro_curl points at mock: {curl}"
         );
-        // §§ marker MUST be gone — substituted with the variant payload.
+        // §§ marker MUST be gone (substituted with the variant payload).
         assert!(!curl.contains("§§"), "repro_curl substituted: {curl}");
     }
 
@@ -201,7 +201,7 @@ fn raw_request_block_signature_in_payload_yields_zero_bypasses() {
     let path = write_get_template(addr);
 
     // Payload literally contains BLOCKED → mock returns 403 to every
-    // variant — but encoding mutations (e.g. URL-encode, hex, base64)
+    // variant, but encoding mutations (e.g. URL-encode, hex, base64)
     // OBFUSCATE the literal "BLOCKED" substring. So SOME mutations
     // will dodge the literal-substring check on the mock side and
     // get 200. We just assert the runner ran end-to-end cleanly.
@@ -218,7 +218,7 @@ fn raw_request_block_signature_in_payload_yields_zero_bypasses() {
         "json",
     ]);
     let _ = std::fs::remove_file(&path);
-    assert_eq!(code, 0, "scan -r should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "scan -r should exit 0, stderr:\n{stderr}");
 
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     // total_fired > 0 (runner actually fired requests, did not no-op).
@@ -253,7 +253,7 @@ fn raw_request_post_template_substitutes_in_body() {
     let _ = std::fs::remove_file(&path);
     assert_eq!(
         code, 0,
-        "scan -r POST template should exit 0 — stderr:\n{stderr}"
+        "scan -r POST template should exit 0, stderr:\n{stderr}"
     );
 
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
@@ -266,7 +266,7 @@ fn raw_request_post_template_substitutes_in_body() {
 
 #[test]
 fn raw_request_rejects_template_without_injection_marker() {
-    // Template has NO §§ — runner must reject early with exit 2 and
+    // Template has NO §§, runner must reject early with exit 2 and
     // an actionable message naming the missing marker.
     let path = std::env::temp_dir().join(format!("wafrift-raw-nomark-{}.req", std::process::id()));
     let body = "GET /search?q=hardcoded HTTP/1.1\r\nHost: 127.0.0.1:9999\r\nAccept: */*\r\n\r\n";
@@ -282,7 +282,7 @@ fn raw_request_rejects_template_without_injection_marker() {
         "json",
     ]);
     let _ = std::fs::remove_file(&path);
-    assert_eq!(code, 2, "missing-marker should exit 2 — stderr:\n{stderr}");
+    assert_eq!(code, 2, "missing-marker should exit 2, stderr:\n{stderr}");
     assert!(
         stderr.contains("§§") || stderr.to_lowercase().contains("marker"),
         "error must name the missing marker: stderr=\n{stderr}"
@@ -300,7 +300,7 @@ fn raw_request_rejects_missing_file_with_clear_error() {
         "--format",
         "json",
     ]);
-    assert_eq!(code, 2, "missing file should exit 2 — stderr:\n{stderr}");
+    assert_eq!(code, 2, "missing file should exit 2, stderr:\n{stderr}");
     assert!(
         stderr.to_lowercase().contains("raw-request") || stderr.to_lowercase().contains("read"),
         "error must mention the file: stderr=\n{stderr}"
@@ -309,7 +309,7 @@ fn raw_request_rejects_missing_file_with_clear_error() {
 
 #[test]
 fn raw_request_rejects_malformed_request_file() {
-    // File exists but has no `Host:` header — parser must reject
+    // File exists but has no `Host:` header, parser must reject
     // with a clear error.
     let path = std::env::temp_dir().join(format!("wafrift-raw-bad-{}.req", std::process::id()));
     std::fs::write(&path, "GET / HTTP/1.1\r\nAccept: */*\r\n\r\n").unwrap();
@@ -324,7 +324,7 @@ fn raw_request_rejects_malformed_request_file() {
         "json",
     ]);
     let _ = std::fs::remove_file(&path);
-    assert_eq!(code, 2, "malformed file should exit 2 — stderr:\n{stderr}");
+    assert_eq!(code, 2, "malformed file should exit 2, stderr:\n{stderr}");
     assert!(
         stderr.to_lowercase().contains("host"),
         "error must name the missing Host header: stderr=\n{stderr}"
@@ -362,7 +362,7 @@ fn raw_request_auto_distill_populates_minimal_payload_per_bypass() {
     let _ = std::fs::remove_file(&path);
     assert_eq!(
         code, 0,
-        "scan -r --auto-distill should exit 0 — stderr:\n{stderr}"
+        "scan -r --auto-distill should exit 0, stderr:\n{stderr}"
     );
 
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
@@ -438,11 +438,11 @@ fn raw_request_default_does_not_populate_minimal_payload() {
 fn raw_request_scheme_https_reconstructs_https_template_url() {
     // The runner builds the template URL from scheme + Host header.
     // With --raw-request-scheme=https the template URL must use
-    // https:// (no actual TLS handshake — we don't fire, we just
+    // https:// (no actual TLS handshake, we don't fire, we just
     // verify the parsed shape via JSON output).
     //
     // Trick: point at an unreachable target so the fire loop errors
-    // out — but the template metadata is emitted regardless.
+    // out (but the template metadata is emitted regardless).
     let path = std::env::temp_dir().join(format!("wafrift-raw-https-{}.req", std::process::id()));
     let body = "GET /?q=§§ HTTP/1.1\r\nHost: 127.0.0.1:65500\r\nAccept: */*\r\n\r\n";
     std::fs::write(&path, body).unwrap();
@@ -464,7 +464,7 @@ fn raw_request_scheme_https_reconstructs_https_template_url() {
     let _ = std::fs::remove_file(&path);
     assert_eq!(
         code, 0,
-        "runner exits 0 even when fires error — stdout:\n{stdout}"
+        "runner exits 0 even when fires error, stdout:\n{stdout}"
     );
 
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");

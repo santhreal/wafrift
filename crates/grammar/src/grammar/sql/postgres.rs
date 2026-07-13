@@ -16,7 +16,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<String> {
     let lower = payload.to_ascii_lowercase();
 
     // ── Dollar-quoting for string literals ──
-    // Replace single quotes with $$ — evades quote-escaping WAFs
+    // Replace single quotes with $$, evades quote-escaping WAFs
     if let Some(start) = payload.find('\'')
         && let Some(end) = payload[start + 1..].find('\'')
     {
@@ -52,7 +52,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<String> {
     if lower.contains("sleep") {
         results.push(payload.replace("SLEEP(", "pg_sleep("));
         results.push(payload.replace("sleep(", "pg_sleep("));
-        // Subquery variant — harder for WAFs to regex
+        // Subquery variant, harder for WAFs to regex
         results.push(
             payload
                 .replace("SLEEP(", "(SELECT pg_sleep(")
@@ -66,7 +66,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<String> {
     }
 
     // ── CHR() string building ──
-    // Build strings from CHR() calls — no keywords visible
+    // Build strings from CHR() calls, no keywords visible
     if let Some(start) = payload.find('\'')
         && let Some(end) = payload[start + 1..].find('\'')
     {

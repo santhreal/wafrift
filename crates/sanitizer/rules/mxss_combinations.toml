@@ -1,17 +1,17 @@
 # Tier-B mutation-XSS (mXSS) trigger combinations.
 #
 # Some sanitizers (DOMPurify and friends) correctly remove every <script> tag
-# and on*= handler from their OWN serialized output — yet the BROWSER re-parses
+# and on*= handler from their OWN serialized output, yet the BROWSER re-parses
 # that output differently than the sanitizer's parser did, resurrecting script.
 # This "mutation XSS" hinges on HTML foreign-content / raw-text parsing
 # differentials, NOT on a handler the in-model executability check can see. So
 # the L*/SFA miner, which judges executability by <script>/on*= survival, cannot
-# surface these — they need a real browser (scald) to confirm.
+# surface these (they need a real browser (scald) to confirm).
 #
 # Each entry names a tag pair that, when BOTH are reachable in the sanitizer's
 # allow/deny model, has historically enabled an mXSS bypass. The decompiler flags
 # the pair as a CANDIDATE (proposed, never asserted executed) for scald to
-# confirm in a live DOM. Extend coverage by adding rows here — never by
+# confirm in a live DOM. Extend coverage by adding rows here, never by
 # hardcoding tag names in code.
 #
 # Fields:
@@ -48,7 +48,7 @@ note = "<mglyph>/<malignmark> under <math> are HTML integration points; foreign-
 root = "noscript"
 child = "style"
 class = "noscript-mode-toggle"
-note = "Whether <noscript> contents parse as text or markup depends on scripting-enabled state, which differs between the sanitizer (scripting off) and the victim browser (scripting on) — the contents flip from inert text to live markup."
+note = "Whether <noscript> contents parse as text or markup depends on scripting-enabled state, which differs between the sanitizer (scripting off) and the victim browser (scripting on) (the contents flip from inert text to live markup)."
 
 [[mxss]]
 root = "template"
@@ -74,7 +74,7 @@ note = "A <form> wrapping foreign content has produced parser-state confusion (p
 root = "math"
 child = "annotation-xml"
 class = "mathml-html-integration-point"
-note = "<annotation-xml encoding=\"text/html\"> (or application/xhtml+xml) under <math> is an HTML integration point per the parsing spec: the parser switches back to HTML and reparses its contents as live markup. This is the element at the heart of the Bentkowski DOMPurify < 2.0.x namespace-confusion bypass — e.g. <math><annotation-xml encoding=text/html><object data=javascript:alert(1)>. Flag whenever both <math> and <annotation-xml> are reachable."
+note = "<annotation-xml encoding=\"text/html\"> (or application/xhtml+xml) under <math> is an HTML integration point per the parsing spec: the parser switches back to HTML and reparses its contents as live markup. This is the element at the heart of the Bentkowski DOMPurify < 2.0.x namespace-confusion bypass, e.g. <math><annotation-xml encoding=text/html><object data=javascript:alert(1)>. Flag whenever both <math> and <annotation-xml> are reachable."
 
 [[mxss]]
 root = "svg"

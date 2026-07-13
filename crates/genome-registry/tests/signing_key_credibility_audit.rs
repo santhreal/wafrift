@@ -37,7 +37,7 @@ fn debug_does_not_leak_secret_hex() {
 
 #[test]
 fn debug_with_two_distinct_keys_renders_different_fingerprints() {
-    // Defence-in-depth — make sure the redacted Debug still distinguishes
+    // Defence-in-depth, make sure the redacted Debug still distinguishes
     // keys in a multi-key context (e.g. publisher rotation).
     let k1 = SigningKey::generate();
     let k2 = SigningKey::generate();

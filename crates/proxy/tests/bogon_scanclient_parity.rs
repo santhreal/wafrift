@@ -3,9 +3,9 @@
 //!
 //! Two textual copies of the SSRF policy live in the tree (see the
 //! module-doc in `wafrift-types/src/bogon.rs` for the layering
-//! reason — pulling scanclient's reqwest tree into the foundation
-//! types crate is unacceptable). This test exists so any drift —
-//! a new range added to one, a fix landing only in one — fails CI
+//! reason, pulling scanclient's reqwest tree into the foundation
+//! types crate is unacceptable). This test exists so any drift 
+//! a new range added to one, a fix landing only in one, fails CI
 //! instead of leaking through to production.
 //!
 //! Battery covers every category both implementations classify:
@@ -29,7 +29,7 @@ fn v6(s0: u16, s1: u16, s2: u16, s3: u16, s4: u16, s5: u16, s6: u16, s7: u16) ->
 
 fn battery() -> Vec<IpAddr> {
     vec![
-        // IPv4 — bogon
+        // IPv4, bogon
         v4(10, 0, 0, 1),
         v4(10, 255, 255, 254),
         v4(172, 16, 0, 1),
@@ -49,14 +49,14 @@ fn battery() -> Vec<IpAddr> {
         v4(192, 0, 0, 1),
         v4(198, 18, 0, 1),
         v4(198, 19, 0, 1),
-        // IPv4 — public
+        // IPv4, public
         v4(8, 8, 8, 8),
         v4(1, 1, 1, 1),
         v4(208, 67, 222, 222),
         v4(172, 32, 0, 1),
         v4(100, 128, 0, 1),
         v4(198, 20, 0, 1),
-        // IPv6 — bogon (loopback regression on left flank)
+        // IPv6, bogon (loopback regression on left flank)
         IpAddr::V6(Ipv6Addr::LOCALHOST),
         IpAddr::V6(Ipv6Addr::UNSPECIFIED),
         v6(0xfc00, 0, 0, 0, 0, 0, 0, 1),
@@ -68,11 +68,11 @@ fn battery() -> Vec<IpAddr> {
         v6(0x2001, 0x002f, 0, 0, 0, 0, 0, 1),
         v6(0x0100, 0, 0, 0, 0, 0, 0, 1),
         v6(0xff00, 0, 0, 0, 0, 0, 0, 1),
-        // ::ffff:10.0.0.1 — IPv4-mapped private v4
+        // ::ffff:10.0.0.1: IPv4-mapped private v4
         IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0x0a00, 0x0001)),
         // 2002::/16 6to4 wrapping a private v4 (10.0.0.1)
         v6(0x2002, 0x0a00, 0x0001, 0, 0, 0, 0, 1),
-        // IPv6 — public
+        // IPv6, public
         v6(0x2001, 0x4860, 0x4860, 0, 0, 0, 0, 0x8888),
         v6(0x2606, 0x4700, 0x4700, 0, 0, 0, 0, 0x1111),
         // 2002::/16 6to4 wrapping a public v4 (8.8.8.8)
@@ -99,7 +99,7 @@ fn wafrift_types_and_scanclient_agree_on_battery() {
 
 #[test]
 fn battery_covers_both_verdicts() {
-    // Sanity — the parity test would pass trivially if every IP
+    // Sanity, the parity test would pass trivially if every IP
     // returned the same verdict, so confirm the battery actually
     // exercises both branches.
     let mut bogon = 0usize;
@@ -117,7 +117,7 @@ fn battery_covers_both_verdicts() {
 
 #[test]
 fn ipv6_loopback_is_bogon_in_both_impls() {
-    // Singled out — this is the regression the wafrift donor
+    // Singled out, this is the regression the wafrift donor
     // carried before 2026-05-23. Keep it as its own test so the
     // failure message is unambiguous if it ever re-breaks.
     let lo = IpAddr::V6(Ipv6Addr::LOCALHOST);

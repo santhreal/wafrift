@@ -2,20 +2,20 @@
 .el .ds Aq '
 .TH wafrift 1  "wafrift 0.3.1" 
 .SH NAME
-wafrift \- WAF evasion toolkit — run without arguments for interactive mode
+wafrift \- WAF evasion toolkit, run without arguments for interactive mode
 .SH SYNOPSIS
 \fBwafrift\fR [\fB\-q\fR|\fB\-\-quiet\fR] [\fB\-c\fR|\fB\-\-config\fR] [\fB\-\-differential\-baseline\fR] [\fB\-\-detonate\-engine\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] [\fIsubcommands\fR]
 .SH DESCRIPTION
-WAF evasion toolkit — run without arguments for interactive mode.
+WAF evasion toolkit (run without arguments for interactive mode).
 .PP
 Exit codes (CI\-friendly):
 0  success
 1  generic error (IO failure, runtime error, etc.)
-2  argument / input error (unknown flag, contradictory selectors, malformed value, unknown technique selector, unrecognised algorithm, missing required field) — clap convention; ALSO used by bench\-waf for \*(Aqzero bypasses\*(Aq and by replay for \*(Aqsaved bypass blocked\*(Aq (legacy: per perf\-hunt N01 the dual usage is documented rather than split because the bench\-waf/replay overload is well\-established in CI scripts)
+2  argument / input error (unknown flag, contradictory selectors, malformed value, unknown technique selector, unrecognised algorithm, missing required field), clap convention; ALSO used by bench\-waf for \*(Aqzero bypasses\*(Aq and by replay for \*(Aqsaved bypass blocked\*(Aq (legacy: per perf\-hunt N01 the dual usage is documented rather than split because the bench\-waf/replay overload is well\-established in CI scripts)
 3  bench\-diff: regression vs baseline (see \-\-bypass\-drop\-pp)
 4  bench\-waf \-\-validate\-only: corpus integrity errors (duplicate id, TOML parse failure, missing required field)
-5  scan: aborted — target rate\-limited the probes (inconclusive, not \*(Aqno bypass\*(Aq)
-7  scan \-\-scan\-timeout\-secs: wall\-clock budget exceeded — partial results emitted (check truncated_by_scan_timeout in JSON output)
+5  scan: aborted: target rate\-limited the probes (inconclusive, not \*(Aqno bypass\*(Aq)
+7  scan \-\-scan\-timeout\-secs: wall\-clock budget exceeded, partial results emitted (check truncated_by_scan_timeout in JSON output)
 .PP
 Environment variables (R50 pass\-12 I5 / CLAUDE.md §10):
 HOME, USERPROFILE      home dir for ~/.wafrift state (gene\-bank, hunt, keys)
@@ -31,18 +31,18 @@ WAFRIFT_REPLAY_AUTOEXEC  proxy/yank: if 1, replay\-curl files are bash\-executed
 .SH OPTIONS
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
-Suppress human\-readable output — emit only machine\-parseable results (JSON)
+Suppress human\-readable output, emit only machine\-parseable results (JSON)
 .TP
 \fB\-c\fR, \fB\-\-config\fR \fI<CONFIG>\fR
 Path to a TOML config file. Default: `.wafrift.toml` in CWD or `~/.config/wafrift/config.toml`
 .TP
 \fB\-\-differential\-baseline\fR
-Differential\-baseline bypass verification. Credit a payload as a WAF bypass only when the UN\-EVADED base is BLOCKED in the same delivery — proving the evasion is what passed it, not a payload the WAF never policed. Off by default (anti\-rig: the headline bypass metric is unchanged unless you opt in). Costs ~one extra probe per delivery arm.
+Differential\-baseline bypass verification. Credit a payload as a WAF bypass only when the UN\-EVADED base is BLOCKED in the same delivery, proving the evasion is what passed it, not a payload the WAF never policed. Off by default (anti\-rig: the headline bypass metric is unchanged unless you opt in). Costs ~one extra probe per delivery arm.
 
 Named `\-\-differential\-baseline` (not bare `\-\-differential`) to stay distinct from the `diff <kind>` parser\-disagreement subcommands.
 .TP
 \fB\-\-detonate\-engine\fR \fI<DETONATE_ENGINE>\fR [default: jsdet]
-Detonation engine used whenever wafrift proves execution (`\-\-prove\-execution`, `exploit`, proxy classification): `jsdet` (default, fast QuickJS sandbox) or `chrome` (real headless Chrome — also fires mutation\-XSS and browser\-only handlers the sandbox cannot model). The chrome engine needs a Chrome/Chromium binary (`$WAFRIFT_CHROME_BIN`)
+Detonation engine used whenever wafrift proves execution (`\-\-prove\-execution`, `exploit`, proxy classification): `jsdet` (default, fast QuickJS sandbox) or `chrome` (real headless Chrome, also fires mutation\-XSS and browser\-only handlers the sandbox cannot model). The chrome engine needs a Chrome/Chromium binary (`$WAFRIFT_CHROME_BIN`)
 .br
 
 .br
@@ -65,10 +65,10 @@ wafrift\-evade(1)
 Transform a payload with evasion techniques
 .TP
 wafrift\-exploit(1)
-Detonation\-guided evasion — find a payload that bypasses the WAF AND actually executes (`alert(1)` fires), proven by the `detonate` sandbox
+Detonation\-guided evasion, find a payload that bypasses the WAF AND actually executes (`alert(1)` fires), proven by the `detonate` sandbox
 .TP
 wafrift\-client\-deliver(1)
-Emit the WAF\-blind CLIENT\-SIDE delivery plan for an XSS payload: the fragment / window.name / postMessage / storage / client\-route channels whose taint source never reaches the server, so no WAF/CDN inspects them. Sends nothing — it prints a copy\-pasteable browser\-delivery plan (text or `wafrift.client_deliver.v1` JSON for scald) confirmed by DOM execution, not a server response. The lane modern reflected\-XSS bypasses live in
+Emit the WAF\-blind CLIENT\-SIDE delivery plan for an XSS payload: the fragment / window.name / postMessage / storage / client\-route channels whose taint source never reaches the server, so no WAF/CDN inspects them. Sends nothing, it prints a copy\-pasteable browser\-delivery plan (text or `wafrift.client_deliver.v1` JSON for scald) confirmed by DOM execution, not a server response. The lane modern reflected\-XSS bypasses live in
 .TP
 wafrift\-detect(1)
 Identify a WAF / CDN / origin\-infrastructure from response metadata
@@ -98,7 +98,7 @@ wafrift\-discover(1)
 Endpoint discovery: parse OpenAPI/Swagger, run GraphQL introspection, or fire differential parameter mining. Emits `DiscoveredEndpoint` JSON suitable for piping into `wafrift scan \-\-from\-discovery`
 .TP
 wafrift\-replay(1)
-Replay a saved bypass against a target — proves reproducibility
+Replay a saved bypass against a target, proves reproducibility
 .TP
 wafrift\-report(1)
 Generate a markdown findings report from the proxy gene bank
@@ -122,7 +122,7 @@ wafrift\-man(1)
 Generate a troff man page for `wafrift` (and optionally subcommands)
 .TP
 wafrift\-model\-evade(1)
-Active\-learning WAF bypass: learn the target\*(Aqs decision boundary online (L* membership queries via HTTP), mine bypass candidates offline against the learned SFA at ~1M/sec, and verify each online. Deduces bypasses from the WAF\*(Aqs decision boundary — not from mutation luck. Use `\-\-budget` to cap live queries
+Active\-learning WAF bypass: learn the target\*(Aqs decision boundary online (L* membership queries via HTTP), mine bypass candidates offline against the learned SFA at ~1M/sec, and verify each online. Deduces bypasses from the WAF\*(Aqs decision boundary, not from mutation luck. Use `\-\-budget` to cap live queries
 .TP
 wafrift\-audit(1)
 Decompile a CRS\-class ruleset and report the holes an attacker can drive through it (the WAF X\-ray). Zero\-config; `\-\-ruleset` audits a custom Tier\-B config
@@ -140,25 +140,25 @@ wafrift\-tcp\-overlap(1)
 Plan a target\-based TCP sequence\-overlap desync: overlapping TCP segments a WAF/IDS reassembles to a BENIGN stream while the origin reassembles to the ATTACK (Ptacek\-Newsham / Snort stream5 class). Each plan is self\- verified by simulating both reassembly policies (first/last/bsd/linux). Emits the segments (seq + bytes) for a raw\-socket sender to deliver
 .TP
 wafrift\-legendary(1)
-One\-shot demo command — runs detect + fingerprint + bypass\-probe (and optionally scan) against a single target, and stitches the results into one polished markdown writeup
+One\-shot demo command, runs detect + fingerprint + bypass\-probe (and optionally scan) against a single target, and stitches the results into one polished markdown writeup
 .TP
 wafrift\-listener(1)
-Out\-of\-band callback receiver — pre\-mints unique tokens to embed in payloads (blind SQLi / stored XSS / blind SSRF / OOB command injection); logs any inbound HTTP request matching a minted token. The oracle for the vuln classes that never echo a verdict on the same response
+Out\-of\-band callback receiver, pre\-mints unique tokens to embed in payloads (blind SQLi / stored XSS / blind SSRF / OOB command injection); logs any inbound HTTP request matching a minted token. The oracle for the vuln classes that never echo a verdict on the same response
 .TP
 wafrift\-diff(1)
-Differential analysis — surface WAF↔origin (and WAF↔cache, H1↔H2, browser↔browser) parser disagreements, wafrift\*(Aqs deepest bypass seam. `wafrift diff <kind>` groups the whole family in one verb: `path` / `header` / `body` / `query` / `cache` / `h2` / `method` / `gql` / `jwt` / `cors` / `trailer`. `all` runs the SEVEN original parser\-diff probes concurrently (path, header, body, query, cache, h2, method) — it does NOT include `gql` / `jwt` / `cors` / `trailer`; run those individually. The legacy `<kind>\-diff` commands and `attack` remain as deprecated hidden aliases (LAW 2)
+Differential analysis, surface WAF↔origin (and WAF↔cache, H1↔H2, browser↔browser) parser disagreements, wafrift\*(Aqs deepest bypass seam. `wafrift diff <kind>` groups the whole family in one verb: `path` / `header` / `body` / `query` / `cache` / `h2` / `method` / `gql` / `jwt` / `cors` / `trailer`. `all` runs the SEVEN original parser\-diff probes concurrently (path, header, body, query, cache, h2, method), it does NOT include `gql` / `jwt` / `cors` / `trailer`; run those individually. The legacy `<kind>\-diff` commands and `attack` remain as deprecated hidden aliases (LAW 2)
 .TP
 wafrift\-compress(1)
-Wrap a request body in one or more `Content\-Encoding` layers (gzip / deflate / brotli / chain). The compression\-confusion attack: WAFs that inspect raw bytes pass over the encoded body while the origin decompresses normally. Brotli is the headline gap — many WAFs don\*(Aqt ship a brotli decompressor even though Chrome / nginx / Apache all do
+Wrap a request body in one or more `Content\-Encoding` layers (gzip / deflate / brotli / chain). The compression\-confusion attack: WAFs that inspect raw bytes pass over the encoded body while the origin decompresses normally. Brotli is the headline gap, many WAFs don\*(Aqt ship a brotli decompressor even though Chrome / nginx / Apache all do
 .TP
 wafrift\-smuggle(1)
-HTTP request smuggling probes (CL.TE / TE.CL / TE.TE / CL.0 / dual\-CL / multi\-value\-CL, plus the CVE\-class chunk\-ext\-lone\-lf, rapid\-reset, made\-you\-reset, settings\-storm — run `wafrift smuggle list` for the authoritative, current variant set). Subcommands: `detect` runs the SAFE timing\-differential probes that can\*(Aqt poison the connection pool; `probe` fires the exploit\-grade payloads (requires `\-\-unsafe`); `dry\-run` renders the raw wire bytes without sending anything; `list` enumerates the variants. Built on the same engine powering the `wafrift\-smuggling` library, but exposed as a first\-class CLI surface so pentesters don\*(Aqt need to roll their own runner
+HTTP request smuggling probes (CL.TE / TE.CL / TE.TE / CL.0 / dual\-CL / multi\-value\-CL, plus the CVE\-class chunk\-ext\-lone\-lf, rapid\-reset, made\-you\-reset, settings\-storm, run `wafrift smuggle list` for the authoritative, current variant set). Subcommands: `detect` runs the SAFE timing\-differential probes that can\*(Aqt poison the connection pool; `probe` fires the exploit\-grade payloads (requires `\-\-unsafe`); `dry\-run` renders the raw wire bytes without sending anything; `list` enumerates the variants. Built on the same engine powering the `wafrift\-smuggling` library, but exposed as a first\-class CLI surface so pentesters don\*(Aqt need to roll their own runner
 .TP
 wafrift\-smuggle\-emit(1)
 Emit every wafrift smuggle probe as JSON (one per line) across the 11 probe families: cookie, auth, range, path, host, jwt, content\-type, json, capsule, quic\-datagram, compression. Pipe to `jq` / Burp / `xargs curl` to drive probes through any HTTP client that reads JSON. `\-\-family <prefix>` filters; `\-\-kind headers|body|frames` filters by artifact shape; `\-\-canary\-header NAME` attaches an instrumentation header to each probe; exit 2 when zero probes match
 .TP
 wafrift\-smuggle\-cross\-product(1)
-Emit the cartesian product of two smuggle\-probe families as composed JSON artifacts. For every probe in family X × every probe in family Y, emit one merged artifact carrying both probes\*(Aq wire shapes — surfaces bypass\-chain interactions that no single technique produces. Bound output size with `\-\-cap N` (default 64); exit 2 when either side matches zero probes
+Emit the cartesian product of two smuggle\-probe families as composed JSON artifacts. For every probe in family X × every probe in family Y, emit one merged artifact carrying both probes\*(Aq wire shapes, surfaces bypass\-chain interactions that no single technique produces. Bound output size with `\-\-cap N` (default 64); exit 2 when either side matches zero probes
 .TP
 wafrift\-smuggle\-stats(1)
 Operator\-facing probe\-budget snapshot. Counts every probe wafrift can emit across the 11 smuggle families, broken down by family and artifact kind, and reports the total wire\-byte budget. Output is structured JSON suitable for piping into `jq` or CI gates. Useful for deciding whether you need to subsample before firing a scan against a rate\-limited target
@@ -167,16 +167,16 @@ wafrift\-smuggle\-chain(1)
 N\-way smuggle\-probe composition. Takes 2+ `\-\-family <NAME>` flags and emits the cartesian product of probes across all N families as composed JSON artifacts. The N\-way generalization of `smuggle\-cross\-product`. Bound output size with `\-\-cap N` (default 64); exit 2 when any family matches zero probes
 .TP
 wafrift\-smuggle\-fire(1)
-Fire every smuggle probe against a live target. The end\-to\-end execution pipeline — converts probe artifacts to real HTTP requests, fires via reqwest, captures status/body\-length/latency, and reports a `bypass_signal` vs a baseline request (`canary\-reflected` / `none` / `status\-diverged` / `body\-diverged` / `both\-diverged`). `canary\-reflected` is the strongest signal: a 16\-char random canary token appeared verbatim in the response (false\-positive\- free). Requires `\-\-i\-have\-permission <REASON>` for non\- allowlisted hosts. Frame\-artifact probes (capsule / quic\-datagram / compression) are skipped — they live below the HTTP layer
+Fire every smuggle probe against a live target. The end\-to\-end execution pipeline, converts probe artifacts to real HTTP requests, fires via reqwest, captures status/body\-length/latency, and reports a `bypass_signal` vs a baseline request (`canary\-reflected` / `none` / `status\-diverged` / `body\-diverged` / `both\-diverged`). `canary\-reflected` is the strongest signal: a 16\-char random canary token appeared verbatim in the response (false\-positive\- free). Requires `\-\-i\-have\-permission <REASON>` for non\- allowlisted hosts. Frame\-artifact probes (capsule / quic\-datagram / compression) are skipped, they live below the HTTP layer
 .TP
 wafrift\-distill(1)
-Adversarial distillation via Zeller\*(Aqs ddmin: take a KNOWN\- working bypass payload and find the minimum\-edit\-distance subset that STILL bypasses. Useful for pentest reports — shorter payloads are easier for clients to reproduce, and the reduction reveals which payload features the WAF actually objected to vs. which were noise. Typically chained from `wafrift scan \-\-format json | jq .bypass_variants[0].payload`
+Adversarial distillation via Zeller\*(Aqs ddmin: take a KNOWN\- working bypass payload and find the minimum\-edit\-distance subset that STILL bypasses. Useful for pentest reports, shorter payloads are easier for clients to reproduce, and the reduction reveals which payload features the WAF actually objected to vs. which were noise. Typically chained from `wafrift scan \-\-format json | jq .bypass_variants[0].payload`
 .TP
 wafrift\-cluster(1)
-Offline bypass clustering: group a `bench\-waf \-\-output` JSON by rule_id, payload class, and edit\-distance similarity. Outputs clusters with a representative technique and member count per cluster. Pure offline — no HTTP. Useful for triaging large bypass corpora and identifying duplicate root causes
+Offline bypass clustering: group a `bench\-waf \-\-output` JSON by rule_id, payload class, and edit\-distance similarity. Outputs clusters with a representative technique and member count per cluster. Pure offline, no HTTP. Useful for triaging large bypass corpora and identifying duplicate root causes
 .TP
 wafrift\-sarif(1)
-Emit SARIF 2.1.0 from a `bench\-waf \-\-output` or `scan \-\-output` JSON file. SARIF is the OASIS\-standardised security\-tool format accepted by GitHub Code Scanning, Azure DevOps, and most enterprise SAST/DAST UIs. Pipe a wafrift result into this and the bypass findings appear as first\-class alerts on a PR or dashboard. Pure offline — no HTTP. Use `\-` to read from stdin
+Emit SARIF 2.1.0 from a `bench\-waf \-\-output` or `scan \-\-output` JSON file. SARIF is the OASIS\-standardised security\-tool format accepted by GitHub Code Scanning, Azure DevOps, and most enterprise SAST/DAST UIs. Pipe a wafrift result into this and the bypass findings appear as first\-class alerts on a PR or dashboard. Pure offline, no HTTP. Use `\-` to read from stdin
 .TP
 wafrift\-hunt(1)
 Long\-running autonomous bypass campaign. Repeatedly runs `bench\-waf \-\-evade` rounds against a target with rotating mutators/strategies, saves every confirmed bypass to a campaign JSON at `~/.wafrift/hunt\-<campaign\-id>.json`, and exits cleanly on Ctrl\-C. Resumable: re\-run with the same `\-\-campaign\-id`

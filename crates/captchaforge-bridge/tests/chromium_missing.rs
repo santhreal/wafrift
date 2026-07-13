@@ -39,7 +39,7 @@ async fn firefox_missing_returns_err_within_timeout() {
 
         // Either Err (hard launch error) or Ok(None) ("didn't solve")
         // is a valid signal that the bridge handled the missing-firefox
-        // case — what we care about is the bound on wall time, not the
+        // case, what we care about is the bound on wall time, not the
         // exact Result shape, which varies by launch backend.
         assert!(
             result.is_err() || matches!(result, Ok(None)),

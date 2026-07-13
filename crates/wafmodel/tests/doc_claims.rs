@@ -1,4 +1,4 @@
-//! E10/75 — doc-claim audit (the legendary differentiator).
+//! E10/75 (doc-claim audit (the legendary differentiator)).
 //!
 //! Every load-bearing claim the public docs make is registered in
 //! `doc_claims.toml` and bound to a REAL test. This auditor enforces,
@@ -12,7 +12,7 @@
 //!
 //! It also hosts the four proving tests for claims that previously had
 //! no dedicated test (no-stubs, forbid-unsafe, zero-config CRS, the
-//! README library example) — so the whole ledger is honestly `proven`.
+//! README library example) (so the whole ledger is honestly `proven`).
 
 use serde::Deserialize;
 use std::fs;
@@ -78,7 +78,7 @@ fn every_doc_claim_is_real_and_bound_to_a_living_test() {
     const MIN_CLAIMS: usize = 11;
     assert!(
         led.claim.len() >= MIN_CLAIMS,
-        "ledger shrank to {} (< {MIN_CLAIMS}) — a claim was dropped, not proven",
+        "ledger shrank to {} (< {MIN_CLAIMS}), a claim was dropped, not proven",
         led.claim.len()
     );
 
@@ -87,7 +87,7 @@ fn every_doc_claim_is_real_and_bound_to_a_living_test() {
     let open = led.claim.iter().filter(|c| c.status != "proven").count();
     assert_eq!(
         open, OPEN_BASELINE,
-        "{open} open doc-claims (baseline {OPEN_BASELINE}) — every claim must be proven; \
+        "{open} open doc-claims (baseline {OPEN_BASELINE}), every claim must be proven; \
          the baseline may only ratchet down to 0, never up"
     );
 
@@ -115,7 +115,7 @@ fn every_doc_claim_is_real_and_bound_to_a_living_test() {
         };
         assert!(
             hay.contains(&c.claim),
-            "[{}] claim text is not a verbatim substring of {} — \
+            "[{}] claim text is not a verbatim substring of {}. \
              the doc was changed or the ledger is fabricated:\n  {:?}",
             c.id,
             c.source,
@@ -184,7 +184,7 @@ fn forbid_unsafe_is_declared() {
 #[test]
 fn default_crs_ruleset_parses_zero_config() {
     // Zero-config: the CRS ruleset is embedded (no file/network) and is
-    // real — it actually blocks a canonical XSS payload.
+    // real (it actually blocks a canonical XSS payload).
     let mut waf = SimRegexWaf::from_toml(default_crs_ruleset())
         .expect("embedded CRS ruleset must parse with no external files");
     let req = Request::get("https://h/p?x=<script>alert(1)</script>");

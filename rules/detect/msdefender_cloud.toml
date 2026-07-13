@@ -8,7 +8,7 @@ source = "frontier-2026:msdefender-mcas"
 # Microsoft Cloud App Security (rebranded "Defender for Cloud Apps"
 # 2024–2025) intercepts via reverse-proxy. Blocked / inspected
 # traffic carries the `x-ms-cpim-*` family of headers and any
-# redirect target lands on `*.mcas.ms` or `*.access.mcas.ms` —
+# redirect target lands on `*.mcas.ms` or `*.access.mcas.ms` 
 # both load-bearing signals not covered by the existing Microsoft
 # Azure WAF rule.
 

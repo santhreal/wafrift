@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift compress`.
 //!
-//! All tests are purely offline — no HTTP, no mock server. The command
+//! All tests are purely offline, no HTTP, no mock server. The command
 //! reads a body from stdin / --input and writes the compressed bytes
 //! to stdout / --output together with a `Content-Encoding` header on
 //! stderr. Tests verify:
@@ -134,7 +134,7 @@ fn compress_unknown_algorithm_exits_2() {
 
 #[test]
 fn compress_no_input_source_exits_1() {
-    // Neither --stdin nor --input given — must exit 1 with a clear message.
+    // Neither --stdin nor --input given (must exit 1 with a clear message).
     let (code, _stdout, stderr) = wafrift(&["compress", "--algo", "gzip"]);
     assert_ne!(
         code, 0,

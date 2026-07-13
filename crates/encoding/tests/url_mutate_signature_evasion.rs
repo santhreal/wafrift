@@ -5,7 +5,7 @@
 use proptest::prelude::*;
 use wafrift_encoding::url_mutate::UrlStrategy;
 
-/// Walk `encoded` in lockstep with `input` — the aggressive encoder's
+/// Walk `encoded` in lockstep with `input`: the aggressive encoder's
 /// contract is order-preserving with 1→1 or 1→3 expansion per byte.
 fn assert_aggressive_encoding(input: &[u8], encoded: &str) {
     let out = encoded.as_bytes();

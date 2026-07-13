@@ -23,14 +23,14 @@
 //! | `1' AND 1=1--`            | `1 AND 1 BETWEEN 0 AND 9` | 200 ✓ |
 //! | `' OR 'a'='a' --`         | `1 OR 1=1`                | 200 ✓ |
 //!
-//! UNION/SELECT/extraction payloads are NOT covered here — Naxsi blocks
+//! UNION/SELECT/extraction payloads are NOT covered here. Naxsi blocks
 //! those keywords directly and the only known evasions involve
 //! out-of-band data exfiltration that's outside this module's scope.
 
 use crate::grammar::sql::common::SqlMutation;
 
 /// Quote-free tautology forms, sorted by surprise (boring forms first
-/// — `1=1` ranks higher than `CHAR(49)=CHAR(49)` because the boring
+///: `1=1` ranks higher than `CHAR(49)=CHAR(49)` because the boring
 /// one is what real SQL queries look like).
 const QUOTE_FREE_TAUTOLOGIES: &[&str] = &[
     "1=1",
@@ -118,7 +118,7 @@ pub fn mutations(payload: &str, max_mutations: usize) -> Vec<SqlMutation> {
     // For an auth-bypass value injection like `'admin'--` a quote-free
     // truthy tautology is equivalent. But `admin`/`root` also appear in
     // non-tautology attacks (`UNION SELECT pw FROM admin_users`,
-    // `'; DROP TABLE root_sessions--`) — replacing those with a bare
+    // `'; DROP TABLE root_sessions--`), replacing those with a bare
     // tautology destroys the exploit. Only fire when the payload is a
     // value/auth injection terminated by a comment AND is not already
     // a structured (UNION/stacked/error-based) attack.
@@ -147,7 +147,7 @@ pub fn mutations(payload: &str, max_mutations: usize) -> Vec<SqlMutation> {
         }
     }
 
-    // Strategy 4: unwrap parens — `(1) OR (1=1)` → `1 OR 1=1`. Many
+    // Strategy 4: unwrap parens: `(1) OR (1=1)` → `1 OR 1=1`. Many
     // WAFs flag the parenthesised form as suspicious; the unwrapped
     // form is plain SQL.
     if payload.contains('(') && payload.contains(')') {
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn non_sql_input_yields_zero() {
-        // No quote, no comment, no SQL keyword — nothing to rewrite.
+        // No quote, no comment, no SQL keyword (nothing to rewrite).
         let out = mutations("hello world", 10);
         assert!(out.is_empty(), "expected empty for non-SQL, got {out:?}");
     }

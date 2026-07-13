@@ -11,7 +11,7 @@ use tokio::sync::oneshot;
 use super::state::{InputMode, State, Tab, ToastKind};
 use super::yank::{replay_to_disk_and_optionally_exec, yank_to_disk_and_clipboard};
 
-/// Result of one keystroke dispatch — `true` means the loop should
+/// Result of one keystroke dispatch: `true` means the loop should
 /// exit.
 #[must_use]
 pub fn handle_key(
@@ -33,7 +33,7 @@ fn handle_filter_edit(state: &mut State, code: KeyCode, mods: KeyModifiers) -> b
         KeyCode::Enter => state.commit_filter_edit(),
         KeyCode::Backspace => state.filter_backspace(),
         KeyCode::Char(c) => {
-            // Ctrl-c during edit cancels rather than quitting — operator
+            // Ctrl-c during edit cancels rather than quitting, operator
             // expects edit-mode to be modal.
             if mods.contains(KeyModifiers::CONTROL) && (c == 'c' || c == 'C') {
                 state.cancel_filter_edit();
@@ -77,7 +77,7 @@ fn handle_normal(
         }
         KeyCode::Char('5') => state.tab = Tab::Intercept,
 
-        // Outcome filter cycle (Flow only) — 'o' lowercase
+        // Outcome filter cycle (Flow only): 'o' lowercase
         KeyCode::Char('o') if state.tab == Tab::Flow => {
             state.cycle_outcome_filter();
             let label = state.outcome_filter.label();
@@ -114,7 +114,7 @@ fn handle_normal(
             state.set_toast("request list cleared", ToastKind::Ok);
         }
 
-        // Navigation — when inspect pane is open, j/k scroll the detail
+        // Navigation, when inspect pane is open, j/k scroll the detail
         // pane; otherwise they navigate the list.
         KeyCode::Char('j') | KeyCode::Down if state.tab == Tab::Flow => {
             if state.inspect {
@@ -174,15 +174,15 @@ fn handle_normal(
             do_yank(state);
         }
 
-        // Replay — write a /tmp/wafrift-replay-N.curl reproducer and
+        // Replay, write a /tmp/wafrift-replay-N.curl reproducer and
         // (when WAFRIFT_REPLAY_AUTOEXEC=1) re-fire it via bash. This
-        // does NOT route through the proxy's evade pipeline — the
+        // does NOT route through the proxy's evade pipeline, the
         // captured request is already evaded.
         KeyCode::Char('R') if state.tab == Tab::Flow => {
             do_replay(state);
         }
 
-        // Intercept-mode toggle — works from any tab so the operator
+        // Intercept-mode toggle, works from any tab so the operator
         // doesn't have to navigate to enable.
         KeyCode::Char('i' | 'I') => {
             let now_on = crate::intercept::toggle_intercept_mode();
@@ -405,7 +405,7 @@ mod tests {
         assert_eq!(s.tab, Tab::Flow);
         press(&mut s, KeyCode::Char('o'), KeyModifiers::NONE);
         assert_eq!(s.outcome_filter, OutcomeFilter::BypassOnly);
-        // tab unchanged — 'o' on Flow MUST NOT also jump to Overview
+        // tab unchanged: 'o' on Flow MUST NOT also jump to Overview
         assert_eq!(s.tab, Tab::Flow);
     }
 
@@ -415,7 +415,7 @@ mod tests {
         s.tab = Tab::Overview;
         let before = s.outcome_filter;
         press(&mut s, KeyCode::Char('o'), KeyModifiers::NONE);
-        // we're on Overview already — pressing 'o' is a no-op (was a
+        // we're on Overview already, pressing 'o' is a no-op (was a
         // jump-to-Overview command, but we're already there)
         assert_eq!(s.outcome_filter, before);
     }
@@ -495,7 +495,7 @@ mod tests {
     fn r_on_intercept_tab_does_not_reset_counters() {
         let mut s = State::new();
         // Force the unguarded reset arm NOT to fire from the
-        // Intercept tab — total must stay 0 after r.
+        // Intercept tab (total must stay 0 after r).
         s.tab = Tab::Intercept;
         s.total = 7;
         press(&mut s, KeyCode::Char('r'), KeyModifiers::NONE);

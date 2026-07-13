@@ -8,7 +8,7 @@
 //! - **Tag characters (U+E0000–U+E007F, "Plan 9 tags").** Each ASCII
 //!   codepoint `c` has a tag-equivalent at `U+E0000 + c`. Strip them and
 //!   you recover the original ASCII. Prompt-injection research has shown
-//!   modern LLM tokenizers preserve and decode these — meaning an
+//!   modern LLM tokenizers preserve and decode these, meaning an
 //!   LLM-backed WAF will see a benign-looking blob while still receiving
 //!   the attack tokens.
 //! - **Variation selectors (U+FE00–U+FE0F, U+E0100–U+E01EF).** Originally
@@ -35,8 +35,8 @@
 //! # Why a new module
 //!
 //! `unicode.rs` is already 17K LOC of encoders. The encoders here belong
-//! together as a class — "looks identical, parses identical, byte stream
-//! is unrecognizable" — and putting them next to the case-folding /
+//! together as a class: "looks identical, parses identical, byte stream
+//! is unrecognizable", and putting them next to the case-folding /
 //! homoglyph / math-alphabet encoders would dilute that boundary.
 
 /// Encode every ASCII byte as its Plan 9 tag-character equivalent.
@@ -87,7 +87,7 @@ pub fn variation_selector_pad(input: &str, selector: char) -> String {
 /// selector drawn from the supplementary range `U+E0100..=U+E01EF`.
 ///
 /// Useful when a WAF strips a constant pad (U+FE0F) but allows the
-/// supplementary plane — exposing the discrepancy directly.
+/// supplementary plane (exposing the discrepancy directly).
 #[must_use]
 pub fn variation_selector_supplementary_pad(input: &str) -> String {
     let mut out = String::with_capacity(input.len() * 5);
@@ -109,7 +109,7 @@ pub fn variation_selector_supplementary_pad(input: &str) -> String {
 /// parses identically.
 #[must_use]
 pub fn ligature_encode(input: &str) -> String {
-    // Order matters — longer matches must be tried first so `ffi` /
+    // Order matters, longer matches must be tried first so `ffi` /
     // `ffl` don't get partially consumed as `ff`.
     const LIGATURES: &[(&str, char)] = &[
         ("ffi", '\u{FB03}'),
@@ -130,7 +130,7 @@ pub fn ligature_encode(input: &str) -> String {
                 continue 'outer;
             }
         }
-        // No ligature at this position — copy one codepoint and advance.
+        // No ligature at this position (copy one codepoint and advance).
         let mut chars = rest.chars();
         if let Some(c) = chars.next() {
             out.push(c);
@@ -144,7 +144,7 @@ pub fn ligature_encode(input: &str) -> String {
 /// (U+24B6..=U+24CF for uppercase, U+24D0..=U+24E9 for lowercase).
 ///
 /// NFKC decomposes these back to the plain Latin letters. Same trick
-/// shape as `fullwidth_encode` but a non-overlapping codepoint set —
+/// shape as `fullwidth_encode` but a non-overlapping codepoint set 
 /// rotating between them defeats any filter that scrubs ONE of them.
 #[must_use]
 pub fn circled_letter_encode(input: &str) -> String {
@@ -177,7 +177,7 @@ pub fn circled_letter_encode(input: &str) -> String {
 /// U+249C..=U+24B5 for lowercase).
 ///
 /// Another rotation partner for `circled_letter_encode` /
-/// `fullwidth_encode` — the byte stream looks entirely different
+/// `fullwidth_encode`: the byte stream looks entirely different
 /// even though NFKC collapses all three back to the same ASCII.
 #[must_use]
 pub fn parenthesized_letter_encode(input: &str) -> String {
@@ -215,7 +215,7 @@ pub fn soft_hyphen_inject(input: &str) -> String {
     // §1 SPEED: replaced Vec<char> collect (heap allocation proportional to
     // input length) + two-pass enumerate with a single-pass peekable iterator.
     // The `first` flag replaces the `i > 0` guard without materialising the
-    // full char vec — zero extra allocation beyond the output String.
+    // full char vec (zero extra allocation beyond the output String).
     //
     // Before: 2 heap allocs (Vec + String), O(n) collect, O(n) enumerate.
     // After:  1 heap alloc (String), O(n) single pass.
@@ -253,7 +253,7 @@ pub fn word_joiner_wrap(input: &str) -> String {
 }
 
 /// Returns the list of every invisible-class encoder name shipped by
-/// this module — used by the integration test to assert the
+/// this module, used by the integration test to assert the
 /// dispatcher in `strategy.rs` has wired every one of them.
 pub const INVISIBLE_ENCODER_NAMES: &[&str] = &[
     "tag_char_encode",
@@ -348,9 +348,9 @@ mod tests {
 
     #[test]
     fn ligature_encode_replaces_known_digraphs() {
-        // "effect"  → ef·ff·ect — `ff` not followed by `i`/`l`, so ﬀ (U+FB00).
-        // "official" → o·ffi·cial — `ffi` matches before `ff`, so ﬃ (U+FB03).
-        // "offload"  → o·ffl·oad — `ffl` matches before `ff`, so ﬄ (U+FB04).
+        // "effect"  → ef·ff·ect: `ff` not followed by `i`/`l`, so ﬀ (U+FB00).
+        // "official" → o·ffi·cial: `ffi` matches before `ff`, so ﬃ (U+FB03).
+        // "offload"  → o·ffl·oad: `ffl` matches before `ff`, so ﬄ (U+FB04).
         let out = ligature_encode("effect official offload");
         assert!(out.contains('\u{FB00}'), "ff → ﬀ in 'effect': {out:?}");
         assert!(out.contains('\u{FB03}'), "ffi → ﬃ in 'official': {out:?}");
@@ -491,7 +491,7 @@ mod tests {
             let out = enc("");
             // soft_hyphen_inject and word_joiner_wrap-empty special case:
             // word_joiner_wrap("") still produces a single U+2060.
-            // That's fine — it preserves the "wrap" invariant.
+            // That's fine (it preserves the "wrap" invariant).
             assert!(out.len() < 8, "empty input must produce ~empty output");
         }
     }

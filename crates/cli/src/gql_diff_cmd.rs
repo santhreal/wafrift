@@ -1,11 +1,11 @@
-//! `wafrift gql-diff` — GraphQL parser / cost-limit disagreement
+//! `wafrift gql-diff`: GraphQL parser / cost-limit disagreement
 //! scanner.
 //!
 //! ## What this finds
 //!
 //! GraphQL endpoints have a different attack surface from REST.
 //! WAFs that gate REST routes by URL-shape see only `POST /graphql`
-//! and a JSON body — they miss the structure inside. Origins that
+//! and a JSON body, they miss the structure inside. Origins that
 //! parse the GraphQL query may:
 //!
 //! - Honour introspection queries and leak the schema.
@@ -112,7 +112,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
         GqlProbe {
             kind: "introspection-full",
             description:
-                "Standard full introspection — leaks the entire schema if the WAF \
+                "Standard full introspection, leaks the entire schema if the WAF \
                  doesn't block `__schema` queries (common misconfiguration)",
             body: r#"{"query":"{ __schema { types { name fields { name } } } }"}"#.into(),
             content_type: "",
@@ -121,7 +121,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
         GqlProbe {
             kind: "introspection-type",
             description:
-                "Targeted type introspection — narrower than full schema dump; \
+                "Targeted type introspection, narrower than full schema dump; \
                  WAFs that match the literal `__schema` keyword miss this",
             body: r#"{"query":"{ __type(name:\"Query\") { fields { name type { name } } } }"}"#.into(),
             content_type: "",
@@ -131,7 +131,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
         GqlProbe {
             kind: "alias-bombing",
             description:
-                "Same field aliased many times — bypasses WAF rules that count \
+                "Same field aliased many times, bypasses WAF rules that count \
                  unique field references; rate-limited by op count, not field count",
             body: r#"{"query":"{ a:__typename b:__typename c:__typename d:__typename e:__typename f:__typename }"}"#.into(),
             content_type: "",
@@ -141,7 +141,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
         GqlProbe {
             kind: "batched-operations",
             description:
-                "Array-of-operations request — Apollo / Hasura support; one WAF \
+                "Array-of-operations request: Apollo / Hasura support; one WAF \
                  request, many origin operations. Breaks per-request rate limits.",
             body: r#"[{"query":"{ __typename }"},{"query":"{ __typename }"}]"#.into(),
             content_type: "",
@@ -151,7 +151,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
         GqlProbe {
             kind: "mutation-as-query",
             description:
-                "Mutation request declared with `query` operationType — strict \
+                "Mutation request declared with `query` operationType, strict \
                  parsers reject; lenient ones execute as mutation; WAF gates by \
                  declared type and misses the actual op",
             body: r#"{"query":"mutation { __typename }","operationName":null}"#.into(),
@@ -162,7 +162,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
         GqlProbe {
             kind: "field-duplication",
             description:
-                "Same field requested twice in same selection — origin parsers \
+                "Same field requested twice in same selection, origin parsers \
                  dedup silently; WAF sees two field references",
             body: r#"{"query":"{ __typename __typename }"}"#.into(),
             content_type: "",
@@ -172,7 +172,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
         GqlProbe {
             kind: "fragment-nesting",
             description:
-                "Several layers of inline fragments — exercises query-cost \
+                "Several layers of inline fragments, exercises query-cost \
                  limits; WAFs without cost analysis pass through",
             body: r#"{"query":"{ ... on Query { ... on Query { ... on Query { __typename } } } }"}"#.into(),
             content_type: "",
@@ -194,7 +194,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
             kind: "get-shaped-query",
             description:
                 "Same operation sent via HTTP GET with the query in the `?query=` \
-                 string instead of a POST body — WAF rules that inspect only POST \
+                 string instead of a POST body. WAF rules that inspect only POST \
                  bodies never see it; GraphQL servers that honour GET (Apollo, \
                  graphql-yoga with GET enabled) still execute it.",
             // `http_get` makes the live fire a real GET ?query=<raw query>, so the
@@ -209,7 +209,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
             kind: "operation-name-spoof",
             description:
                 "Operation declared with one name but operationName parameter \
-                 points to another — WAFs that check operationName miss the \
+                 points to another: WAFs that check operationName miss the \
                  actual op being executed",
             body: r#"{"query":"query SafeOp { __typename } query AdminOp { __typename }","operationName":"AdminOp"}"#.into(),
             content_type: "",
@@ -439,7 +439,7 @@ fn emit_output(
     for r in results.iter().filter(|r| r.severity != "none") {
         let badge = crate::parser_diff_common::severity_badge(r.severity);
         println!();
-        println!("  [{badge}] {} — {}", r.kind.bold(), r.description);
+        println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         crate::parser_diff_common::print_baseline_probe_arrow(
             r.baseline_status,
             r.baseline_body_len,
@@ -457,8 +457,8 @@ mod tests {
 
     /// §5/§10/§11 regression: `get-shaped-query` must be a REAL GraphQL-over-GET
     /// probe (the technique its description claims), not a POST look-alike. Pre-fix
-    /// it fired a POST with body `{"query":"{ __typename }"}` — identical to the
-    /// baseline — yet the operator-facing text promised a `?query=` GET test.
+    /// it fired a POST with body `{"query":"{ __typename }"}`: identical to the
+    /// baseline (yet the operator-facing text promised a `?query=` GET test).
     #[test]
     fn get_shaped_query_is_a_real_get_with_raw_query_body() {
         let probe = generate_gql_variants()
@@ -469,7 +469,7 @@ mod tests {
             probe.http_get,
             "must be marked http_get so the live fire is a GET"
         );
-        // Body is the RAW query string (no JSON wrapper) — it rides ?query=.
+        // Body is the RAW query string (no JSON wrapper) (it rides ?query=).
         assert_eq!(probe.body, "{ __typename }");
         assert!(
             !probe.body.contains("\"query\""),
@@ -500,7 +500,7 @@ mod tests {
             url.starts_with("https://api.test/graphql?query="),
             "got {url}"
         );
-        // Braces percent-encoded, space form-encoded ('+' or %20) — never raw.
+        // Braces percent-encoded, space form-encoded ('+' or %20) (never raw).
         assert!(
             !url.contains('{') && !url.contains('}'),
             "braces must be encoded: {url}"
@@ -566,7 +566,7 @@ mod tests {
             .iter()
             .find(|p| p.kind == "batched-operations")
             .expect("batched probe");
-        // Body must start with `[` — array of ops.
+        // Body must start with `[`: array of ops.
         assert!(
             batched.body.trim_start().starts_with('['),
             "got: {}",

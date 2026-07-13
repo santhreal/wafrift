@@ -5,23 +5,23 @@
 //! `auth-scheme 1*SP token68 / auth-params`. Real-world parsers are
 //! inconsistent about:
 //!
-//! - **Case sensitivity** of the scheme — RFC says case-insensitive
+//! - **Case sensitivity** of the scheme. RFC says case-insensitive
 //!   (`Bearer` ≡ `bearer` ≡ `BEARER`) but some WAFs match `Bearer`
 //!   literally and miss lowercase.
-//! - **Linear whitespace** between scheme and token — RFC says
+//! - **Linear whitespace** between scheme and token. RFC says
 //!   `1*SP` (one or more spaces) but some parsers accept tabs,
 //!   multiple spaces, or no space at all (`Bearereyj…`).
-//! - **Multiple Authorization headers** — RFC 7230 §3.2.2 forbids
+//! - **Multiple Authorization headers**: RFC 7230 §3.2.2 forbids
 //!   most header duplication; Authorization is single-valued. Real
 //!   stacks: nginx keeps first, Apache keeps last, some join with
 //!   commas. Privilege-escalation surface when WAF and origin
 //!   disagree on which header wins.
-//! - **Quoted scheme** (`"Bearer" eyj…`) — strict RFC rejects; lax
+//! - **Quoted scheme** (`"Bearer" eyj…`), strict RFC rejects; lax
 //!   parsers strip quotes.
-//! - **Trailing junk** after the token — many origin parsers stop
+//! - **Trailing junk** after the token, many origin parsers stop
 //!   at the first whitespace and ignore the rest; WAFs that scan
 //!   the entire header value see the trailing payload.
-//! - **Control bytes in the token** — strict RFC 5234 token68
+//! - **Control bytes in the token**: strict RFC 5234 token68
 //!   alphabet forbids CTLs; lax parsers silently strip them.
 //!
 //! The same matrix applies to `Proxy-Authorization` (RFC 7235
@@ -33,7 +33,7 @@
 //! Every probe produces a single string for the header value. The
 //! caller attaches it to a `Request` under either `Authorization` or
 //! `Proxy-Authorization`. Some variants emit a `Vec<(name, value)>`
-//! when the probe requires more than one header — see
+//! when the probe requires more than one header, see
 //! [`AuthSmuggleProbe::header_lines`].
 
 use rand::Rng;
@@ -50,31 +50,31 @@ pub const MAX_AUTH_HEADER_BYTES: usize = 4 * 1024;
 /// Authorization-header smuggle variants.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AuthHeaderVariant {
-    /// `bearer <token>` — lowercase scheme. RFC 7235 §2.1 says
+    /// `bearer <token>`: lowercase scheme. RFC 7235 §2.1 says
     /// case-insensitive; some WAFs match literally and miss it.
     LowercaseScheme,
-    /// `Bearer<token>` — no whitespace between scheme and token.
+    /// `Bearer<token>`: no whitespace between scheme and token.
     /// RFC says `1*SP`; some lenient parsers join them.
     NoWhitespaceAfterScheme,
-    /// `Bearer\t<token>` — TAB instead of SP between scheme and
+    /// `Bearer\t<token>`: TAB instead of SP between scheme and
     /// token. RFC 5234 allows SP only in `1*SP`; lax parsers accept
     /// any LWS.
     TabBetweenSchemeAndToken,
-    /// `Bearer   <token>` — multiple spaces (3-7 chosen randomly)
+    /// `Bearer   <token>`: multiple spaces (3-7 chosen randomly)
     /// instead of `1*SP`. Some strict parsers reject; most accept.
     MultipleSpacesAfterScheme,
     /// Two `Authorization:` header lines with different tokens.
     /// `header_lines` returns both. WAF takes first; origin may
     /// take last → privilege escalation differential.
     DuplicateHeaderFirstWinsBenign,
-    /// `"Bearer" <token>` — scheme wrapped in double quotes. Strict
+    /// `"Bearer" <token>`: scheme wrapped in double quotes. Strict
     /// RFC rejects; some lax parsers strip.
     QuotedScheme,
-    /// `Bearer <token> trailing junk` — extra bytes after the
+    /// `Bearer <token> trailing junk`: extra bytes after the
     /// token. Most parsers stop at whitespace; WAFs scanning the
     /// whole value see the trailing payload.
     TrailingJunkAfterToken,
-    /// `Bearer <token-with-ctl-byte>` — control byte inserted into
+    /// `Bearer <token-with-ctl-byte>`: control byte inserted into
     /// the token. Strict parsers reject; lax parsers strip.
     ControlByteInToken,
 }
@@ -117,7 +117,7 @@ impl AuthSmuggleProbe {
         }
     }
 
-    /// `bearer <token>` — lowercase scheme.
+    /// `bearer <token>`: lowercase scheme.
     #[must_use]
     pub fn lowercase_scheme(header_name: &str, scheme: &str, token: &str) -> Self {
         let value = format!("{} {}", scheme.to_lowercase(), sanitise_token(token));
@@ -125,24 +125,24 @@ impl AuthSmuggleProbe {
             AuthHeaderVariant::LowercaseScheme,
             vec![(header_name.to_string(), value)],
             format!(
-                "Lowercase auth scheme {:?} — RFC 7235 §2.1 case-insensitive but some WAFs match literal",
+                "Lowercase auth scheme {:?}: RFC 7235 §2.1 case-insensitive but some WAFs match literal",
                 scheme.to_lowercase()
             ),
         )
     }
 
-    /// `Bearer<token>` — no whitespace between scheme and token.
+    /// `Bearer<token>`: no whitespace between scheme and token.
     #[must_use]
     pub fn no_whitespace_after_scheme(header_name: &str, scheme: &str, token: &str) -> Self {
         let value = format!("{}{}", scheme, sanitise_token(token));
         Self::finalise(
             AuthHeaderVariant::NoWhitespaceAfterScheme,
             vec![(header_name.to_string(), value)],
-            "No SP between scheme and token — RFC 7235 §2.1 violation, lenient parsers join".into(),
+            "No SP between scheme and token. RFC 7235 §2.1 violation, lenient parsers join".into(),
         )
     }
 
-    /// `Bearer\t<token>` — TAB instead of SP between scheme and
+    /// `Bearer\t<token>`: TAB instead of SP between scheme and
     /// token.
     #[must_use]
     pub fn tab_between_scheme_and_token(header_name: &str, scheme: &str, token: &str) -> Self {
@@ -150,11 +150,11 @@ impl AuthSmuggleProbe {
         Self::finalise(
             AuthHeaderVariant::TabBetweenSchemeAndToken,
             vec![(header_name.to_string(), value)],
-            "TAB between scheme and token — RFC requires SP, some accept any LWS".into(),
+            "TAB between scheme and token. RFC requires SP, some accept any LWS".into(),
         )
     }
 
-    /// `Bearer   <token>` — 3-7 spaces between scheme and token.
+    /// `Bearer   <token>`: 3-7 spaces between scheme and token.
     #[must_use]
     pub fn multiple_spaces_after_scheme(header_name: &str, scheme: &str, token: &str) -> Self {
         let mut rng = rand::thread_rng();
@@ -163,7 +163,7 @@ impl AuthSmuggleProbe {
         Self::finalise(
             AuthHeaderVariant::MultipleSpacesAfterScheme,
             vec![(header_name.to_string(), value)],
-            format!("{n} spaces between scheme and token — boundary stretch of `1*SP`"),
+            format!("{n} spaces between scheme and token, boundary stretch of `1*SP`"),
         )
     }
 
@@ -182,11 +182,11 @@ impl AuthSmuggleProbe {
         Self::finalise(
             AuthHeaderVariant::DuplicateHeaderFirstWinsBenign,
             vec![(header_name.to_string(), v1), (header_name.to_string(), v2)],
-            "Duplicate Authorization headers — nginx-vs-Apache first/last-wins differential".into(),
+            "Duplicate Authorization headers, nginx-vs-Apache first/last-wins differential".into(),
         )
     }
 
-    /// `"Bearer" <token>` — scheme wrapped in double quotes.
+    /// `"Bearer" <token>`: scheme wrapped in double quotes.
     #[must_use]
     pub fn quoted_scheme(header_name: &str, scheme: &str, token: &str) -> Self {
         // Strip any inner quotes so the wrapping pair isn't ambiguous.
@@ -195,11 +195,11 @@ impl AuthSmuggleProbe {
         Self::finalise(
             AuthHeaderVariant::QuotedScheme,
             vec![(header_name.to_string(), value)],
-            "Quoted scheme — strict RFC rejects, lax parsers strip quotes".into(),
+            "Quoted scheme, strict RFC rejects, lax parsers strip quotes".into(),
         )
     }
 
-    /// `Bearer <token> <junk>` — extra bytes after the token.
+    /// `Bearer <token> <junk>`: extra bytes after the token.
     #[must_use]
     pub fn trailing_junk_after_token(
         header_name: &str,
@@ -216,11 +216,11 @@ impl AuthSmuggleProbe {
         Self::finalise(
             AuthHeaderVariant::TrailingJunkAfterToken,
             vec![(header_name.to_string(), value)],
-            "Trailing bytes after token — parser stops at SP vs WAF scans whole value".into(),
+            "Trailing bytes after token, parser stops at SP vs WAF scans whole value".into(),
         )
     }
 
-    /// `Bearer <token-with-ctl>` — control byte injected at the
+    /// `Bearer <token-with-ctl>`: control byte injected at the
     /// token midpoint. CTL pool randomised per call.
     #[must_use]
     pub fn control_byte_in_token(header_name: &str, scheme: &str, token: &str) -> Self {
@@ -241,7 +241,7 @@ impl AuthSmuggleProbe {
         Self::finalise(
             AuthHeaderVariant::ControlByteInToken,
             vec![(header_name.to_string(), value)],
-            format!("Control byte 0x{ctl:02x} inside token — strict reject vs lax strip"),
+            format!("Control byte 0x{ctl:02x} inside token, strict reject vs lax strip"),
         )
     }
 }
@@ -445,7 +445,7 @@ mod tests {
     #[test]
     fn sanitise_strips_cr_lf_nul_from_token() {
         // Anti-rig: CR/LF/NUL must NEVER reach the wire even when the
-        // probe explores lax parsers — they break framing universally.
+        // probe explores lax parsers (they break framing universally).
         let p = AuthSmuggleProbe::lowercase_scheme("Authorization", "Bearer", "to\rke\nn\0X");
         let (_, v) = &p.header_lines[0];
         assert!(!v.contains('\r'));

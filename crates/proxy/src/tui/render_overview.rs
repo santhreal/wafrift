@@ -1,4 +1,4 @@
-//! Overview tab — counters, latency percentiles, status-code ribbon,
+//! Overview tab, counters, latency percentiles, status-code ribbon,
 //! TLS rotation, WAFs identified.
 
 use ratatui::Frame;
@@ -216,7 +216,7 @@ fn draw_tls(f: &mut Frame, area: Rect, state: &State) {
     f.render_widget(block, area);
 
     if total == 0 || state.tls.counts.is_empty() {
-        let p = Paragraph::new("(no TLS rotation active — start with --tls-impersonate-rotate)")
+        let p = Paragraph::new("(no TLS rotation active, start with --tls-impersonate-rotate)")
             .style(crate::tui::style::DIM);
         f.render_widget(p, inner);
         return;
@@ -253,7 +253,7 @@ fn draw_wafs(f: &mut Frame, area: Rect, state: &State) {
     f.render_widget(block, area);
 
     if state.waf_seen.is_empty() {
-        let p = Paragraph::new("(no WAFs identified yet — proxy more requests)")
+        let p = Paragraph::new("(no WAFs identified yet, proxy more requests)")
             .style(crate::tui::style::DIM);
         f.render_widget(p, inner);
         return;
@@ -328,7 +328,7 @@ mod tests {
         out
     }
 
-    // ── draw() — top-level composition ─────────────────────
+    // ── draw(), top-level composition ─────────────────────
 
     #[test]
     fn draw_top_level_renders_all_sections() {
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn draw_handles_zero_request_state_without_panic() {
-        // Fresh state — no requests, no latencies recorded.  The
+        // Fresh state, no requests, no latencies recorded.  The
         // percentile / TLS / WAF sections should still render.
         let c = cfg();
         let s = State::new();
@@ -406,7 +406,7 @@ mod tests {
         assert!(!buf.contains("NaN"));
     }
 
-    // ── pct_color — pure helper ───────────────────────────
+    // ── pct_color, pure helper ───────────────────────────
 
     #[test]
     fn pct_color_returns_distinct_styles_across_ms_buckets() {
@@ -441,7 +441,7 @@ mod tests {
     fn wafs_section_renders_empty_state() {
         let s = State::new();
         let buf = render(120, 6, |f, area| draw_wafs(f, area, &s));
-        // Empty state — at minimum a section header is present.
+        // Empty state (at minimum a section header is present).
         assert!(!buf.is_empty());
     }
 
@@ -454,7 +454,7 @@ mod tests {
 
     #[test]
     fn draw_handles_tiny_screen_without_panic() {
-        // 40x12 is below any reasonable terminal size — the
+        // 40x12 is below any reasonable terminal size, the
         // function must clip cleanly rather than panic.
         let c = cfg();
         let s = State::new();

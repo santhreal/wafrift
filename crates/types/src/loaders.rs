@@ -65,7 +65,7 @@ fn read_capped_toml(path: &Path) -> io::Result<String> {
 /// Multi-writer safe: the tmp filename embeds the writer's PID + a
 /// nanosecond timestamp so two processes pointed at the same path
 /// don't collide on each other's `<path>.tmp`. The last `rename`
-/// wins — matching the existing single-writer semantics that callers
+/// wins, matching the existing single-writer semantics that callers
 /// rely on. Pre-extract, this dance was hand-rolled at 3 sites
 /// (`strategy::gene_bank::write_genome`, `proxy::gene_bank_io`,
 /// `cli::seed`) with subtly different tmp-suffix policies and
@@ -105,7 +105,7 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
     }
 
     // Best-effort parent-dir fsync so the rename is durable across a
-    // crash. Failure here is non-fatal — the rename already happened
+    // crash. Failure here is non-fatal, the rename already happened
     // and most filesystems will recover the directory entry anyway.
     if let Some(parent) = path.parent()
         && let Ok(dir) = std::fs::OpenOptions::new().read(true).open(parent)
@@ -142,7 +142,7 @@ pub fn read_toml_files_strict(dir: &Path) -> io::Result<Vec<(PathBuf, String)>> 
 
 /// Lossy: same iteration as `read_toml_files_strict` but silently
 /// skips files that fail to read (best-effort discovery). The outer
-/// directory-open failure is also swallowed — callers that need to
+/// directory-open failure is also swallowed, callers that need to
 /// distinguish "no such directory" from "no .toml files" should use
 /// the strict variant.
 #[must_use]
@@ -314,7 +314,7 @@ mod tests {
     /// LAW 12: per R55 pass-19 I4, `write_atomic` auto-creates the
     /// parent directory so callers don't have to. The previous test
     /// asserted the OPPOSITE (must fail when parent missing) and was
-    /// stale relative to the hardened behaviour — silently passing on
+    /// stale relative to the hardened behaviour, silently passing on
     /// the unwrap chain. Locked in: parent auto-create succeeds, file
     /// is written, parent now exists.
     #[test]
@@ -342,7 +342,7 @@ mod tests {
 
     #[test]
     fn write_atomic_distinct_tmp_names_for_concurrent_writers() {
-        // Two back-to-back calls in the same process — the per-nanos
+        // Two back-to-back calls in the same process, the per-nanos
         // suffix should still differ enough to avoid collision.
         let dir = tmp();
         let path = dir.join("seq.json");

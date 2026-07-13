@@ -54,7 +54,7 @@ if ($status['attack'] === true && !(bool)$config->get('observe')) {
     exit;
 }
 
-// Request is clean — echo all parameters back as JSON.
+// Request is clean (echo all parameters back as JSON).
 http_response_code(200);
 header('Content-Type: application/json');
 echo json_encode([

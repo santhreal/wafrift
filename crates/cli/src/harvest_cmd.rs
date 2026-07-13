@@ -1,4 +1,4 @@
-//! `wafrift harvest` + `wafrift submit` — turn a hunt/bench bypass
+//! `wafrift harvest` + `wafrift submit`: turn a hunt/bench bypass
 //! corpus into review-ready HackerOne reports, then (separately, one at
 //! a time, only with `--confirm`) file a single reviewed report.
 //!
@@ -36,7 +36,7 @@ use crate::equiv_engine::{
     verified_bypass,
 };
 
-/// Tier-B per-class "policing probe" table — an un-evaded canonical attack per
+/// Tier-B per-class "policing probe" table, an un-evaded canonical attack per
 /// class that a competent WAF should block. Used by the differential-baseline
 /// gate to tell a genuine evasion from a never-policed sink (see
 /// [`differential_credits`]).
@@ -95,7 +95,7 @@ fn class_policing_probe(class: &str) -> Option<&'static str> {
 ///   SAME delivery (`build_control`) and credit only if the WAF BLOCKED it
 ///   (`base_blocked`). A probe that sails through means the sink was never
 ///   policed for this class, so the recorded "bypass" reaching the app is a
-///   false positive (no evasion occurred) — drop it. When no probe exists for
+///   false positive (no evasion occurred), drop it. When no probe exists for
 ///   the class, the differential cannot be evaluated, so credit is withheld
 ///   (`base_blocked = false`) rather than inflating the count.
 async fn differential_credits<F>(
@@ -124,11 +124,11 @@ where
     differential_confirmed(true, differential, base_blocked)
 }
 
-/// Cloudflare's public WAF-bypass bounty surface — the `--target
+/// Cloudflare's public WAF-bypass bounty surface, the `--target
 /// cumulusfire` preset for both `hunt` and `harvest`.
 const CUMULUSFIRE_BASE_URL: &str = "https://waf.cumulusfire.net";
 const CUMULUSFIRE_PERMISSION: &str =
-    "CumulusFire public bug bounty scope — wafrift harvest --target cumulusfire";
+    "CumulusFire public bug bounty scope, wafrift harvest --target cumulusfire";
 const CUMULUSFIRE_TEAM: &str = "cumulusfire";
 
 /// Fallback delivery shapes tried during re-verify, in order. Used ONLY
@@ -177,7 +177,7 @@ pub(crate) struct HarvestArgs {
     #[arg(long)]
     pub base_url: Option<String>,
 
-    /// Named target preset. Currently only `cumulusfire` — pre-fills
+    /// Named target preset. Currently only `cumulusfire`: pre-fills
     /// `--base-url`, the permission reason, and the H1 team for
     /// Cloudflare's public WAF bounty surface.
     #[arg(long, value_name = "PRESET", value_parser = ["cumulusfire"])]
@@ -213,13 +213,13 @@ pub(crate) struct HarvestArgs {
     #[arg(long, default_value_t = 15)]
     pub timeout_secs: u64,
 
-    /// Delay between re-verify probes (milliseconds) — be polite to the
+    /// Delay between re-verify probes (milliseconds), be polite to the
     /// live target.
     #[arg(long, default_value_t = 250)]
     pub delay_ms: u64,
 
     /// Skip the live re-verify step and emit reports straight from the
-    /// corpus (offline triage). Reports are marked UNVERIFIED — do not
+    /// corpus (offline triage). Reports are marked UNVERIFIED, do not
     /// submit one without re-verifying it first.
     #[arg(long)]
     pub no_reverify: bool,
@@ -236,7 +236,7 @@ pub(crate) struct HarvestArgs {
     pub root_cause: bool,
 
     /// After confirming a bypass still reaches origin, PROVE it executes by
-    /// detonating the response through the external `detonate` tool — elevating
+    /// detonating the response through the external `detonate` tool, elevating
     /// a reflected XSS bypass to a confirmed `alert(1)`-class exploit. Requires
     /// the `detonate` binary on PATH (or `$WAFRIFT_DETONATE_BIN`); when absent,
     /// harvest warns once and proceeds without execution proof.
@@ -283,7 +283,7 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
     };
 
     // Gate on the same allowlist / --i-have-permission contract bench &
-    // hunt use (exits 2 on refusal). Always — not just when re-verifying:
+    // hunt use (exits 2 on refusal). Always, not just when re-verifying:
     // every report embeds the target host and a curl reproduction aimed at
     // it, so generating attack reports for a host the operator hasn't
     // asserted permission to target is refused even under --no-reverify.
@@ -305,7 +305,7 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
     }
     // Parse the corpus EXPLICITLY so a corrupt/truncated file is a hard
     // error, not a silent empty. `RuleBypassCorpus::load_or_default`
-    // swallows parse failures into a fresh corpus — correct for the WRITE
+    // swallows parse failures into a fresh corpus, correct for the WRITE
     // side (bench/hunt are about to fill it) but dangerous here: a broken
     // corpus would read as "no bypasses to harvest" and the operator could
     // silently miss submittable findings (= lost bounty money).
@@ -322,7 +322,7 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
             eprintln!(
                 "error: corpus {} is not valid JSON: {e}\n\
                  It may be truncated or corrupt. harvest will NOT silently treat a broken \
-                 corpus as empty (you could miss submittable bypasses) — re-run the hunt or \
+                 corpus as empty (you could miss submittable bypasses), re-run the hunt or \
                  `bench-waf --corpus-out` to regenerate it.",
                 corpus_path.display()
             );
@@ -382,7 +382,7 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
         candidates.len(),
         corpus_path.display(),
         if args.no_reverify {
-            "no re-verify — reports marked UNVERIFIED"
+            "no re-verify, reports marked UNVERIFIED"
         } else {
             "re-verifying against the live target"
         }
@@ -390,7 +390,7 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
 
     if candidates.is_empty() {
         eprintln!(
-            "[wafrift harvest] nothing to do — corpus has no un-handled bypasses. \
+            "[wafrift harvest] nothing to do, corpus has no un-handled bypasses. \
              (Already-submitted/accepted/rejected entries are skipped.)"
         );
         return 0;
@@ -413,7 +413,7 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
         let prove = args.prove_execution;
         if prove && !crate::exec_proof::available() {
             eprintln!(
-                "[wafrift harvest] WARNING — --prove-execution set but the `detonate` \
+                "[wafrift harvest] WARNING: --prove-execution set but the `detonate` \
                  tool was not found (PATH or $WAFRIFT_DETONATE_BIN). Proceeding WITHOUT \
                  execution proof; install `detonate` to elevate reflected bypasses to \
                  confirmed exploits."
@@ -433,12 +433,12 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
     // Honest bypass-vs-exploit split: of the re-verified bypasses, how many were
     // proven to actually EXECUTE (alert(1) fired) by detonation, vs merely
     // bypass the WAF and reflect inert. This is the gap behind "real payloads
-    // struggle vs what we classify as a bypass" — surfaced as a headline, never
+    // struggle vs what we classify as a bypass", surfaced as a headline, never
     // hidden inside per-report JSON.
     let mut executed = 0usize;
     for ((rule_id, bp), proof) in candidates.iter().zip(proofs.iter()) {
         // When re-verifying, only write reports for bypasses that STILL
-        // work — a candidate the WAF now blocks is not submittable.
+        // work (a candidate the WAF now blocks is not submittable).
         if !args.no_reverify && proof.is_none() {
             continue;
         }
@@ -477,13 +477,13 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
             "[wafrift harvest] bypass-vs-exploit: {executed}/{still_working} re-verified \
              bypasses EXECUTE (confirmed exploits, alert(1) fired); {bypass_only} bypass the \
              WAF but reflect inert. Only the {executed} executing finding(s) are submittable \
-             exploits — the rest are WAF bypasses, not proven XSS."
+             exploits: the rest are WAF bypasses, not proven XSS."
         );
     }
     eprintln!(
         "[wafrift harvest] REVIEW each report, then file the good ones ONE at a time:\n  \
          wafrift submit --report {}/<file>.md --confirm\n\
-         wafrift never auto-submits — batch-filing is a bounty-program ban risk.",
+         wafrift never auto-submits, batch-filing is a bounty-program ban risk.",
         out_dir.display()
     );
     0
@@ -502,7 +502,7 @@ fn is_unhandled(status: &SubmissionStatus) -> bool {
 /// The technique that defines a bypass's root cause: the first non-identity
 /// step of its encoding chain (the transform that actually evades the WAF),
 /// or `"identity"` when the payload bypassed unmodified. Paired with the
-/// attack class this keys a `(class × technique)` root cause — the unit a
+/// attack class this keys a `(class × technique)` root cause, the unit a
 /// bounty triager treats as one distinct bypass.
 fn root_cause_technique(bp: &RecordedBypass) -> &str {
     bp.encoding_chain
@@ -514,7 +514,7 @@ fn root_cause_technique(bp: &RecordedBypass) -> &str {
 
 /// Collapse candidates to one canonical per `(class × technique)` root cause,
 /// keeping the SHORTEST payload (the minimal, cleanest reproduction). Fully
-/// deterministic — ties broken by payload bytes — so the same corpus always
+/// deterministic, ties broken by payload bytes, so the same corpus always
 /// yields the same canonical set. Each kept bypass retains its `rule_id`.
 fn collapse_to_root_causes(
     candidates: Vec<(String, RecordedBypass)>,
@@ -537,7 +537,7 @@ fn collapse_to_root_causes(
     best.into_values().collect()
 }
 
-/// True when the incumbent `cur` should be KEPT over candidate `cand` — i.e.
+/// True when the incumbent `cur` should be KEPT over candidate `cand`: i.e.
 /// `cur` is the shorter payload, ties broken by lexicographic bytes so the
 /// canonical choice is deterministic across runs.
 fn keeps_incumbent(cur: &RecordedBypass, cand: &RecordedBypass) -> bool {
@@ -549,14 +549,14 @@ struct ReverifyProof {
     /// Human description of the delivery that reproduced the bypass
     /// (for the report's "Delivery:" line).
     delivery_desc: String,
-    /// Ready-to-paste curl that reproduces EXACTLY this delivery —
+    /// Ready-to-paste curl that reproduces EXACTLY this delivery 
     /// rendered from the request actually fired, so it matches whatever
     /// shape (faithful recorded shape or standard fallback) reproduced.
     repro_curl: String,
     status: u16,
     latency_ms: f64,
     /// True iff the winning payload bytes were reflected in the response
-    /// body — strong evidence it reached origin un-sanitized.
+    /// body (strong evidence it reached origin un-sanitized).
     reflected: bool,
     /// Bounded, control-stripped excerpt of the response body.
     body_excerpt: String,
@@ -580,7 +580,7 @@ fn proof_from_env(
 ) -> ReverifyProof {
     let body = String::from_utf8_lossy(&env.body);
     let reflected = body.contains(payload);
-    // Only spend a detonation when the payload actually reflected — an
+    // Only spend a detonation when the payload actually reflected, an
     // unreflected bypass has no JS in the response to execute.
     let execution = if prove && reflected {
         crate::exec_proof::prove_execution(&body, url)
@@ -626,7 +626,7 @@ async fn reverify_all(
 /// (oracle-verified, not just unblocked).
 ///
 /// Faithful-first: if the corpus recorded the exact delivery shape that
-/// beat the WAF, re-fire THAT shape first — it reproduces the original
+/// beat the WAF, re-fire THAT shape first, it reproduces the original
 /// request byte-for-byte, which is the only re-fire that reliably works
 /// for equiv-cegis bypasses (they depend on a specific delivery channel,
 /// not just the payload bytes). Only if there's no recorded shape, or it
@@ -656,13 +656,13 @@ async fn reverify_one(
                     return Some(proof_from_env(
                         &env,
                         &bp.payload,
-                        format!("recorded shape `{}` — faithful re-fire", shape.label()),
+                        format!("recorded shape `{}`: faithful re-fire", shape.label()),
                         request_to_curl(&req),
                         prove,
                         base_url,
                     ));
                 }
-                // Recorded shape no longer reproduces — be polite before
+                // Recorded shape no longer reproduces, be polite before
                 // trying the fallback shapes.
                 if delay_ms > 0 {
                     tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
@@ -692,7 +692,7 @@ async fn reverify_one(
             continue;
         };
         // Same independent oracle the bench/hunt use: not blocked AND
-        // reached the app AND still a working attack of its class — plus, under
+        // reached the app AND still a working attack of its class, plus, under
         // --differential-baseline, the class's un-evaded probe must be BLOCKED
         // in this same mode (else the sink was never policed: false positive).
         if verified_bypass(class, &bp.payload, &bp.payload, env.blocked, env.status)
@@ -817,7 +817,7 @@ fn render_report(
     b.push_str(if proof.is_some() {
         "re-verified live by `wafrift`.\n\n"
     } else {
-        "recorded by `wafrift` (NOT re-verified — confirm before submitting).\n\n"
+        "recorded by `wafrift` (NOT re-verified, confirm before submitting).\n\n"
     });
 
     b.push_str(&format!(
@@ -830,7 +830,7 @@ fn render_report(
     b.push_str("\n```\n");
     if needs_ansi_c_quoting(&bp.payload) {
         b.push_str(
-            "\nThis payload contains non-printable bytes (rendered raw above — they may be \
+            "\nThis payload contains non-printable bytes (rendered raw above, they may be \
              invisible). Byte-exact (bash ANSI-C) form:\n\n```\n$'",
         );
         b.push_str(&ansi_c_escape(&bp.payload));
@@ -873,7 +873,7 @@ fn render_report(
                 if e.executed {
                     b.push_str(&format!(
                         "- **Execution proven**: the reflected payload's JavaScript ran in a \
-                         sandboxed browser (jsdet) and fired `{}({})` — this is a confirmed \
+                         sandboxed browser (jsdet) and fired `{}({})`: this is a confirmed \
                          exploit, not merely a WAF bypass.\n\n",
                         e.sink.as_deref().unwrap_or("alert"),
                         e.message.as_deref().unwrap_or("1"),
@@ -881,7 +881,7 @@ fn render_report(
                 } else {
                     b.push_str(
                         "- Execution proof: the reflection did NOT execute in the sandbox \
-                         (lands in a non-executable / escaped context) — a WAF bypass, but \
+                         (lands in a non-executable / escaped context), a WAF bypass, but \
                          not a proven exploit on this endpoint.\n\n",
                     );
                 }
@@ -892,7 +892,7 @@ fn render_report(
         }
         None => {
             b.push_str(
-                "UNVERIFIED — this report was emitted with `--no-reverify`. \
+                "UNVERIFIED, this report was emitted with `--no-reverify`. \
                  Re-run harvest without that flag (or fire the reproduction above) \
                  to capture a live HTTP response before submitting.\n\n",
             );
@@ -939,7 +939,7 @@ fn curl_repro(base_url: &str, mode: &str, payload: &str) -> String {
             sq_escape(payload)
         ),
         // body_form_q (default): let curl URL-encode the form value.
-        // `q=$'...'` — the shell expands the ANSI-C string and prepends
+        // `q=$'...'`: the shell expands the ANSI-C string and prepends
         // `q=`, so curl sees one `q=<bytes>` arg and URL-encodes the value.
         _ if ansi => format!(
             "curl -sk -X POST '{base}/post' \\\n  --data-urlencode q=$'{}'",
@@ -959,8 +959,8 @@ fn sq_escape(s: &str) -> String {
 
 /// True if the payload has any byte outside printable ASCII (control
 /// bytes, UTF-8 multibyte). Those can't survive a plain single-quoted
-/// shell arg intact — and for WAF bypasses the non-printable byte is
-/// often the bypass itself (`\f`, `\t`, NUL, fullwidth unicode) — so the
+/// shell arg intact, and for WAF bypasses the non-printable byte is
+/// often the bypass itself (`\f`, `\t`, NUL, fullwidth unicode), so the
 /// curl repro must switch to byte-exact bash ANSI-C `$'...'` quoting.
 fn needs_ansi_c_quoting(s: &str) -> bool {
     s.bytes().any(|b| !(0x20..=0x7e).contains(&b))
@@ -969,7 +969,7 @@ fn needs_ansi_c_quoting(s: &str) -> bool {
 /// Escape a payload for bash ANSI-C `$'...'` quoting, BYTE-exact: every
 /// byte outside printable ASCII becomes `\xHH` (named escapes for the
 /// common control bytes), and `'`/`\` are escaped. Pasted into bash/zsh
-/// this reconstructs the exact wire bytes — including the control bytes
+/// this reconstructs the exact wire bytes, including the control bytes
 /// that carry the bypass.
 fn ansi_c_escape(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 8);
@@ -1026,7 +1026,7 @@ pub(crate) struct SubmitArgs {
 
     /// Actually file the report to HackerOne. WITHOUT this flag, submit
     /// is a dry run that prints exactly what would be sent. wafrift never
-    /// auto-submits and never batch-submits — you file one reviewed
+    /// auto-submits and never batch-submits, you file one reviewed
     /// report at a time, deliberately.
     #[arg(long)]
     pub confirm: bool,
@@ -1067,14 +1067,14 @@ fn run_submit_inner(args: SubmitArgs) -> u8 {
     };
     let team = args.team.clone().unwrap_or(meta.team);
     if team.is_empty() {
-        eprintln!("error: no HackerOne team handle — pass --team <handle>.");
+        eprintln!("error: no HackerOne team handle, pass --team <handle>.");
         return 2;
     }
     // The H1 body is the Markdown with the machine header stripped.
     let body: String = raw.lines().skip(1).collect::<Vec<_>>().join("\n");
 
     if !args.confirm {
-        println!("DRY RUN — nothing was submitted.\n");
+        println!("DRY RUN, nothing was submitted.\n");
         println!("  Team       : {team}");
         println!("  Title      : {}", meta.title);
         println!(
@@ -1123,7 +1123,7 @@ fn run_submit_inner(args: SubmitArgs) -> u8 {
         meta.weakness_id,
     )) {
         Ok(report_id) => {
-            println!("filed to HackerOne team `{team}` — report id: {report_id}");
+            println!("filed to HackerOne team `{team}`: report id: {report_id}");
             0
         }
         Err(e) => {
@@ -1174,7 +1174,7 @@ fn parse_report_meta(raw: &str) -> Option<ReportMeta> {
 ///
 /// Requires `H1_API_KEY` (token) and `H1_USERNAME` (handle) in the
 /// environment. Only ever reached from `wafrift submit --confirm`, one
-/// report per invocation — wafrift has no automatic or batch submit path.
+/// report per invocation (wafrift has no automatic or batch submit path).
 async fn submit_report_to_h1(
     team: &str,
     title: &str,
@@ -1183,7 +1183,7 @@ async fn submit_report_to_h1(
     weakness_id: u32,
 ) -> Result<String, String> {
     let api_key = std::env::var("H1_API_KEY")
-        .map_err(|_| "H1_API_KEY not set — cannot submit to HackerOne".to_string())?;
+        .map_err(|_| "H1_API_KEY not set, cannot submit to HackerOne".to_string())?;
     let username = std::env::var("H1_USERNAME").map_err(|_| "H1_USERNAME not set".to_string())?;
 
     let client = reqwest::Client::new();
@@ -1257,7 +1257,7 @@ mod tests {
         ] {
             assert!(
                 class_policing_probe(class).is_some(),
-                "no policing probe for corpus class `{class}` — differential would drop it"
+                "no policing probe for corpus class `{class}`: differential would drop it"
             );
         }
     }
@@ -1472,7 +1472,7 @@ mod tests {
 
     #[test]
     fn ansi_c_escape_renders_control_bytes_byte_exact() {
-        // formfeed (0x0c), tab, single-quote, backslash — the bytes that
+        // formfeed (0x0c), tab, single-quote, backslash, the bytes that
         // a WAF bypass payload commonly carries.
         let s = "a\u{0c}b\tc'd\\e";
         assert_eq!(ansi_c_escape(s), "a\\x0cb\\tc\\'d\\\\e");
@@ -1483,7 +1483,7 @@ mod tests {
         assert!(needs_ansi_c_quoting("has\u{0c}formfeed"));
         assert!(needs_ansi_c_quoting("\t"));
         assert!(needs_ansi_c_quoting("fullwidth\u{ff1f}")); // non-ASCII unicode
-        // Single quotes are printable ASCII — handled by the single-quote
+        // Single quotes are printable ASCII, handled by the single-quote
         // form, so they do NOT force ANSI-C quoting.
         assert!(!needs_ansi_c_quoting("plain ' OR 1=1 -- printable"));
     }
@@ -1663,7 +1663,7 @@ mod tests {
     #[test]
     fn request_to_curl_control_bytes_use_ansi_c() {
         // A multipart field carries the payload RAW between boundaries, so
-        // a formfeed reaches the body as byte 0x0c — request_to_curl must
+        // a formfeed reaches the body as byte 0x0c, request_to_curl must
         // switch to byte-exact ANSI-C `$'…\x0c…'` quoting so the repro
         // reconstructs the exact bytes that carried the bypass.
         let req = build_request_for_delivery(
@@ -1688,7 +1688,7 @@ mod tests {
         // at re-verify time (faithful shape), not a re-derived guess.
         let bp = bypass("sql", "1 OR 1=1 --", &["hpp_split"]);
         let proof = ReverifyProof {
-            delivery_desc: "recorded shape `hpp_split` — faithful re-fire".into(),
+            delivery_desc: "recorded shape `hpp_split`: faithful re-fire".into(),
             repro_curl: "curl -sk -X GET 'http://t/get?q=v0&q=1%20OR%201%3D1%20--'".into(),
             status: 200,
             latency_ms: 5.0,

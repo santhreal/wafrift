@@ -2,7 +2,7 @@ use super::*;
 use std::fs;
 
 /// The shipped default genome must parse and yield the proven generic
-/// seed techniques — else `load_or_default` silently no-ops and a cold
+/// seed techniques, else `load_or_default` silently no-ops and a cold
 /// install gets no warm-start (a stub-by-another-name, §11). Pins the
 /// build-time invariant + that a known scan-consumable key is present.
 #[test]
@@ -67,7 +67,7 @@ fn load_or_default_seeds_cold_bank_then_preserves_existing() {
 /// (carries the cloudflare-only `vector::POST-cbor`), while a ModSecurity/CRS
 /// target gets the generic encoding default (CF-only vector absent, but still
 /// non-empty). Pins that `bundled_default_for` is actually consulted, not
-/// bypassed — a regression that routed everything to one default would trip
+/// bypassed, a regression that routed everything to one default would trip
 /// one of these two assertions.
 #[test]
 fn load_or_default_routes_cloudflare_to_delivery_vectors() {
@@ -87,7 +87,7 @@ fn load_or_default_routes_cloudflare_to_delivery_vectors() {
     let _ = fs::remove_dir_all(&cf_dir);
 
     // Cloudflare Bot Management (the ML tier) routes to the SAME cloudflare
-    // default — both CF variants (managed-rules + bot-management) get the
+    // default, both CF variants (managed-rules + bot-management) get the
     // delivery-vector set. Pins the second `bundled_default_for` match arm.
     let bot_dir =
         std::env::temp_dir().join(format!("wafrift-gb-route-cfbot-{}", std::process::id()));
@@ -223,7 +223,7 @@ fn gene_bank_list_wafs() {
     // PID + nanos suffix so concurrent test runs (`cargo test` with the
     // default thread pool) don't trample each other's tmp dir. The
     // earlier `wafrift_test_list` static-name version flaked under
-    // load — two threads racing on the same directory would unwrap()
+    // load, two threads racing on the same directory would unwrap()
     // a `NotFound` between one's remove_dir_all and another's save.
     let tmp = std::env::temp_dir().join(format!(
         "wafrift_test_list_{}_{}",
@@ -368,7 +368,7 @@ fn forward_compatible_unknown_fields_ignored() {
     let _ = fs::create_dir_all(&tmp);
 
     // JSON with a field that doesn't exist in the current struct.
-    // File must be at <normalize_name(waf_name)>.json — i.e. lowercased.
+    // File must be at <normalize_name(waf_name)>.json (i.e. lowercased).
     let json = r#"{
         "waf_name": "FutureWAF",
         "techniques": [],
@@ -394,8 +394,8 @@ fn backward_compatible_missing_fields_defaulted() {
     let _ = fs::remove_dir_all(&tmp);
     let _ = fs::create_dir_all(&tmp);
 
-    // JSON missing some fields — they should default to zero/empty.
-    // File must be at <normalize_name(waf_name)>.json — i.e. lowercased.
+    // JSON missing some fields (they should default to zero/empty).
+    // File must be at <normalize_name(waf_name)>.json (i.e. lowercased).
     let json = r#"{"waf_name": "OldWAF"}"#;
     fs::write(tmp.join("oldwaf.json"), json).unwrap();
 
@@ -483,7 +483,7 @@ fn class_stat_success_rate_basic_and_zero_attempts() {
 #[test]
 fn technique_record_class_success_rate_returns_none_when_class_unseen() {
     // A technique with global history but no per-class data should
-    // return None for `success_rate_for_class` — that's the signal
+    // return None for `success_rate_for_class`: that's the signal
     // for the caller to fall back to the global rate.
     let rec = TechniqueRecord {
         name: "DoubleUrlEncode".into(),
@@ -551,7 +551,7 @@ fn merge_session_for_class_accumulates_across_sessions() {
 #[test]
 fn merge_session_for_class_empty_class_falls_through_to_global() {
     // Passing "" (or whitespace) for class must NOT create an empty-
-    // string per-class bucket — it must fall through to merge_session
+    // string per-class bucket, it must fall through to merge_session
     // so the global totals get updated and per_class stays clean.
     let mut genome = WafGenome::new("TestWAF");
     genome.merge_session_for_class("", &[("T".into(), 5, 10)]);
@@ -572,10 +572,10 @@ fn seed_winners_for_class_returns_class_specific_winners() {
     // Tech A: great at SQL (10/10), bad at XSS (1/10).
     genome.merge_session_for_class("sql", &[("A".into(), 10, 10)]);
     genome.merge_session_for_class("xss", &[("A".into(), 1, 10)]);
-    // Tech B: opposite — bad at SQL (1/10), great at XSS (10/10).
+    // Tech B: opposite (bad at SQL (1/10), great at XSS (10/10)).
     genome.merge_session_for_class("sql", &[("B".into(), 1, 10)]);
     genome.merge_session_for_class("xss", &[("B".into(), 10, 10)]);
-    // SQL warm-start picks A only; XSS picks B only — the global
+    // SQL warm-start picks A only; XSS picks B only, the global
     // seed_winners would have lumped them both in.
     assert_eq!(genome.seed_winners_for_class("sql"), vec!["A".to_string()]);
     assert_eq!(genome.seed_winners_for_class("xss"), vec!["B".to_string()]);
@@ -586,7 +586,7 @@ fn seed_winners_for_class_fallback_when_no_class_history() {
     // If the class has been seen by ZERO techniques (or all
     // techniques are below the threshold), fall back to the global
     // seed_winners so warm-start still provides *something* useful
-    // — the fresh-class case must not silently produce an empty
+    //: the fresh-class case must not silently produce an empty
     // priority list and lose all benefit of historical data.
     let mut genome = WafGenome::new("TestWAF");
     genome.merge_session_for_class("sql", &[("Good".into(), 9, 10)]);
@@ -732,7 +732,7 @@ fn merge_and_save_for_class_concurrent_safe_via_lock() {
     // Both merge_and_save and merge_and_save_for_class take the same
     // advisory lock, so a class-aware merge interleaved with a
     // class-less merge must not lose either's writes. Run two
-    // back-to-back operations on the same waf — final state must
+    // back-to-back operations on the same waf, final state must
     // reflect both.
     use std::env::temp_dir;
     let tmp = temp_dir().join(format!(
@@ -793,7 +793,7 @@ fn genome_with_null_per_class_field_loads_as_empty_map() {
     }"#;
     // serde rejects `null` for a non-Option BTreeMap unless we
     // explicitly opt into `deserialize_with`. The current behaviour
-    // is to error — which is HONEST about the corruption. Test
+    // is to error, which is HONEST about the corruption. Test
     // pins that result: an Err on parse, not a silent default.
     let result: Result<WafGenome, _> = serde_json::from_str(json_null);
     assert!(
@@ -805,7 +805,7 @@ fn genome_with_null_per_class_field_loads_as_empty_map() {
 #[test]
 fn genome_with_wrong_per_class_type_errors_cleanly() {
     // Adversarial: per_class is a STRING instead of a map. Must
-    // error on parse — the load path then quarantines the file,
+    // error on parse, the load path then quarantines the file,
     // so the rest of the gene bank is unaffected.
     let json_bad = r#"{
         "waf_name": "Edited",
@@ -826,7 +826,7 @@ fn genome_with_wrong_per_class_type_errors_cleanly() {
 fn max_techniques_cap_prevents_unbounded_per_class_growth() {
     // The MAX_TECHNIQUES cap (1024) applies to NEW techniques even
     // when called via merge_session_for_class. Verify: after we
-    // hit the cap, additional new technique NAMES are dropped —
+    // hit the cap, additional new technique NAMES are dropped 
     // the per_class breakdown for an EXISTING technique can still
     // grow, but a brand-new technique name above the cap won't.
     let mut genome = WafGenome::new("CapTest");
@@ -895,7 +895,7 @@ fn class_key_normalisation_is_lowercase_only_no_trim_inside_segments() {
 fn seed_winners_for_class_does_not_recommend_a_class_with_zero_attempts() {
     // Edge: a technique that has per-class entries for SQL with
     // zero attempts (e.g. set externally to track presence) must
-    // not be recommended on the SQL warm-start — zero attempts
+    // not be recommended on the SQL warm-start, zero attempts
     // means zero evidence.
     let mut g = WafGenome::new("W");
     g.techniques.push(TechniqueRecord {
@@ -968,7 +968,7 @@ fn seed_winners_for_class_ranks_by_per_class_rate_not_global() {
 #[test]
 fn round_trip_genome_with_per_class_serialises_to_stable_json() {
     // The per_class field uses BTreeMap (not HashMap) so the JSON
-    // output is deterministic — important for diff-based audits
+    // output is deterministic, important for diff-based audits
     // of the on-disk genomes. Verify two round-trips produce
     // byte-identical JSON.
     let mut g = WafGenome::new("Determinism");
@@ -994,9 +994,9 @@ fn merge_and_save_for_class_under_shared_bank_thread_contention() {
     // one bank per process, accessed from many tokio tasks /
     // threads). With the bank guarded by Mutex the read-modify-
     // write cycle stays serialised and every merge contributes
-    // deterministically. (Multi-INSTANCE concurrency — separate
+    // deterministically. (Multi-INSTANCE concurrency, separate
     // GeneBank objects in the same process all touching the same
-    // file — is NOT what this test gates: the fs4 advisory lock
+    // file, is NOT what this test gates: the fs4 advisory lock
     // does cover inter-process safety, but tmp-file naming in the
     // write path is not currently per-instance and that's tracked
     // as a separate hardening item.)
@@ -1053,7 +1053,7 @@ fn merge_and_save_for_class_under_shared_bank_thread_contention() {
 #[test]
 fn oversized_genome_is_quarantined_on_load_not_read() {
     // A genome file that exceeds MAX_GENOME_FILE_BYTES must be quarantined
-    // and NOT read into memory — defending against OOM on crafted files.
+    // and NOT read into memory (defending against OOM on crafted files).
     let tmp = std::env::temp_dir().join(format!(
         "wafrift_test_oversize_load_{}_{}",
         std::process::id(),
@@ -1065,7 +1065,7 @@ fn oversized_genome_is_quarantined_on_load_not_read() {
     let _ = fs::create_dir_all(&tmp);
 
     // Write a file of exactly MAX_GENOME_FILE_BYTES + 1 bytes.
-    // Content doesn't matter — the cap check fires before the read.
+    // Content doesn't matter (the cap check fires before the read).
     let genome_path = tmp.join("cloudflare.json");
     let oversized: Vec<u8> = vec![b'x'; GeneBank::MAX_GENOME_FILE_BYTES as usize + 1];
     fs::write(&genome_path, &oversized).unwrap();
@@ -1073,7 +1073,7 @@ fn oversized_genome_is_quarantined_on_load_not_read() {
     let mut bank = GeneBank::open(tmp.clone()).unwrap();
     let result = bank.load("Cloudflare");
 
-    // Must return None (file too large — not read).
+    // Must return None (file too large (not read)).
     assert!(
         result.is_none(),
         "oversized genome must be rejected, not loaded"

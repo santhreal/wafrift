@@ -1,6 +1,6 @@
 //! End-to-end dogfood of the shipped `wafrift fingerprint` binary against a
 //! REAL local target that exhibits a normalization-mismatch hole: it gates on
-//! the raw (framework-url-decoded) parameter — blocking `<script` with 403 —
+//! the raw (framework-url-decoded) parameter, blocking `<script` with 403 
 //! but its *origin* base64-decodes the same parameter before using it. So a
 //! base64-wrapped payload sails past the gate and reconstitutes the attack at
 //! the origin. This is exactly the class the live decompiler is built to find.
@@ -17,7 +17,7 @@ use std::net::{TcpListener, TcpStream};
 use std::process::Command;
 use std::thread;
 
-/// One-pass percent-decode — the framework's baseline query-string decode.
+/// One-pass percent-decode (the framework's baseline query-string decode).
 fn pct_decode_once(s: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity(s.len());
     let mut i = 0;
@@ -158,7 +158,7 @@ fn fingerprint_binary_detects_base64_origin_and_solves_verified_bypass() {
     );
     let payload_b64 = bypass["payload_base64"].as_str().expect("payload_base64");
     // The verified bypass payload, base64-decoded by the origin, must
-    // reconstruct the attack — that is the whole point.
+    // reconstruct the attack (that is the whole point).
     use base64::Engine;
     let payload = base64::engine::general_purpose::STANDARD
         .decode(payload_b64)
@@ -177,7 +177,7 @@ fn fingerprint_binary_detects_base64_origin_and_solves_verified_bypass() {
     );
 }
 
-/// A target that returns a fixed page and never echoes the parameter — the
+/// A target that returns a fixed page and never echoes the parameter, the
 /// inconclusive case. The binary must NOT report an empty pipeline as a clean
 /// origin; it must signal "no reflection observed" (exit 3 / JSON flag false).
 fn handle_non_reflecting(mut stream: TcpStream) {
@@ -196,7 +196,7 @@ fn handle_non_reflecting(mut stream: TcpStream) {
 }
 
 /// A target whose origin reflects the (base64-)normalized parameter ONLY in a
-/// `Location` response header — a 302 redirect with an empty body. A body-only
+/// `Location` response header, a 302 redirect with an empty body. A body-only
 /// scan sees nothing here; the header-aware reflector must still fingerprint the
 /// base64 normalization. Header values are gated to all-alphanumeric (our marker
 /// is) so a non-base64 probe's residue can never inject CRLF or an invalid
@@ -292,7 +292,7 @@ fn fingerprint_binary_detects_base64_origin_reflected_only_in_a_header() {
 /// A WAF-shaped origin for the differential filter-characterization path: it
 /// BLOCKS (403) any request whose `q` value url-decodes to contain the literal
 /// `<script>` token, and otherwise reflects the decoded value (200 echo). So the
-/// `<script>` probe blocks while its signature-broken twin `<scrupt>` passes —
+/// `<script>` probe blocks while its signature-broken twin `<scrupt>` passes 
 /// the differential must read `<script>` as Policed and leave the other-class
 /// tokens (which never contain `<script>`) Unpoliced.
 fn handle_script_blocking_waf(mut stream: TcpStream) {
@@ -337,7 +337,7 @@ fn handle_script_blocking_waf(mut stream: TcpStream) {
 
 /// A base64-normalizing origin that reflects the decoded value but NEVER blocks
 /// anything (always 200). Its normalization stage is detectable, but since it
-/// does not police the attack, a targeted solve must report `not_policed` — not
+/// does not police the attack, a targeted solve must report `not_policed`: not
 /// fabricate a "bypass" of a token the WAF never gated (#7).
 fn handle_base64_reflect_no_block(mut stream: TcpStream) {
     use base64::Engine;
@@ -361,7 +361,7 @@ fn handle_base64_reflect_no_block(mut stream: TcpStream) {
         .unwrap_or(buf.len());
     let path = buf[..line_end].split(|&b| b == b' ').nth(1).unwrap_or(b"");
     let decoded = pct_decode_once(&extract_q(path));
-    // Base64-decode the param (the detectable origin normalization), then echo —
+    // Base64-decode the param (the detectable origin normalization), then echo 
     // but unconditionally 200: this origin gates nothing.
     let reflected = base64::engine::general_purpose::STANDARD
         .decode(&decoded)
@@ -476,7 +476,7 @@ fn fingerprint_characterize_filter_isolates_the_policed_token() {
         .collect();
     assert!(
         policed.contains(&"<script>"),
-        "the WAF policies `<script>` and its benign twin passes — must read as Policed, got {policed:?}"
+        "the WAF policies `<script>` and its benign twin passes, must read as Policed, got {policed:?}"
     );
 
     let unpoliced: Vec<&str> = fp["unpoliced"]
@@ -486,7 +486,7 @@ fn fingerprint_characterize_filter_isolates_the_policed_token() {
         .filter_map(|v| v.as_str())
         .collect();
     // A token this WAF never inspects (no `<script>` substring) must surface as
-    // a free, plaintext-usable token — the actionable other half of the result.
+    // a free, plaintext-usable token (the actionable other half of the result).
     assert!(
         unpoliced.contains(&"union select"),
         "an un-policed token must be reported unpoliced, got {unpoliced:?}"
@@ -497,7 +497,7 @@ fn fingerprint_characterize_filter_isolates_the_policed_token() {
     );
 
     // Decode-gap surface: this single-decode origin does not decode the encoded
-    // preimages of `<script>`, so they pass — each is a candidate decode-gap the
+    // preimages of `<script>`, so they pass, each is a candidate decode-gap the
     // operator can try. The capability must reach the JSON end-to-end.
     let gaps = fp["decode_gaps"].as_array().expect("decode_gaps array");
     assert!(
@@ -512,7 +512,7 @@ fn fingerprint_characterize_filter_isolates_the_policed_token() {
 }
 
 /// A WAF that blocks the literal custom token `EVILTAG` (and reflects otherwise)
-/// — used to prove a `--filter-battery` override reaches live behavior.
+///: used to prove a `--filter-battery` override reaches live behavior.
 fn handle_eviltag_blocking_waf(mut stream: TcpStream) {
     let mut buf = Vec::new();
     let mut tmp = [0u8; 1024];
@@ -613,7 +613,7 @@ fn fingerprint_custom_filter_battery_overrides_the_default_token_set() {
 /// A WAF that blocks attacks with a **200** body containing NO standard block
 /// signature (`northstar gateway intercept …`) and reflects clean values
 /// otherwise. The static classifier cannot recognise this block page; only
-/// per-target calibration — which learns the shape from the malicious controls —
+/// per-target calibration, which learns the shape from the malicious controls 
 /// can. Proves the self-calibration path end-to-end.
 fn handle_bespoke_200_block_waf(mut stream: TcpStream) {
     let mut buf = Vec::new();
@@ -641,7 +641,7 @@ fn handle_bespoke_200_block_waf(mut stream: TcpStream) {
         .iter()
         .any(|m| lower.contains(m));
     let body: Vec<u8> = if attackish {
-        // No "access denied"/"blocked"/"forbidden" — unknown to any signature list.
+        // No "access denied"/"blocked"/"forbidden" (unknown to any signature list).
         b"northstar gateway intercept reference 9931 contact your administrator".to_vec()
     } else {
         decoded
@@ -822,7 +822,7 @@ fn handle_two_hundred_block_page_waf(mut stream: TcpStream) {
     let blocked = decoded
         .windows(8)
         .any(|w| w.eq_ignore_ascii_case(b"<script>"));
-    // ALWAYS HTTP 200 — the block is signalled only in the body.
+    // ALWAYS HTTP 200 (the block is signalled only in the body).
     let body: Vec<u8> = if blocked {
         b"<html><h1>Access Denied</h1><p>This request was blocked.</p></html>".to_vec()
     } else {
@@ -976,7 +976,7 @@ fn fingerprint_filter_budget_caps_probes_and_history_persists() {
             .expect("invoke fingerprint --filter-budget")
     };
 
-    // Run 1: budget 3 — only 3 of the 12 battery tokens may be probed.
+    // Run 1: budget 3 (only 3 of the 12 battery tokens may be probed).
     let out = run("3");
     assert!(
         out.status.success(),

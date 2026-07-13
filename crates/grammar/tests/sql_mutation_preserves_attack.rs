@@ -3,7 +3,7 @@
 //!
 //! The bug this pins: `keywordless`/`quote_free` substituted a fixed
 //! library of `'+0+'` / `1 OR 1=1` fragments for the *whole* payload,
-//! for EVERY sql input — so `1 AND extractvalue(1,concat(0x7e,(SELECT
+//! for EVERY sql input, so `1 AND extractvalue(1,concat(0x7e,(SELECT
 //! version())))` (error-based data exfil) "mutated" into `'+0+'`,
 //! which is a different, useless attack. The bench then scored the
 //! non-attack as a bypass (the rig) or the operator shipped a dud.
@@ -115,7 +115,7 @@ fn adversarial_twin_genuine_tautology_still_gets_keyword_free_rewrites() {
         });
         assert!(
             has_keyword_free,
-            "tautology {taut:?} lost its legitimate keyword-free rewrites — \
+            "tautology {taut:?} lost its legitimate keyword-free rewrites. \
              the gate is too aggressive"
         );
     }

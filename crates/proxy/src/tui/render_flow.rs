@@ -1,4 +1,4 @@
-//! Flow tab — live request stream with optional detail pane.
+//! Flow tab (live request stream with optional detail pane).
 //!
 //! Layout when no inspect:
 //!   ┌─ Requests ──────────────┐
@@ -59,13 +59,13 @@ fn draw_request_list(f: &mut Frame, area: Rect, state: &State) {
     f.render_widget(block, area);
 
     if state.recent.is_empty() {
-        let p = Paragraph::new("(no requests yet — proxy a request through this address)")
+        let p = Paragraph::new("(no requests yet, proxy a request through this address)")
             .style(crate::tui::style::DIM);
         f.render_widget(p, inner);
         return;
     }
     if visible.is_empty() {
-        let p = Paragraph::new("(filter matches nothing — `/` to edit, `o` to cycle outcome)")
+        let p = Paragraph::new("(filter matches nothing: `/` to edit, `o` to cycle outcome)")
             .style(crate::tui::style::DIM);
         f.render_widget(p, inner);
         return;
@@ -206,7 +206,7 @@ fn draw_detail(f: &mut Frame, area: Rect, state: &State) {
     f.render_widget(block, area);
 
     // Build a single flat line stream so the scroll offset is a real
-    // line index — much simpler than maintaining three independent
+    // line index, much simpler than maintaining three independent
     // scroll offsets.
     let lines = render_detail_lines(rec);
     let total = lines.len() as u16;
@@ -441,7 +441,7 @@ fn render_mutation_diff(rec: &RequestRecord) -> Vec<Line<'static>> {
         && rec.req_body_pre_excerpt == rec.req_body_excerpt
     {
         out.push(Line::from(vec![Span::styled(
-            "(no mutation — request passed through unchanged)",
+            "(no mutation, request passed through unchanged)",
             crate::tui::style::DIM,
         )]));
     }

@@ -1,4 +1,4 @@
-//! `wafrift smuggle-chain` — N-way smuggle-probe composition CLI.
+//! `wafrift smuggle-chain`: N-way smuggle-probe composition CLI.
 //!
 //! Takes 2+ `--family <NAME>` flags and emits the cartesian product
 //! of probes across all N families as composed JSON artifacts. The
@@ -34,14 +34,14 @@ use crate::smuggle_transport;
 pub struct SmuggleChainArgs {
     /// Family prefix to include in the chain (repeatable). Order
     /// determines the artifact composition order. At least 2
-    /// families required — for 2-family chains, prefer
+    /// families required, for 2-family chains, prefer
     /// `smuggle-cross-product` (which has the same shape but
     /// dedicated `--lhs/--rhs` flag names).
     #[arg(long = "family", num_args = 1.., value_name = "FAMILY", required = true)]
     pub families: Vec<String>,
 
     /// Cap on emitted composed artifacts. 0 = unlimited. Default
-    /// 64 — a 3-way chain across families of 8 probes each is
+    /// 64, a 3-way chain across families of 8 probes each is
     /// already 512 composed artifacts and grows polynomially.
     #[arg(long, default_value_t = wafrift_types::DEFAULT_SMUGGLE_COMPOSED_CAP)]
     pub cap: usize,
@@ -75,11 +75,11 @@ pub struct SmuggleChainArgs {
     pub pretty: bool,
 
     /// When set, splice `(NAME, canary)` pairs into each composed
-    /// artifact's `headers` — one per merged probe canary. Operators
+    /// artifact's `headers`: one per merged probe canary. Operators
     /// set this to e.g. `X-Wafrift-Canary` so OOB callbacks land
     /// already tagged with all component techniques' canaries. In
     /// `--fire-target` mode the response headers and body are also
-    /// scanned for these tokens — a verbatim echo yields the
+    /// scanned for these tokens, a verbatim echo yields the
     /// `canary-reflected` signal and matching tokens appear in
     /// `reflected_canaries`.
     #[arg(long, default_value = "", value_name = "HEADER_NAME")]

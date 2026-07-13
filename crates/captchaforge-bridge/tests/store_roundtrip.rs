@@ -59,7 +59,7 @@ fn record_into_store_does_not_bleed_to_other_hosts() {
 
 /// When `solve_and_record` does not produce an outcome (e.g. Chromium
 /// absent → launch errors, or the challenge HTML wasn't a captcha →
-/// `Ok(None)`), the store must remain empty — partial state must
+/// `Ok(None)`), the store must remain empty, partial state must
 /// never be recorded. Both branches satisfy the contract: the test
 /// asserts the LOAD-BEARING half (no cookie in store) regardless of
 /// whether the bridge surfaces the browser-missing path as `Err`
@@ -92,7 +92,7 @@ async fn solve_and_record_does_not_pollute_store_on_err() {
         // matters is that no partial cookie was written.
         assert!(
             !matches!(result, Ok(Some(_))),
-            "must not return Ok(Some(_)) when chromium is missing — got {result:?}"
+            "must not return Ok(Some(_)) when chromium is missing, got {result:?}"
         );
         assert!(
             store.get(host).is_none(),

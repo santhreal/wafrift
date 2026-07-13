@@ -24,7 +24,7 @@ benign_twin = "double the fun%25"
 
 [[entry]]
 id = "case_variant_case_sensitive_rule"
-source = "Custom case-sensitive SecRule misconfig (no t:lowercase) — common CRS tuning error"
+source = "Custom case-sensitive SecRule misconfig (no t:lowercase), common CRS tuning error"
 class = "xss"
 token = "<script"
 payload = "<ScRiPt"

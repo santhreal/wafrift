@@ -1,10 +1,10 @@
-# waf-zoo/modsec-azure — ModSecurity + Azure AppGW WAF v2 emulation
+# waf-zoo/modsec-azure: ModSecurity + Azure AppGW WAF v2 emulation
 
 ## What this is
 
 ModSecurity 3 (Apache) running OWASP CRS 4 at Paranoia Level 2, with the rule
 exclusions and scoring overrides that mirror **Azure Application Gateway WAF v2
-DefaultRuleSet 2.1** — the ruleset deployed by default for Azure AppGW WAF,
+DefaultRuleSet 2.1**, the ruleset deployed by default for Azure AppGW WAF,
 Azure Front Door WAF, and Azure CDN WAF customers.
 
 This is an emulation, not the real Azure WAF. The delta from vanilla CRS PL2
@@ -21,11 +21,11 @@ References:
 
 ## Port
 
-`18102` — does not conflict with any other waf-zoo or wafrift-bench/targets stack.
+`18102`: does not conflict with any other waf-zoo or wafrift-bench/targets stack.
 
 ## Backend
 
-`kennethreitz/httpbin` — echoes the request. 200 + echo = WAF allowed (bypass).
+`kennethreitz/httpbin`: echoes the request. 200 + echo = WAF allowed (bypass).
 403 / 406 = WAF blocked.
 
 ## How to run
@@ -34,7 +34,7 @@ References:
 # 1. Start the stack
 docker compose -f bench/waf-zoo/modsec-azure/docker-compose.yml up -d
 
-# 2. Smoke test — expect 200 OK
+# 2. Smoke test: expect 200 OK
 curl -si http://127.0.0.1:18102/get | head -2
 
 # 3. Verify WAF blocks a raw SQLi payload
@@ -57,6 +57,6 @@ docker compose -f bench/waf-zoo/modsec-azure/docker-compose.yml down -v
 
 ## Licensing
 
-`owasp/modsecurity-crs` — Apache 2.0.
-`kennethreitz/httpbin` — ISC.
+`owasp/modsecurity-crs`: Apache 2.0.
+`kennethreitz/httpbin`: ISC.
 No commercial or trial licenses required.

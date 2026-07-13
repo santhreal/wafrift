@@ -66,7 +66,7 @@ pub struct MapElites {
 /// Serialize/deserialize the MAP-Elites `grid` as a JSON array of
 /// `[descriptor, chromosome]` pairs rather than a JSON object. A
 /// `HashMap` keyed by the `FeatureDescriptor` struct cannot serialize to
-/// a JSON object — JSON object keys must be strings, so the derived map
+/// a JSON object: JSON object keys must be strings, so the derived map
 /// serialization fails with "key must be a string". The pair-array form
 /// fixes that and matches the byte layout of the original
 /// `Vec<(FeatureDescriptor, Chromosome)>` checkpoint, so v1 checkpoints
@@ -137,7 +137,7 @@ impl MapElites {
                 grammar,
                 content_type,
             };
-            // O(1) lookup — if the cell exists, clone its elite; otherwise
+            // O(1) lookup, if the cell exists, clone its elite; otherwise
             // fall back to a uniform random sample (same semantics as before).
             if let Some(c) = self.grid.get(&descriptor) {
                 Some(c.clone())
@@ -205,7 +205,7 @@ impl SearchAlgorithm for MapElites {
                 candidate.record_verdict(&verdict);
                 let descriptor = FeatureDescriptor::from_chromosome(&candidate);
                 // F144: route through comparable_fitness so a NaN / ±inf cell
-                // never becomes permanently inelastic — mapping non-finite
+                // never becomes permanently inelastic, mapping non-finite
                 // fitness to NEG_INFINITY makes any finite candidate strictly
                 // better and evicts the poisoned cell.
                 //
@@ -264,7 +264,7 @@ impl SearchAlgorithm for MapElites {
         Ok(())
     }
 
-    /// Every grid cell holds an elite chromosome —
+    /// Every grid cell holds an elite chromosome 
     /// the elite set IS the live population for diversity purposes.
     fn population_snapshot(&self) -> Vec<Chromosome> {
         self.grid.values().cloned().collect()
@@ -381,7 +381,7 @@ mod tests {
         // F144 regression: pre-fix `candidate.fitness > existing.fitness`
         // returned false for ANY candidate when existing.fitness was
         // NaN (every comparison with NaN is false in IEEE-754), so a
-        // single bad eval poisoned the cell PERMANENTLY — every future
+        // single bad eval poisoned the cell PERMANENTLY, every future
         // candidate landing in that feature region was rejected and
         // the search effectively lost that descriptor forever. Post-
         // fix the comparison routes through comparable_fitness, which
@@ -492,7 +492,7 @@ mod tests {
             &mut rng,
         );
         alg.eval_counter = u64::MAX;
-        // request_evaluations must use saturating_add — counter must stay at MAX.
+        // request_evaluations must use saturating_add (counter must stay at MAX).
         let _ = alg.request_evaluations(1, &mut rng);
         assert_eq!(
             alg.eval_counter,

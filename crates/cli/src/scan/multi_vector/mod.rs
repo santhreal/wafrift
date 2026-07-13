@@ -1,4 +1,4 @@
-//! Multi-vector probing — fire each top-confidence bypass payload
+//! Multi-vector probing, fire each top-confidence bypass payload
 //! through every alternative delivery vector to find a richer
 //! bypass set.
 //!
@@ -9,7 +9,7 @@
 //! lines and made every new vector a touch on `scan/mod.rs`. This
 //! module is the natural extraction point so a new delivery vector
 //! is ONE row in `VECTORS` + ONE arm in `build_request_for_vector`
-//! — a five-minute job, no scan-engine reading required.
+//! (a five-minute job, no scan-engine reading required).
 //!
 //! ## Vector axes
 //!
@@ -18,14 +18,14 @@
 //! surface might miss another. Three independent axes:
 //!
 //! 1. **Compression-confusion** (`POST-form-br`, `POST-json-br`,
-//!    `POST-form-gz`, `POST-json-gz`) — wrap the body in
+//!    `POST-form-gz`, `POST-json-gz`), wrap the body in
 //!    `Content-Encoding: br` or `gzip`. Brotli is the headline gap
 //!    (most WAFs lack a brotli decompressor in the inspection
-//!    pipeline). Gzip is the control — most WAFs DO decode gzip,
+//!    pipeline). Gzip is the control, most WAFs DO decode gzip,
 //!    so a gzip-only bypass is a separate (gzip-handling) bug.
 //!
 //! 2. **JSON parser-disagreement** (`POST-json-bom`,
-//!    `POST-json-dupkey`, `POST-json-array`) — exploit body-
+//!    `POST-json-dupkey`, `POST-json-array`), exploit body-
 //!    processor edge cases. BOM-prefixed JSON: ModSec's processor
 //!    rejects on BOM and skips body inspection while the origin
 //!    parses fine. Duplicate keys: WAF takes first occurrence,
@@ -33,13 +33,13 @@
 //!    expecting object-root.
 //!
 //! 3. **Content-Type lying** (`POST-json-as-plain`,
-//!    `POST-form-as-octet`) — declare a non-`application/json` /
+//!    `POST-form-as-octet`), declare a non-`application/json` /
 //!    `application/x-www-form-urlencoded` Content-Type so the WAF
 //!    skips body parsing. Lenient backends auto-detect or accept
 //!    raw bodies anyway.
 //!
 //! 4. **Header / parameter shuffling** (`cookie`, `hpp`,
-//!    `x-forwarded-for`, `referer`) — pre-existing vectors kept
+//!    `x-forwarded-for`, `referer`), pre-existing vectors kept
 //!    for completeness. WAFs sometimes weight header inspection
 //!    lower than ARGS inspection.
 
@@ -71,7 +71,7 @@ pub(crate) struct Vector {
 /// the WAF gap exploited and points at the backend behaviour that
 /// makes the vector land.
 ///
-/// Display ordering is functionally meaningful only at the head —
+/// Display ordering is functionally meaningful only at the head 
 /// the operator's text-mode scan-output table starts with the
 /// natural body shapes (POST-form / POST-json) so the most-common
 /// surface is visible first. Beyond the baselines, ordering reflects
@@ -99,10 +99,10 @@ pub(crate) const VECTORS: &[Vector] = &[
         content_type: "multipart/form-data",
     },
     // ──────── COMPRESSION-CONFUSION (Content-Encoding gap) ────
-    // brotli is the headline class — almost no inspection
+    // brotli is the headline class, almost no inspection
     // pipeline ships a brotli decoder. gzip is the control (most
     // WAFs do decode it); a gzip-only bypass is a separate bug.
-    // deflate is the third option — the encoding crate's own
+    // deflate is the third option, the encoding crate's own
     // doc-comment flags it as "irregular WAF support".
     // Chain `gzip,br` per RFC 9110 §8.4 stacks both layers so
     // a WAF with ONE decoder still sees an opaque blob.
@@ -162,7 +162,7 @@ pub(crate) const VECTORS: &[Vector] = &[
         name: "POST-json-key-as-payload",
         content_type: "application/json",
     },
-    // JSON5 / hjson — `{ /* comment */ "key": "value" }`. Strict
+    // JSON5 / hjson: `{ /* comment */ "key": "value" }`. Strict
     // JSON parsers refuse the comment and skip body inspection;
     // permissive backends (Node `json5`, RethinkDB, several Go/
     // Python parsers configured for trailing-comma/comment) strip
@@ -203,7 +203,7 @@ pub(crate) const VECTORS: &[Vector] = &[
         name: "POST-cbor",
         content_type: "application/cbor",
     },
-    // NDJSON / JSON-Lines — `application/x-ndjson` body, one JSON
+    // NDJSON / JSON-Lines: `application/x-ndjson` body, one JSON
     // doc per line. WAF processors that fan out ARGS from one
     // top-level JSON doc miss the multi-doc stream; backends that
     // accept NDJSON (logging endpoints, streaming APIs, ELK ingest)
@@ -212,7 +212,7 @@ pub(crate) const VECTORS: &[Vector] = &[
         name: "POST-ndjson",
         content_type: "application/x-ndjson",
     },
-    // JSON body declared as form — reverse of `POST-form-as-octet`.
+    // JSON body declared as form (reverse of `POST-form-as-octet`).
     // The body is real JSON; the declared Content-Type is
     // `application/x-www-form-urlencoded`. WAFs route to the form
     // processor and find no `=`-separated pairs; lenient backends
@@ -264,7 +264,7 @@ pub(crate) const VECTORS: &[Vector] = &[
         name: "POST-multipart-filename",
         content_type: "multipart/form-data",
     },
-    // Quoted-printable CTE per RFC 2045 §6.7 — sibling of the
+    // Quoted-printable CTE per RFC 2045 §6.7, sibling of the
     // base64 multipart vector. WAFs that decode neither QP nor
     // base64 see the encoded blob; backend MIME parsers decode
     // both. QP is rarer than base64 in WAF inspection pipelines
@@ -305,7 +305,7 @@ pub(crate) const VECTORS: &[Vector] = &[
         content_type: "application/json",
     },
     // ──────── URL POSITION ────────────────────────────────────
-    // Payload lives in the URL itself — path segment or
+    // Payload lives in the URL itself, path segment or
     // header-driven proxy reverse-routing. WAFs scoped to
     // ARGS / REQUEST_URI miss either.
     Vector {
@@ -369,7 +369,7 @@ pub(crate) const VECTORS: &[Vector] = &[
     },
 ];
 
-/// The phase's I/O surface — keeps callers from having to know the
+/// The phase's I/O surface, keeps callers from having to know the
 /// full ScanArgs shape and keeps the inputs to this module
 /// minimal. `top_payloads` is the operator's top-confidence set
 /// from the equivalence-class phase, already deduped.
@@ -378,7 +378,7 @@ pub(crate) struct PhaseInput<'a> {
     pub target: &'a str,
     pub param: &'a str,
     pub top_payloads: &'a [(String, Vec<String>)],
-    /// Payloads that were BLOCKED in earlier phases — fire them
+    /// Payloads that were BLOCKED in earlier phases, fire them
     /// through every alt vector as rescue attempts. A bypass on
     /// any vector means the payload itself was viable; only the
     /// delivery shape was getting caught. Each rescue success
@@ -399,7 +399,7 @@ pub(crate) struct PhaseInput<'a> {
     pub max_fires: usize,
 }
 
-/// What this phase produces. Counters are DELTAS — the caller
+/// What this phase produces. Counters are DELTAS, the caller
 /// merges them into its running totals.
 #[derive(Debug, Default)]
 pub(crate) struct PhaseOutcome {
@@ -411,7 +411,7 @@ pub(crate) struct PhaseOutcome {
     /// (id, payload, techs, confidence) shape `scan/mod.rs` uses.
     pub new_bypass_variants: Vec<(usize, String, Vec<String>, f64)>,
     /// (technique_tags, blocked) outcomes for every fire this
-    /// phase — feeds the post-scan gene-bank merge.
+    /// phase (feeds the post-scan gene-bank merge).
     pub new_variant_outcomes: Vec<(Vec<String>, bool)>,
     /// Per-vector tallies for the text-mode summary table.
     pub vector_results: Vec<(String, u32, u32)>,
@@ -419,13 +419,13 @@ pub(crate) struct PhaseOutcome {
 
 /// Run the multi-vector phase. Returns a [`PhaseOutcome`] the
 /// caller merges into its running totals. Cancellable via the
-/// CancellationToken — the loop exits cleanly between fires.
+/// CancellationToken (the loop exits cleanly between fires).
 ///
 /// Two payload sets get fired through every vector:
-/// 1. `top_payloads` — already-bypassed at earlier phases. A
+/// 1. `top_payloads`: already-bypassed at earlier phases. A
 ///    bypass here confirms the new delivery shape ALSO works for
 ///    the same payload (broadens the bypass set).
-/// 2. `rescue_payloads` — top blocked from earlier phases. A
+/// 2. `rescue_payloads`: top blocked from earlier phases. A
 ///    bypass here means the payload itself was viable; only the
 ///    earlier delivery shape was getting caught. Recovered ones
 ///    are tagged with `vector::<name>::rescue` so the operator
@@ -438,7 +438,7 @@ pub(crate) async fn run_phase(input: PhaseInput<'_>) -> PhaseOutcome {
         println!(
             "\n{}",
             format!(
-                "[5/7] Multi-vector probing — {} payloads ({} bypass + {} rescue) × {} vectors...",
+                "[5/7] Multi-vector probing: {} payloads ({} bypass + {} rescue) × {} vectors...",
                 total_inputs,
                 input.top_payloads.len(),
                 input.rescue_payloads.len(),
@@ -449,7 +449,7 @@ pub(crate) async fn run_phase(input: PhaseInput<'_>) -> PhaseOutcome {
         );
     }
 
-    // Joined input — same vectors fire against both pools. We tag
+    // Joined input, same vectors fire against both pools. We tag
     // the technique differently so the operator can tell rescue
     // wins apart from confirm wins.
     let combined: Vec<(&(String, Vec<String>), bool)> = input
@@ -496,7 +496,7 @@ pub(crate) async fn run_phase(input: PhaseInput<'_>) -> PhaseOutcome {
             let is_blocked = match result {
                 Ok(resp) => {
                     let status = resp.status().as_u16();
-                    // Bounded read — hostile target could ship a
+                    // Bounded read, hostile target could ship a
                     // gzip-bomb response that OOMs the scanner.
                     let body = crate::safe_body::read_bounded(
                         resp,
@@ -567,7 +567,7 @@ pub(crate) async fn run_phase(input: PhaseInput<'_>) -> PhaseOutcome {
                     .green()
                     .to_string()
             } else {
-                format!("0/{total} — fully blocked")
+                format!("0/{total}, fully blocked")
                     .bright_black()
                     .to_string()
             };

@@ -8,9 +8,9 @@
 //! # Validation strategy
 //!
 //! A valid SSTI payload must contain:
-//! 1. **Matched delimiters** — `{{ ... }}`, `${ ... }`, `<% ... %>`, `#{ ... }`, `{% ... %}`
-//! 2. **Expression content** — non-empty content between delimiters
-//! 3. **Optional introspection markers** — `__class__`, `getClass()`, `system()`, etc.
+//! 1. **Matched delimiters**: `{{ ... }}`, `${ ... }`, `<% ... %>`, `#{ ... }`, `{% ... %}`
+//! 2. **Expression content**: non-empty content between delimiters
+//! 3. **Optional introspection markers**: `__class__`, `getClass()`, `system()`, etc.
 
 use crate::traits::PayloadOracle;
 
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn probe_with_different_expression_valid() {
         let oracle = SstiOracle;
-        // Different expression but same structure — valid transform
+        // Different expression but same structure, valid transform
         assert!(oracle.is_semantically_valid("{{7*7}}", "{{7*'7'}}"));
     }
 }

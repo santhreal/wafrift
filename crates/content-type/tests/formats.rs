@@ -1,4 +1,4 @@
-//! Modern format serialization tests — protobuf, messagepack, gRPC-Web.
+//! Modern format serialization tests (protobuf, messagepack, gRPC-Web).
 
 use wafrift_content_type::formats::{deserialize, serialize};
 use wafrift_types::format::BodyFormat;

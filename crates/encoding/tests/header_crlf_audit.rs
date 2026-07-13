@@ -1,7 +1,7 @@
 //! Regression coverage for the 2026-05-10 swarm-audit CRITICAL:
 //!   header.rs mutators embedded `value` verbatim in their output. A
 //!   caller passing `value = "x\r\nEvil-Header: pwn"` produced response-
-//!   splitting / request-smuggling on the wire — the exact threat the
+//!   splitting / request-smuggling on the wire, the exact threat the
 //!   crate claims to be probing for, not exposing. Each public mutator
 //!   now sanitises CR / LF / NUL via `sanitize_header_value()` before
 //!   embedding, closing the gap without an API break.
@@ -17,15 +17,15 @@ const NUL_INJECTION: &str = "x\0Evil";
 fn assert_no_smuggling_chars(out: &str, label: &str) {
     assert!(
         !out.contains('\r'),
-        "{label} output must not contain CR — would smuggle a header. got: {out:?}"
+        "{label} output must not contain CR, would smuggle a header. got: {out:?}"
     );
     assert!(
         !out.contains('\n'),
-        "{label} output must not contain LF — would smuggle a header. got: {out:?}"
+        "{label} output must not contain LF, would smuggle a header. got: {out:?}"
     );
     assert!(
         !out.contains('\0'),
-        "{label} output must not contain NUL — many HTTP/1 stacks truncate at NUL. got: {out:?}"
+        "{label} output must not contain NUL, many HTTP/1 stacks truncate at NUL. got: {out:?}"
     );
 }
 
@@ -45,7 +45,7 @@ fn whitespace_pad_strips_crlf_in_value() {
 #[test]
 fn line_fold_does_not_double_fold_pre_folded_value() {
     // Pre-fix, embedding a CR/LF would produce `\r\n  ...\r\n\t...`
-    // — nested folding that no compliant server accepts. Now stripped.
+    //: nested folding that no compliant server accepts. Now stripped.
     let out = line_fold("X-Custom", "before\r\nafter");
     // The ONLY \r\n permitted is the one line_fold inserts itself.
     let crlf_count = out.matches("\r\n").count();
@@ -105,7 +105,7 @@ fn null_byte_in_value_is_stripped() {
 
 #[test]
 fn clean_value_unchanged() {
-    // Negative twin — sanitise must not eat normal characters.
+    // Negative twin (sanitise must not eat normal characters).
     let out = tab_separator("X-Custom", "normal value with spaces");
     assert_eq!(out, "X-Custom:\tnormal value with spaces");
 }

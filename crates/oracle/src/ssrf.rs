@@ -2,9 +2,9 @@
 //!
 //! SSRF payloads manipulate URLs to make the server issue requests to
 //! unintended destinations. A valid SSRF payload must preserve:
-//! 1. **URL scheme** — `http://`, `https://`, `ftp://`, `file://`, etc.
-//! 2. **Host identifier** — IP address, hostname, or special address like `[::1]`
-//! 3. **Path/query structure** — `/admin`, `?action=read`, etc.
+//! 1. **URL scheme**: `http://`, `https://`, `ftp://`, `file://`, etc.
+//! 2. **Host identifier**: IP address, hostname, or special address like `[::1]`
+//! 3. **Path/query structure**: `/admin`, `?action=read`, etc.
 //!
 //! If encoding destroys the URL structure, the request cannot be parsed
 //! and the SSRF attack fails.
@@ -21,7 +21,7 @@ pub struct SsrfOracle;
 //  Hardcoded constants (not in TOML - URL schemes are protocol constants)
 // ──────────────────────────────────────────────
 
-/// URL schemes that indicate a network request — loaded from
+/// URL schemes that indicate a network request, loaded from
 /// `rules/ssrf/schemes.toml` so the community can extend the set
 /// without touching Rust.
 #[derive(serde::Deserialize)]
@@ -131,7 +131,7 @@ fn internal_path_indicators() -> &'static [String] {
 
 /// Whole-token matcher for short indicator hosts (the "0" shorthand
 /// being the canonical case). A token is bounded by `://`, `/`, `?`,
-/// `#`, `:`, or end-of-string — i.e. the URL grammar boundaries
+/// `#`, `:`, or end-of-string, i.e. the URL grammar boundaries
 /// around an authority. Returns true iff one occurrence of `host`
 /// in `payload` is a complete authority component, ignoring case.
 fn host_is_complete_token(payload: &str, host: &str) -> bool {
@@ -173,7 +173,7 @@ fn host_is_complete_token(payload: &str, host: &str) -> bool {
 /// Extract the authority (host[:port][@userinfo]) from a
 /// `scheme://...` URL. Returns the authority slice without the
 /// surrounding URL plumbing. None when the payload doesn't have a
-/// `://` separator — caller decides the fallback.
+/// `://` separator (caller decides the fallback).
 fn extract_authority(payload: &str) -> Option<&str> {
     let scheme_end = payload.find("://")?;
     let auth_start = scheme_end + 3;
@@ -212,7 +212,7 @@ fn has_ssrf_structure(payload: &str) -> bool {
 
     // Check for SSRF indicator hosts. Single-character indicator
     // tokens (the legitimate "0" → "0.0.0.0" shorthand) MUST be
-    // matched as a complete host token, not a substring — otherwise
+    // matched as a complete host token, not a substring, otherwise
     // any URL containing the digit '0' (e.g. /page?id=100) trips
     // the indicator. Multi-character indicators are substring
     // matched against the AUTHORITY only.
@@ -224,14 +224,14 @@ fn has_ssrf_structure(payload: &str) -> bool {
         }
     });
 
-    // Private IP prefixes likewise scan the authority only — a `10.`
+    // Private IP prefixes likewise scan the authority only, a `10.`
     // sitting in the path is not a private-IP indicator.
     let has_private_ip = private_ip_prefixes().iter().any(|prefix| {
         contains_ascii_insensitive(authority, prefix)
             || contains_ascii_insensitive(authority, &prefix.replace('.', "_"))
     });
 
-    // Internal-path indicators DO scan the full payload — they are
+    // Internal-path indicators DO scan the full payload, they are
     // path patterns by definition (`/api/`, `/admin/`, etc.).
     let has_internal_path = internal_path_indicators()
         .iter()
@@ -290,7 +290,7 @@ fn has_valid_url_syntax(payload: &str) -> bool {
             // valid SSRF-shaped URL, accept the original.
             //
             // Bare `scheme://[ipv6-fragment` (no closing bracket) is
-            // still rejected — the salvage only fires on NUL.
+            // still rejected (the salvage only fires on NUL).
             nul_in_authority_salvage(payload)
         }
     }
@@ -300,7 +300,7 @@ fn has_valid_url_syntax(payload: &str) -> bool {
 /// See `has_valid_url_syntax` for the rationale. Returns true iff
 /// the prefix preceding the first encoded-or-literal NUL (after
 /// `://`) parses as a valid URL whose HOST is itself an SSRF
-/// target — the salvage must not promote arbitrary public hosts.
+/// target (the salvage must not promote arbitrary public hosts).
 fn nul_in_authority_salvage(payload: &str) -> bool {
     // Find the `://` authority boundary; if missing, no salvage.
     let Some(authority_start) = payload.find("://") else {
@@ -354,7 +354,7 @@ fn nul_in_authority_salvage(payload: &str) -> bool {
     // localhost, metadata names, ...) OR begins with a private-IP
     // prefix (10., 127., 192.168., ...). This is the per-host
     // version of the looser `has_ssrf_structure` check, applied to
-    // the parsed authority instead of the raw payload — so
+    // the parsed authority instead of the raw payload, so
     // "%00." substring tricks against public hosts no longer
     // promote them.
     let host_lc = host.to_ascii_lowercase();
@@ -661,7 +661,7 @@ mod tests {
         // "0" should NOT match as a substring inside "a0b"
         assert!(!host_is_complete_token("a0b", "0"));
         // The IPv6 `::` substring inside `abc::def` is not at a
-        // host boundary — the surrounding `c` and `d` are not
+        // host boundary, the surrounding `c` and `d` are not
         // authority delimiters.
         assert!(!host_is_complete_token("abc::def", "::"));
     }
@@ -675,7 +675,7 @@ mod tests {
     // F130 regression suite: indicator-host + private-IP scans must
     // run against the URL authority, NOT the whole payload. Pre-fix
     // a public URL with a `10.` or `127.` substring anywhere in the
-    // path/query falsely matched a private indicator — anti-rigging
+    // path/query falsely matched a private indicator, anti-rigging
     // the bypass count for SSRF mutations that became public.
 
     #[test]
@@ -763,7 +763,7 @@ mod tests {
 
     #[test]
     fn anti_rig_public_url_with_router_ip_substring_rejected() {
-        // `172.16.` is a private prefix — must match only in authority.
+        // `172.16.` is a private prefix (must match only in authority).
         let oracle = SsrfOracle;
         assert!(
             !oracle.is_semantically_valid(

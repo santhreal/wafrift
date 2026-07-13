@@ -46,7 +46,7 @@ mod tests {
         assert_eq!(a, b, "whitespace_pad must be deterministic for replay");
 
         // Different input → different pad width (with very high
-        // probability) — proves the encoder isn't a fixed constant.
+        // probability) (proves the encoder isn't a fixed constant).
         let mut seen = std::collections::HashSet::new();
         for v in [
             "example.com",
@@ -266,7 +266,7 @@ mod tests {
                     !line.contains('\r') && !line.contains('\n'),
                     "{technique:?} must strip CR/LF from the value (header injection): {line:?}"
                 );
-                // Stripping removes only CR/LF — the value text survives as
+                // Stripping removes only CR/LF, the value text survives as
                 // inert content (not a new header line), proving we don't
                 // over-sanitise.
                 assert!(

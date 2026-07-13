@@ -81,7 +81,7 @@ fn distill_reduces_long_bypass_to_minimum_via_real_binary() {
         "--format",
         "json",
     ]);
-    assert_eq!(code, 0, "distill should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "distill should exit 0, stderr:\n{stderr}");
 
     let parsed: serde_json::Value =
         serde_json::from_str(stdout.trim()).expect("distill --format json must emit valid JSON");
@@ -124,7 +124,7 @@ fn distill_rejects_payload_that_target_already_blocks() {
         "--format",
         "json",
     ]);
-    assert_eq!(code, 2, "distill should exit 2 — stderr:\n{stderr}");
+    assert_eq!(code, 2, "distill should exit 2, stderr:\n{stderr}");
     assert!(
         stderr.to_lowercase().contains("block"),
         "error must explain payload was blocked: stderr={stderr}"
@@ -133,7 +133,7 @@ fn distill_rejects_payload_that_target_already_blocks() {
 
 #[test]
 fn distill_rejects_empty_payload() {
-    // No need for a mock — empty payload short-circuits before any
+    // No need for a mock, empty payload short-circuits before any
     // network IO.
     let (code, _stdout, stderr) = wafrift(&[
         "distill",
@@ -143,7 +143,7 @@ fn distill_rejects_empty_payload() {
         "--format",
         "json",
     ]);
-    assert_eq!(code, 2, "empty payload should exit 2 — stderr:\n{stderr}");
+    assert_eq!(code, 2, "empty payload should exit 2, stderr:\n{stderr}");
 }
 
 #[test]
@@ -170,7 +170,7 @@ fn distill_preserves_load_bearing_substring_through_reduction() {
         "--format",
         "json",
     ]);
-    assert_eq!(code, 0, "distill should exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "distill should exit 0, stderr:\n{stderr}");
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).unwrap();
     let minimal = parsed["minimal"]["payload"]
         .as_str()
@@ -205,7 +205,7 @@ fn distill_respects_max_fires_cap() {
     ]);
     assert_eq!(
         code, 0,
-        "distill should exit 0 even when capped — stdout:\n{stdout}"
+        "distill should exit 0 even when capped, stdout:\n{stdout}"
     );
     let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).unwrap();
     let capped = parsed["fires_capped"].as_bool().unwrap_or(false);

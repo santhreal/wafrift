@@ -16,9 +16,9 @@
 //!
 //! 1. **Shard rate-limit state** across N CIDs, multiplying the effective
 //!    rate limit by N
-//! 2. **Reset WAF inspection context** — start fresh per-CID WAF state
+//! 2. **Reset WAF inspection context**: start fresh per-CID WAF state
 //!    so sliding-window anomaly detectors see each request as the first
-//! 3. **Confuse bot-score accumulators** — the WAF scores each CID
+//! 3. **Confuse bot-score accumulators**: the WAF scores each CID
 //!    independently; rotating resets the score to zero before threshold
 
 use crate::{EvasionFrame, EvasionFrameSet, EvasionTechnique};
@@ -696,7 +696,7 @@ mod tests {
         }
 
         /// Decoding at a non-zero offset reads the varint at that position and
-        /// reports bytes consumed relative to it — used by every frame parser.
+        /// reports bytes consumed relative to it (used by every frame parser).
         #[test]
         fn prop_varint_decode_at_offset(prefix in proptest::collection::vec(any::<u8>(), 0..8), v in 0u64..(1u64 << 62)) {
             let mut buf = prefix.clone();

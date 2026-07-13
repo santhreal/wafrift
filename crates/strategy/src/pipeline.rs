@@ -1,4 +1,4 @@
-//! Evasion pipeline — an ordered sequence of techniques with a cost estimate.
+//! Evasion pipeline (an ordered sequence of techniques with a cost estimate).
 
 use serde::{Deserialize, Serialize};
 use wafrift_types::{Request, Technique};
@@ -43,7 +43,7 @@ impl EvasionPipeline {
     }
 
     /// Returns a cloned `Request` and the technique list this pipeline
-    /// declares — it does NOT actually apply the techniques to the
+    /// declares, it does NOT actually apply the techniques to the
     /// request bytes. The mutation logic lives in `strategy::evade*`
     /// (so the `Pipeline` value type stays I/O-free and trivially
     /// serializable). Call this when you want to surface "the plan"

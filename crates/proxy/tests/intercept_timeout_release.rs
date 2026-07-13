@@ -1,4 +1,4 @@
-//! Intercept store timeout / cancel behaviour — mirrors the proxy's
+//! Intercept store timeout / cancel behaviour, mirrors the proxy's
 //! `tokio::select!` arm in `main.rs` (default-allow after
 //! `INTERCEPT_TIMEOUT` + `store.cancel(id)` so pending maps don't leak).
 //!
@@ -70,7 +70,7 @@ async fn cancel_before_timeout_keeps_store_empty() {
     assert!(store.cancel(id));
     assert_eq!(store.pending_count(), baseline);
 
-    // Dropping the sender without `send` closes the oneshot — await
+    // Dropping the sender without `send` closes the oneshot, await
     // returns `Err`, not a decision.
     assert!(
         rx.await.is_err(),

@@ -1,4 +1,4 @@
-//! Hosts tab — top-N table sorted by request volume, with bypass rate
+//! Hosts tab, top-N table sorted by request volume, with bypass rate
 //! and most-recent winning technique per host.
 
 use ratatui::Frame;
@@ -41,7 +41,7 @@ pub fn draw(f: &mut Frame, area: Rect, state: &State) {
                 p if p >= 25.0 => Color::Yellow,
                 _ => Color::DarkGray,
             };
-            let waf_label = hs.waf_name.as_deref().unwrap_or("—").to_string();
+            let waf_label = hs.waf_name.as_deref().unwrap_or(". ").to_string();
             Row::new(vec![
                 Cell::from(host.clone()).style(Style::default().fg(Color::White)),
                 Cell::from(waf_label).style(Style::default().fg(Color::LightMagenta)),
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn render_with_no_hosts_does_not_panic() {
-        // Empty state — only the header row is drawn.
+        // Empty state (only the header row is drawn).
         let s = State::new();
         let _ = render(120, 12, &s);
     }
@@ -247,8 +247,8 @@ mod tests {
         let mut s = State::new();
         s.record(&req("unknown.example", true));
         let buf = render(200, 12, &s);
-        // The "—" U+2014 fallback should be present in the WAF column.
-        assert!(buf.contains('—') || buf.contains("-"));
+        // The ": " U+2014 fallback should be present in the WAF column.
+        assert!(buf.contains(': ') || buf.contains("-"));
     }
 
     #[test]
@@ -266,7 +266,7 @@ mod tests {
     #[test]
     fn render_top_hosts_capped_at_20() {
         let mut s = State::new();
-        // Insert 30 distinct hosts — only top 20 should be drawn.
+        // Insert 30 distinct hosts (only top 20 should be drawn).
         for i in 0..30 {
             let h = format!("host{i:02}.example");
             for _ in 0..(30 - i) {
@@ -277,7 +277,7 @@ mod tests {
         let buf = render(180, 25, &s);
         // host00 has the most requests, must appear.
         assert!(buf.contains("host00"));
-        // host29 has the fewest — shouldn't appear in top 20.
+        // host29 has the fewest (shouldn't appear in top 20).
         assert!(!buf.contains("host29"));
     }
 

@@ -14,7 +14,7 @@
 
 use std::time::Duration;
 
-/// Pending callback verification — the data scan must hold from
+/// Pending callback verification, the data scan must hold from
 /// substitution time until the post-fire poll.
 #[derive(Debug, Clone)]
 pub(crate) struct CallbackPending {
@@ -32,10 +32,10 @@ pub(crate) struct CallbackPending {
 /// Result of the post-fire poll.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CallbackVerdict {
-    /// The listener confirmed an inbound matched the token —
+    /// The listener confirmed an inbound matched the token 
     /// a blind / stored vuln is confirmed.
     Verified,
-    /// The listener responded but no inbound matched — at least
+    /// The listener responded but no inbound matched, at least
     /// for the duration of the scan + management-API round trip,
     /// the callback hasn't fired. Could still fire later (stored
     /// XSS execution may be hours away); operator should keep the
@@ -58,7 +58,7 @@ pub(crate) fn check_url(base_url: &str, token: &str) -> String {
 /// the response. Status 200 = Verified, 404 = NotObserved, anything
 /// else (connection error, timeout, weird status) = ListenerUnreachable.
 ///
-/// Uses a FRESH reqwest client (not the session-init one) — the
+/// Uses a FRESH reqwest client (not the session-init one), the
 /// listener is on operator infrastructure, so replaying auth cookies
 /// at it would be a privacy / leakage footgun.
 pub(crate) async fn verify(pending: &CallbackPending, timeout: Duration) -> CallbackVerdict {
@@ -72,7 +72,7 @@ pub(crate) async fn verify(pending: &CallbackPending, timeout: Duration) -> Call
             200 => CallbackVerdict::Verified,
             404 => CallbackVerdict::NotObserved,
             // Any other status is the listener responding but in a
-            // way we don't recognise — treat as unreachable, not
+            // way we don't recognise, treat as unreachable, not
             // a confirmed negative.
             _ => CallbackVerdict::ListenerUnreachable,
         },
@@ -185,7 +185,7 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn verify_returns_unreachable_on_unexpected_status() {
         // Anti-rig: a 500 from the listener is NOT a confirmed
-        // negative — operator should know their oracle is broken.
+        // negative (operator should know their oracle is broken).
         let addr = spawn_mock_listener(|_n, _path| {
             "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\
              Connection: close\r\n\r\n"

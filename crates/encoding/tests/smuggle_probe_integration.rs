@@ -4,7 +4,7 @@
 //! (cookie_smuggle, auth_header_smuggle, range_header_smuggle) all
 //! implement `wafrift_types::probe::SmuggleProbe` cleanly and can be
 //! iterated through one `Vec<Box<dyn SmuggleProbe>>` operator path
-//! — the whole point of the trait was to make this loop work.
+//! (the whole point of the trait was to make this loop work).
 //!
 //! The trait now also covers `wafrift-content-type::ContentTypeVariant`
 //! (body-shaping multipart smuggle probes), making it possible to
@@ -172,7 +172,7 @@ fn compose_real_cookie_plus_auth_plus_range_into_one_request() {
     assert!(header_names.contains("Authorization"));
     assert!(header_names.contains("Range"));
 
-    // No body or frames — all three probes are header-shaped.
+    // No body or frames (all three probes are header-shaped).
     assert!(composed.body.is_none());
     assert!(composed.frames.is_empty());
 
@@ -256,7 +256,7 @@ fn content_type_variant_artifact_is_body_with_content_type() {
 fn compose_duplicate_header_probes_preserves_all_header_lines() {
     // The duplicate-header variants (cookie + auth + range each have
     // one) emit MULTIPLE Cookie / Authorization / Range lines per
-    // probe. Composition must preserve every line — collapsing
+    // probe. Composition must preserve every line, collapsing
     // duplicates would defeat the whole point of those variants.
     let auth_dup = AuthSmuggleProbe::duplicate_header_first_wins_benign(
         "Authorization",
@@ -319,7 +319,7 @@ fn path_family_implements_trait_object_safely() {
 fn compose_cookie_plus_path_chains_into_one_request() {
     // Real operator chain: forge a session cookie + request the
     // protected path through a normalization-bypass encoding. One
-    // request, two parser-differential surfaces — the headline value
+    // request, two parser-differential surfaces, the headline value
     // proposition of the path family.
     let cookie = CookieSmuggleProbe::duplicate_name_last_wins("session", "guest", "admin");
     let path = PathSmuggleProbe::new(PathNormalizeTechnique::DotSegmentEncoded, "/admin");
@@ -346,7 +346,7 @@ fn compose_cookie_plus_path_chains_into_one_request() {
 #[test]
 fn path_artifact_value_carries_encoded_dot_dot() {
     // Anti-rig: the path-family artifact must actually contain the
-    // encoded traversal payload — a regression that defaulted the
+    // encoded traversal payload, a regression that defaulted the
     // path string to the protected_path verbatim would silently
     // defeat the whole bypass.
     let p = PathSmuggleProbe::new(PathNormalizeTechnique::DotSegmentEncoded, "/admin");
@@ -418,7 +418,7 @@ fn json_family_artifact_is_body_with_application_json_content_type() {
 #[test]
 fn compose_cookie_plus_path_plus_json_into_one_request() {
     // Three-way composition spanning header (cookie), header
-    // (:path), and body (JSON) — the full operator chain. One
+    // (:path), and body (JSON), the full operator chain. One
     // request, three parser-differential surfaces, three
     // independent canaries preserved.
     let cookie = CookieSmuggleProbe::duplicate_name_last_wins("session", "guest", "admin");
@@ -643,7 +643,7 @@ fn descriptions_are_non_trivial_human_readable_strings() {
         );
         // Description must NOT be the same as the technique
         // identifier (those are different surfaces for different
-        // audiences — operator log vs telemetry tag).
+        // audiences (operator log vs telemetry tag)).
         assert_ne!(
             d,
             p.technique(),

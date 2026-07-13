@@ -2,13 +2,13 @@
 //! `(payload × delivery)` generator. Every rewrite is
 //! semantic-preserving by construction; the generator additionally
 //! re-verifies each member with [`still_executes`] so it is sound by
-//! construction AND checked — it can never emit a non-attack.
+//! construction AND checked (it can never emit a non-attack).
 
 use super::{DeliveryShape, Dialect, EquivConfig, EquivPayload, Rng};
 use crate::grammar::sql::is_structured_attack;
 
 // ── Token model ────────────────────────────────────────────────────
-// Injection payloads are NOT standalone SQL — the leading `'`/`"` is a
+// Injection payloads are NOT standalone SQL, the leading `'`/`"` is a
 // *context break* out of the host query's string literal, not a
 // literal delimiter. So quotes are `Sym`, and `OR`/`UNION`/`1=1` are
 // top-level tokens the rewrites can actually reach.
@@ -249,7 +249,7 @@ fn rand_ident(rng: &mut Rng) -> String {
 
 // ── Soundness verifier ─────────────────────────────────────────────
 fn normalize(s: &str) -> String {
-    // Strip comments, collapse ws, lowercase — what a DB + a
+    // Strip comments, collapse ws, lowercase, what a DB + a
     // WAF-normalizer effectively see; comment-split keywords fold back.
     let mut out = String::with_capacity(s.len());
     let bytes: Vec<char> = s.chars().collect();
@@ -282,7 +282,7 @@ fn normalize(s: &str) -> String {
             }
         } else if (bytes[i] == '-' && i + 1 < bytes.len() && bytes[i + 1] == '-') || bytes[i] == '#'
         {
-            // line comment (`-- …` or `# …`) — skip to newline.
+            // line comment (`-- …` or `# …`) (skip to newline).
             while i < bytes.len() && bytes[i] != '\n' {
                 i += 1;
             }
@@ -321,11 +321,11 @@ pub fn still_executes(original: &str, cand: &str) -> bool {
         if want.is_empty() {
             return !nc.is_empty();
         }
-        // EVERY structural token of the original must remain — as a WHOLE
+        // EVERY structural token of the original must remain, as a WHOLE
         // token, not a substring. Substring containment (the prior
         // `nc.contains(t)`) let a mutation that buries a keyword inside a
         // larger identifier pass: `from` was "preserved" by `fromage`, `user`
-        // by `username`, `select` by `selected` — none of which is the SQL
+        // by `username`, `select` by `selected`: none of which is the SQL
         // keyword any more. `contains_token` (the shared boundary-aware
         // matcher, §7 DEDUP: one primitive for SQL + XSS) requires a token
         // boundary on each alphanumeric edge so only a genuine surviving
@@ -334,7 +334,7 @@ pub fn still_executes(original: &str, cand: &str) -> bool {
     } else {
         // Auth-bypass / tautology. Valid iff a context break (quote /
         // paren / logical operator) survives AND the exploit mechanism
-        // survives — either a boolean condition OR a comment-terminator
+        // survives, either a boolean condition OR a comment-terminator
         // (the `admin'--` class: close the literal, comment out the
         // password check; it has NO boolean and is still a real bypass).
         let has_break = cand.contains('\'')
@@ -438,13 +438,13 @@ fn rw_whitespace(toks: &mut [Tok], rng: &mut Rng) -> bool {
 /// Split / case-permute keyword Words. Equivalence holds at the SQL
 /// parser (comments fold out, SQL keywords are case-insensitive);
 /// surviving the WAF normalizer is Phase C's selection job.
-// SOUND keyword evasions only. The classic `UN/**/ION` is NOT sound —
+// SOUND keyword evasions only. The classic `UN/**/ION` is NOT sound 
 // a comment is a *token separator* in SQL, so it SPLITS the keyword
 // into two identifiers rather than gluing it (the verifier rejected
 // those anyway; emitting them was wasted work and conceptually wrong).
 // What IS sound:
-//   * case permutation — SQL keywords are case-insensitive (Generic);
-//   * `/*!ver KW */` MySQL conditional comment — the keyword executes
+//   * case permutation: SQL keywords are case-insensitive (Generic);
+//   * `/*!ver KW */` MySQL conditional comment, the keyword executes
 //     on MySQL (so the variant is tagged `MySql`, never claimed
 //     dialect-generic).
 fn rw_keyword(toks: &mut [Tok], rng: &mut Rng, dialect: &mut Dialect) -> bool {
@@ -512,7 +512,7 @@ fn promote(a: Dialect, b: Dialect) -> Dialect {
 
 /// String-level: swap a recognised boolean-tautology *atom* for a
 /// freshly-generated provably-true expression. ONLY for non-structured
-/// payloads (never touch an exfil/error-based core — the in-generator
+/// payloads (never touch an exfil/error-based core, the in-generator
 /// anti-rig invariant). Conservative: only well-formed tautology atoms
 /// are swapped, and the surrounding break/comment context is kept, so
 /// the result is sound by construction (and [`still_executes`]
@@ -556,7 +556,7 @@ fn rw_tautology(payload: &str, s: &str, rng: &mut Rng) -> Option<String> {
     let (pos, atom) = best?;
     // Defensive char-boundary check: `to_ascii_lowercase` does not
     // change non-ASCII byte positions, so for ASCII atoms the
-    // positions align — but if a prior tamper introduced a
+    // positions align, but if a prior tamper introduced a
     // multibyte char before the matched atom (homoglyphs,
     // fullwidth-encoded intermediates) the slice could land
     // mid-codepoint and panic. Fall back to None on any boundary
@@ -583,7 +583,7 @@ fn rw_paren(toks: &mut Vec<Tok>, rng: &mut Rng) -> bool {
     }
     // Find the first logical operator and parenthesise its right
     // operand. The closing `)` must go BEFORE any trailing comment
-    // terminator (`--` / `#`) — appending it at the absolute end would
+    // terminator (`--` / `#`), appending it at the absolute end would
     // bury it inside the comment, leaving the `(` unmatched and the
     // query a syntax error (an unsound emission).
     for i in 0..toks.len() {
@@ -618,7 +618,7 @@ fn rw_paren(toks: &mut Vec<Tok>, rng: &mut Rng) -> bool {
 }
 
 /// Swap a trailing comment terminator for an equivalent one
-/// (`-- -` ≡ `#` ≡ `-- <rand>` — all comment to end-of-input). Gives
+/// (`-- -` ≡ `#` ≡ `-- <rand>`: all comment to end-of-input). Gives
 /// entropy to comment-only auth bypasses with no other surface.
 fn rw_terminator(s: &str, rng: &mut Rng) -> Option<String> {
     let trimmed = s.trim_end();
@@ -646,7 +646,7 @@ fn rw_terminator(s: &str, rng: &mut Rng) -> Option<String> {
 /// Insert an equivalent separator at SQL-whitespace-optional
 /// boundaries (around operators / parens / commas, between adjacent
 /// keyword words). NEVER next to a break-quote or between a word and a
-/// quote — that would change the injected literal's value. Sound by
+/// quote, that would change the injected literal's value. Sound by
 /// the boundary predicate.
 fn rw_insert_sep(toks: &mut Vec<Tok>, rng: &mut Rng) -> bool {
     let op = |t: &Tok| {
@@ -683,7 +683,7 @@ fn rw_insert_sep(toks: &mut Vec<Tok>, rng: &mut Rng) -> bool {
 // Empirically-strong-first against modsec CRS PL1 (multipart-file and
 // path-segment carry STRUCTURED exfil straight through).
 /// Number of delivery-shape arms (index space for `force_delivery` /
-/// the Phase-C bandit). MUST equal `delivery_set(..).len()` — pinned
+/// the Phase-C bandit). MUST equal `delivery_set(..).len()`: pinned
 /// by `delivery_api_tests::phase_c_arm_table_is_aligned_injective_
 /// and_tail_stable`. (8 → 10 in 0.2.17: the bandit must explore the
 /// new `header_value` / `cookie` arms or they are dead in the
@@ -746,7 +746,7 @@ pub(crate) fn delivery_set(param: &str) -> Vec<DeliveryShape> {
         DeliveryShape::Query {
             param: param.to_string(),
         },
-        // Raw reflected channels — CRS covers REQUEST_HEADERS /
+        // Raw reflected channels: CRS covers REQUEST_HEADERS /
         // REQUEST_COOKIES weaker than ARGS at PL1. Sound only for
         // transport-legal payloads; the generator filters per
         // `DeliveryShape::transport_legal`.
@@ -757,7 +757,7 @@ pub(crate) fn delivery_set(param: &str) -> Vec<DeliveryShape> {
             name: param.to_string(),
         },
         // Third body axis: XML. CRS PL1 has no body processor for
-        // `application/xml` — payload arrives as escaped text inside
+        // `application/xml`: payload arrives as escaped text inside
         // an element, parser decodes back to the original bytes for
         // the backend sink. Transparent iff the app parses XML.
         DeliveryShape::XmlBody {
@@ -771,7 +771,7 @@ pub(crate) fn delivery_set(param: &str) -> Vec<DeliveryShape> {
             depth: 6,
         },
         // GraphQL envelope: a JSON body whose payload is one of many
-        // string variables. CRS has no GraphQL grammar — the payload
+        // string variables. CRS has no GraphQL grammar, the payload
         // is invisible to an ARGS- or JSON-path-scoped rule.
         DeliveryShape::GraphQLQuery {
             field: "search".to_string(),
@@ -781,7 +781,7 @@ pub(crate) fn delivery_set(param: &str) -> Vec<DeliveryShape> {
         // as `\uXXXX`. The WAF keyword-matches the raw body and sees none
         // of the attack; every backend JSON parser decodes the escapes to
         // the exact payload (RFC 8259 §7). Sound iff the app JSON-parses
-        // the body — Content-Type is forced to application/json.
+        // the body: Content-Type is forced to application/json.
         DeliveryShape::JsonUnicodeBody {
             param: param.to_string(),
         },
@@ -812,14 +812,14 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut out: Vec<EquivPayload> = Vec::with_capacity(cfg.max);
 
-    // The original must itself be a valid attack — the generator can
+    // The original must itself be a valid attack, the generator can
     // only preserve an exploit that exists, never manufacture one from
     // junk. (Anti-rig: a non-attack in ⇒ nothing out.)
     if !still_executes(payload, payload) {
         return out;
     }
 
-    // Seed 1: identity payload across every delivery shape — even with
+    // Seed 1: identity payload across every delivery shape, even with
     // zero string rewrites, multipart-file / path-segment / hpp-split
     // carry the *unmodified structured exploit* past CRS (empirical).
     for d in &deliveries {

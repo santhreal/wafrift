@@ -18,7 +18,7 @@ fn quoted_regions(payload: &str) -> Vec<(usize, usize)> {
             i += 1;
             while i < bytes.len() {
                 if bytes[i] == quote {
-                    // SQL-style escaped quote: '' or "" — skip both.
+                    // SQL-style escaped quote: '' or "" (skip both).
                     if i + 1 < bytes.len() && bytes[i + 1] == quote {
                         i += 2;
                         continue;
@@ -30,7 +30,7 @@ fn quoted_regions(payload: &str) -> Vec<(usize, usize)> {
                 i += 1;
             }
             // If we reached the end without a closing quote, it's unbalanced.
-            // Don't add a region — the remainder of the payload is treated as
+            // Don't add a region, the remainder of the payload is treated as
             // outside a string literal (common in SQL injection break-out
             // payloads like `' OR 1=1`).
         } else {
@@ -79,7 +79,7 @@ pub(crate) fn replace_logical_operator(
             // (payload + target). Pre-fix `rand::thread_rng()` meant
             // identical input produced different output across calls,
             // so a successful bypass discovered via this mutation
-            // could not be replayed — same hazard fixed in
+            // could not be replayed, same hazard fixed in
             // parameter_pollute (F114), whitespace_pad (F136), and
             // space_to_random_blank (F140). With more than one
             // alternative the picked variant matters; deterministic
@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn replace_logical_operator_pick_varies_across_distinct_payloads() {
         // The deterministic-but-varied contract: different inputs
-        // should NOT all collapse to the same alternative — that
+        // should NOT all collapse to the same alternative, that
         // would mean the FNV-1a mix is degenerate. Fire several
         // distinct payloads and assert ≥2 different alternatives
         // appear across them (with 3 alternatives and a real hash

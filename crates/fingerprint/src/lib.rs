@@ -1,4 +1,4 @@
-//! wafrift-fingerprint — Browser and TLS fingerprint profiles.
+//! wafrift-fingerprint: Browser and TLS fingerprint profiles.
 //!
 //! Provides browser-accurate fingerprint profiles (User-Agent, headers,
 //! Sec-Fetch-*) and TLS profiles (JA3/JA4 cipher suites, extensions,
@@ -7,7 +7,7 @@
 //! # Examples
 //!
 //! Pick a random browser profile and stamp it onto an outgoing
-//! request's headers — the User-Agent + Accept + Sec-Fetch-* fields
+//! request's headers, the User-Agent + Accept + Sec-Fetch-* fields
 //! all align so a WAF heuristic can't catch a "Chrome UA but
 //! Firefox Accept-Language" mismatch:
 //!

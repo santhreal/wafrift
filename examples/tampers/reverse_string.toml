@@ -1,9 +1,9 @@
-# reverse_string.toml — example wafrift plugin
+# reverse_string.toml: example wafrift plugin
 #
 # Drop this file into ~/.wafrift/tampers/ and wafrift will pick it up on
 # next startup.  No rebuild required.
 #
-# This tamper reverses the entire input payload — a contrived but self-
+# This tamper reverses the entire input payload, a contrived but self-
 # contained demo of the TOML plugin format.
 
 [manifest]
@@ -18,8 +18,8 @@ description     = "Reverses the entire payload for obfuscation smoke-tests."
 # Each rule is a regex pattern + a replacement string.
 #
 # Special replacement tokens:
-#   $REVERSED  — replaces the entire match with its character-reversed form.
-#   $1, $2 …   — standard regex capture-group back-references.
+#   $REVERSED (replaces the entire match with its character-reversed form).
+#   $1, $2 … (standard regex capture-group back-references).
 
 [[rules]]
 # Match the whole input and reverse it.

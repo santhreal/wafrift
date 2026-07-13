@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH bench-waf 1  "bench-waf " 
 .SH NAME
-bench\-waf \- Reproducible WAF benchmark: measure raw block rate AND wafrift bypass rate. Pass `\-\-evade` to actually run the evasion engine (off by default — without it, only the WAF\*(Aqs raw rejection rate is measured, no bypass claim is made)
+bench\-waf \- Reproducible WAF benchmark: measure raw block rate AND wafrift bypass rate. Pass `\-\-evade` to actually run the evasion engine (off by default, without it, only the WAF\*(Aqs raw rejection rate is measured, no bypass claim is made)
 .SH SYNOPSIS
 \fBbench\-waf\fR [\fB\-\-base\-url\fR] [\fB\-\-corpus\fR] [\fB\-\-class\fR] [\fB\-\-evade\fR] [\fB\-\-variants\fR] [\fB\-\-strategies\fR] [\fB\-\-oracle\-gate\fR] [\fB\-\-delay\-ms\fR] [\fB\-\-timeout\-secs\fR] [\fB\-\-insecure\fR] [\fB\-\-format\fR] [\fB\-\-output\fR] [\fB\-\-summary\-only\fR] [\fB\-\-skip\-healthcheck\fR] [\fB\-\-adaptive\-pause\-after\-errors\fR] [\fB\-\-validate\-only\fR] [\fB\-\-lineage\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-Reproducible WAF benchmark: measure raw block rate AND wafrift bypass rate. Pass `\-\-evade` to actually run the evasion engine (off by default — without it, only the WAF\*(Aqs raw rejection rate is measured, no bypass claim is made)
+Reproducible WAF benchmark: measure raw block rate AND wafrift bypass rate. Pass `\-\-evade` to actually run the evasion engine (off by default, without it, only the WAF\*(Aqs raw rejection rate is measured, no bypass claim is made)
 .SH OPTIONS
 .TP
 \fB\-\-base\-url\fR \fI<BASE_URL>\fR
@@ -25,7 +25,7 @@ Run wafrift evasion engine and measure bypass rate. Without this flag, only the 
 Variants per case to try in `\-\-evade` mode (per strategy)
 .TP
 \fB\-\-strategies\fR \fI<STRATEGIES>\fR [default: heavy]
-Comma\-separated list of evasion strategies. Default: heavy. Pass `\-\-strategies all` to run the full set in one shot. Available: light / medium / heavy   — payload\-string mutation via build_variants mcts                      — Monte Carlo Tree Search over actions (mctrust) smuggling                 — HTTP request smuggling variants (CL.TE / TE.CL / TE.TE / dual\-CL) content\-type              — Content\-Type confusion variants (multipart/json/xml/...) redos                     — wrap payload in catastrophic\-backtracking patterns hill\-climb / sim\-anneal / tabu / novelty / map\-elites — feedback\-driven search via wafrift\-evolution differential              — class\-filtered probes from wafrift\-evolution::differential (rule\-fingerprint coverage; "what does this WAF NOT block")
+Comma\-separated list of evasion strategies. Default: heavy. Pass `\-\-strategies all` to run the full set in one shot. Available: light / medium / heavy, payload\-string mutation via build_variants mcts. Monte Carlo Tree Search over actions (mctrust) smuggling. HTTP request smuggling variants (CL.TE / TE.CL / TE.TE / dual\-CL) content\-type. Content\-Type confusion variants (multipart/json/xml/...) redos, wrap payload in catastrophic\-backtracking patterns hill\-climb / sim\-anneal / tabu / novelty / map\-elites, feedback\-driven search via wafrift\-evolution differential, class\-filtered probes from wafrift\-evolution::differential (rule\-fingerprint coverage; "what does this WAF NOT block")
 .TP
 \fB\-\-oracle\-gate\fR
 Gate bypass count by oracle (per\-class semantic validity check). When set, a "bypassed" variant is only counted if the corresponding payload oracle agrees the variant is structurally a valid attack (i.e. would actually trigger the vulnerability server\-side, not garbage that slipped past because nothing parsed it)
@@ -65,10 +65,10 @@ Skip the upstream healthcheck before benching. By default the bench pings the WA
 Adaptive throttle: if this many consecutive sends fail at the connection level (target is overwhelmed), pause for 2s and continue at half\-speed. 0 disables. Default 50
 .TP
 \fB\-\-validate\-only\fR
-Just validate the corpus and exit — load every TOML, check every case has a unique id + non\-empty payload + a known class, then report counts and exit. Doesn\*(Aqt connect to the WAF target. Useful in CI to catch corpus drift without standing a WAF up
+Just validate the corpus and exit, load every TOML, check every case has a unique id + non\-empty payload + a known class, then report counts and exit. Doesn\*(Aqt connect to the WAF target. Useful in CI to catch corpus drift without standing a WAF up
 .TP
 \fB\-\-lineage\-output\fR \fI<LINEAGE_OUTPUT>\fR
-Persist successful evolution\-strategy bypasses (genes + lineage trace) to this JSON file as a `BypassCorpus`. Each entry is replayable: the gene tuple is enough to reconstruct the exact wire payload, and the lineage trace records every mutation step that led to it. When unset, bypasses still count toward the headline rate but are not persisted. Only the search\-loop strategies (hill\-climb / sim\-anneal / tabu / novelty / map\-elites) populate lineage — the static strategies have no chromosome
+Persist successful evolution\-strategy bypasses (genes + lineage trace) to this JSON file as a `BypassCorpus`. Each entry is replayable: the gene tuple is enough to reconstruct the exact wire payload, and the lineage trace records every mutation step that led to it. When unset, bypasses still count toward the headline rate but are not persisted. Only the search\-loop strategies (hill\-climb / sim\-anneal / tabu / novelty / map\-elites) populate lineage, the static strategies have no chromosome
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help

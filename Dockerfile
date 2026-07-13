@@ -16,7 +16,7 @@
 
 ARG RUST_VERSION=1.89
 
-# Pin to bookworm so the binary uses glibc 2.36 — matching the runtime
+# Pin to bookworm so the binary uses glibc 2.36, matching the runtime
 # image below. The default `rust:slim` tracks Debian Trixie (glibc 2.39)
 # which the bookworm runtime can't load:
 #   "/lib/x86_64-linux-gnu/libc.so.6: version GLIBC_2.39 not found"
@@ -45,7 +45,7 @@ COPY . .
 RUN cargo build --release -p wafrift-cli -p wafrift-proxy
 RUN strip /src/target/release/wafrift /src/target/release/wafrift-proxy || true
 
-# ── Runtime image — Debian slim is the smallest base that ships full
+# ── Runtime image: Debian slim is the smallest base that ships full
 # libstdc++ + ca-certificates without Alpine's musl C-library quirks.
 FROM debian:bookworm-slim
 
@@ -59,7 +59,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /src/target/release/wafrift /usr/local/bin/wafrift
 COPY --from=builder /src/target/release/wafrift-proxy /usr/local/bin/wafrift-proxy
 
-# Non-root user — the proxy doesn't need root to bind to non-privileged
+# Non-root user, the proxy doesn't need root to bind to non-privileged
 # ports, and running as root inside a container is a defence-in-depth
 # foot-gun if the practitioner accidentally `--cap-add` something.
 RUN useradd --system --shell /usr/sbin/nologin --home /var/lib/wafrift wafrift \
@@ -79,7 +79,7 @@ CMD ["wafrift"]
 
 # Documentation labels (OCI image spec). Set by the release workflow.
 LABEL org.opencontainers.image.title="wafrift" \
-      org.opencontainers.image.description="Programmable WAF-evasion engine — CLI + transparent forward proxy. Lawful use only." \
+      org.opencontainers.image.description="Programmable WAF-evasion engine. CLI + transparent forward proxy. Lawful use only." \
       org.opencontainers.image.url="https://github.com/santhsecurity/wafrift" \
       org.opencontainers.image.source="https://github.com/santhsecurity/wafrift" \
       org.opencontainers.image.licenses="MIT OR Apache-2.0" \

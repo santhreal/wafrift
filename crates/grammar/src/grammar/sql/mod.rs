@@ -79,7 +79,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<SqlMutation> {
     // Priority 1: quote-free / comment-free rewrites (Naxsi, AWS WAF
     // managed, modsec PL3+). Promoted ABOVE keywordless because high-
     // paranoia WAFs flag the math-only operator forms keywordless emits
-    // (`1-1`, `+1+`) just as aggressively as quoted SQL — but they
+    // (`1-1`, `+1+`) just as aggressively as quoted SQL, but they
     // pass clean integer-comparison forms (`1 OR 1=1`, `1 IS NOT NULL`)
     // through. Live-confirmed against wafrift-bench naxsi.
     extend_until_limit(
@@ -285,7 +285,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<SqlMutation> {
         max_mutations,
         union_mutations(payload, max_mutations),
     );
-    // Nested comment mutations — defeats WAFs that strip one comment layer
+    // Nested comment mutations, defeats WAFs that strip one comment layer
     for (mutated, desc) in nested_comment_mutations(payload, max_mutations) {
         if results.len() >= max_mutations {
             break;
@@ -301,7 +301,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<SqlMutation> {
         extend_until_limit(&mut results, max_mutations, union_column_probes(10));
     }
 
-    // Dialect-specific mutations — always reserve at least 20% of budget.
+    // Dialect-specific mutations (always reserve at least 20% of budget).
     // Use an extended limit so dialect mutations always get included.
     let dialect_limit = max_mutations + max_mutations / 5;
     let per_dialect = (max_mutations / 5).max(5);
@@ -341,21 +341,21 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<SqlMutation> {
     // ── Anti-rig chokepoint ──────────────────────────────────────────
     // A "mutation" of an attack must still BE that attack. Several
     // generators (json_xml, keywordless, canned-tautology, …) emit
-    // fixed library payloads with ZERO relation to the input — so a
+    // fixed library payloads with ZERO relation to the input, so a
     // request to evade `1 AND extractvalue(...)` came back as
     // `' OR JSON_EXTRACT('{"a":1}','$.a')=1--`. That destroys the
     // exploit and is exactly what made the bench report fake bypasses.
     //
-    // For a boolean tautology, a canned tautology IS equivalent — skip
+    // For a boolean tautology, a canned tautology IS equivalent, skip
     // the filter there (adversarial-twin: legit keyword-free rewrites
     // must survive). For any structured attack (UNION / error-based /
     // stacked / blind / time), every returned variant MUST still carry
-    // at least one significant token of the original — checked after
+    // at least one significant token of the original, checked after
     // stripping SQL comments + whitespace so legitimate
     // comment-injection evasions (`extr/**/actvalue`) still pass.
     //
     // §1 SPEED: strip_sql_comments_ws(payload) is now called ONCE and
-    // shared between is_structured_attack and significant_tokens — the
+    // shared between is_structured_attack and significant_tokens, the
     // old code called it twice for every structured payload.
     {
         let stripped_payload = strip_sql_comments_ws(payload);
@@ -382,7 +382,7 @@ pub fn mutate(payload: &str, max_mutations: usize) -> Vec<SqlMutation> {
     results
 }
 
-/// STRUCTURED attack token set — the canonical single copy, shared by both
+/// STRUCTURED attack token set, the canonical single copy, shared by both
 /// `is_structured_attack` and `is_structured_attack_stripped` via delegation.
 /// §7 DEDUP: one definition, two callers.
 const STRUCTURED_TOKENS: &[&str] = &[
@@ -436,19 +436,19 @@ const STRUCTURED_TOKENS: &[&str] = &[
 /// one `strip_sql_comments_ws` allocation per call.
 ///
 /// §1 SPEED: `strip_sql_comments_ws(payload)` is called ONCE in the anti-rig gate
-/// and reused — old code called it twice (once per fn) for every structured payload.
+/// and reused (old code called it twice (once per fn) for every structured payload).
 fn is_structured_attack_stripped(s: &str) -> bool {
     STRUCTURED_TOKENS.iter().any(|m| s.contains(m))
 }
 
 /// True when the payload is a STRUCTURED attack: it has a data-
 /// exfiltration or secondary effect (UNION read, error-based extract,
-/// time/boolean blind, stacked statement, file/proc access) — NOT just
+/// time/boolean blind, stacked statement, file/proc access). NOT just
 /// "make the WHERE true".
 ///
 /// This is the axis that matters for the anti-rig gate. A pure boolean
 /// tautology or an `'admin'--` auth bypass CAN be swapped for an
-/// equivalent always-true expression (same effect) — that is a valid
+/// equivalent always-true expression (same effect), that is a valid
 /// mutation. A structured attack CANNOT: replacing `extractvalue(...)`
 /// or `UNION SELECT pw` with `1 OR 1=1` throws the exploit away. So:
 ///   * structured  → forbid canned substitution, enforce token
@@ -465,7 +465,7 @@ pub(crate) fn is_structured_attack(payload: &str) -> bool {
 }
 
 /// Significant lowercase tokens (alphanumeric runs ≥ 4 chars) of a
-/// payload — the attack's class-defining vocabulary
+/// payload, the attack's class-defining vocabulary
 /// (`extractvalue`, `union`, `select`, `concat`, `sleep`, …). A real
 /// evasion preserves at least one; a canned substitution carries none.
 ///
@@ -484,7 +484,7 @@ fn significant_tokens(stripped: &str) -> std::collections::HashSet<String> {
 /// so comment-injection evasions (`UN/**/ION`, `sel--\nect`) normalise
 /// back to the keyword they evade rather than reading as a new token.
 ///
-/// §1 SPEED: single-pass implementation — bytes are lowercased inline as they
+/// §1 SPEED: single-pass implementation, bytes are lowercased inline as they
 /// are pushed to `out`, avoiding the old two-pass approach (build ASCII string
 /// byte-by-byte then call `out.to_ascii_lowercase()` on the whole allocation).
 /// For a 70-byte payload the old code allocated one 70-byte String then created
@@ -502,12 +502,12 @@ fn strip_sql_comments_ws(s: &str) -> String {
             }
             i += 2;
         } else if (b[i] == b'-' && i + 1 < b.len() && b[i + 1] == b'-') || b[i] == b'#' {
-            // line comment (`-- …` or `# …`) — skip to newline.
+            // line comment (`-- …` or `# …`) (skip to newline).
             while i < b.len() && b[i] != b'\n' {
                 i += 1;
             }
         } else {
-            // Inline lowercase — eliminates the second `to_ascii_lowercase()` pass.
+            // Inline lowercase (eliminates the second `to_ascii_lowercase()` pass).
             out.push(b[i].to_ascii_lowercase() as char);
             i += 1;
         }
@@ -615,7 +615,7 @@ fn push_combined_whitespace_mutations(
 
     // F143: pre-fix this used rand::thread_rng().gen_range so every
     // call to mutate() produced a different combined-whitespace
-    // suffix on the SAME input — gene-bank replay was broken for
+    // suffix on the SAME input, gene-bank replay was broken for
     // any winner that ended up in this branch. Same hazard fixed
     // in parameter_pollute (F114), whitespace_pad (F136),
     // space_to_random_blank (F140), replace_logical_operator

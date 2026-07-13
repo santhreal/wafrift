@@ -6,7 +6,7 @@ use crate::policy::ReassemblyPolicy;
 
 /// One TCP segment: its starting sequence number and its payload bytes.
 ///
-/// The model uses absolute (non-wrapping) sequence offsets — real TCP sequence
+/// The model uses absolute (non-wrapping) sequence offsets, real TCP sequence
 /// numbers wrap at 2³², but an overlap plan operates within a tiny window where
 /// wrap never occurs. `seq` is the sequence number of `data[0]`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ impl Segment {
 
     /// Sequence number one past the last byte (exclusive end). Saturating: a
     /// segment crafted with `seq` near `u32::MAX` clamps at `u32::MAX` rather
-    /// than overflowing (debug panic / release wrap) — `Segment::new` is public,
+    /// than overflowing (debug panic / release wrap). `Segment::new` is public,
     /// so a hostile caller must not be able to drive `end()` to misbehave.
     #[must_use]
     pub fn end(&self) -> u32 {
@@ -38,7 +38,7 @@ impl Segment {
 }
 
 /// Hard cap on the reassembly window (1 MiB). A real overlap plan spans a single
-/// request — a few KiB at most. Without this, a segment set with a huge sequence
+/// request, a few KiB at most. Without this, a segment set with a huge sequence
 /// gap (or `u32`-scale `seq` values) would size the position buffer at up to
 /// ~4 GiB and OOM the process. Positions past the cap are never part of a
 /// legitimate plan, so clamping is both safe and sufficient.
@@ -49,7 +49,7 @@ pub const MAX_REASSEMBLY_SPAN: usize = 1 << 20;
 /// Segments are processed in **arrival order** (their order in the slice). Each
 /// byte position is resolved by [`ReassemblyPolicy::overwrites`]. The result is
 /// the contiguous byte run starting at the lowest sequence number, stopping at
-/// the first gap — exactly what an in-order TCP stack delivers to the
+/// the first gap, exactly what an in-order TCP stack delivers to the
 /// application (bytes past a hole are buffered, not delivered).
 ///
 /// Deterministic and total: any segment set yields a defined stream (empty if
@@ -242,7 +242,7 @@ mod tests {
         }
 
         /// Non-overlapping, gap-free segments concatenate identically under EVERY
-        /// policy — overlap resolution can only matter where bytes overlap.
+        /// policy (overlap resolution can only matter where bytes overlap).
         #[test]
         fn prop_disjoint_segments_are_policy_invariant(
             chunks in proptest::collection::vec(proptest::collection::vec(any::<u8>(), 1..6), 1..6),

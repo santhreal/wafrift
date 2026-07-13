@@ -3,7 +3,7 @@
 //!     `Java 10.0`, `Version 192.168.something`, anything with `127.`
 //!     inside a benign substring.
 //!   CRITICAL `template::detect_type` fired on JSON, CSS, C, Python,
-//!     Markdown — any string containing `{`, `}`, `#`, or `$` because
+//!     Markdown, any string containing `{`, `}`, `#`, or `$` because
 //!     Smarty / Velocity declare 1-char delimiters.
 //!
 //! Pre-fix every `assert!(!detect_type(...))` would have returned true.
@@ -41,7 +41,7 @@ fn ssrf_does_not_fire_on_localhost_substring_in_hostname() {
 
 #[test]
 fn ssrf_still_fires_on_real_ssrf_payloads() {
-    // Negative twin — the precision fix must not regress recall.
+    // Negative twin (the precision fix must not regress recall).
     assert!(ssrf::detect_type("http://127.0.0.1/admin"));
     assert!(ssrf::detect_type("http://localhost/internal"));
     assert!(ssrf::detect_type("http://169.254.169.254/latest/meta-data"));
@@ -80,7 +80,7 @@ fn template_does_not_fire_on_markdown_or_shell_var() {
 
 #[test]
 fn template_still_fires_on_real_ssti_payloads() {
-    // Negative twin — recall preserved on real SSTI.
+    // Negative twin (recall preserved on real SSTI).
     assert!(template::detect_type("{{7*7}}"), "jinja2 / twig");
     assert!(template::detect_type("{% if user %}{{ user }}{% endif %}"));
     assert!(template::detect_type("${7*7}"), "freemarker");

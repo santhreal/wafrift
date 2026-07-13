@@ -1,4 +1,4 @@
-//! Benign (non-injection) canned bodies — oracles must not accept these as semantically valid exploits.
+//! Benign (non-injection) canned bodies (oracles must not accept these as semantically valid exploits).
 
 mod common;
 

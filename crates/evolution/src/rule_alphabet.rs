@@ -1,7 +1,7 @@
 //! Per-rule alphabet refinement for the L\* learner.
 //!
 //! Closes #166. The wafmodel L\* learner reasons over an
-//! [`wafrift_wafmodel::Alphabet`] — a small set of distinguished
+//! [`wafrift_wafmodel::Alphabet`], a small set of distinguished
 //! bytes plus a single catch-all class representing every byte the
 //! rule doesn't branch on. Picking that distinguished set well is
 //! the difference between a learner that converges in 200 membership
@@ -20,10 +20,10 @@
 //! 1. For every byte 0..255, compute how often it appears in
 //!    *blocked* payloads versus *bypassed* payloads.
 //! 2. Bytes that appear much more in blocks than in bypasses are
-//!    "trigger-bytes" — the rule fires when they're present. They
+//!    "trigger-bytes", the rule fires when they're present. They
 //!    are the distinguished alphabet.
 //! 3. Bytes that appear much more in bypasses than blocks are
-//!    "evasion-bytes" — they may also be worth distinguishing,
+//!    "evasion-bytes", they may also be worth distinguishing,
 //!    since they're the operator's leverage on the rule.
 //! 4. Bytes that appear roughly equally in both, or in neither, are
 //!    candidates for the catch-all class.
@@ -38,7 +38,7 @@ use wafrift_wafmodel::Alphabet;
 use crate::rule_corpus::RuleBucket;
 
 /// Default number of distinguished bytes the inferred alphabet
-/// carries. Eight has been the sweet spot in empirical sweeps —
+/// carries. Eight has been the sweet spot in empirical sweeps 
 /// large enough to cover every rule we've examined so far in the
 /// CRS, small enough to keep L\* table size O(k²) tractable.
 pub const DEFAULT_DISTINGUISHED_COUNT: usize = 8;
@@ -152,7 +152,7 @@ pub fn pick_catch_all(bucket: &RuleBucket, distinguished: &[u8]) -> u8 {
             return candidate;
         }
     }
-    // Fallback — `Z` is conventional even if it appears somewhere;
+    // Fallback: `Z` is conventional even if it appears somewhere;
     // the worst case is just a slightly less precise alphabet, not
     // a learner crash.
     b'Z'
@@ -164,7 +164,7 @@ pub fn pick_catch_all(bucket: &RuleBucket, distinguished: &[u8]) -> u8 {
 /// is a never-observed ASCII letter.
 ///
 /// If `bucket` is empty (no blocked / bypassed payloads recorded),
-/// returns `None` — callers should fall back to a generic
+/// returns `None`: callers should fall back to a generic
 /// alphabet rather than learn over a zero-signal alphabet that
 /// can't distinguish anything.
 #[must_use]
@@ -242,7 +242,7 @@ mod tests {
 
     #[test]
     fn highly_discriminative_byte_ranks_first() {
-        // `<` appears in every block but never in any bypass — perfect
+        // `<` appears in every block but never in any bypass, perfect
         // discrimination of 1.0.
         let b = bucket_with(
             vec!["<script>", "<img>", "<svg>"],
@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     fn distinguished_excludes_filler_bytes() {
-        // Space appears in every blocked payload but is HTTP filler —
+        // Space appears in every blocked payload but is HTTP filler 
         // must be filtered out even with discrimination=1.0.
         let b = bucket_with(vec!["a b", "c d", "e f"], vec!["abcdef", "qwert", "zxcvb"]);
         let dist = distinguished_bytes(&b, 5);
@@ -303,7 +303,7 @@ mod tests {
 
     #[test]
     fn pick_catch_all_falls_back_to_z_when_letters_exhausted() {
-        // Payloads contain every ASCII letter — pick_catch_all
+        // Payloads contain every ASCII letter, pick_catch_all
         // falls back to 'Z'.
         let all_letters: String = (b'A'..=b'Z')
             .chain(b'a'..=b'z')
@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn infer_alphabet_zero_discrimination_bucket_returns_none() {
-        // Same payloads in both blocks and bypasses — no byte has any
+        // Same payloads in both blocks and bypasses, no byte has any
         // discrimination signal.
         let b = bucket_with(vec!["abc", "abc", "abc"], vec!["abc", "abc", "abc"]);
         // Either returns None (no discriminating bytes) or a fallback
@@ -414,7 +414,7 @@ mod tests {
 
     #[test]
     fn many_payloads_perf_smoke() {
-        // 1000 blocks × 100 bypasses — must complete fast (< 100ms).
+        // 1000 blocks × 100 bypasses (must complete fast (< 100ms)).
         let payloads: Vec<String> = (0..1000)
             .map(|i| format!("' OR {i}=1-- comment{i}"))
             .collect();

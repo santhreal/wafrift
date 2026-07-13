@@ -50,7 +50,7 @@ fn modsecurity_response() -> (u16, Vec<(String, String)>, Vec<u8>) {
     )
 }
 
-/// Clean response — should produce zero detections.
+/// Clean response (should produce zero detections).
 fn clean_response() -> (u16, Vec<(String, String)>, Vec<u8>) {
     (
         200,

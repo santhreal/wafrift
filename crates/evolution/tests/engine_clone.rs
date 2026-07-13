@@ -94,7 +94,7 @@ fn clone_starts_with_empty_cache_at_same_capacity() {
     assert_eq!(
         cloned.cache.len(),
         0,
-        "cache is intentionally drained on clone — use SharedEngine for sharing"
+        "cache is intentionally drained on clone, use SharedEngine for sharing"
     );
     assert_eq!(
         cloned.cache.cap(),
@@ -110,7 +110,7 @@ fn clone_is_independent_of_original_for_subsequent_writes() {
     engine.seed_population(random_population(&pool, 4, 11));
     let mut cloned = engine.clone();
 
-    // Mutate the original — the clone's snapshot must not change.
+    // Mutate the original (the clone's snapshot must not change).
     let snapshot_before = cloned.population_snapshot();
     engine.seed_population(random_population(&pool, 12, 99));
     let snapshot_after = cloned.population_snapshot();
@@ -119,7 +119,7 @@ fn clone_is_independent_of_original_for_subsequent_writes() {
         "mutating the original must not leak into the clone"
     );
 
-    // Mutate the clone — the original's snapshot must not change.
+    // Mutate the clone (the original's snapshot must not change).
     let original_before = engine.population_snapshot();
     cloned.seed_population(random_population(&pool, 1, 33));
     let original_after = engine.population_snapshot();
@@ -135,13 +135,13 @@ fn clone_is_independent_of_original_for_subsequent_writes() {
 fn clone_of_populated_map_elites_engine_under_50ms() {
     // The original blocker called out clone spikes on populated state.
     // Seed a MapElites grid with 100 distinct chromosomes and gate
-    // clone time at 50ms — the serde_json path used to take 200ms+
+    // clone time at 50ms, the serde_json path used to take 200ms+
     // for similar payloads.
     let mut engine = engine_with("map_elites", 6);
     let pool = engine.gene_pool.clone();
     engine.seed_population(random_population(&pool, 100, 0));
 
-    // Warm up — first clone may include cache effects we don't care
+    // Warm up, first clone may include cache effects we don't care
     // about for the perf gate.
     let _warmup = engine.clone();
 
@@ -177,7 +177,7 @@ fn many_sequential_clones_do_not_accumulate_state() {
     engine.seed_population(random_population(&pool, 16, 0));
     let baseline_population = engine.population_snapshot();
 
-    // Cascade clone N times — final clone's snapshot must match
+    // Cascade clone N times, final clone's snapshot must match
     // the original's, byte-for-byte.
     let mut tip = engine.clone();
     for _ in 0..32 {
@@ -227,13 +227,13 @@ async fn shared_engine_concurrent_readers_do_not_block_each_other() {
     assert_eq!(a, 0);
     assert_eq!(b, 0);
     assert_eq!(c, 0);
-    // Concurrent readers should overlap — total wall time must be
+    // Concurrent readers should overlap, total wall time must be
     // closer to 20ms (one reader's hold time) than 60ms (three
     // serialised holds). Allow a generous buffer for scheduler
     // jitter under load.
     assert!(
         elapsed.as_millis() < 50,
-        "concurrent readers serialised — took {elapsed:?} for three 20ms holds"
+        "concurrent readers serialised, took {elapsed:?} for three 20ms holds"
     );
 }
 
@@ -269,18 +269,18 @@ async fn shared_engine_writer_excludes_readers() {
     writer.await.unwrap();
     assert_eq!(
         read_value, 999,
-        "reader saw stale state — write didn't take effect before read"
+        "reader saw stale state, write didn't take effect before read"
     );
     assert!(
         elapsed.as_millis() >= 15,
-        "reader didn't actually wait on the writer — got {elapsed:?}"
+        "reader didn't actually wait on the writer, got {elapsed:?}"
     );
 }
 
 #[tokio::test]
 async fn shared_engine_arc_clone_is_cheap() {
     // Sanity: cloning an Arc<RwLock<EvolutionEngine>> must not
-    // duplicate engine state — that's the whole point of the
+    // duplicate engine state, that's the whole point of the
     // SharedEngine type.
     let engine = engine_with("novelty_search", 11);
     let shared = engine.into_shared();

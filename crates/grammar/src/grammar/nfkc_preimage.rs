@@ -1,9 +1,9 @@
-//! NFKC-preimage homoglyph engine — the principled, exhaustive generalization
+//! NFKC-preimage homoglyph engine, the principled, exhaustive generalization
 //! of the four hand-rolled transforms in `super::unicode_norm`.
 //!
 //! ## The WAF↔origin normalization gap
 //!
-//! A regex/signature WAF matches ASCII attack tokens — `<script`, `union
+//! A regex/signature WAF matches ASCII attack tokens: `<script`, `union
 //! select`, `alert(`, `/etc/passwd`. But a large class of origins normalize
 //! input through **NFKC** (the W3C-recommended form: Node.js `String.prototype
 //! .normalize`, Python `unicodedata.normalize`, Java `Normalizer`, .NET, many
@@ -27,11 +27,11 @@
 //! This module instead **derives the complete inverse map directly from the
 //! NFKC function**: enumerate Unicode once, fold each codepoint, and record
 //! every codepoint that collapses to a single ASCII character. A future Unicode
-//! revision extends coverage with zero code changes — the data IS the contract.
+//! revision extends coverage with zero code changes (the data IS the contract).
 //!
 //! Variant generation (style passes, minimal single-codepoint perturbation,
 //! alternating) and the `NFKC(v) == payload` soundness gate live in the shared
-//! `super::homoglyph_gen` — this module supplies only the inverse map and the
+//! `super::homoglyph_gen`: this module supplies only the inverse map and the
 //! NFKC origin transform.
 
 use std::collections::HashMap;
@@ -42,7 +42,7 @@ use unicode_normalization::UnicodeNormalization;
 /// Upper bound on codepoints scanned when building the preimage map. Covers
 /// Latin-1 Supplement through the Mathematical Alphanumeric Symbols
 /// (U+1D400–U+1D7FF) and Enclosed Alphanumeric Supplement / Symbols-for-Legacy
-/// blocks — every NFKC-to-ASCII homoglyph Unicode 15 defines lives below this.
+/// blocks (every NFKC-to-ASCII homoglyph Unicode 15 defines lives below this).
 const SCAN_CEIL: u32 = 0x1_FBFF;
 
 /// NFKC of a single character as a `String` (may be multi-char for ligatures).
@@ -85,7 +85,7 @@ fn preimage_map() -> &'static HashMap<char, Vec<char>> {
 
 /// Multi-char inverse-NFKC: short ASCII token (len 2..=4) ← single codepoints
 /// that NFKC-fold to *exactly* that token. One codepoint masquerades as a
-/// multi-byte attack string — the path-traversal `..`→U+2025 (TWO DOT LEADER)
+/// multi-byte attack string, the path-traversal `..`→U+2025 (TWO DOT LEADER)
 /// and `...`→U+2026 (HORIZONTAL ELLIPSIS) class, plus Roman numerals, `№`→`No`,
 /// fractions, etc. A WAF matching the literal `../` never sees it; the origin
 /// reconstructs it under NFKC.
@@ -170,14 +170,14 @@ pub fn preimage_count(c: char) -> usize {
 /// `normalize(&first_preimage(c)?.to_string()) == c.to_string()`. Deterministic
 /// (the map is built codepoint-ascending). The wafmodel solver uses it to
 /// compute a single homoglyph preimage of an attack under an NFKC-normalizing
-/// sink — the exact dual of percent-encoding under a URL-decoding sink — without
+/// sink, the exact dual of percent-encoding under a URL-decoding sink, without
 /// re-deriving the inverse-NFKC map (which lives only here, by NO-DUP contract).
 #[must_use]
 pub fn first_preimage(c: char) -> Option<char> {
     preimage_map().get(&c).and_then(|v| v.first()).copied()
 }
 
-/// NFKC-normalize `s` — the *origin-side* transform that reconstructs the exact
+/// NFKC-normalize `s`: the *origin-side* transform that reconstructs the exact
 /// attack from any [`variants`] output (the dual of this engine). Exposed so
 /// callers can model "what the NFKC-normalizing origin sees" without taking a
 /// direct dependency on `unicode-normalization`.
@@ -186,7 +186,7 @@ pub fn normalize(s: &str) -> String {
     nfkc(s)
 }
 
-/// Layered NFKC + percent-encoding variants — a normalization variant that is
+/// Layered NFKC + percent-encoding variants, a normalization variant that is
 /// *also* `%XX`-encoded. See `super::homoglyph_gen::generate_composed`. Only
 /// an origin that url-decodes THEN NFKC-normalizes reconstructs the attack.
 #[must_use]
@@ -291,7 +291,7 @@ mod tests {
     fn emits_an_alternating_partial_fold_variant() {
         // Guards the capability that subsumed `unicode_norm::mixed_fullwidth`:
         // homoglyph_gen Strategy B alternates substitution by position, so among
-        // the variants there must be one that is *partially* folded — at least
+        // the variants there must be one that is *partially* folded, at least
         // two non-ASCII codepoints, yet with some foldable ASCII letter left
         // intact (distinct from the all-substituted style passes and from the
         // single-codepoint minimal perturbation). This is the "mixed" style a
@@ -408,7 +408,7 @@ mod tests {
         }
         // The XSS-load-bearing angle brackets have a non-ASCII NFKC preimage
         // (the canonical/lowest is a compatibility form such as U+FE64 SMALL
-        // LESS-THAN SIGN — we pin the soundness property, not the exact
+        // LESS-THAN SIGN, we pin the soundness property, not the exact
         // codepoint, since the map is data-derived and Unicode-revision-stable).
         let lt = first_preimage('<').expect("'<' must have an NFKC preimage");
         assert_eq!(normalize(&lt.to_string()), "<");

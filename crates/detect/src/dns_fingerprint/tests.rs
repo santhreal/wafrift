@@ -1,4 +1,4 @@
-//! DNS-fingerprint test suite — engine matching, rule loading,
+//! DNS-fingerprint test suite, engine matching, rule loading,
 //! and embedded-catalog invariants for CNAME / PTR / ASN layers.
 
 use super::rules::CnameRuleEngine;
@@ -77,7 +77,7 @@ fn no_detection_on_unrelated_chain() {
 #[test]
 fn matches_intermediate_hop_not_just_final() {
     // Fastly's POP chain often goes through `.map.fastly.net`
-    // (the alias-cluster name) THEN to a regional pop — the
+    // (the alias-cluster name) THEN to a regional pop, the
     // final hop may be a fastly-internal name we don't pattern
     // for.  Matching intermediate hops covers that.
     let probe = probe_from_hosts(
@@ -90,7 +90,7 @@ fn matches_intermediate_hop_not_just_final() {
 
 #[test]
 fn case_insensitive_host_matching() {
-    // DNS is case-insensitive — a hostile resolver returning
+    // DNS is case-insensitive, a hostile resolver returning
     // CamelCase host names must not break detection.
     let probe = probe_from_hosts("www.example.com", &["Example.Map.Fastly.NET"]);
     let r = engine().detect(&probe);
@@ -100,7 +100,7 @@ fn case_insensitive_host_matching() {
 #[test]
 fn confidence_threshold_filters_weak_matches() {
     // A rule needing 0.5 confidence with one matching 0.3
-    // signature shouldn't fire — partial chains are common
+    // signature shouldn't fire, partial chains are common
     // false positives on parked-domain registrars.
     let toml = r#"
 [[cname]]
@@ -191,7 +191,7 @@ fn embedded_ruleset_loads_and_has_rules() {
     let eng = CnameRuleEngine::load_embedded().expect("embedded rules compile");
     assert!(
         eng.len() >= 5,
-        "embedded CNAME ruleset has only {} rules — catalog shrank",
+        "embedded CNAME ruleset has only {} rules, catalog shrank",
         eng.len()
     );
 }
@@ -499,7 +499,7 @@ fn rule_compilation_idempotent_for_same_toml() {
 
 #[test]
 fn signature_matching_is_anchored_at_end_for_dollar_patterns() {
-    // The catalog uses `\.fastly\.net$` — must not match
+    // The catalog uses `\.fastly\.net$`: must not match
     // `foo.fastly.net.evil.attacker.com`.  The `$` anchor is
     // crucial for preventing supply-chain false positives.
     let toml = r#"

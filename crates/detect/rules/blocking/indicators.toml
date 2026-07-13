@@ -3,7 +3,7 @@
 # Phrases that, when found in a response body (case-insensitive),
 # strongly suggest a WAF interception page.
 #
-# Community contributions welcome — append a new `[[indicator]]`
+# Community contributions welcome, append a new `[[indicator]]`
 # stanza. The Aho-Corasick scanner handles any number of patterns
 # in a single O(n) pass, so adding to the list costs nothing at
 # scan time.
@@ -22,7 +22,7 @@ description = "HTTP-403-aligned phrase common to nginx error pages and WAF templ
 
 [[indicator]]
 phrase = "captcha"
-description = "Indicates a managed challenge — Cloudflare, hCaptcha, reCAPTCHA"
+description = "Indicates a managed challenge. Cloudflare, hCaptcha, reCAPTCHA"
 
 [[indicator]]
 phrase = "challenge"
@@ -38,7 +38,7 @@ description = "ModSecurity / OWASP CRS default phrasing"
 
 [[indicator]]
 phrase = "not acceptable"
-description = "HTTP-406 phrasing — used by mod_security to obscure 403"
+description = "HTTP-406 phrasing, used by mod_security to obscure 403"
 
 [[indicator]]
 phrase = "rate limit"

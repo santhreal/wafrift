@@ -1,4 +1,4 @@
-# waf-zoo/naxsi — Naxsi (positive-security WAF for nginx)
+# waf-zoo/naxsi: Naxsi (positive-security WAF for nginx)
 
 ## What this is
 
@@ -27,7 +27,7 @@ up --build` takes ~5 minutes. Subsequent starts are instant (layer cache).
 
 ## Port
 
-`18104` — does not conflict with any other waf-zoo or wafrift-bench/targets stack.
+`18104`: does not conflict with any other waf-zoo or wafrift-bench/targets stack.
 
 Note: `wafrift-bench/targets/naxsi` uses port 18087. This stack uses a distinct
 image name (`wafrift/zoo-naxsi`) and container name prefix (`wafrift-zoo-naxsi`)
@@ -35,7 +35,7 @@ so both can run simultaneously.
 
 ## Backend
 
-`kennethreitz/httpbin` — echoes the request. 200 + echo = WAF allowed (bypass).
+`kennethreitz/httpbin`: echoes the request. 200 + echo = WAF allowed (bypass).
 403 = WAF blocked via `/RequestDenied` routing.
 
 ## How to run
@@ -44,7 +44,7 @@ so both can run simultaneously.
 # 1. Build and start (first run ~5 min)
 docker compose -f bench/waf-zoo/naxsi/docker-compose.yml up -d --build
 
-# 2. Smoke test — expect 200 OK
+# 2. Smoke test: expect 200 OK
 curl -si http://127.0.0.1:18104/get | head -2
 
 # 3. Verify WAF blocks a raw SQLi payload
@@ -77,9 +77,9 @@ becomes high.
 
 ## Licensing
 
-nginx — BSD 2-clause.
-Naxsi — GPLv3 (wargio/naxsi fork; see https://github.com/wargio/naxsi/blob/main/LICENSE).
-`kennethreitz/httpbin` — ISC.
+nginx: BSD 2-clause.
+Naxsi: GPLv3 (wargio/naxsi fork; see https://github.com/wargio/naxsi/blob/main/LICENSE).
+`kennethreitz/httpbin`: ISC.
 No commercial or trial licenses required.
 
 **GPLv3 note**: Naxsi is compiled into nginx as a dynamic module at build time.

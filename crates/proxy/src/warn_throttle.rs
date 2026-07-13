@@ -49,7 +49,7 @@ impl WarnThrottle {
         {
             return false;
         }
-        // Cap defence — without it the map grows one-entry-per-distinct-key
+        // Cap defence, without it the map grows one-entry-per-distinct-key
         // forever. A long-running proxy session against thousands of unique
         // hosts × multiple warn categories accumulated stale entries
         // indefinitely (slow OOM).
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn after_cooldown_elapses_warning_fires_again() {
-        let t = WarnThrottle::new(0); // 0-second cooldown — every call passes
+        let t = WarnThrottle::new(0); // 0-second cooldown, every call passes
         for _ in 0..5 {
             assert!(t.should_warn("k"));
         }

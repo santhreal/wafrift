@@ -3,7 +3,7 @@
 use crate::error::EncodeError;
 use std::fmt::Write as _;
 
-/// Between obfuscation — rewrites `=` and `>` using `BETWEEN` syntax.
+/// Between obfuscation (rewrites `=` and `>` using `BETWEEN` syntax).
 ///
 /// Safe for: SQL contexts.
 pub fn between_obfuscate(payload: &str) -> String {
@@ -22,7 +22,7 @@ pub fn between_obfuscate(payload: &str) -> String {
     result
 }
 
-/// Unmagic quotes — multi-byte quote escape for PHP multi-byte charsets.
+/// Unmagic quotes (multi-byte quote escape for PHP multi-byte charsets).
 ///
 /// Emits `%bf%27` (or similar) to exploit `addslashes()` when the connection
 /// charset is GBK, Big5, or Shift-JIS.
@@ -34,7 +34,7 @@ pub fn unmagic_quotes(payload: impl AsRef<[u8]>) -> Result<String, EncodeError> 
     Ok(payload_str.replace('\'', "%bf%27"))
 }
 
-/// Percentage prefix — adds `%` before each character.
+/// Percentage prefix (adds `%` before each character).
 ///
 /// Lightweight bypass against WAFs that tokenize on alphanumeric boundaries
 /// but do not strip leading `%` signs.

@@ -3,7 +3,7 @@
 //! Race conditions in web applications usually require the attacker
 //! to fire N parallel requests so close in time that they all reach
 //! the application's logic check before any of them commits. The
-//! limit is no longer "how fast can I send" — it's "how synchronized
+//! limit is no longer "how fast can I send", it's "how synchronized
 //! can my requests be when they hit the server's TCP layer."
 //!
 //! James Kettle's Black Hat 2023 "Smashing the State Machine" research
@@ -14,7 +14,7 @@
 //!
 //! This module builds the WIRE BYTES for the attack. The actual
 //! "send everything in one TCP packet" trick is a transport-layer
-//! concern: the operator must disable Nagle (`TCP_NODELAY` off — yes
+//! concern: the operator must disable Nagle (`TCP_NODELAY` off, yes
 //! OFF, so Nagle batches the writes), keep the connection open with
 //! HTTP/2, and use `MSG_MORE`-style writev to coalesce.
 //!
@@ -89,7 +89,7 @@ pub fn pipelined_h1_coalesce(
 /// each one byte of payload, all in the same buffer.
 ///
 /// `stream_ids` is the list of stream IDs the operator pre-allocated
-/// in step 2. `final_bytes` is one byte per stream — the byte that
+/// in step 2. `final_bytes` is one byte per stream, the byte that
 /// completes each request body.
 ///
 /// Returns `None` if `stream_ids.len() != final_bytes.len()` or if
@@ -110,10 +110,10 @@ pub fn h2_last_byte_sync_frames(stream_ids: &[u32], final_bytes: &[u8]) -> Optio
 
     // Each DATA frame layout (RFC 7540 §6.1):
     //   Length: 24 bits big-endian (1 byte of payload → 0x000001)
-    //   Type:    8 bits — 0x00 for DATA
-    //   Flags:   8 bits — 0x01 END_STREAM
-    //   Stream:  32 bits — high bit reserved, then 31-bit stream id
-    //   Payload: <Length> bytes — the final byte.
+    //   Type:    8 bits: 0x00 for DATA
+    //   Flags:   8 bits: 0x01 END_STREAM
+    //   Stream:  32 bits, high bit reserved, then 31-bit stream id
+    //   Payload: <Length> bytes (the final byte).
     let mut out = Vec::with_capacity(stream_ids.len() * 10);
     for (id, byte) in stream_ids.iter().zip(final_bytes.iter()) {
         // Length = 1 (24-bit big-endian).
@@ -141,7 +141,7 @@ pub fn h2_last_byte_sync_frames(stream_ids: &[u32], final_bytes: &[u8]) -> Optio
 /// fires `h2_last_byte_sync_frames` once to complete every stream
 /// atomically.
 ///
-/// HEADERS payload is operator-supplied (HPACK-encoded — this module
+/// HEADERS payload is operator-supplied (HPACK-encoded, this module
 /// doesn't carry an HPACK encoder; use `hpack` crate at the call site).
 #[must_use]
 pub fn h2_prestaged_frames(
@@ -167,7 +167,7 @@ pub fn h2_prestaged_frames(
     out.extend_from_slice(hpack_encoded_headers);
 
     // DATA frame for the body MINUS the last byte. Flags = 0 (no
-    // END_STREAM — that's what the final-byte frame will carry).
+    // END_STREAM (that's what the final-byte frame will carry)).
     if !body_without_last_byte.is_empty() {
         let blen = body_without_last_byte.len();
         if blen > 0xFF_FFFF {
@@ -187,11 +187,11 @@ pub fn h2_prestaged_frames(
 /// Operators set these on their sender's TCP socket before issuing
 /// the payload from `pipelined_h1_coalesce` / `h2_last_byte_sync_frames`.
 pub const RECOMMENDED_SOCKET_SETTINGS: &[&str] = &[
-    "TCP_NODELAY: OFF — allow Nagle to batch the writes into one segment",
-    "SO_SNDBUF: ≥ 65536 — large enough to hold every byte before flush",
-    "MSS: default (1460 over Ethernet) — coalesces ≥10 small requests",
-    "TCP_QUICKACK: OFF — defer ACKs",
-    "TLS_RECORD_SIZE_LIMIT: 16384 — fits ≥30 typical requests in one record",
+    "TCP_NODELAY: OFF, allow Nagle to batch the writes into one segment",
+    "SO_SNDBUF: ≥ 65536, large enough to hold every byte before flush",
+    "MSS: default (1460 over Ethernet), coalesces ≥10 small requests",
+    "TCP_QUICKACK: OFF, defer ACKs",
+    "TLS_RECORD_SIZE_LIMIT: 16384, fits ≥30 typical requests in one record",
 ];
 
 #[cfg(test)]
@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn h2_prestaged_emits_headers_then_data() {
-        let hpack = vec![0x82]; // HPACK static-table index 2 — `:method GET`
+        let hpack = vec![0x82]; // HPACK static-table index 2. `:method GET`
         let body_short = b"hello"; // 5 bytes
         let bytes = h2_prestaged_frames(1, &hpack, body_short).expect("ok");
         // HEADERS frame: 9-byte header + 1-byte payload = 10.
@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn h2_prestaged_rejects_oversized_headers() {
-        // 2^24 bytes — exceeds 24-bit length field.
+        // 2^24 bytes (exceeds 24-bit length field).
         let huge = vec![0u8; 16_777_216];
         let r = h2_prestaged_frames(1, &huge, &[]);
         assert!(r.is_none());

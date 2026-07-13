@@ -262,7 +262,7 @@ fn scan_active_waf_mock_reports_active_engagement() {
             .contains("blocked"),
         "reason must mention block: {v}"
     );
-    // Baseline blocked — explore may still run but meaningful count is honest.
+    // Baseline blocked (explore may still run but meaningful count is honest).
     assert!(
         v["meaningful_bypassed"].as_u64().unwrap() <= v["bypassed"].as_u64().unwrap(),
         "meaningful must be subset of bypassed: {v}"

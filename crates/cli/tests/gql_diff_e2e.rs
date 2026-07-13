@@ -55,7 +55,7 @@ fn gql_diff_finds_introspection_leak_on_permissive_mock() {
         "--delay-ms",
         "0",
     ]);
-    assert_eq!(code, 0, "gql-diff exit 0 — stderr:\n{stderr}");
+    assert_eq!(code, 0, "gql-diff exit 0, stderr:\n{stderr}");
     let p: serde_json::Value = serde_json::from_str(stdout.trim()).expect("JSON parse");
     let total = p["divergences"]["high"].as_u64().unwrap_or(0)
         + p["divergences"]["medium"].as_u64().unwrap_or(0);
@@ -68,7 +68,7 @@ fn gql_diff_finds_introspection_leak_on_permissive_mock() {
         let curl = r["curl_cmd"].as_str().expect("curl_cmd");
         // gql-diff probes BOTH transports: POST (canonical) and
         // GraphQL-over-GET (a real CSRF/cache divergence). The reproducer curl
-        // must faithfully match the transport the tool used — `-X POST` for the
+        // must faithfully match the transport the tool used: `-X POST` for the
         // POST variants, a plain `curl -i '<url?query=…>'` for the GET variant.
         // Asserting POST-only would reject the legitimate GET repro.
         let is_post = curl.starts_with("curl -i -X POST ");
@@ -117,13 +117,13 @@ fn gql_diff_is_grouped_under_diff_with_working_alias() {
     let (code2, _stdout2, stderr2) = wafrift(&["diff", "gql", "--help"]);
     assert_eq!(
         code2, 0,
-        "`wafrift diff gql --help` must exit 0 — stderr:\n{stderr2}"
+        "`wafrift diff gql --help` must exit 0, stderr:\n{stderr2}"
     );
 
     // 3. Deprecated flat alias still runs (LAW 2 backwards-compat).
     let (code3, _stdout3, stderr3) = wafrift(&["gql-diff", "--help"]);
     assert_eq!(
         code3, 0,
-        "`wafrift gql-diff --help` must still exit 0 — stderr:\n{stderr3}"
+        "`wafrift gql-diff --help` must still exit 0, stderr:\n{stderr3}"
     );
 }

@@ -1,4 +1,4 @@
-//! Deep coverage for `auth_bypass::auth_bypass_probes` — the 230-probe
+//! Deep coverage for `auth_bypass::auth_bypass_probes`: the 230-probe
 //! Tsai-class header bypass set. Catches duplicate header, missing
 //! family, broken label, malformed value, mixing across the 5 families
 //! (URL-rewrite, IP-trust, gateway-injected-identity, method-override,
@@ -124,7 +124,7 @@ fn every_probe_has_non_empty_description() {
 fn header_names_are_valid_ascii_except_for_lws_smuggle_family() {
     // header-smuggle-lws DELIBERATELY ships malformed header names
     // (soft-hyphen U+00AD, leading/trailing whitespace, underscore
-    // swap) — that's the whole bypass mechanism: WAF parsers that
+    // swap), that's the whole bypass mechanism: WAF parsers that
     // strip these chars disagree with origin parsers that don't.
     // For every OTHER family, headers must be valid ASCII tchars.
     for p in &probes() {
@@ -162,7 +162,7 @@ fn header_names_contain_no_forbidden_chars_except_for_lws_smuggle() {
 #[test]
 fn lws_smuggle_family_actually_contains_malformed_headers() {
     // Anti-rig: the LWS family must contain AT LEAST ONE probe with
-    // a non-tchar in the header name — otherwise the family is dead.
+    // a non-tchar in the header name (otherwise the family is dead).
     let any_malformed = probes()
         .iter()
         .filter(|p| p.label == "header-smuggle-lws")
@@ -173,7 +173,7 @@ fn lws_smuggle_family_actually_contains_malformed_headers() {
         });
     assert!(
         any_malformed,
-        "header-smuggle-lws family has zero malformed-header probes — \
+        "header-smuggle-lws family has zero malformed-header probes. \
          it's supposed to test parser disagreement on non-tchar bytes"
     );
 }
@@ -198,7 +198,7 @@ fn header_values_are_valid_utf8() {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Family coverage — each documented family must appear
+// Family coverage, each documented family must appear
 // ────────────────────────────────────────────────────────────────
 
 fn labels() -> Vec<&'static str> {
@@ -428,7 +428,7 @@ fn no_header_dominates_more_than_50_pct() {
 }
 
 // ────────────────────────────────────────────────────────────────
-// Stability — multiple calls return identical sets
+// Stability, multiple calls return identical sets
 // ────────────────────────────────────────────────────────────────
 
 #[test]

@@ -1,4 +1,4 @@
-//! `wafrift probe` — emit the differential analysis probe set as
+//! `wafrift probe`: emit the differential analysis probe set as
 //! NDJSON. Each line is one canonical probe shape (a payload + the
 //! WAF feature it tests + whether a well-behaved WAF should block
 //! it). Useful as a sanity oracle for hand-built rules.

@@ -1,8 +1,8 @@
-//! Cross-target gene bank — persistent WAF evasion memory.
+//! Cross-target gene bank (persistent WAF evasion memory).
 //!
 //! Stores per-WAF evasion genomes to `~/.wafrift/genomes/<waf_name>.json`.
 //! When a new scan targets a known WAF, the gene bank pre-populates the
-//! winner pool with historically effective techniques — eliminating the
+//! winner pool with historically effective techniques, eliminating the
 //! discovery phase entirely for previously-encountered WAFs.
 //!
 //! This is **horizontal gene transfer**: knowledge gained against one
@@ -12,7 +12,7 @@
 //!
 //! All writes use **atomic rename** (`write` → `.tmp` → `rename`).
 //! A crash at any point leaves either the old file intact or the new
-//! file fully written — never a truncated/corrupt state.
+//! file fully written (never a truncated/corrupt state).
 //!
 //! # Concurrency
 //!
@@ -34,7 +34,7 @@ use std::path::PathBuf;
 /// so a future scan against `(waf, payload_class)` can warm-start
 /// from the class-specific winners instead of the global average.
 ///
-/// Why a separate struct: the JSON shape is forward-compatible —
+/// Why a separate struct: the JSON shape is forward-compatible 
 /// adding a new field here doesn't change the parent
 /// `TechniqueRecord` schema, and old genomes (pre-per-class) still
 /// deserialise via `#[serde(default)]` on the parent's `per_class`
@@ -101,7 +101,7 @@ impl TechniqueRecord {
 
     /// Success rate for this technique on the named payload class
     /// (`sql`, `xss`, `cmdi`, …). Returns `None` when this technique
-    /// has no per-class history yet — caller should fall back to the
+    /// has no per-class history yet, caller should fall back to the
     /// global [`Self::success_rate`].
     #[must_use]
     pub fn success_rate_for_class(&self, class: &str) -> Option<f64> {
@@ -121,7 +121,7 @@ impl TechniqueRecord {
     }
 }
 
-/// A WAF-specific genome — the accumulated knowledge for one WAF vendor.
+/// A WAF-specific genome (the accumulated knowledge for one WAF vendor).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WafGenome {
     /// WAF name (e.g., `"Cloudflare"`, `"ModSecurity"`).
@@ -170,7 +170,7 @@ impl WafGenome {
         // R51 pass-13 I4 (CLAUDE.md §11 UTILIZATION): wire
         // target_count into the rank as a tiebreaker. A technique
         // with 100% on ONE target is less trustworthy than one
-        // with 95% across five targets — the latter generalises;
+        // with 95% across five targets, the latter generalises;
         // the former is likely a fluke or fixture artifact.
         // target_count was previously written by merge_session
         // but never consulted; this turns it into a real signal.
@@ -205,7 +205,7 @@ impl WafGenome {
         }
     }
 
-    /// Per-technique merge — shared by [`Self::merge_session`] and
+    /// Per-technique merge, shared by [`Self::merge_session`] and
     /// [`Self::merge_session_for_class`]. Folds `(successes, attempts)`
     /// into the matching record (creating one if absent and the
     /// MAX_TECHNIQUES cap allows), and optionally folds into the
@@ -278,14 +278,14 @@ impl WafGenome {
     /// stat is also folded into the per-class breakdown so subsequent
     /// `seed_winners_for_class(class)` calls bias the variant order
     /// toward what historically beat this specific WAF on this
-    /// specific payload class — the warm-start that makes a repeat
+    /// specific payload class, the warm-start that makes a repeat
     /// SQLi scan against Cloudflare start from "the chains that beat
     /// CF on SQLi yesterday", not "the chains that beat anything on
     /// anything."
     ///
     /// Class is normalised to lowercase for stable lookups. Pass
     /// `""` or any whitespace-only string to fall through to the
-    /// class-less [`Self::merge_session`] — the per-class breakdown
+    /// class-less [`Self::merge_session`], the per-class breakdown
     /// then stays untouched, which is what callers want when they
     /// don't know the class (e.g. a generic scan against an unknown
     /// endpoint).
@@ -344,7 +344,7 @@ impl WafGenome {
     }
 }
 
-/// The gene bank — manages all WAF genomes on disk.
+/// The gene bank (manages all WAF genomes on disk).
 pub struct GeneBank {
     /// Root directory for genome storage.
     root: PathBuf,
@@ -354,7 +354,7 @@ pub struct GeneBank {
 
 /// Bundled default genome: proven *generic* technique-records (delivery-vector
 /// + encoding confusion) that warm-start a COLD bank, so the first scan against
-/// a WAF fires known winners instead of discovering from zero — the warm-start
+/// a WAF fires known winners instead of discovering from zero, the warm-start
 /// pentesters want. These are generic recipes (technique-keys + priors), NOT
 /// target-specific payloads (those stay in the private per-target corpus, never
 /// shipped). Sourced from real bench/cumulus runs; a test pins that it parses.
@@ -362,7 +362,7 @@ const DEFAULT_GENERIC_GENOME: &str = include_str!("default_genomes/generic.json"
 
 /// Cloudflare-class default genome: the delivery-vector + encoding techniques
 /// proven most effective against Cloudflare-fronted WAFs (content-type
-/// confusion — JSON dup-key / multipart / CBOR / YAML — plus overlong-UTF8 /
+/// confusion: JSON dup-key / multipart / CBOR / YAML, plus overlong-UTF8 /
 /// hex). A pentester hitting a Cloudflare target warm-starts from these instead
 /// of the broad generic encodings. Generic technique-keys + priors, not
 /// target-specific payloads (those stay in the private per-target corpus).
@@ -416,10 +416,10 @@ impl GeneBank {
     /// If the genome file exists but contains corrupt JSON, the file is
     /// quarantined (renamed to `<name>.json.corrupt.<timestamp>`) and
     /// a warning is emitted.  This prevents a single corrupt file from
-    /// silently destroying accumulated knowledge — the quarantined file
+    /// silently destroying accumulated knowledge, the quarantined file
     /// can be inspected and recovered manually.
     /// Maximum genome file size we will load into memory (F137).
-    /// Mirrors the `LearningCache` cap (16 MiB) — a crafted or
+    /// Mirrors the `LearningCache` cap (16 MiB), a crafted or
     /// corrupted genome file that exceeds this is quarantined, not
     /// read. Without the cap, `fs::read_to_string` on a multi-GB file
     /// causes an OOM abort before any JSON-parse error can fire.
@@ -439,7 +439,7 @@ impl GeneBank {
         // between each of which a concurrent agent on the shared NFS mount
         // could swap the file (delete, replace with symlink, truncate).
         // Opening once and using the file handle's metadata closes the
-        // TOCTOU window — the kernel guarantees the stat we read describes
+        // TOCTOU window, the kernel guarantees the stat we read describes
         // the file we will then read from. NFS-correct because every
         // wafrift agent operates on the same `/media/.../Santh/` share.
         let mut file = match fs::File::open(&path) {
@@ -465,7 +465,7 @@ impl GeneBank {
                 path = %path.display(),
                 bytes = meta.len(),
                 cap = Self::MAX_GENOME_FILE_BYTES,
-                "genome file exceeds size cap — quarantining to prevent OOM"
+                "genome file exceeds size cap, quarantining to prevent OOM"
             );
             let fake_err = serde_json::from_str::<WafGenome>("").unwrap_err();
             Self::quarantine_corrupt(&path, &fake_err);
@@ -504,7 +504,7 @@ impl GeneBank {
     /// Writes to a `.tmp` file first, fsyncs it, renames it to the final
     /// path, then fsyncs the parent directory.  A crash at any point
     /// leaves either the old file intact or the new file fully committed
-    /// — never a truncated state.
+    ///: never a truncated state.
     ///
     /// An exclusive advisory lock is acquired for the duration of the
     /// operation to serialize concurrent writers.
@@ -512,7 +512,7 @@ impl GeneBank {
     /// # Errors
     ///
     /// Returns an error if the file cannot be written.
-    /// The bundled default genome's technique names — the warm-start seed pool
+    /// The bundled default genome's technique names, the warm-start seed pool
     /// for a brand-new (cold) install with no per-WAF history yet. Empty only
     /// if the embedded default fails to parse (a build-time invariant pinned by
     /// a test, so in practice this always yields the proven generic set).
@@ -526,14 +526,14 @@ impl GeneBank {
     /// Like [`load`](Self::load), but on a COLD bank (no genome yet for this
     /// WAF) it materializes the bundled default best-matched to the WAF class
     /// (Cloudflare-fronted → the delivery-vector set, else the generic
-    /// encodings) — stamping it with the detected `waf_name` and writing it
-    /// through to disk — so the
+    /// encodings), stamping it with the detected `waf_name` and writing it
+    /// through to disk, so the
     /// FIRST scan warm-starts from proven techniques instead of discovering from
     /// zero. An existing genome is returned untouched (the default never
     /// clobbers accumulated knowledge).
     ///
     /// Write-through is best-effort: a read-only `$HOME` falls back to an
-    /// in-memory seed so the scan still warm-starts — this never fails a scan.
+    /// in-memory seed so the scan still warm-starts (this never fails a scan).
     /// Returns `None` only if there's no existing genome AND the bundled default
     /// fails to parse (a build-time invariant pinned by a test, so in practice
     /// a known WAF always warm-starts).
@@ -542,7 +542,7 @@ impl GeneBank {
         if self.load(waf_name).is_some() {
             return self.cache.get(&key);
         }
-        // Cold start — seed from the bundled default for this WAF.
+        // Cold start (seed from the bundled default for this WAF).
         let mut default: WafGenome = serde_json::from_str(bundled_default_for(waf_name)).ok()?;
         default.waf_name = waf_name.to_string();
         if self.save(&default).is_err() {
@@ -604,7 +604,7 @@ impl GeneBank {
     /// guarantees as the class-less path.
     ///
     /// Pass `""` for `class` to fall through to [`Self::merge_and_save`]
-    /// — the per-class breakdown stays untouched.
+    ///: the per-class breakdown stays untouched.
     ///
     /// # Errors
     ///
@@ -688,7 +688,7 @@ impl GeneBank {
 
     /// Atomic write of a genome to disk.
     ///
-    /// Does NOT acquire locks — the caller must hold the advisory lock.
+    /// Does NOT acquire locks (the caller must hold the advisory lock).
     /// Delegates the crash-safe write dance to
     /// [`wafrift_types::loaders::write_atomic`], which is shared with
     /// `proxy::gene_bank_io` and `cli::seed` so a fsync-policy tweak
@@ -709,7 +709,7 @@ impl GeneBank {
         if !path.exists() {
             return None;
         }
-        // F137: same OOM guard as `load` — an adversarial file here
+        // F137: same OOM guard as `load`: an adversarial file here
         // would be consumed by the merge_and_save / merge_and_save_for_class
         // path, which is equally reachable from the scan loop.
         if let Ok(meta) = fs::metadata(path)
@@ -719,7 +719,7 @@ impl GeneBank {
                 path = %path.display(),
                 bytes = meta.len(),
                 cap = Self::MAX_GENOME_FILE_BYTES,
-                "genome file exceeds size cap during merge — quarantining to prevent OOM"
+                "genome file exceeds size cap during merge, quarantining to prevent OOM"
             );
             let fake_err = serde_json::from_str::<WafGenome>("").unwrap_err();
             Self::quarantine_corrupt(path, &fake_err);
@@ -755,7 +755,7 @@ impl GeneBank {
             path = %path.display(),
             quarantine = %quarantine.display(),
             error = %error,
-            "corrupt genome file — quarantining for inspection"
+            "corrupt genome file, quarantining for inspection"
         );
         if let Err(e) = fs::rename(path, &quarantine) {
             tracing::error!(

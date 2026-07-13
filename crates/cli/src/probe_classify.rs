@@ -1,4 +1,4 @@
-//! Shared probe-response classification primitives — the dedup
+//! Shared probe-response classification primitives, the dedup
 //! target for `bypass_probe` and `parser_diff` (and any future
 //! "fire-N-variants-against-a-baseline-and-rate-the-divergence"
 //! command).
@@ -10,7 +10,7 @@
 //! status would have to be applied twice and might miss one. Now
 //! it lives here, tested once, consumed by both.
 
-/// Numeric rank for severity strings — used for sorting and for
+/// Numeric rank for severity strings, used for sorting and for
 /// `--min-severity` filtering. Unknown strings rank as 0 (always
 /// included when sorting; never matched when filtering). Case-
 /// insensitive so callers can pass `"HIGH"`, `"high"`, or `"High"`.
@@ -28,7 +28,7 @@ pub(crate) fn severity_rank(s: &str) -> u8 {
 /// HTTP statuses that mean "the target is throttling or temporarily
 /// unavailable", NOT "you bypassed the control". A 429 (or a 503 /
 /// 502 / 504 / 408, or Cloudflare's 520-527 origin-error band) is
-/// the target telling us to slow down — turning it into a "LOW
+/// the target telling us to slow down, turning it into a "LOW
 /// severity bypass divergence" (the dogfood bug: 135/191 probes
 /// were 429 against try.discourse.org and every one was flagged)
 /// is a false positive that buries any real finding in rate-limit
@@ -46,7 +46,7 @@ pub(crate) fn is_throttle_or_unavailable(status: u16) -> bool {
 /// R55 pass-18 I4 (CLAUDE.md §7 DEDUP): delegated to
 /// [`crate::parser_diff_common::body_delta_pct`] (which itself routes
 /// through `respdiff::body_size_delta_pct`) so a tuning of the
-/// rule — e.g. switching from raw bytes to ratio of similarity —
+/// rule, e.g. switching from raw bytes to ratio of similarity 
 /// reaches every diff family from one place. Pre-fix this module
 /// carried its own inline formula and the parser-diff path went
 /// through respdiff; they happened to agree but were silently drift-
@@ -60,7 +60,7 @@ pub(crate) fn body_delta_pct(baseline_len: usize, probe_len: usize) -> f64 {
 /// gate used by both probe families.
 ///
 /// Returns `(status_changed, body_changed, delta_pct)`. The caller
-/// folds those into its own severity heuristic — this function
+/// folds those into its own severity heuristic, this function
 /// doesn't pick a name for the divergence because the consumers
 /// disagree on the vocabulary (`Divergence` vs `DiffResult`).
 #[must_use]
@@ -280,7 +280,7 @@ mod tests {
     #[test]
     fn severity_label_body_shrank_is_low() {
         // Body shrinkage (probe smaller than baseline) is typically
-        // an error page — not a bypass. Must surface as LOW, never
+        // an error page, not a bypass. Must surface as LOW, never
         // MEDIUM/HIGH.
         assert_eq!(severity_label(200, 200, -50.0, 10.0), "LOW");
     }
@@ -306,7 +306,7 @@ mod tests {
 
     #[test]
     fn severity_label_status_flip_into_5xx_is_low() {
-        // 200→500 is not a bypass — it's the WAF (or origin)
+        // 200→500 is not a bypass, it's the WAF (or origin)
         // failing on our variant. LOW signals "this happened but
         // do not get excited."
         assert_eq!(severity_label(200, 500, 0.0, 10.0), "LOW");
@@ -315,7 +315,7 @@ mod tests {
     #[test]
     fn severity_label_high_threshold_suppresses_small_body_changes() {
         // With a strict 50% threshold, a 30% growth must NOT count
-        // as a divergence — caller asked for the noise floor.
+        // as a divergence (caller asked for the noise floor).
         assert_eq!(severity_label(200, 200, 30.0, 50.0), "EQUAL");
     }
 

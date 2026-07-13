@@ -3,7 +3,7 @@
 //! Bug pinned: `template::mutate` dumped the canned `{{7*7}}`
 //! engine-fingerprint library for EVERY input, so a real RCE
 //! `{{cycler.__init__.__globals__.os.popen('id').read()}}` "mutated"
-//! into `{{7*7}}` — a mere *detection* probe. The de-rigged bench
+//! into `{{7*7}}`: a mere *detection* probe. The de-rigged bench
 //! would then claim "RCE bypassed the WAF" when only arithmetic was
 //! ever sent. Proving side: a structured RCE/exfil expression is
 //! re-templated into every engine and never replaced by `7*7`.
@@ -84,7 +84,7 @@ fn java_and_velocity_rce_keep_their_construct() {
 
 #[test]
 fn adversarial_twin_detection_probe_keeps_canned_arsenal() {
-    // `{{user}}` / `${7*7}` are engine-fingerprint probes — the canned
+    // `{{user}}` / `${7*7}` are engine-fingerprint probes, the canned
     // library IS the correct product. The gate must not kill it.
     let v = template::mutate("{{user}}");
     assert!(
@@ -110,7 +110,7 @@ fn evade_path_preserves_rce_expression() {
     assert!(!out.is_empty());
     // The mutate_as arm additionally appends the SSTI+XSS polyglot
     // probe (a legitimate additive probe, like the SQL+XSS polyglot in
-    // the SQL arm) — so forbid only the *arithmetic* detection probes
+    // the SQL arm), so forbid only the *arithmetic* detection probes
     // that would mean the RCE itself was discarded.
     const ARITH_PROBES: &[&str] = &[
         "{{7*7}}",

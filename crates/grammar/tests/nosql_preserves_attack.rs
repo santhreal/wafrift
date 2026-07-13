@@ -3,21 +3,21 @@
 //! Two invariants the NoSQL family (`mongo`/`elastic`/`redis`/`cassandra`)
 //! silently violated until the shared `variant_util::finalize` post-pass:
 //!
-//!  1. **"a mutation must mutate"** — `mongo`/`redis`/`cassandra`/`elastic`
+//!  1. **"a mutation must mutate"**: `mongo`/`redis`/`cassandra`/`elastic`
 //!     pushed unconditional `payload.replace(a, b)` variants that are no-ops
 //!     when the token is absent (e.g. `payload.replace("$eq","$nin")` on a
 //!     `$ne`-only payload), so `mutate` echoed the *unmutated input* back as a
 //!     "variant" and emitted duplicates. A bench firing those counts the
-//!     baseline payload as a distinct "mutation" — skewing the bypass-rate
+//!     baseline payload as a distinct "mutation", skewing the bypass-rate
 //!     denominator with sends that aren't mutations.
-//!  2. **intent preservation** — the operator's distinctive target token
+//!  2. **intent preservation**: the operator's distinctive target token
 //!     (field name, key, command argument) must survive into at least one
 //!     variant; the canned auth-bypass / detection probes a mutator *adds*
 //!     must never be the *only* thing it emits.
 //!
 //! Adversarial twin: a benign but loosely-detected `{…}` JSON body (Mongo's
 //! detector fires on any `{`-prefixed string) must NOT surface as a fake
-//! attack mutation — with no real transform available, `mutate` returns empty.
+//! attack mutation (with no real transform available, `mutate` returns empty).
 
 use wafrift_grammar::grammar::{cassandra, elastic, ldap, mongo, redis};
 
@@ -36,7 +36,7 @@ fn families() -> Vec<MutateFamily> {
     ]
 }
 
-/// A real, structured attack per family — distinctive operator token that
+/// A real, structured attack per family, distinctive operator token that
 /// must survive, paired with a benign-looking string the detector rejects.
 const ATTACKS: &[(&str, &str, &str)] = &[
     // (family, structured attack, distinctive token that must survive)
@@ -105,7 +105,7 @@ fn operator_target_token_survives_into_a_variant() {
         assert!(
             variants.iter().any(|v| v.contains(token)),
             "{family}: distinctive operator token {token:?} was erased from \
-             every variant of {attack:?} — canned probes replaced the intent: \
+             every variant of {attack:?}, canned probes replaced the intent: \
              {variants:?}"
         );
     }
@@ -115,7 +115,7 @@ fn operator_target_token_survives_into_a_variant() {
 fn benign_json_is_not_minted_into_a_fake_mongo_attack() {
     // Mongo's detector fires on any `{`-prefixed body. A benign document has
     // no operator to mutate and no auth field to graft a canned probe onto,
-    // so the only candidates were input-echoes — which finalize() drops.
+    // so the only candidates were input-echoes (which finalize() drops).
     for benign in [r#"{"name": "Alice"}"#, r#"{"city": "Paris"}"#] {
         let variants = mongo::mutate(benign);
         assert!(

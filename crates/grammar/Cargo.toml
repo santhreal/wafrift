@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Grammar-aware payload mutation engine — SQL, XSS, CMD, LDAP, SSRF, path traversal, SSTI."
+description = "Grammar-aware payload mutation engine. SQL, XSS, CMD, LDAP, SSRF, path traversal, SSTI."
 readme = "README.md"
 repository.workspace = true
 keywords = ["waf", "grammar", "parser", "evasion", "security"]
@@ -20,7 +20,7 @@ tracing = { workspace = true }
 # Quote-free SQL mutator URL-decodes incoming payloads so its shape
 # detection works on encoded forms (1%27+OR+%271%27%3D%271).
 urlencoding = { workspace = true }
-# Real NFKC normalization — builds the complete inverse-NFKC preimage map for
+# Real NFKC normalization, builds the complete inverse-NFKC preimage map for
 # the normalization-differential homoglyph engine (grammar::nfkc_preimage).
 unicode-normalization = "0.1.24"
 

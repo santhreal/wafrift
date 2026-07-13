@@ -2,7 +2,7 @@
 //!
 //! Every [`super::DeliveryShape`] is *transparent to the backend sink*: the
 //! payload still traverses the WAF and the **server** reflects it. That model
-//! is correct for SSRF/SSTI/CMDi/LDAP/SQL — and for XSS it is a dead lane
+//! is correct for SSRF/SSTI/CMDi/LDAP/SQL, and for XSS it is a dead lane
 //! (1 of 895 confirmed bypasses on a live Cloudflare stack), because against a
 //! modern WAF plus framework auto-escaping, reflected-server XSS genuinely
 //! loses.
@@ -17,7 +17,7 @@
 //!
 //! (Observed on `sandbox-buy.paddle.com`; see `wafrift-feedback-paddle-bypass.md`.)
 //!
-//! A [`ClientChannel`] therefore is **not** a 13th `DeliveryShape` — it does
+//! A [`ClientChannel`] therefore is **not** a 13th `DeliveryShape`: it does
 //! not reach a server sink and cannot be confirmed by the server-response
 //! verdict oracle. It names *which client-side taint source* carries the
 //! payload, mapping one-to-one onto scald-core's `dom.rs` taint sources
@@ -49,13 +49,13 @@ impl StorageKind {
 
 /// A client-side taint source that delivers an XSS payload to a DOM sink
 /// **without** the payload traversing the WAF. Confirmed only by scald-core's
-/// real-Chrome DOM sink hooks — never by a server-response verdict.
+/// real-Chrome DOM sink hooks (never by a server-response verdict).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ClientChannel {
     /// URL fragment (`#…`). Never transmitted to the origin server, so no WAF
     /// or CDN can inspect it. Reaches `location.hash` DOM sinks.
     Fragment,
-    /// `window.name` — survives cross-origin navigation; the attacker sets it
+    /// `window.name`: survives cross-origin navigation; the attacker sets it
     /// on their page, then navigates the victim to the target. Never sent to
     /// the server.
     WindowName,
@@ -106,7 +106,7 @@ impl ClientChannel {
     }
 
     /// Always `false`: by construction a client channel never reaches a server
-    /// sink. This is the whole point — it is the dual of
+    /// sink. This is the whole point, it is the dual of
     /// [`super::DeliveryShape`]'s "transparent to the backend sink" contract.
     /// Callers MUST route confirmation through scald DOM, not the server
     /// verdict oracle.
@@ -119,7 +119,7 @@ impl ClientChannel {
     /// navigate to so the payload lands in the fragment. The bytes after `#`
     /// are never put on the wire to the origin, so no encoding/WAF gate
     /// applies. Returns `None` for channels delivered by browser state
-    /// (window.name / storage / postMessage) rather than the URL — scald sets
+    /// (window.name / storage / postMessage) rather than the URL, scald sets
     /// those via CDP before navigation.
     #[must_use]
     pub fn fragment_url(&self, target: &str, payload: &str) -> Option<String> {
@@ -150,8 +150,8 @@ impl ClientChannel {
     }
 
     /// The concrete browser action that lands `payload` in this channel's taint
-    /// source against `target`. This is the WAF-blind delivery *instruction* —
-    /// the dual of a server [`super::DeliveryShape`]'s wire request — that scald
+    /// source against `target`. This is the WAF-blind delivery *instruction* 
+    /// the dual of a server [`super::DeliveryShape`]'s wire request, that scald
     /// (or a human with a browser) executes to confirm DOM execution. Nothing it
     /// describes traverses the WAF.
     #[must_use]
@@ -186,7 +186,7 @@ impl ClientChannel {
 }
 
 /// The concrete operator action that places a payload into a client channel's
-/// taint source — the WAF-blind delivery step scald or a human runs in a real
+/// taint source, the WAF-blind delivery step scald or a human runs in a real
 /// browser. The dual of a server `DeliveryShape`'s wire request: nothing here
 /// crosses the WAF, so confirmation is a DOM-execution event, never a server
 /// verdict. `kind`-tagged for stable JSON (`wafrift.client_deliver.v1`).
@@ -213,7 +213,7 @@ pub enum DeliveryAction {
         then_load: String,
     },
     /// `postMessage(value)` to the listener at `target`. `accepted_origin` is the
-    /// origin the listener trusts — `None` means a wildcard / unvalidated
+    /// origin the listener trusts: `None` means a wildcard / unvalidated
     /// listener (any origin, including the attacker's, is accepted).
     PostMessage {
         value: String,
@@ -254,12 +254,12 @@ impl DeliveryAction {
 }
 
 /// One XSS payload bound to a WAF-blind client channel. The client-side
-/// analogue of [`super::EquivPayload`] — but carrying a [`ClientChannel`]
+/// analogue of [`super::EquivPayload`], but carrying a [`ClientChannel`]
 /// instead of a server [`super::DeliveryShape`], because confirmation is a
 /// DOM-execution event, not a server reflection.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ClientDelivery {
-    /// The payload bytes that reach the DOM sink (verbatim — the fragment is
+    /// The payload bytes that reach the DOM sink (verbatim, the fragment is
     /// not WAF-inspected, so no evasion encoding is applied or needed).
     pub payload: String,
     /// Which client-side taint source carries it.
@@ -285,7 +285,7 @@ fn scheme_offset(payload: &str) -> Option<(usize, &'static str)> {
 ///
 /// A position-anchored sanitizer such as
 /// `url.substring(0,11).toLowerCase() === 'javascript:'` is defeated by any
-/// leading byte the browser strips *before* scheme parsing — WHATWG URL
+/// leading byte the browser strips *before* scheme parsing. WHATWG URL
 /// parsing removes leading C0-control-or-space, and tab/CR/LF are stripped
 /// from anywhere in the URL. So ` javascript:…`, `\tjavascript:…`, and
 /// `java\tscript:…` all still execute while failing the exact-position check.
@@ -312,7 +312,7 @@ pub fn prefix_bypass_variants(payload: &str) -> Vec<(String, &'static str)> {
         out.push((format!("{prefix}{payload}"), rule));
     }
 
-    // Intra-scheme tab: `java\tscript:` — HTML/URL parsers drop the tab, the
+    // Intra-scheme tab: `java\tscript:`: HTML/URL parsers drop the tab, the
     // sanitizer's contiguous `=== 'javascript:'` match fails. Only meaningful
     // for `javascript:` (insert after the 4-char `java` prefix of the scheme).
     if scheme == "javascript" {
@@ -332,7 +332,7 @@ pub fn prefix_bypass_variants(payload: &str) -> Vec<(String, &'static str)> {
 /// Generate up to `max` WAF-blind client deliveries for an XSS `payload`.
 ///
 /// Deterministic and allocation-light: the identity payload across every
-/// client channel, plus — for scheme-carrying payloads — the sanitizer
+/// client channel, plus, for scheme-carrying payloads, the sanitizer
 /// prefix-bypass variants on the fragment channel (the most broadly reachable
 /// WAF-blind sink). Deduplicated by `(payload, channel.label())`.
 #[must_use]
@@ -392,7 +392,7 @@ mod tests {
     #[test]
     fn fragment_url_keeps_payload_after_hash_byte_exact() {
         let c = ClientChannel::Fragment;
-        // The payload lands verbatim after `#` — never percent-encoded,
+        // The payload lands verbatim after `#`: never percent-encoded,
         // because the fragment is never sent to the origin.
         assert_eq!(
             c.fragment_url("https://t/checkout", "javascript:alert(1)")
@@ -589,7 +589,7 @@ mod tests {
 
     #[test]
     fn every_catalog_channel_yields_a_describable_action() {
-        // Anti-rig: no channel may produce an empty or panicking instruction —
+        // Anti-rig: no channel may produce an empty or panicking instruction 
         // the operator must get a usable line for every WAF-blind lane.
         for c in ClientChannel::catalog() {
             let a = c.delivery_action("https://t/path", "javascript:alert(1)");

@@ -55,7 +55,7 @@ async fn concurrent_install_exactly_one_installed() {
 }
 
 /// `current_config()` must return a consistent value under concurrent
-/// readers — no panics, no poisoned locks.
+/// readers (no panics, no poisoned locks).
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn concurrent_current_config_is_deterministic() {
     const CONCURRENCY: usize = 10;

@@ -1,6 +1,6 @@
 //! End-to-end tests for `wafrift bench-diff`.
 //!
-//! `bench-diff` is fully offline — compares two bench-waf JSON blobs
+//! `bench-diff` is fully offline, compares two bench-waf JSON blobs
 //! written to temp files. No HTTP, no mock server.
 //!
 //! Tests verify:
@@ -51,7 +51,7 @@ fn bench_diff_help_documents_required_flags() {
     );
 }
 
-// Surface reduction: bench-diff is dev/QA tooling hidden from the user-facing menu (LAW 2 —
+// Surface reduction: bench-diff is dev/QA tooling hidden from the user-facing menu (LAW 2 
 // the command still runs, just not advertised at the top level).
 #[test]
 fn bench_diff_hidden_from_menu_but_still_runs() {
@@ -63,7 +63,7 @@ fn bench_diff_hidden_from_menu_but_still_runs() {
         "bench-diff must be hidden from top-level help (dev/QA tooling): {stdout}"
     );
 
-    // Must still be invokable — LAW 2 backwards compat.
+    // Must still be invokable: LAW 2 backwards compat.
     let (sub_code, sub_stdout, _) = wafrift(&["bench-diff", "--help"]);
     assert_eq!(
         sub_code, 0,

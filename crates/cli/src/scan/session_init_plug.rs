@@ -1,11 +1,11 @@
-//! Scan's Step 0 — bridge `args.session_init` (an optional curl
+//! Scan's Step 0, bridge `args.session_init` (an optional curl
 //! file path) into a captured `SessionState` ready to feed
 //! `reqwest::ClientBuilder::default_headers`.
 //!
 //! Lives in its own module so `scan/mod.rs` doesn't grow another
 //! 35 lines of glue every time we add a phase. The phase has a
 //! crisp contract: given the operator's CLI flag, return either
-//! the captured state (Some), no state (None — flag wasn't set,
+//! the captured state (Some), no state (None, flag wasn't set,
 //! the normal path), or an `ExitCode` if the auth-phase request
 //! itself failed.
 
@@ -19,16 +19,16 @@ use reqwest::header::HeaderMap;
 
 /// Run the session-init phase. Returns:
 ///
-/// - `Ok(None)` — `--session-init` was not set; subsequent scan
+/// - `Ok(None)`: `--session-init` was not set; subsequent scan
 ///   phases proceed unauthenticated (existing default behaviour).
-/// - `Ok(Some(state))` — auth-phase request succeeded; caller
+/// - `Ok(Some(state))`: auth-phase request succeeded; caller
 ///   plugs `state.headers` into `ClientBuilder::default_headers`
 ///   so every subsequent variant carries the cookies.
-/// - `Err(ExitCode::from(1))` — auth-phase request failed; the
+/// - `Err(ExitCode::from(1))`: auth-phase request failed; the
 ///   error has already been printed to stderr. Caller should
 ///   propagate the exit code immediately (a failed auth phase
 ///   means subsequent scans will be anonymous, which would
-///   silently change the scan's semantics — explicit error is
+///   silently change the scan's semantics, explicit error is
 ///   the right move).
 pub(crate) async fn run(
     session_init_path: Option<&Path>,
@@ -63,7 +63,7 @@ mod tests {
 
     #[tokio::test(flavor = "current_thread")]
     async fn run_with_none_path_returns_ok_none_no_io() {
-        // The fast path — no --session-init flag, no work.
+        // The fast path (no --session-init flag, no work).
         let result = run(None, false, false, Duration::from_secs(1), HeaderMap::new()).await;
         assert!(matches!(result, Ok(None)));
     }
@@ -85,7 +85,7 @@ mod tests {
         )
         .await;
         match result {
-            Err(_) => {} // ExitCode::from(1) — Debug not derivable on ExitCode
+            Err(_) => {} // ExitCode::from(1). Debug not derivable on ExitCode
             Ok(_) => panic!("missing file must error"),
         }
     }

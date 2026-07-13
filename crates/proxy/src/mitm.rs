@@ -42,7 +42,7 @@ impl CertificateAuthority {
             KeyUsagePurpose::CrlSign,
         ];
         // Bounded CA validity (397 days, the CA/B forum max for leafs
-        // — conservative even for a root). A locally-issued MITM CA
+        //: conservative even for a root). A locally-issued MITM CA
         // is a network-wide trust root for any client that imports
         // it, so a security-tool-shipped CA must not default to the
         // 10-year-root rcgen default. Practitioners regenerate per
@@ -83,13 +83,13 @@ impl CertificateAuthority {
         // §15 least-privilege / TOCTOU: the CA PRIVATE KEY must never exist
         // on disk with permissive bits, even briefly. The prior
         // write()-then-chmod(0o600) left a window where the key was created
-        // with the umask default (typically 0644 — world-readable) before
+        // with the umask default (typically 0644, world-readable) before
         // the chmod tightened it; a local attacker on a shared host could
         // race-read the key in that window and then forge certs every client
         // that installed this CA will trust (a MITM of the MITM). Create the
         // file owner-only AND tighten the handle BEFORE writing any key bytes,
         // so the secret never touches disk under loose perms. (The public CA
-        // cert written above needs no such guard — it is meant to be shared.)
+        // cert written above needs no such guard, it is meant to be shared.)
         #[cfg(unix)]
         {
             use std::io::Write as _;
@@ -236,7 +236,7 @@ impl CertificateAuthority {
 /// any practitioner who installed the wafrift CA in a real browser
 /// would see TLS errors on every MITM session before traffic flowed.
 fn leaf_params_for(tls_server_name: &str) -> anyhow::Result<CertificateParams> {
-    // Refuse to mint a wildcard leaf — the MITM CA must never sign a
+    // Refuse to mint a wildcard leaf, the MITM CA must never sign a
     // cert that covers more than the specific SNI it was asked for.
     // A malformed CONNECT authority or a hostile-source SNI containing
     // `*` would otherwise produce a wildcard dNSName SAN, and any
@@ -245,7 +245,7 @@ fn leaf_params_for(tls_server_name: &str) -> anyhow::Result<CertificateParams> {
     // can't widen the CA's blast radius.
     if tls_server_name.contains('*') {
         anyhow::bail!(
-            "refusing to issue wildcard cert for SNI {tls_server_name:?} — \
+            "refusing to issue wildcard cert for SNI {tls_server_name:?}. \
              MITM CA must mint host-specific leaves only"
         );
     }
@@ -340,12 +340,12 @@ pub enum TrustResult {
         /// How it was installed (e.g. "update-ca-certificates").
         method: String,
     },
-    /// Auto-install not possible — manual instructions provided.
+    /// Auto-install not possible (manual instructions provided).
     ManualRequired {
         /// Platform-specific instructions.
         instructions: String,
     },
-    /// Auto-install failed — fallback to manual.
+    /// Auto-install failed (fallback to manual).
     Failed {
         /// What went wrong.
         error: String,
@@ -363,7 +363,7 @@ pub enum TrustResult {
 ///
 /// # Arguments
 ///
-/// * `ca_cert_path` — Path to the CA PEM file to trust.
+/// * `ca_cert_path`: Path to the CA PEM file to trust.
 pub fn install_ca_trust(ca_cert_path: &std::path::Path) -> TrustResult {
     let cert_display = ca_cert_path.display().to_string();
 
@@ -405,7 +405,7 @@ pub fn install_ca_trust(ca_cert_path: &std::path::Path) -> TrustResult {
             // Fall through to manual.
         }
 
-        // Try Fedora/RHEL trust(1) — does NOT need sudo, can run as user.
+        // Try Fedora/RHEL trust(1) (does NOT need sudo, can run as user).
         if let Ok(status) = std::process::Command::new("trust")
             .args(["anchor", "--store", &cert_display])
             .stdin(std::process::Stdio::null())
@@ -491,12 +491,12 @@ pub fn ensure_ca(dir: &std::path::Path) -> anyhow::Result<CertificateAuthority> 
             // We use mtime rather than parsing X.509 NotAfter so
             // this fix doesn't pull an x509-parser dep into proxy.
             // The mtime check is a generous proxy for issuance
-            // time — close enough since `write_to_dir` is the
+            // time, close enough since `write_to_dir` is the
             // only thing that writes the file.
             if ca_is_stale(dir) {
                 tracing::warn!(
                     dir = %dir.display(),
-                    "loaded MITM CA is older than {} days — regenerating to avoid \
+                    "loaded MITM CA is older than {} days, regenerating to avoid \
                      expired-root TLS errors. Re-install the new CA in any client \
                      trust store that pinned the old one.",
                     CA_REGEN_AFTER_DAYS
@@ -571,7 +571,7 @@ mod tests {
         // Regression for F66: a wildcard SNI must not produce a
         // wildcard leaf cert. Any client trusting the wafrift CA
         // would then accept the cert for every matching subdomain
-        // — widens the MITM blast radius beyond the specific host
+        //: widens the MITM blast radius beyond the specific host
         // the operator targeted.
         let err = leaf_params_for("*.evil.example.com").expect_err("wildcard SNI must be rejected");
         assert!(format!("{err}").contains("wildcard"));
@@ -606,7 +606,7 @@ mod tests {
 
     #[test]
     fn ca_is_stale_returns_false_for_freshly_written_file() {
-        // A CA we just wrote must NOT be flagged as stale —
+        // A CA we just wrote must NOT be flagged as stale 
         // otherwise ensure_ca would regenerate-and-load on every
         // process startup.
         let dir = std::env::temp_dir().join(format!("wafrift_ca_fresh_{}", std::process::id()));
@@ -641,7 +641,7 @@ mod tests {
     #[test]
     fn ca_private_key_written_owner_only_0600() {
         // §15 least-privilege regression: the CA private key must land on
-        // disk with 0600 (owner read/write only) — never world/group
+        // disk with 0600 (owner read/write only), never world/group
         // readable, even transiently. A leaked CA key lets a local attacker
         // forge certs every client that installed this CA trusts. The fix
         // creates the file 0600 atomically (no write-then-chmod window);

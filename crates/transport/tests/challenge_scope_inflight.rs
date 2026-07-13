@@ -149,7 +149,7 @@ fn operator_prompt_global_cap_throttles_storm() {
 #[test]
 fn operator_prompt_under_global_cap_still_fires_per_host_cooldown() {
     let s = ChallengeStore::new();
-    // 5 distinct hosts — well under the global cap (30/min).
+    // 5 distinct hosts (well under the global cap (30/min)).
     assert!(s.should_prompt_operator("a"));
     assert!(s.should_prompt_operator("b"));
     assert!(s.should_prompt_operator("c"));
@@ -210,7 +210,7 @@ fn dispatch_returns_longer_wait_when_solver_in_flight() {
 fn solver_in_flight_ttl_lets_another_caller_take_over_after_expiry() {
     // Ensure SOLVER_INFLIGHT_TTL is the right scale (not millis).
     assert!(SOLVER_INFLIGHT_TTL >= Duration::from_secs(10));
-    // Real eviction test would need to wait SOLVER_INFLIGHT_TTL —
+    // Real eviction test would need to wait SOLVER_INFLIGHT_TTL 
     // skip (don't sleep 60s in unit tests). The eviction logic is
     // exercised by mark_solver_pending's GC loop on every call.
 }

@@ -1,4 +1,4 @@
-//! `wafrift hunt` — long-running autonomous bypass campaign.
+//! `wafrift hunt`: long-running autonomous bypass campaign.
 //!
 //! Repeatedly runs `bench-waf --evade` rounds against a target, rotating
 //! mutators/strategies each round. Every confirmed bypass is saved to a
@@ -13,7 +13,7 @@
 //! interval the next round starts immediately. The loop exits when:
 //!
 //! - `--max-duration-secs` wall time has elapsed, OR
-//! - Ctrl-C is received (graceful — finishes the current in-flight round
+//! - Ctrl-C is received (graceful, finishes the current in-flight round
 //!   before persisting and exiting).
 //!
 //! ## Bypass corpus (consumed by `wafrift harvest`)
@@ -22,7 +22,7 @@
 //! `~/.wafrift`, so a campaign accumulates the concrete winning payload +
 //! response evidence for each confirmed bypass. `wafrift harvest` later
 //! reads that corpus, re-verifies each candidate live, and writes
-//! review-ready reports. `hunt` itself NEVER submits anything — filing is
+//! review-ready reports. `hunt` itself NEVER submits anything, filing is
 //! a deliberate, one-at-a-time manual step via `wafrift submit`. (Auto-
 //! submitting machine-generated reports at a bounty program is a ban risk,
 //! so wafrift has no automatic or batch submission path.)
@@ -52,7 +52,7 @@ use wafrift_strategy::drift_window::{BypassRateMonitor, ChangePointEvent};
 /// Known target presets.
 const CUMULUSFIRE_BASE_URL: &str = "https://waf.cumulusfire.net";
 const CUMULUSFIRE_PERMISSION: &str =
-    "CumulusFire public bug bounty scope — wafrift hunt --target cumulusfire";
+    "CumulusFire public bug bounty scope, wafrift hunt --target cumulusfire";
 
 /// Hunt round writes a `bench-waf --output` JSON to a tmp file then
 /// reads it back. Even though the path is owned by wafrift, a tmpdir
@@ -87,7 +87,7 @@ pub(crate) struct CampaignBypass {
 
 /// A change-point event detected by the CUSUM bypass-rate monitor (C-11).
 ///
-/// Recorded when the online CUSUM detector fires — indicating a statistically
+/// Recorded when the online CUSUM detector fires, indicating a statistically
 /// significant drop in bypass rate, likely caused by a WAF vendor rule update.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ChangePointMarker {
@@ -163,7 +163,7 @@ pub(crate) struct HuntArgs {
     /// "AWS Bot Control"). When it names an ML-backed WAF, the campaign
     /// adds the `ml-evasion` decision-boundary strategy to its rotation and
     /// passes the name through to each bench round. Omit for rule-based
-    /// targets — `ml-evasion` would be a no-op there.
+    /// targets: `ml-evasion` would be a no-op there.
     #[arg(long)]
     pub waf_name: Option<String>,
 
@@ -187,7 +187,7 @@ pub(crate) struct HuntArgs {
     #[arg(long, default_value_t = 0)]
     pub round_budget: usize,
 
-    /// Stable campaign identifier — used as the output filename stem
+    /// Stable campaign identifier, used as the output filename stem
     /// (`~/.wafrift/hunt-<id>.json`). If a file for this id already
     /// exists, the campaign is resumed from where it left off.
     /// Default: a UUID generated from the current timestamp.
@@ -259,7 +259,7 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
 
     // Paradigm-aware routing: if the operator names an ML-backed WAF
     // (AWS/Cloudflare/Akamai bot-management, Datadome), add the `ml-evasion`
-    // decision-boundary strategy to the rotation — rule-decompilation
+    // decision-boundary strategy to the rotation, rule-decompilation
     // (equiv-cegis) is the wrong paradigm for a learned classifier.
     if let Some(wn) = &args.waf_name
         && wafrift_types::WafClass::from_waf_name(wn).is_ml_backed()
@@ -309,7 +309,7 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
     // on an empty corpus directory (every round failed with "no
     // cases found" inside bench_waf but the campaign continued).
     // Walk the corpus path once at startup; if zero .toml files
-    // exist, abort with exit 2 — a corpus-less hunt produces zero
+    // exist, abort with exit 2, a corpus-less hunt produces zero
     // signal by construction. Recursive walk matches bench_waf's
     // own corpus-loading rule.
     fn has_any_toml(path: &std::path::Path) -> bool {
@@ -331,7 +331,7 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
     if !has_any_toml(&args.corpus) {
         eprintln!(
             "error: corpus path {} contains no `*.toml` files. An empty corpus \
-             produces zero signal per round — the campaign would loop forever \
+             produces zero signal per round, the campaign would loop forever \
              burning rate-limit budget. Add at least one corpus TOML before \
              launching hunt.",
             args.corpus.display()
@@ -358,7 +358,7 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
         tokio::spawn(async move {
             if tokio::signal::ctrl_c().await.is_ok() {
                 eprintln!(
-                    "\n{} Ctrl+C — finishing current round then saving…",
+                    "\n{} Ctrl+C, finishing current round then saving…",
                     "⚠".yellow().bold()
                 );
                 shutdown.store(true, Ordering::SeqCst);
@@ -406,7 +406,7 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
             let elapsed = crate::helpers::now_unix_secs().saturating_sub(campaign_start);
             if elapsed >= max.as_secs() {
                 eprintln!(
-                    "{} max-duration {}s reached — stopping.",
+                    "{} max-duration {}s reached, stopping.",
                     "[wafrift hunt]".bright_cyan(),
                     args.max_duration_secs
                 );
@@ -418,7 +418,7 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
         let round_start = std::time::Instant::now();
 
         eprintln!(
-            "{} round {} — strategies: {}",
+            "{} round {}, strategies: {}",
             "[wafrift hunt]".bright_cyan(),
             round.to_string().bright_white(),
             args.strategies.join(",").dimmed(),
@@ -434,12 +434,12 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
 
         // §13 dogfood round-2 DEFECT 6 (platform UX): a hunt round can run
         // for minutes inside run_one_round; pre-fix the operator saw the
-        // "round N — strategies:" start line and then total silence until the
+        // "round N, strategies:" start line and then total silence until the
         // next round (or the wall-clock budget), with no signal the campaign
         // was making progress. Emit a per-round completion summary with the
         // elapsed time + fire/bypass counts so each round visibly closes.
         eprintln!(
-            "{} round {} done in {:.1}s — fired {} variant(s), {} new verified bypass(es)",
+            "{} round {} done in {:.1}s, fired {} variant(s), {} new verified bypass(es)",
             "[wafrift hunt]".bright_cyan(),
             round,
             round_start.elapsed().as_secs_f64(),
@@ -515,7 +515,7 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
             }) = change_point_event
             {
                 eprintln!(
-                    "  {} CHANGE POINT: bypass rate dropped from {:.0}% to {:.0}% — WAF rule update likely",
+                    "  {} CHANGE POINT: bypass rate dropped from {:.0}% to {:.0}%. WAF rule update likely",
                     "⚠".yellow().bold(),
                     baseline_rate * 100.0,
                     observed_rate * 100.0,
@@ -538,7 +538,7 @@ async fn run_hunt_async(mut args: HuntArgs) -> ExitCode {
             }
 
             eprintln!(
-                "  round {} done — new bypasses: {}  total: {}",
+                "  round {} done, new bypasses: {}  total: {}",
                 round,
                 new_bypasses.len().to_string().bright_green(),
                 s.total_bypasses.to_string().bright_green(),
@@ -600,7 +600,7 @@ struct RoundSummary {
 /// Run one round of bench-waf evasion and collect newly confirmed bypasses.
 ///
 /// We invoke the bench logic by constructing `BenchWafArgs` and passing it
-/// directly to the bench runner rather than spawning a subprocess — this
+/// directly to the bench runner rather than spawning a subprocess, this
 /// keeps the campaign in-process and avoids serialization overhead.
 ///
 /// Returns a [`RoundSummary`] containing the bypasses plus total variant
@@ -622,7 +622,7 @@ async fn run_one_round(
     // to a per-target rule-bypass corpus under ~/.wafrift, so a campaign
     // accumulates a re-verifiable, submittable bypass set across rounds
     // (consumed by `wafrift harvest`). Pre-fix hunt passed corpus_out:None,
-    // discarding every winning payload the strategies found — only
+    // discarding every winning payload the strategies found, only
     // technique tags survived in the campaign state, which can't
     // reconstruct the wire payload. The path is computed by the SINGLE
     // shared helper `harvest` also reads from, so the two can't diverge.
@@ -641,7 +641,7 @@ async fn run_one_round(
         // manifold-projected ML-evasion structural mutator.
         waf_name: args.waf_name.clone(),
         // hunt gates at the campaign level (--i-have-permission / cumulus
-        // preset); its internal bench rounds don't re-gate — the CLI bench-waf
+        // preset); its internal bench rounds don't re-gate, the CLI bench-waf
         // arm is what gates direct invocations.
         i_have_permission: None,
         oracle_gate: false, // no-op flag
@@ -699,7 +699,7 @@ async fn run_one_round(
     // to defeat the predictable-tmp-path symlink attack: pre-fix the
     // path was `/tmp/wafrift-hunt-round-{round}.json`, which an attacker
     // on a shared box could pre-create as `ln -s /etc/cron.d/evil <path>`
-    // BEFORE hunt started — bench_waf's `fs::write` would then follow
+    // BEFORE hunt started, bench_waf's `fs::write` would then follow
     // the symlink and clobber the attacker-chosen target.
     let nanos = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -712,7 +712,7 @@ async fn run_one_round(
     // Belt + braces: claim the inode atomically via O_CREAT|O_EXCL
     // BEFORE handing the path to bench_waf. If anything (including a
     // symlink) already sits at the path, this errors and we skip the
-    // round — much safer than truncating a victim file. Once claimed,
+    // round, much safer than truncating a victim file. Once claimed,
     // bench_waf's fs::write (O_CREAT|O_TRUNC) reopens OUR regular
     // file and proceeds normally.
     if let Err(e) = std::fs::OpenOptions::new()
@@ -742,7 +742,7 @@ async fn run_one_round(
         .await
         .unwrap_or(ExitCode::from(1));
 
-    // Exit code 2 means zero bypasses — that's fine; read the file anyway.
+    // Exit code 2 means zero bypasses (that's fine; read the file anyway).
     let _ = exit;
 
     // Parse the output file.
@@ -821,7 +821,7 @@ async fn run_one_round(
     }
 }
 
-/// Rotate strategy list each round — cycle through subsets to explore the
+/// Rotate strategy list each round, cycle through subsets to explore the
 /// strategy space over many rounds rather than hammering the same set.
 fn rotate_strategies(strategies: &[String], round: u64) -> Vec<String> {
     if strategies.len() <= 1 {
@@ -942,14 +942,14 @@ mod tests {
         // run_one_round pre-claims the per-round tmp output path via
         // O_CREAT|O_EXCL (the TOCTOU/symlink defense), so the file already
         // exists when bench_waf opens it. bench_waf MUST be told to
-        // overwrite it — otherwise its no-clobber guard rejects EVERY
+        // overwrite it, otherwise its no-clobber guard rejects EVERY
         // round's output ("already exists … --force-overwrite") and the
         // campaign records 0 bypasses (the hunt was entirely non-functional
         // against the live edge until this was fixed; caught by dogfooding
         // a real CumulusFire campaign).
         // This test greps its OWN source via include_str!, so neither the
         // wanted nor the forbidden setting may appear here as a contiguous
-        // literal — that would self-match and defeat the check. Both needles
+        // literal, that would self-match and defeat the check. Both needles
         // are assembled at runtime from split pieces; the only contiguous
         // `force_overwrite: <bool>` in this file is the production assignment
         // in run_one_round above.
@@ -959,12 +959,12 @@ mod tests {
         let forbidden = format!("{field} {}", "false");
         assert!(
             src.contains(&want),
-            "run_one_round must keep overwrite enabled — it pre-claims the tmp output inode, so \
+            "run_one_round must keep overwrite enabled, it pre-claims the tmp output inode, so \
              bench_waf's no-clobber guard would reject every round otherwise (0 bypasses)"
         );
         assert!(
             !src.contains(&forbidden),
-            "hunt overwrite flag reverted to disabled — every round's output is rejected (0 bypasses)"
+            "hunt overwrite flag reverted to disabled, every round's output is rejected (0 bypasses)"
         );
     }
 
@@ -1137,7 +1137,7 @@ mod tests {
         assert_eq!(CampaignState::SCHEMA_VERSION, 2);
     }
 
-    // ── Test 11: persist_state is atomic — no orphaned .tmp on success ───
+    // ── Test 11: persist_state is atomic, no orphaned .tmp on success ───
     // After a successful persist_state call, the sibling `.json.tmp` file
     // must NOT exist (it was renamed into the final path).
 
@@ -1167,7 +1167,7 @@ mod tests {
         let v: serde_json::Value = serde_json::from_str(&raw).unwrap();
         assert_eq!(v["campaign_id"], "atomic-test");
 
-        // The .tmp sibling must be gone — rename succeeded.
+        // The .tmp sibling must be gone (rename succeeded).
         assert!(
             !tmp_sibling.exists(),
             ".json.tmp sibling was not cleaned up: {:?}",
@@ -1336,7 +1336,7 @@ mod tests {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // C-11: Change-point alarm tests (LAW 9 — pinned JSON shape + wiring)
+    // C-11: Change-point alarm tests (LAW 9, pinned JSON shape + wiring)
     // ══════════════════════════════════════════════════════════════════════
 
     // ── CP-1: ChangePointMarker round-trips through JSON with correct fields.

@@ -1,4 +1,4 @@
-//! Payload oracles — semantic validation across injection types.
+//! Payload oracles (semantic validation across injection types).
 //!
 //! The oracle system ensures that evasion transforms preserve exploit
 //! semantics. Each oracle understands the structural invariants of a
@@ -9,13 +9,13 @@
 //!
 //! ```text
 //! PayloadOracle (trait)
-//! ├── SqlOracle       — SQL AST parsing via sqlparser
-//! ├── XssOracle       — HTML tag/event/exec structure validation
-//! ├── SstiOracle      — Template delimiter and expression validation
-//! ├── CmdiOracle      — Shell separator + command validation
-//! ├── PathOracle      — Directory traversal sequence validation
-//! ├── LdapOracle      — LDAP filter syntax validation
-//! └── SsrfOracle      — URL structure and host validation
+//! ├── SqlOracle: SQL AST parsing via sqlparser
+//! ├── XssOracle: HTML tag/event/exec structure validation
+//! ├── SstiOracle: Template delimiter and expression validation
+//! ├── CmdiOracle: Shell separator + command validation
+//! ├── PathOracle: Directory traversal sequence validation
+//! ├── LdapOracle: LDAP filter syntax validation
+//! └── SsrfOracle: URL structure and host validation
 //! ```
 //!
 //! # Usage
@@ -32,7 +32,7 @@
 //! ```
 //!
 //! Pick the right oracle dynamically from the classified payload
-//! type — every grammar in `wafrift-grammar` has a matching oracle:
+//! type, every grammar in `wafrift-grammar` has a matching oracle:
 //!
 //! ```
 //! use wafrift_grammar::PayloadType;
@@ -53,14 +53,14 @@
 //! use wafrift_oracle::traits::PayloadOracle;
 //!
 //! let oracle = SsrfOracle;
-//! // Same target, different on-the-wire encoding — kept.
+//! // Same target, different on-the-wire encoding (kept).
 //! assert!(oracle.is_semantically_valid("http://127.0.0.1/", "http://127.1/"));
-//! // Pivot to a public host — semantics lost, rejected.
+//! // Pivot to a public host (semantics lost, rejected).
 //! assert!(!oracle.is_semantically_valid("http://127.0.0.1/", "http://example.com/"));
 //! ```
 
 mod ascii_scan;
-/// Per-target calibration session. R76 §8 — internal-only;
+/// Per-target calibration session. R76 §8, internal-only;
 /// `wafrift_types::calibration` is the cross-crate name; this is
 /// oracle-internal state.
 pub(crate) mod calibration;
@@ -103,9 +103,9 @@ pub mod ssi;
 pub mod ssrf;
 /// SSTI (Server-Side Template Injection) oracle.
 pub mod ssti;
-/// Timing oracle — confirms blind attacks via latency anomaly when
+/// Timing oracle, confirms blind attacks via latency anomaly when
 /// the DNS callback channel is blocked and the error oracle is
-/// squashed by the WAF. R76 §8 — internal-only.
+/// squashed by the WAF. R76 §8 (internal-only).
 pub(crate) mod timing;
 /// Oracle trait definition.
 pub mod traits;
@@ -155,7 +155,7 @@ impl PayloadOracle for SqlOracle {
 ///
 /// # Returns
 ///
-/// `None` for `PayloadType::Unknown` — no oracle can validate an
+/// `None` for `PayloadType::Unknown`: no oracle can validate an
 /// unknown payload type without risk of false positives.
 #[must_use]
 pub fn oracle_for(payload_type: PayloadType) -> Option<Box<dyn PayloadOracle>> {
@@ -169,7 +169,7 @@ pub fn oracle_for(payload_type: PayloadType) -> Option<Box<dyn PayloadOracle>> {
         PayloadType::Ssrf => Some(Box::new(ssrf::SsrfOracle)),
         PayloadType::Ssi => Some(Box::new(ssi::SsiOracle)),
         // Future-proof: new payload types get oracles when they're built.
-        // Until then, returning None means "don't validate" — safe default.
+        // Until then, returning None means "don't validate" (safe default).
         _ => None,
     }
 }
@@ -259,7 +259,7 @@ mod tests {
         assert!(oracle.is_semantically_valid("(uid=x)", "*)(|(uid=*"));
         // ANTI-RIG: a standalone, well-formed *benign* filter is NOT an
         // injection. The previous assertion here accepted `(uid=admin)`
-        // — that is the exact rig `ldap.rs`'s doctrine + MUST-REJECT
+        //: that is the exact rig `ldap.rs`'s doctrine + MUST-REJECT
         // battery exist to kill (it would let the bench score benign
         // passthrough as a bypass).
         assert!(!oracle.is_semantically_valid("(uid=admin)", "(uid=admin)"));

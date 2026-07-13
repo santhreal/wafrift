@@ -85,7 +85,7 @@ fn roundtrip_deflate() {
 fn roundtrip_json_encode() {
     let original = "hello\nworld\"test";
     let encoded = encode(original, Strategy::JsonEncode).unwrap();
-    // JsonEncode produces escaped content only — no surrounding quotes (F67).
+    // JsonEncode produces escaped content only (no surrounding quotes (F67)).
     // Wrap manually to parse as a JSON string value.
     let wrapped = format!("\"{encoded}\"");
     let parsed: String = serde_json::from_str(&wrapped).unwrap();

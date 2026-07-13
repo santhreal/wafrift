@@ -3,7 +3,7 @@
 //! Pre-fix at v0.2.12: `wafrift-proxy --version` errored with
 //! `unexpected argument '--version' found`. Pentesters routinely
 //! check `--version` to verify which build they're running for
-//! their report — a missing `--version` flag fails the first
+//! their report, a missing `--version` flag fails the first
 //! `tool --version` smoke test that any audit checklist runs.
 
 use std::process::Command;

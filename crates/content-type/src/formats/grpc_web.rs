@@ -2,7 +2,7 @@
 ///
 /// ```text
 /// byte 0     : compression flag (0x00 = no compression)
-/// bytes 1–4  : BE u32 — length of the inner protobuf message
+/// bytes 1–4  : BE u32, length of the inner protobuf message
 /// bytes 5..  : protobuf-encoded payload
 /// ```
 ///
@@ -10,7 +10,7 @@
 /// `u32::MAX` bytes (> 4 GiB), which gRPC-Web cannot express in its
 /// 4-byte length field. Pre-fix used `p_body.len() as u32`, which
 /// silently truncated the length field on 64-bit platforms for payloads
-/// above 4 GiB — the deserialiser would then read a wildly wrong byte
+/// above 4 GiB, the deserialiser would then read a wildly wrong byte
 /// range. In practice injection payloads are tiny, so the fallback path
 /// is never taken; the guard is defensive against adversarial callers.
 pub fn serialize(payload: &str) -> Vec<u8> {
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn deserialize_truncated_at_header_is_safe() {
-        // 4 bytes — one short of the 5-byte minimum.
+        // 4 bytes (one short of the 5-byte minimum).
         assert_eq!(deserialize(&[0x00, 0x00, 0x00, 0x00]), "");
     }
 
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn roundtrip_large_payload_no_as_u32_truncation() {
-        // Pre-fix used `p_body.len() as u32` — harmless for small payloads
+        // Pre-fix used `p_body.len() as u32`: harmless for small payloads
         // but the fix also gates on try_from. Confirm the round-trip
         // works for a protobuf body that still fits in u32.
         let payload = "A".repeat(10_000);

@@ -7,14 +7,14 @@ expected to have a top-level `by_class` map keyed by payload class
 (`sql`, `xss`, `cmdi`, …) with `bypass_rate` / `raw_block_rate` /
 `cases` / `evaded_bypassed` / `evaded_total` per entry.
 
-Output (stdout): Markdown — one canonical (WAF × class) bypass-rate
+Output (stdout): Markdown, one canonical (WAF × class) bypass-rate
 table + a one-line summary row per WAF and a "how to reproduce" block.
 
 File name → WAF stack inference: the first hyphenated segment that
 matches a known stack wins (so both
 `modsec-pl1-allstrats-2026-05-19.json` and
 `honest-modsec-pl1-equiv-cegis-0.2.16.json` map to `modsec-pl1`).
-Multiple files for the same stack: pick the most recent by mtime — the
+Multiple files for the same stack: pick the most recent by mtime, the
 intent is "the latest run wins," not "average across history."
 
 Run locally after a bench:
@@ -24,7 +24,7 @@ Run locally after a bench:
 
 Or in CI: see `.github/workflows/bench.yml` (the `scoreboard` job).
 
-Designed for zero extra dependencies — only stdlib.
+Designed for zero extra dependencies (only stdlib).
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ KNOWN_STACKS = [
     "naxsi",
 ]
 
-# Display order for the column headers — fixed so column drift between
+# Display order for the column headers, fixed so column drift between
 # runs doesn't shuffle the table. Classes not present in any result are
 # omitted from the rendered table.
 CANONICAL_CLASSES = [
@@ -107,16 +107,16 @@ def fmt_pct(v: float) -> str:
 
 def fmt_cell(entry: Optional[Dict[str, float]]) -> str:
     """Render one (stack, class) cell. Distinguishes:
-    - `—` : class not exercised by this stack's run at all
+    - `: ` : class not exercised by this stack's run at all
     - `0.0` : exercised, no bypass
     - `12.3` : verified bypass rate (percent)
     """
     if entry is None:
-        return "—"
+        return ": "
     bypass = entry.get("bypass_rate")
     cases = entry.get("cases")
     if bypass is None or cases in (None, 0):
-        return "—"
+        return ": "
     return fmt_pct(float(bypass))
 
 
@@ -141,9 +141,9 @@ def render_scoreboard(latest: Dict[str, pathlib.Path]) -> str:
     lines.append(
         f"_Generated {now} from `wafrift-bench/results/` via "
         "`wafrift-bench/scripts/render-scoreboard.py`. Numbers are the "
-        "**verified-bypass** rate per payload class — oracle-gated, "
+        "**verified-bypass** rate per payload class, oracle-gated, "
         "transport-reached, no inflation. Cell = % of variants for that "
-        "class that wafrift found a working bypass for; `—` = class "
+        "class that wafrift found a working bypass for; `: ` = class "
         "not exercised on that stack._"
     )
     lines.append("")
@@ -215,7 +215,7 @@ def _no_results_message() -> str:
     return (
         "# WafRift bypass scoreboard\n"
         "\n"
-        "_No bench results found. Run a bench first — see "
+        "_No bench results found. Run a bench first, see "
         "[wafrift-bench/README.md](../wafrift-bench/README.md)._\n"
     )
 

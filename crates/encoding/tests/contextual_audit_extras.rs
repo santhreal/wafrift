@@ -6,7 +6,7 @@
 //!     `<script>JSON</script>` or passed to `eval()`, an attacker-
 //!     controlled value could close the JS string and inject script.
 //!   HIGH: `CookieValue` percent-encoded only `; = \\r \\n \\0`. RFC 6265
-//!     §4.1.1 cookie-octet excludes space, `,`, `"`, `\\` as well —
+//!     §4.1.1 cookie-octet excludes space, `,`, `"`, `\\` as well 
 //!     Chrome / Firefox / curl truncate cookies at the offending byte,
 //!     making bypass probes silently lie about the value sent.
 
@@ -27,7 +27,7 @@ fn xml_attribute_escapes_apostrophe() {
 
 #[test]
 fn xml_attribute_still_escapes_other_metas() {
-    // Negative twin — make sure adding apos didn't regress the original
+    // Negative twin, make sure adding apos didn't regress the original
     // four escapes.
     let escaped = escape_for_context("a&b\"c<d>e", InjectionContext::XmlAttribute).unwrap();
     assert!(escaped.contains("&amp;"));
@@ -41,7 +41,8 @@ fn xml_attribute_still_escapes_other_metas() {
 #[test]
 fn json_string_escapes_line_separator_u2028() {
     // U+2028 must round-trip through any JS parser as the escape
-    // sequence  , NOT the literal character.
+    // sequence 
+, NOT the literal character.
     let payload = "a\u{2028}b";
     let escaped = escape_for_context(payload, InjectionContext::JsonString).unwrap();
     assert!(
@@ -113,7 +114,7 @@ fn cookie_value_encodes_double_quote_and_backslash() {
 
 #[test]
 fn cookie_value_still_encodes_pre_existing_set() {
-    // Negative twin — make sure adding new chars didn't drop old ones.
+    // Negative twin (make sure adding new chars didn't drop old ones).
     let escaped = escape_for_context("a;b=c\r\n\0d", InjectionContext::CookieValue).unwrap();
     assert!(escaped.contains("%3B"));
     assert!(escaped.contains("%3D"));

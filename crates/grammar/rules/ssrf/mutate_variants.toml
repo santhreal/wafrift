@@ -1,15 +1,15 @@
 # SSRF mutation variants (Tier-B data for `grammar::ssrf::mutate`).
 #
 # `mutate` is the BROAD same-class fuzzer used by `scan`'s exploration pass
-# (NOT the sound same-attack equiv engine — that lives in grammar::equiv::ssrf
+# (NOT the sound same-attack equiv engine, that lives in grammar::equiv::ssrf
 # and is data-driven by its own oracle). These entries are the static variant
 # lists that used to be hardcoded in ssrf.rs; they are deliberately
 # *different-target* forms (loopback/metadata/rebinding hosts), legitimate for
 # scan's fire-at-an-operator-chosen-target job.
 #
 # Templates substitute two placeholders at runtime:
-#   {scheme}      — the payload's URL scheme incl. `://` (e.g. `http://`)
-#   {oob_domain}  — the configured out-of-band domain (WAFRIFT_OOB_DOMAIN)
+#   {scheme}, the payload's URL scheme incl. `://` (e.g. `http://`)
+#   {oob_domain}, the configured out-of-band domain (WAFRIFT_OOB_DOMAIN)
 # `suffixed_address` templates additionally have the payload's path/query
 # appended after substitution.
 #

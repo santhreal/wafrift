@@ -52,7 +52,7 @@ pub enum RegistryError {
     },
     #[error(
         "bundle created_unix={created_unix} is older than max age \
-         ({age_secs}s > {max_age_secs}s) — refusing replay of stale bundle"
+         ({age_secs}s > {max_age_secs}s), refusing replay of stale bundle"
     )]
     BundleTooOld {
         created_unix: u64,
@@ -73,7 +73,7 @@ pub enum RegistryError {
 ///
 /// **Memory hygiene.** The hex-encoded secret is wiped on drop via
 /// [`ZeroizeOnDrop`]. `Debug` is implemented manually to redact the
-/// secret — the prior derive would have spilled the 32-byte key into
+/// secret, the prior derive would have spilled the 32-byte key into
 /// any tracing line, panic message, or `format!("{key:?}")` call.
 ///
 /// `Deserialize` is implemented manually and routes through

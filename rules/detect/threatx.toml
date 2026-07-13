@@ -4,7 +4,7 @@ vendor = "A10 Networks"
 confidence_threshold = 0.5
 evasions = ["CaseAlternation", "SqlCommentInsertion", "DoubleUrlEncode", "ContentTypeSwitch"]
 source = "WAFW00F:threatx + 2026-05-21 false-positive tighten"
-# `X-Request-Id` is FAR too generic to fire on its own — Heroku,
+# `X-Request-Id` is FAR too generic to fire on its own. Heroku,
 # Kubernetes, FastAPI, every modern app server uses it.  Live
 # dogfood on wikipedia.org (Apache Traffic Server, no ThreatX in
 # the path) was false-positiving as ThreatX because the rule

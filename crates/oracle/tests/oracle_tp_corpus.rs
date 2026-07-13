@@ -1,4 +1,4 @@
-//! Documented injection-structure snippets — each oracle must classify them as semantically valid.
+//! Documented injection-structure snippets (each oracle must classify them as semantically valid).
 
 mod common;
 

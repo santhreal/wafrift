@@ -11,7 +11,7 @@
 //!
 //! # Examples
 //!
-//! Filter a candidate IP list to drop known CDN/WAF edge addresses —
+//! Filter a candidate IP list to drop known CDN/WAF edge addresses 
 //! the IPs left over are origin candidates worth probing directly:
 //!
 //! ```
@@ -27,10 +27,10 @@
 //! assert!(!is_edge_ip("10.0.0.1"));
 //!
 //! let candidates = vec![
-//!     "104.16.0.1".to_string(),    // Cloudflare — drop
-//!     "10.0.0.1".to_string(),      // origin — keep
-//!     "151.101.0.1".to_string(),   // Fastly — drop
-//!     "192.168.1.1".to_string(),   // origin — keep
+//!     "104.16.0.1".to_string(),    // Cloudflare, drop
+//!     "10.0.0.1".to_string(),      // origin, keep
+//!     "151.101.0.1".to_string(),   // Fastly, drop
+//!     "192.168.1.1".to_string(),   // origin, keep
 //! ];
 //! let origins = filter_origin_ips(&candidates);
 //! assert_eq!(origins, vec!["10.0.0.1", "192.168.1.1"]);
@@ -53,7 +53,7 @@ pub enum ReconError {
     Parse(#[from] serde_json::Error),
 
     #[error(
-        "crt.sh response exceeded {limit} byte cap (got {got}+ bytes) — \
+        "crt.sh response exceeded {limit} byte cap (got {got}+ bytes). \
          refusing to buffer; aborting"
     )]
     ResponseTooLarge { limit: usize, got: usize },
@@ -117,7 +117,7 @@ pub async fn resolve_origins(hosts: &[String]) -> Result<Vec<String>> {
 /// Returns `true` if the IP belongs to a known edge network.
 #[must_use]
 pub fn is_edge_ip(ip: &str) -> bool {
-    // Cloudflare IPv4 ranges (prefixes — not exhaustive, but covers most)
+    // Cloudflare IPv4 ranges (prefixes, not exhaustive, but covers most)
     const CF_PREFIXES: &[&str] = &[
         "173.245.", "103.21.", "103.22.", "103.31.", "141.101.", "108.162.", "190.93.", "188.114.",
         "197.234.", "198.41.", "162.158.", "104.16.", "104.17.", "104.18.", "104.19.", "104.20.",
@@ -186,10 +186,10 @@ mod tests {
     #[test]
     fn filters_edge_ips_from_list() {
         let ips = vec![
-            "10.0.0.1".to_string(),    // origin — keep
-            "104.16.0.1".to_string(),  // Cloudflare — filter
-            "192.168.1.1".to_string(), // origin — keep
-            "151.101.0.1".to_string(), // Fastly — filter
+            "10.0.0.1".to_string(),    // origin, keep
+            "104.16.0.1".to_string(),  // Cloudflare, filter
+            "192.168.1.1".to_string(), // origin, keep
+            "151.101.0.1".to_string(), // Fastly, filter
         ];
 
         let origins = filter_origin_ips(&ips);
@@ -224,7 +224,7 @@ mod tests {
     fn is_edge_ip_handles_ipv6() {
         // No IPv6 ranges are encoded; IPv6 always classifies as
         // non-edge. The dual-stack origin-filtering path must
-        // remain stable — `2606:4700::1111` is Cloudflare but the
+        // remain stable: `2606:4700::1111` is Cloudflare but the
         // prefix table only covers v4.
         assert!(!is_edge_ip("2606:4700::1111"));
         assert!(!is_edge_ip("::1"));
@@ -234,7 +234,7 @@ mod tests {
     #[test]
     fn is_edge_ip_rejects_substring_match_in_middle() {
         // "10.104.16.0.1" CONTAINS "104.16." but doesn't START
-        // with it — must not be classified as Cloudflare. This is
+        // with it, must not be classified as Cloudflare. This is
         // the regression test for the string-prefix approach: only
         // a true leading match counts.
         assert!(!is_edge_ip("10.104.16.0.1"));
@@ -245,7 +245,7 @@ mod tests {
     fn is_edge_ip_handles_boundary_ips() {
         // Exact first IP of a Cloudflare prefix.
         assert!(is_edge_ip("104.16.0.0"));
-        // Exact-prefix boundary — the trailing dot rule means
+        // Exact-prefix boundary, the trailing dot rule means
         // "104.16." matches "104.16.x.y" but NOT "104.160.0.1"
         // (which lives in a different /16). Documented invariant.
         assert!(!is_edge_ip("104.160.0.1"));
@@ -262,7 +262,7 @@ mod tests {
     fn filter_origin_preserves_order() {
         let ips = vec![
             "203.0.113.5".into(),
-            "104.16.0.1".into(), // CF — drop
+            "104.16.0.1".into(), // CF, drop
             "203.0.113.6".into(),
         ];
         // Order of survivors == order in input.
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn filter_origin_preserves_duplicates() {
-        // No dedup — caller decides. A repeated non-edge IP comes
+        // No dedup, caller decides. A repeated non-edge IP comes
         // back twice. (Important: dedup-by-default could silently
         // mask a CT log that lists the same origin under multiple
         // alias names.)

@@ -85,7 +85,7 @@ pub async fn stop_proxy(child: &mut Child) {
 ///
 /// `wait_for_listen` returns as soon as *some* process answers on the port. Two
 /// processes can never bind the same port, so if our child lost the race it
-/// failed to bind `--listen` and exits within a few ms of startup — and by the
+/// failed to bind `--listen` and exits within a few ms of startup, and by the
 /// time the listener answered, that exit has usually already happened. A short
 /// grace catches the rare in-flight exit without padding healthy starts. `true`
 /// means the child is still alive and therefore is the listener we reached.
@@ -99,7 +99,7 @@ async fn child_still_alive_after_grace(child: &mut Child) -> bool {
     child.try_wait().ok().flatten().is_none()
 }
 
-/// Pick a free port, spawn the proxy, and wait for it to listen — retrying
+/// Pick a free port, spawn the proxy, and wait for it to listen, retrying
 /// with a fresh port if the spawn loses the pick→bind race.
 ///
 /// `pick_free_port` binds `:0`, reads the assigned port, then *releases* it
@@ -108,7 +108,7 @@ async fn child_still_alive_after_grace(child: &mut Child) -> bool {
 /// to bind and exits, which `wait_for_listen` reports as Err; or (2) the winning
 /// proxy answers our readiness probe, so `wait_for_listen` returns Ok against
 /// the *wrong* process (one likely lacking `--allow-private-upstream`, which
-/// then rejects the loopback upstream and fails the test on response status —
+/// then rejects the loopback upstream and fails the test on response status 
 /// not on startup). `child_still_alive_after_grace` closes the second hole, and
 /// re-picking the port closes both. Returns the live child and its bound port.
 #[allow(dead_code)]
@@ -123,7 +123,7 @@ pub async fn start_proxy_on_free_port(args: &[&str]) -> io::Result<(Child, u16)>
                 }
                 let _ = child.kill().await;
                 last_err = Some(io::Error::other(format!(
-                    "proxy exited just after listen on port {port} — lost pick→bind race"
+                    "proxy exited just after listen on port {port}, lost pick→bind race"
                 )));
             }
             Err(e) => last_err = Some(e),
@@ -166,7 +166,7 @@ pub async fn start_proxy_piped_on_free_port(
                 }
                 let _ = child.kill().await;
                 last_err = Some(io::Error::other(format!(
-                    "proxy exited just after listen on port {port} — lost pick→bind race"
+                    "proxy exited just after listen on port {port}, lost pick→bind race"
                 )));
             }
             Err(e) => {

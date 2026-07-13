@@ -3,9 +3,9 @@
 change whether it reaches the reflective origin past OWASP CRS?
 
 The payload-token axis (which bytes) and the reflection-context axis (where the
-bytes land) are exhausted — CRS blocks every executable markup/JS vector at
+bytes land) are exhausted: CRS blocks every executable markup/JS vector at
 every paranoia level, in every reflection context. This probe opens the third
-axis: the **transport** — the HTTP method, Content-Type, and body framing used
+axis: the **transport**: the HTTP method, Content-Type, and body framing used
 to carry the payload to the origin's `q`.
 
 CRS body inspection is content-type-gated: ModSecurity only parses a request
@@ -13,7 +13,7 @@ body into the collections the XSS rules target (ARGS / XML / JSON) when a body
 *processor* matches the Content-Type, and rule 920420 rejects content-types
 outside an allowlist. Where a processor is absent (or fails to parse) but the
 *application* still recovers the payload from the raw body, the WAF sees inert
-bytes and the origin reflects a live payload — a transport bypass that
+bytes and the origin reflects a live payload, a transport bypass that
 multiplies across the entire executable catalog.
 
 The reflect origin's `do_POST` reflects ANY non-urlencoded body verbatim into
@@ -39,7 +39,7 @@ from urllib.parse import urlsplit
 MARK = "31337"
 PAYLOAD = f"<img src=x onerror=alert({MARK})>"
 # A second, angle-bracket-free executable form for the JS-string family of
-# contexts is not needed here — this probe fixes ctx=body to isolate the
+# contexts is not needed here, this probe fixes ctx=body to isolate the
 # transport variable; context is swept separately once a channel is found.
 
 
@@ -54,7 +54,7 @@ def fire(base: str, method: str, path: str, headers: dict, body) -> tuple[int, s
     """Send one fully-controlled request; return (status, body_text).
 
     http.client adds Host + Content-Length automatically but adds NO
-    Content-Type unless we set one — which is exactly the control the
+    Content-Type unless we set one, which is exactly the control the
     no-content-type and odd-content-type transports require.
     """
     conn, _ = _conn(base)
@@ -65,7 +65,7 @@ def fire(base: str, method: str, path: str, headers: dict, body) -> tuple[int, s
         resp = conn.getresponse()
         raw = resp.read(65536)
         return resp.status, raw.decode("utf-8", "replace")
-    except Exception as e:  # noqa: BLE001 — a transport that breaks the wire is a result
+    except Exception as e:  # noqa: BLE001, a transport that breaks the wire is a result
         return -1, f"<wire-error: {e}>"
     finally:
         conn.close()

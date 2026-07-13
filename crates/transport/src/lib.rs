@@ -1,4 +1,4 @@
-//! wafrift-transport — reqwest middleware for automatic WAF evasion.
+//! wafrift-transport (reqwest middleware for automatic WAF evasion).
 //!
 //! Drop-in wrapper around `reqwest::Client` that automatically applies
 //! WAF evasion techniques from `wafrift-strategy`. Tracks per-host state
@@ -18,7 +18,7 @@
 //!
 //! # Examples
 //!
-//! Sync helpers used inside the retry loop and ratelimit logic — no
+//! Sync helpers used inside the retry loop and ratelimit logic, no
 //! HTTP needed, so these run in `cargo test --doc` against any
 //! environment:
 //!

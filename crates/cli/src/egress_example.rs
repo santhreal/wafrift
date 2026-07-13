@@ -9,7 +9,7 @@ pub(crate) struct EgressExampleArgs {
     #[arg(long, default_value = "tor", value_parser = ["tor"])]
     pub preset: String,
     /// Output format. `json` (default) emits only the bare JSON
-    /// snippet — clean for piping into `jq` or merging into a config
+    /// snippet, clean for piping into `jq` or merging into a config
     /// file. `human` adds the explanatory comment header on stderr
     /// for interactive use. Per dogfood B8: pre-fix the comment was
     /// unconditionally emitted to stderr, polluting `2>&1` capture of
