@@ -1,6 +1,6 @@
 # wafrift-types
 
-Foundational types shared by every crate in the [WafRift](https://github.com/santhsecurity/wafrift) workspace. Pure-data — no I/O, no async, no transitive runtime dependencies. Other wafrift crates depend on this one; this crate depends on nothing wafrift-specific.
+Foundational types shared by every crate in the [WafRift](https://github.com/santhreal/wafrift) workspace. Pure-data — no I/O, no async, no transitive runtime dependencies. Other wafrift crates depend on this one; this crate depends on nothing wafrift-specific.
 
 ## What's in here
 
@@ -38,4 +38,4 @@ if a downstream crate ships a feature.
 ## License
 
 Dual-licensed under Apache-2.0 OR MIT. See the
-[workspace root](https://github.com/santhsecurity/wafrift) for details.
+[workspace root](https://github.com/santhreal/wafrift) for details.

@@ -127,7 +127,7 @@ Without this directory, wafrift's "bypass rate" is a marketing claim.
 With it, every claim has a reproducer:
 
 ```bash
-git clone https://github.com/santhsecurity/wafrift && cd wafrift
+git clone https://github.com/santhreal/wafrift && cd wafrift
 wafrift-bench/scripts/up.sh modsec-pl4
 cargo run --release -p wafrift-cli -- bench-waf \
   --base-url http://127.0.0.1:18084 --evade --variants 10 \
