@@ -36,4 +36,4 @@ wafrift harden --ruleset crs        # emit verified closing rules
 Zero-config: pure Rust, no GPU, no external Coraza, no network for the
 core. Acceleration (vyre/GPU, live HTTP oracles) is strictly additive.
 
-Part of the [wafrift](https://github.com/santhsecurity/wafrift) workspace.
+Part of the [wafrift](https://github.com/santhreal/wafrift) workspace.

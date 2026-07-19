@@ -1,8 +1,10 @@
 # WafRift
 
-[![CI](https://github.com/santhsecurity/wafrift/actions/workflows/ci.yml/badge.svg)](https://github.com/santhsecurity/wafrift/actions/workflows/ci.yml)
+[![CI](https://github.com/santhreal/wafrift/actions/workflows/ci.yml/badge.svg)](https://github.com/santhreal/wafrift/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Crates.io](https://img.shields.io/crates/v/wafrift-cli)](https://crates.io/crates/wafrift-cli)
+
+Part of [Santh](https://santh.dev) - open source Rust security and infrastructure tooling. Follow [@SanthProject](https://x.com/SanthProject) on X.
 
 ![WafRift Demo](wafrift-demo.gif)
 
@@ -10,7 +12,7 @@
 
 **A programmable WAF-evasion engine.** Encoding × grammar-aware mutation × HTTP smuggling × content-type confusion × TLS fingerprint rotation — every layer addressable, every winning combination cached. Point it at a WAF and an evolutionary loop (hill-climb / SA / tabu / novelty / MAP-Elites) discovers what bypasses that exact stack, then persists the winners to a per-WAF gene bank so the next scan starts with zero discovery.
 
-> **Status: BETA.** Local stacks under [`wafrift-bench/`](./wafrift-bench/) (ModSec PL1–4, Coraza, BunkerWeb, naxsi) are exercised in CI. Cloud-WAF coverage (Cloudflare, AWS WAF, Akamai, Imperva, F5) is still sparse; treat those results as preliminary. PRs welcome — open against [github.com/santhsecurity/wafrift](https://github.com/santhsecurity/wafrift). Full version history in [CHANGELOG.md](CHANGELOG.md).
+> **Status: BETA.** Local stacks under [`wafrift-bench/`](./wafrift-bench/) (ModSec PL1–4, Coraza, BunkerWeb, naxsi) are exercised in CI. Cloud-WAF coverage (Cloudflare, AWS WAF, Akamai, Imperva, F5) is still sparse; treat those results as preliminary. PRs welcome — open against [github.com/santhreal/wafrift](https://github.com/santhreal/wafrift). Full version history in [CHANGELOG.md](CHANGELOG.md).
 
 ## What's in the box
 
@@ -83,7 +85,7 @@ Built so each crate is usable standalone: [`wafrift-encoding`](https://docs.rs/w
 
 ```bash
 # Prebuilt binaries (recommended)
-curl -sSfL https://github.com/santhsecurity/wafrift/releases/latest/download/wafrift-$(uname -m)-unknown-linux-gnu.tar.gz | tar xz
+curl -sSfL https://github.com/santhreal/wafrift/releases/latest/download/wafrift-$(uname -m)-unknown-linux-gnu.tar.gz | tar xz
 sudo mv wafrift wafrift-proxy /usr/local/bin/
 
 # From crates.io  (the wafrift-cli crate installs the `wafrift` binary)
@@ -100,7 +102,7 @@ those build prerequisites. Every other wafrift surface (scan, detect,
 attack, parser-diff family, bench-waf, smuggle, listener, ...) works
 on Windows out of the box.
 
-macOS: `wafrift-aarch64-apple-darwin.tar.gz`. Windows: `.zip` of the same name. Full asset list under [Releases](https://github.com/santhsecurity/wafrift/releases). From source: `cargo install --path crates/cli`.
+macOS: `wafrift-aarch64-apple-darwin.tar.gz`. Windows: `.zip` of the same name. Full asset list under [Releases](https://github.com/santhreal/wafrift/releases). From source: `cargo install --path crates/cli`.
 
 ## Quickstart
 
@@ -592,7 +594,7 @@ Live scoreboard: [`docs/SCOREBOARD.md`](./docs/SCOREBOARD.md) — refreshed nigh
 
 ```bash
 # Reproduce
-git clone https://github.com/santhsecurity/wafrift && cd wafrift
+git clone https://github.com/santhreal/wafrift && cd wafrift
 wafrift-bench/scripts/up.sh modsec-pl4
 cargo run --release -p wafrift-cli -- bench-waf \
     --base-url http://127.0.0.1:18084 \

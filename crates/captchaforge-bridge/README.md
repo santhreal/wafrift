@@ -1,7 +1,7 @@
 # wafrift-captchaforge-bridge
 
-Optional adapter that connects [wafrift](https://github.com/santhsecurity/wafrift)'s
-managed-challenge flow to the [captchaforge](https://github.com/santhsecurity/captchaforge)
+Optional adapter that connects [wafrift](https://github.com/santhreal/wafrift)'s
+managed-challenge flow to the [captchaforge](https://github.com/santhreal/captchaforge)
 headless-browser solver.
 
 ## What it does
