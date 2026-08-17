@@ -19,8 +19,6 @@ struct Patterns {
     categories: Vec<String>,
     #[serde(default)]
     vendors: Vec<String>,
-    #[serde(default)]
-    names: Vec<String>,
 }
 
 #[derive(Deserialize)]

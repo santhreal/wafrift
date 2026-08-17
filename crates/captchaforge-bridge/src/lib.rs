@@ -31,7 +31,7 @@
 
 use std::sync::Arc;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Result, anyhow};
 use futures::FutureExt as _;
 use runtime_foxdriver::{FoxBrowserConfig, launch_firefox};
 use tokio::sync::Mutex;
