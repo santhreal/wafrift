@@ -637,42 +637,7 @@ fn encode_layered_unicode_preserves_structure() {
 // Aggressiveness Score Tests (6 tests)
 // ============================================================================
 
-#[test]
-fn aggressiveness_case_alternation_low() {
-    let score = encoding::aggressiveness(Strategy::CaseAlternation);
-    assert!(score < 0.2);
-}
-
-#[test]
-fn aggressiveness_url_encode_low() {
-    let score = encoding::aggressiveness(Strategy::UrlEncode);
-    assert!(score < 0.2);
-}
-
-#[test]
-fn aggressiveness_overlong_high() {
-    let score = encoding::aggressiveness(Strategy::OverlongUtf8);
-    assert!(score >= 0.7);
-}
-
-#[test]
-fn aggressiveness_chunked_high() {
-    let score = encoding::aggressiveness(Strategy::ChunkedSplit);
-    assert!(score > 0.8);
-}
-
-#[test]
-fn aggressiveness_ordering() {
-    // Less aggressive strategies should have lower scores
-    assert!(
-        encoding::aggressiveness(Strategy::CaseAlternation)
-            < encoding::aggressiveness(Strategy::TripleUrlEncode)
-    );
-    assert!(
-        encoding::aggressiveness(Strategy::UrlEncode)
-            < encoding::aggressiveness(Strategy::OverlongUtf8)
-    );
-}
+// Aggressiveness tests are in encoding_depth.rs (stricter assertions).
 
 #[test]
 fn all_strategies_have_aggressiveness() {

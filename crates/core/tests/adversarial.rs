@@ -175,15 +175,6 @@ fn content_type_malformed_body_no_equals() {
 }
 
 #[test]
-fn content_type_empty_params() {
-    let params: Vec<(String, String)> = vec![];
-    let variants = content_type::generate_variants(&params);
-    // Implementation generates variants even with empty params (empty bodies)
-    // Just verify it doesn't panic - check that we got a valid vector
-    let _count = variants.len(); // Should be 0 or more
-}
-
-#[test]
 fn content_type_special_chars_in_param_names() {
     let params = vec![
         ("user[name]".into(), "admin".into()),
@@ -345,22 +336,6 @@ fn strategy_success_records_technique() {
 }
 
 #[test]
-fn strategy_max_attempts_boundary() {
-    let config = EvasionConfig {
-        max_attempts: 3,
-        ..Default::default()
-    };
-    assert_eq!(config.max_attempts, 3);
-
-    // Test with max_attempts = 0 (edge case)
-    let config_zero = EvasionConfig {
-        max_attempts: 0,
-        ..Default::default()
-    };
-    assert_eq!(config_zero.max_attempts, 0);
-}
-
-#[test]
 fn strategy_concurrent_host_states_independent() {
     let mut state1 = HostState::default();
     let state2 = HostState::default();
@@ -392,20 +367,6 @@ fn strategy_next_encoding_exhaustion() {
 
     let next = state.next_encoding();
     assert!(next.is_none());
-}
-
-#[test]
-fn strategy_evasion_with_empty_body() {
-    let req = Request::get("https://example.com");
-    let state = HostState::default();
-    let config = EvasionConfig {
-        fingerprint_rotation: false,
-        ..Default::default()
-    };
-
-    let result = evade(&req, &state, &config);
-    // Should handle GET with no body gracefully
-    assert!(result.techniques.is_empty() || !result.techniques.is_empty());
 }
 
 #[test]
@@ -781,6 +742,10 @@ fn strategy_disabled_features() {
     };
 
     let result = evade(&req, &state, &config);
-    // With all features disabled, should have minimal/no techniques
-    assert!(result.techniques.is_empty() || result.techniques.len() <= 1);
+    // With all features disabled, no evasion techniques should be applied
+    assert!(
+        result.techniques.is_empty(),
+        "expected no techniques with all features disabled, got: {:?}",
+        result.techniques
+    );
 }
