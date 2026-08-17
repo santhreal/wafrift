@@ -1381,9 +1381,9 @@ mod tests {
         assert!(!oracle_valid("not_a_class", "a", "a"));
         assert!(!oracle_valid("", "", ""));
         assert!(!oracle_valid(
-            "graphql",
-            "{ user { id } }",
-            "{ user { id } }"
+            "prototype_pollution",
+            "{\"__proto__\":{\"x\":1}}",
+            "{\"__proto__\":{\"x\":1}}"
         ));
     }
 
