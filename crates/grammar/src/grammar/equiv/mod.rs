@@ -663,7 +663,7 @@ fn strip_ctl(s: &str) -> String {
     s.chars()
         .filter(|c| {
             let b = *c as u32;
-            b > 0x1F && b != 0x7F
+            (b > 0x1F || b == 0x09) && b != 0x7F
         })
         .collect()
 }
