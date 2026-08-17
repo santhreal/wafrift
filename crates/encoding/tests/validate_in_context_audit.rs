@@ -15,34 +15,42 @@
 use wafrift_encoding::contextual::validate_in_context;
 use wafrift_types::injection_context::InjectionContext;
 
-// ── XmlCdata: `]]>` would terminate the section ─────────────────────
+// ── Rejection: each context must reject its structurally dangerous chars ──
 
 #[test]
-fn xml_cdata_rejects_terminator_sequence() {
-    let err = validate_in_context("safe ]]> evil", InjectionContext::XmlCdata)
-        .expect_err("must reject CDATA terminator");
-    assert!(format!("{err}").contains("]]>"));
+fn validate_rejects_structurally_dangerous_input_per_context() {
+    // Each (input, context) pair must be rejected. When an expected
+    // substring is given, the error message must mention it.
+    let cases: &[(&str, InjectionContext, Option<&str>)] = &[
+        ("safe ]]> evil", InjectionContext::XmlCdata, Some("]]>")),
+        ("a < b", InjectionContext::XmlText, Some("<")),
+        ("rock & roll", InjectionContext::XmlText, None),
+        ("a < b", InjectionContext::HtmlAttribute, Some("<")),
+        (
+            "hello \"world\"",
+            InjectionContext::HtmlAttribute,
+            Some("\""),
+        ),
+        ("don't", InjectionContext::HtmlAttribute, Some("'")),
+        ("a & b", InjectionContext::HtmlAttribute, None),
+        ("<script>", InjectionContext::HtmlText, Some("<")),
+        ("AT&T", InjectionContext::HtmlText, None),
+    ];
+    for (input, ctx, expected) in cases {
+        let err = validate_in_context(input, *ctx).expect_err("{ctx:?}: must reject {input:?}");
+        if let Some(ch) = expected {
+            assert!(
+                format!("{err}").contains(ch),
+                "{ctx:?}: error for {input:?} must contain {ch:?}, got {err}"
+            );
+        }
+    }
 }
 
 #[test]
 fn xml_cdata_accepts_clean_payload() {
     validate_in_context("clean cdata content", InjectionContext::XmlCdata)
         .expect("clean payload must pass");
-}
-
-// ── XmlText: unescaped `<` and `&` ──────────────────────────────────
-
-#[test]
-fn xml_text_rejects_raw_lt() {
-    let err = validate_in_context("a < b", InjectionContext::XmlText)
-        .expect_err("must reject unescaped <");
-    assert!(format!("{err}").contains('<'));
-}
-
-#[test]
-fn xml_text_rejects_unescaped_ampersand() {
-    let _err = validate_in_context("rock & roll", InjectionContext::XmlText)
-        .expect_err("must reject unescaped &");
 }
 
 #[test]
@@ -53,56 +61,12 @@ fn xml_text_accepts_proper_entity_references() {
         .expect("numeric and hex entities must pass");
 }
 
-// ── HtmlAttribute: <, ", ', and unescaped & all break out ───────────
-
-#[test]
-fn html_attribute_rejects_raw_lt() {
-    let err =
-        validate_in_context("a < b", InjectionContext::HtmlAttribute).expect_err("must reject <");
-    assert!(format!("{err}").contains('<'));
-}
-
-#[test]
-fn html_attribute_rejects_double_quote() {
-    let err = validate_in_context("hello \"world\"", InjectionContext::HtmlAttribute)
-        .expect_err("must reject double-quote attr breakout");
-    assert!(format!("{err}").contains('"'));
-}
-
-#[test]
-fn html_attribute_rejects_single_quote() {
-    let err = validate_in_context("don't", InjectionContext::HtmlAttribute)
-        .expect_err("must reject single-quote attr breakout");
-    assert!(format!("{err}").contains('\''));
-}
-
-#[test]
-fn html_attribute_rejects_unescaped_ampersand() {
-    let _err = validate_in_context("a & b", InjectionContext::HtmlAttribute)
-        .expect_err("must reject unescaped &");
-}
-
 #[test]
 fn html_attribute_accepts_clean_value() {
     validate_in_context("clean value", InjectionContext::HtmlAttribute)
         .expect("clean payload must pass");
     validate_in_context("with &amp; entity", InjectionContext::HtmlAttribute)
         .expect("entity references must pass");
-}
-
-// ── HtmlText: < and unescaped & ─────────────────────────────────────
-
-#[test]
-fn html_text_rejects_raw_lt() {
-    let err = validate_in_context("<script>", InjectionContext::HtmlText)
-        .expect_err("must reject < (would start tag)");
-    assert!(format!("{err}").contains('<'));
-}
-
-#[test]
-fn html_text_rejects_unescaped_ampersand() {
-    let _err = validate_in_context("AT&T", InjectionContext::HtmlText)
-        .expect_err("must reject unescaped &");
 }
 
 #[test]
