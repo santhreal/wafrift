@@ -409,27 +409,20 @@ mod tests {
     }
 
     #[test]
-    fn b64url_round_trip_single_byte() {
-        // Boundary: 1 byte (rem==1 code path).
+    fn b64url_round_trip_boundary_lengths() {
+        // Boundary: 1 byte (rem==1), 2 bytes (rem==2), 3 bytes (full group).
+        // Single-byte values tested individually to cover the rem==1 path.
         for byte in [0u8, 1, 127, 255] {
             let enc = b64url_encode(&[byte]);
             let dec = b64url_decode(&enc).expect("single byte round-trip");
             assert_eq!(dec, [byte], "round-trip failed for byte {byte}");
         }
-    }
-
-    #[test]
-    fn b64url_round_trip_two_bytes() {
-        // Boundary: 2 bytes (rem==2 code path).
+        // Two bytes (rem==2 code path).
         let input = b"\xFF\x00";
         let enc = b64url_encode(input);
         let dec = b64url_decode(&enc).expect("two-byte round-trip");
         assert_eq!(dec, input);
-    }
-
-    #[test]
-    fn b64url_round_trip_three_bytes_exact() {
-        // Boundary: exactly 3 bytes (full 4-char group, no remainder).
+        // Exactly 3 bytes (full 4-char group, no remainder).
         let input = b"\x00\x01\x02";
         let enc = b64url_encode(input);
         let dec = b64url_decode(&enc).expect("three-byte round-trip");
@@ -452,15 +445,11 @@ mod tests {
     }
 
     #[test]
-    fn b64url_decode_returns_none_on_invalid_character() {
-        // `+` and `/` are not in the url-safe alphabet.
-        assert!(b64url_decode("abc+").is_none());
-        assert!(b64url_decode("ab/c").is_none());
-    }
-
-    #[test]
-    fn b64url_decode_returns_none_on_garbage() {
-        assert!(b64url_decode("!@#$").is_none());
+    fn b64url_decode_returns_none_on_invalid_input() {
+        // `+` and `/` are not in the url-safe alphabet; other garbage too.
+        for input in ["abc+", "ab/c", "!@#$"] {
+            assert!(b64url_decode(input).is_none(), "must reject {input:?}");
+        }
     }
 
     #[test]
