@@ -7,27 +7,12 @@ use wafrift_types::injection_context::InjectionContext;
 // ── Protobuf ───────────────────────────────────────────────────────────────
 
 #[test]
-fn protobuf_roundtrip_ascii() {
-    let payload = "hello world";
-    let bytes = serialize(payload, BodyFormat::Protobuf, InjectionContext::PlainBody).unwrap();
-    let back = deserialize(&bytes, BodyFormat::Protobuf).unwrap();
-    assert_eq!(back, payload);
-}
-
-#[test]
-fn protobuf_roundtrip_unicode() {
-    let payload = "Hello 世界 👋";
-    let bytes = serialize(payload, BodyFormat::Protobuf, InjectionContext::PlainBody).unwrap();
-    let back = deserialize(&bytes, BodyFormat::Protobuf).unwrap();
-    assert_eq!(back, payload);
-}
-
-#[test]
-fn protobuf_roundtrip_sql_payload() {
-    let payload = "' UNION SELECT 1,2,3--";
-    let bytes = serialize(payload, BodyFormat::Protobuf, InjectionContext::PlainBody).unwrap();
-    let back = deserialize(&bytes, BodyFormat::Protobuf).unwrap();
-    assert_eq!(back, payload);
+fn protobuf_roundtrip_preserves_payload() {
+    for payload in ["hello world", "Hello 世界 👋", "' UNION SELECT 1,2,3--"] {
+        let bytes = serialize(payload, BodyFormat::Protobuf, InjectionContext::PlainBody).unwrap();
+        let back = deserialize(&bytes, BodyFormat::Protobuf).unwrap();
+        assert_eq!(back, payload);
+    }
 }
 
 #[test]
@@ -53,29 +38,17 @@ fn protobuf_empty_string() {
 // ── MessagePack ────────────────────────────────────────────────────────────
 
 #[test]
-fn messagepack_roundtrip_ascii() {
-    let payload = "hello world";
-    let bytes = serialize(
-        payload,
-        BodyFormat::MessagePack,
-        InjectionContext::PlainBody,
-    )
-    .unwrap();
-    let back = deserialize(&bytes, BodyFormat::MessagePack).unwrap();
-    assert_eq!(back, payload);
-}
-
-#[test]
-fn messagepack_roundtrip_unicode() {
-    let payload = "Hello 世界 👋";
-    let bytes = serialize(
-        payload,
-        BodyFormat::MessagePack,
-        InjectionContext::PlainBody,
-    )
-    .unwrap();
-    let back = deserialize(&bytes, BodyFormat::MessagePack).unwrap();
-    assert_eq!(back, payload);
+fn messagepack_roundtrip_preserves_payload() {
+    for payload in ["hello world", "Hello 世界 👋"] {
+        let bytes = serialize(
+            payload,
+            BodyFormat::MessagePack,
+            InjectionContext::PlainBody,
+        )
+        .unwrap();
+        let back = deserialize(&bytes, BodyFormat::MessagePack).unwrap();
+        assert_eq!(back, payload);
+    }
 }
 
 #[test]
@@ -139,21 +112,14 @@ fn raw_binary_data() {
 // ── Unsupported formats ────────────────────────────────────────────────────
 
 #[test]
-fn xml_serialize_unsupported() {
-    let err = serialize("hello", BodyFormat::Xml, InjectionContext::PlainBody).unwrap_err();
-    assert!(err.to_string().contains("Unsupported"));
-}
-
-#[test]
-fn multipart_serialize_unsupported() {
-    let err = serialize("hello", BodyFormat::Multipart, InjectionContext::PlainBody).unwrap_err();
-    assert!(err.to_string().contains("Unsupported"));
-}
-
-#[test]
-fn json_serialize_unsupported() {
-    let err = serialize("hello", BodyFormat::Json, InjectionContext::PlainBody).unwrap_err();
-    assert!(err.to_string().contains("Unsupported"));
+fn unsupported_formats_rejected() {
+    for fmt in [BodyFormat::Xml, BodyFormat::Multipart, BodyFormat::Json] {
+        let err = serialize("hello", fmt, InjectionContext::PlainBody).unwrap_err();
+        assert!(
+            err.to_string().contains("Unsupported"),
+            "{fmt:?}: serialize must reject with Unsupported, got {err}"
+        );
+    }
 }
 
 // ── Cross-format consistency ───────────────────────────────────────────────
