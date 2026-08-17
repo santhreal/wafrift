@@ -110,32 +110,23 @@ fn a_blocked_javascript_scheme_is_defanged() {
 // ── executability detector (the sink model) ──────────────────────────────────
 
 #[test]
-fn executable_detector_flags_a_script_tag() {
-    assert!(is_executable_html("<script>x</script>"));
+fn executable_detector_flags_executable_html() {
+    for input in ["<script>x</script>", "<img src=x onerror=alert(1)>"] {
+        assert!(is_executable_html(input), "must flag {input:?}");
+    }
 }
 
 #[test]
-fn executable_detector_flags_an_event_handler() {
-    assert!(is_executable_html("<img src=x onerror=alert(1)>"));
-}
-
-#[test]
-fn executable_detector_rejects_plain_text() {
-    assert!(!is_executable_html("just some harmless text"));
-}
-
-#[test]
-fn executable_detector_rejects_a_bare_javascript_scheme_string() {
-    // A bare `javascript:` in text (no tag/handler) is inert in a markup sink
-    // flagging it would over-report. Documented soundness choice.
-    assert!(!is_executable_html(
-        "the string javascript:alert(1) as text"
-    ));
-}
-
-#[test]
-fn executable_detector_rejects_an_escaped_lt_script() {
-    assert!(!is_executable_html("&lt;script&gt;alert(1)&lt;/script&gt;"));
+fn executable_detector_rejects_inert_html() {
+    // Plain text, bare javascript: scheme in text (no tag/handler), and
+    // HTML-escaped &lt;script&gt; are all inert in a markup sink.
+    for input in [
+        "just some harmless text",
+        "the string javascript:alert(1) as text",
+        "&lt;script&gt;alert(1)&lt;/script&gt;",
+    ] {
+        assert!(!is_executable_html(input), "must reject {input:?}");
+    }
 }
 
 // ── precompiled hot-path consistency (the hang-fix invariant) ────────────────
