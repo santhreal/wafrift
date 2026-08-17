@@ -188,25 +188,18 @@ fn text_pretending_to_be_wasm_rejected() {
 // ── 5. Loader robustness against weird filenames ────────────
 
 #[test]
-fn nonexistent_directory_returns_empty_no_panic() {
-    let p = Path::new("/this/path/definitely/does/not/exist/anywhere");
-    let plugins = load_from(p);
-    assert!(plugins.is_empty());
-}
+fn loader_returns_empty_for_adversarial_directories() {
+    // Nonexistent path, empty directory, and file with no extension
+    // must all yield zero plugins without panicking.
+    let nonexistent = Path::new("/this/path/definitely/does/not/exist/anywhere");
+    assert!(load_from(nonexistent).is_empty());
 
-#[test]
-fn empty_directory_returns_empty() {
-    let dir = TempDir::new().unwrap();
-    let plugins = load_from(dir.path());
-    assert!(plugins.is_empty());
-}
+    let empty_dir = TempDir::new().unwrap();
+    assert!(load_from(empty_dir.path()).is_empty());
 
-#[test]
-fn file_with_no_extension_skipped() {
-    let dir = TempDir::new().unwrap();
-    write_plugin(&dir, "noext", "anything");
-    let plugins = load_from(dir.path());
-    assert!(plugins.is_empty());
+    let noext_dir = TempDir::new().unwrap();
+    write_plugin(&noext_dir, "noext", "anything");
+    assert!(load_from(noext_dir.path()).is_empty());
 }
 
 #[test]
