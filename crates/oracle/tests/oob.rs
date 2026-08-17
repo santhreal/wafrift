@@ -51,35 +51,22 @@ fn embed_xss_img_tag() {
 }
 
 #[test]
-fn embed_unknown_returns_original() {
+fn embed_unsupported_classes_return_original() {
+    // Classes without an OOB embedder must return the payload unchanged.
     let canary = make_canary();
-    let original = "hello world";
-    let out = embed_canary(original, &canary, "Unknown");
-    assert_eq!(out, original);
-}
-
-#[test]
-fn embed_nosql_returns_original() {
-    let canary = make_canary();
-    let original = r#"{"$ne": null}"#;
-    let out = embed_canary(original, &canary, "NoSql");
-    assert_eq!(out, original);
-}
-
-#[test]
-fn embed_path_traversal_returns_original() {
-    let canary = make_canary();
-    let original = "../../../etc/passwd";
-    let out = embed_canary(original, &canary, "PathTraversal");
-    assert_eq!(out, original);
-}
-
-#[test]
-fn embed_template_returns_original() {
-    let canary = make_canary();
-    let original = "{{7*7}}";
-    let out = embed_canary(original, &canary, "TemplateInjection");
-    assert_eq!(out, original);
+    let cases: &[(&str, &str)] = &[
+        ("hello world", "Unknown"),
+        (r#"{"$ne": null}"#, "NoSql"),
+        ("../../../etc/passwd", "PathTraversal"),
+        ("{{7*7}}", "TemplateInjection"),
+    ];
+    for (original, class) in cases {
+        let out = embed_canary(original, &canary, class);
+        assert_eq!(
+            out, *original,
+            "{class}: unsupported class must return original"
+        );
+    }
 }
 
 #[test]
