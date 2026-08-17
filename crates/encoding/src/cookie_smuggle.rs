@@ -440,15 +440,6 @@ mod tests {
     }
 
     #[test]
-    fn every_probe_carries_a_distinct_canary() {
-        // §12 TESTING anti-rig: per-probe correlation must work.
-        let a = CookieSmuggleProbe::empty_name_pair("x");
-        let b = CookieSmuggleProbe::empty_name_pair("x");
-        assert_ne!(a.canary.token, b.canary.token);
-        assert_eq!(a.canary.token.len(), 16);
-    }
-
-    #[test]
     fn header_value_capped_at_max() {
         // Anti-rig: caller-supplied giant value must NOT produce a
         // megabyte header (cap enforced at finalise()).

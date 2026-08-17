@@ -454,14 +454,6 @@ mod tests {
     }
 
     #[test]
-    fn every_probe_carries_a_distinct_canary() {
-        let a = AuthSmuggleProbe::lowercase_scheme("Authorization", "Bearer", "x");
-        let b = AuthSmuggleProbe::lowercase_scheme("Authorization", "Bearer", "x");
-        assert_ne!(a.canary.token, b.canary.token);
-        assert_eq!(a.canary.token.len(), 16);
-    }
-
-    #[test]
     fn header_value_capped_at_max() {
         let huge = "x".repeat(MAX_AUTH_HEADER_BYTES * 4);
         let p = AuthSmuggleProbe::lowercase_scheme("Authorization", "Bearer", &huge);

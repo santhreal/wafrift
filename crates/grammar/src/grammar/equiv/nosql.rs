@@ -449,20 +449,13 @@ mod tests {
     #[test]
     fn deterministic_diverse_and_all_sound() {
         let atk = r#"{"username":{"$ne":null},"pw":{"$regex":".*"}}"#;
-        let a: Vec<_> = generate(atk, &cfg(5))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        let b: Vec<_> = generate(atk, &cfg(5))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        assert_eq!(a, b);
-        assert!(a.iter().collect::<std::collections::HashSet<_>>().len() >= 5);
-        for seed in 0..30u64 {
-            for m in generate(atk, &cfg(seed)) {
-                assert!(still_injects(atk, &m.payload), "UNSOUND {:?}", m.payload);
-            }
-        }
+        crate::grammar::equiv::assert_deterministic_diverse_and_sound(
+            generate,
+            atk,
+            &cfg(5),
+            5,
+            still_injects,
+            30,
+        );
     }
 }

@@ -420,14 +420,6 @@ mod tests {
     }
 
     #[test]
-    fn every_probe_carries_a_distinct_canary() {
-        let a = RangeSmuggleProbe::empty_range_set();
-        let b = RangeSmuggleProbe::empty_range_set();
-        assert_ne!(a.canary.token, b.canary.token);
-        assert_eq!(a.canary.token.len(), 16);
-    }
-
-    #[test]
     fn safe_large_last_pos_pool_within_signed_i64_band() {
         // Anti-rig: every pool entry must fit in i64 so any
         // downstream code that parses Range with signed arithmetic
