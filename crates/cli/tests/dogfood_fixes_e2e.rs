@@ -1561,32 +1561,49 @@ fn dogfood_b4_techniques_list_json_format() {
 }
 
 #[test]
-fn dogfood_b4_techniques_explain_known_tamper() {
-    let (code, stdout, _stderr) = wafrift(&["techniques", "explain", "tamper/json_unicode_alnum"]);
-    assert_eq!(code, 0);
-    assert!(stdout.contains("json_unicode_alnum"));
-    assert!(stdout.contains("aggressiveness"));
+fn dogfood_b4_techniques_explain_known_selectors() {
+    // Valid selectors must exit 0 and echo the selector name in stdout.
+    let cases: &[(&str, &str)] = &[
+        ("tamper/json_unicode_alnum", "json_unicode_alnum"),
+        ("encoding/url/single", "url"),
+    ];
+    for (selector, name) in cases {
+        let (code, stdout, _stderr) = wafrift(&["techniques", "explain", selector]);
+        assert_eq!(code, 0, "explain {selector} must exit 0");
+        assert!(
+            stdout.contains(name),
+            "stdout must contain {name}: {stdout}"
+        );
+    }
+    // The tamper explain must also mention aggressiveness.
+    let (_, stdout, _) = wafrift(&["techniques", "explain", "tamper/json_unicode_alnum"]);
+    assert!(
+        stdout.contains("aggressiveness"),
+        "tamper explain must mention aggressiveness"
+    );
 }
 
 #[test]
-fn dogfood_b4_techniques_explain_unknown_tamper_exits_2() {
-    let (code, _stdout, stderr) = wafrift(&["techniques", "explain", "tamper/does_not_exist_xyz"]);
-    assert_eq!(code, 2);
-    assert!(stderr.contains("unknown"));
-}
-
-#[test]
-fn dogfood_b4_techniques_explain_encoding_strategy() {
-    let (code, stdout, _stderr) = wafrift(&["techniques", "explain", "encoding/url/single"]);
-    assert_eq!(code, 0);
-    assert!(stdout.contains("encoding/url/single"));
-}
-
-#[test]
-fn dogfood_b4_techniques_explain_bad_prefix_exits_2() {
-    let (code, _stdout, stderr) = wafrift(&["techniques", "explain", "garbage/selector"]);
-    assert_eq!(code, 2);
-    assert!(stderr.contains("must start with"));
+fn dogfood_b4_techniques_explain_invalid_selectors_exit_2() {
+    // Unknown tamper and bad prefix must exit 2 with actionable stderr.
+    let cases: &[(&[&str], &str)] = &[
+        (
+            &["techniques", "explain", "tamper/does_not_exist_xyz"],
+            "unknown",
+        ),
+        (
+            &["techniques", "explain", "garbage/selector"],
+            "must start with",
+        ),
+    ];
+    for (args, expected) in cases {
+        let (code, _stdout, stderr) = wafrift(args);
+        assert_eq!(code, 2, "{args:?} must exit 2");
+        assert!(
+            stderr.contains(expected),
+            "stderr must contain '{expected}': {stderr}"
+        );
+    }
 }
 
 // ─────────────────── B7: contradictory --only/--exclude ───────────────
