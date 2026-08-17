@@ -26,51 +26,23 @@ fn cfg_max(max: usize) -> EquivConfig {
 // ─── round_trip (tokenizer ↔ renderer losslessness) ──────────────────────────
 
 #[test]
-fn round_trip_preserves_empty_string() {
-    // PROPERTY: the empty payload must survive losslessly; the tokenizer
-    // must not inject synthetic tokens into an empty input.
-    assert_eq!(esql::round_trip(""), "");
-}
-
-#[test]
-fn round_trip_preserves_structured_exfil_payload() {
-    // PROPERTY: a real UNION-SELECT exfil payload must survive the
-    // tokenize→render cycle byte-for-byte so the rewrite engine can
-    // reconstruct it after any number of mutations.
-    let p = "1 UNION SELECT username,password FROM users-- -";
-    assert_eq!(esql::round_trip(p), p);
-}
-
-#[test]
-fn round_trip_preserves_auth_bypass_payload() {
-    // PROPERTY: a tautology-class auth bypass must also round-trip; no
-    // loss at the quote/operator boundary.
-    let p = "1' OR '1'='1";
-    assert_eq!(esql::round_trip(p), p);
-}
-
-#[test]
-fn round_trip_preserves_hex_and_scientific_literals() {
-    // PROPERTY: hex (`0xDEAD`) and scientific (`1e2`) literals must not
-    // be mangled; they are valid numeric tokens with alternate notation.
-    assert_eq!(esql::round_trip("0xDEAD"), "0xDEAD");
-    assert_eq!(esql::round_trip("1e2"), "1e2");
-}
-
-#[test]
-fn round_trip_preserves_block_comment() {
-    // PROPERTY: `/**/` is a recognised comment token (a whitespace
-    // separator); after tokenizing it must render back unchanged.
-    let p = "1/**/OR/**/1=1";
-    assert_eq!(esql::round_trip(p), p);
-}
-
-#[test]
-fn round_trip_preserves_unicode_identifier() {
-    // PROPERTY: non-ASCII alphabetic characters in an identifier (e.g.
-    // a column alias) must survive (the tokenizer must not drop them).
-    let p = "SELECT café FROM users";
-    assert_eq!(esql::round_trip(p), p);
+fn round_trip_preserves_all_payloads() {
+    // PROPERTY: every payload must survive the tokenize→render cycle
+    // byte-for-byte so the rewrite engine can reconstruct it after any
+    // number of mutations. Covers empty, structured exfil, auth bypass,
+    // hex/scientific literals, block comments, and unicode identifiers.
+    let payloads = [
+        "",
+        "1 UNION SELECT username,password FROM users-- -",
+        "1' OR '1'='1",
+        "0xDEAD",
+        "1e2",
+        "1/**/OR/**/1=1",
+        "SELECT café FROM users",
+    ];
+    for p in payloads {
+        assert_eq!(esql::round_trip(p), p, "round_trip must preserve: {p:?}");
+    }
 }
 
 // ─── normalize_pub ────────────────────────────────────────────────────────────
