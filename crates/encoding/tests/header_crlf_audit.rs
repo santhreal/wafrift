@@ -30,15 +30,17 @@ fn assert_no_smuggling_chars(out: &str, label: &str) {
 }
 
 #[test]
-fn tab_separator_strips_crlf_in_value() {
+fn single_arg_mutators_strip_crlf_in_value() {
+    // All single-value header mutators must sanitize CR/LF from the
+    // caller-supplied value before embedding it in their output.
     assert_no_smuggling_chars(&tab_separator("X-Custom", CRLF_INJECTION), "tab_separator");
-}
-
-#[test]
-fn whitespace_pad_strips_crlf_in_value() {
     assert_no_smuggling_chars(
         &whitespace_pad("X-Custom", CRLF_INJECTION),
         "whitespace_pad",
+    );
+    assert_no_smuggling_chars(
+        &trailing_space("X-Custom", CRLF_INJECTION),
+        "trailing_space",
     );
 }
 
@@ -73,14 +75,6 @@ fn duplicate_header_strips_crlf_in_both_values() {
     let (b, r) = duplicate_header("X-Custom", CRLF_INJECTION, "benign\rvalue");
     assert_no_smuggling_chars(&b, "duplicate_header.benign");
     assert_no_smuggling_chars(&r, "duplicate_header.real");
-}
-
-#[test]
-fn trailing_space_strips_crlf_in_value() {
-    assert_no_smuggling_chars(
-        &trailing_space("X-Custom", CRLF_INJECTION),
-        "trailing_space",
-    );
 }
 
 #[test]
