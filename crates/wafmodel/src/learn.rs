@@ -727,7 +727,7 @@ where
         // §1 SPEED: index-based loop splits the borrow between `self.mqx`
         // (mutable) and `self.access[i]` (immutable) without cloning the
         // entire access list.  The pre-fix `self.access.clone().iter()`
-        // allocated O(states × avg_word_len) bytes on every hypothesis call 
+        // allocated O(states × avg_word_len) bytes on every hypothesis call
         // a cost that scales linearly with the L* discrimination-tree depth.
         for (i, slot) in accept.iter_mut().enumerate().take(n) {
             *slot = self.mqx.ask(&self.access[i])?;
@@ -831,7 +831,7 @@ where
         // on the residual c[i..]. That yields a new state and a
         // distinguishing suffix that splits an existing leaf.
         let n = c.len();
-        // F92: an `EquivalenceOracle` returning `Some(vec![])` 
+        // F92: an `EquivalenceOracle` returning `Some(vec![])`
         // "the empty word is a counterexample", would slice `c[1..]`
         // on an empty Vec and panic. The Rivest–Schapire decomposition
         // is undefined for an empty counterexample (γ0 == γn

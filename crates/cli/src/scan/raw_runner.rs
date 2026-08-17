@@ -426,7 +426,7 @@ fn emit_text(
                     _ => String::new(),
                 }
             );
-            // Prefer the minimal repro when auto-distill is on 
+            // Prefer the minimal repro when auto-distill is on
             // shorter payloads are easier to share / report.
             println!(
                 "{}",

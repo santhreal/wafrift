@@ -929,7 +929,7 @@ fn scan_from_discovery_zero_endpoints_emits_valid_envelope() {
 
 // ── Bug 12: detect positional URL form ───────────────────────────────────
 //
-// PRE-FIX BUG: `wafrift detect <URL>` (positional form) was not wired 
+// PRE-FIX BUG: `wafrift detect <URL>` (positional form) was not wired
 // only `--url <URL>` was accepted. The positional form conflicted with
 // `--status` and `--headers` at the clap level but wasn't forwarded to
 // the detection path. `DetectArgs::resolved_url()` was introduced to
@@ -967,7 +967,7 @@ fn detect_url_flag_form_is_accepted_twin() {
 //
 // PRE-FIX BUG: `output.report_layers`, `output.quiet`, `scan.concurrency`,
 // `http.timeout_secs`, and `http.user_agent` were parsed from `.wafrift.toml`
-// but the `apply_to_scan` path was missing the wiring for four of them 
+// but the `apply_to_scan` path was missing the wiring for four of them
 // operators wrote the field and got no effect. Each field now has its own
 // `apply_to_scan_wires_*` unit test in `config.rs`, but we add one
 // integration-level test here that exercises ALL FIVE together through a

@@ -1,6 +1,6 @@
 //! Per-target self-calibration of the live block/pass signal.
 //!
-//! The static classifier ([`crate::verdict`]) catches *known* block shapes 
+//! The static classifier ([`crate::verdict`]) catches *known* block shapes
 //! recognised status codes and listed block-page phrases. But a WAF we have
 //! never seen can signal a block in a way no signature lists: a bespoke 200
 //! page, an unusual status, a redirect to a captcha host. Calibration **learns
@@ -92,7 +92,7 @@ pub struct Calibration {
 }
 
 /// Build a calibration from the benign baseline and the malicious baselines.
-/// Returns `None` when no malicious control is distinguishable from benign 
+/// Returns `None` when no malicious control is distinguishable from benign
 /// i.e. calibration could not learn a signal and the caller must fall back.
 #[must_use]
 pub fn calibrate(benign: Baseline, malicious: Vec<Baseline>) -> Option<Calibration> {

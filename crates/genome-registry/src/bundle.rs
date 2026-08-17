@@ -249,7 +249,7 @@ impl SignedBundle {
 
     /// Verify signature + trust + freshness window.
     ///
-    /// Rejects bundles older than `max_age_secs` (replay defence 
+    /// Rejects bundles older than `max_age_secs` (replay defence
     /// a captured bundle from a key that has since been revoked
     /// cannot be re-imported indefinitely) AND bundles dated more
     /// than `future_skew_secs` ahead of the local clock (defends

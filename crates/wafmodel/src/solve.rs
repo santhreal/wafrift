@@ -161,7 +161,7 @@ fn pct_encode(input: &[u8], scope: Scope) -> Vec<u8> {
     out
 }
 
-/// JSON-escape `input` as `\uXXXX`. Uses a precomputed lookup table 
+/// JSON-escape `input` as `\uXXXX`. Uses a precomputed lookup table
 /// zero `format!` calls, no per-byte heap allocation.
 fn json_escape(input: &[u8], scope: Scope) -> Vec<u8> {
     let mut out = Vec::with_capacity(input.len() * 6);
@@ -175,7 +175,7 @@ fn json_escape(input: &[u8], scope: Scope) -> Vec<u8> {
     out
 }
 
-/// HTML-entity-encode `input` as `&#xN;`. Uses a precomputed lookup table 
+/// HTML-entity-encode `input` as `&#xN;`. Uses a precomputed lookup table
 /// zero `format!` calls, no per-byte heap allocation.
 fn html_entity_encode(input: &[u8], scope: Scope) -> Vec<u8> {
     let mut out = Vec::with_capacity(input.len() * 6);
@@ -330,7 +330,7 @@ pub struct Solution {
 ///
 /// CEGIS: candidates are ordered minimal-first (encode only dangerous
 /// bytes) then escalated (encode everything); each is *verified*
-/// against the real oracle and the real sink. `None` ⇒ no bypass 
+/// against the real oracle and the real sink. `None` ⇒ no bypass
 /// either the raw attack is **not blocked** (nothing to bypass; the
 /// never-policed case) or it is blocked but no structural preimage
 /// passes this pipeline (e.g. an identity sink). Both are reported

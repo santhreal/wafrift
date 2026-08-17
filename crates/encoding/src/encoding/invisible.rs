@@ -144,7 +144,7 @@ pub fn ligature_encode(input: &str) -> String {
 /// (U+24B6..=U+24CF for uppercase, U+24D0..=U+24E9 for lowercase).
 ///
 /// NFKC decomposes these back to the plain Latin letters. Same trick
-/// shape as `fullwidth_encode` but a non-overlapping codepoint set 
+/// shape as `fullwidth_encode` but a non-overlapping codepoint set
 /// rotating between them defeats any filter that scrubs ONE of them.
 #[must_use]
 pub fn circled_letter_encode(input: &str) -> String {

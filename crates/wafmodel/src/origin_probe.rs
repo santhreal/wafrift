@@ -656,7 +656,7 @@ The live fingerprinter is blind to an origin the solver can bypass"
         }
     }
 
-    /// Echoes the input but ALSO injects the bare marker into every response 
+    /// Echoes the input but ALSO injects the bare marker into every response
     /// models a live page whose ambient content collides with our fold marker.
     struct MarkerInjectOrigin;
     impl ReflectionOracle for MarkerInjectOrigin {

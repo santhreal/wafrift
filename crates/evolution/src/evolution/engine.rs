@@ -98,7 +98,7 @@ impl Clone for EvolutionEngine {
             algorithm: self.algorithm.clone_box(),
             gene_pool: self.gene_pool.clone(),
             rng: self.rng.clone(),
-            // The LRU cache deliberately does not survive cloning 
+            // The LRU cache deliberately does not survive cloning
             // each cloned engine gets a fresh same-capacity cache.
             // Sharing the cache across clones is what `SharedEngine`
             // is for (Arc<RwLock<EvolutionEngine>>); deep-cloning the
@@ -386,7 +386,7 @@ impl EvolutionEngine {
     /// periodically (or when a Worker pool is reaped) so a dropped
     /// evaluation doesn't permanently consume a budget slot.
     ///
-    /// Audit (2026-05-10): pre-fix `in_flight` grew without any TTL 
+    /// Audit (2026-05-10): pre-fix `in_flight` grew without any TTL
     /// every dropped eval permanently consumed a `max_requests` slot,
     /// so a long scan with even moderate eval-loss would terminate
     /// prematurely with budget exhausted while the in-flight map
@@ -723,7 +723,7 @@ impl EvolutionEngine {
         )
     }
 
-    /// Seed the underlying algorithm with an explicit population 
+    /// Seed the underlying algorithm with an explicit population
     /// the public path callers use to warm-start search from a known
     /// good corpus (or to inject a synthetic population from tests).
     ///

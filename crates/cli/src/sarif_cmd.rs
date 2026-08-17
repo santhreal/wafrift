@@ -299,7 +299,7 @@ pub(crate) fn run_sarif(args: SarifArgs) -> ExitCode {
     }
 
     let crate_version = env!("CARGO_PKG_VERSION");
-    // Rules + taxonomies emitted only when there are results to describe 
+    // Rules + taxonomies emitted only when there are results to describe
     // an empty SARIF stays minimal so jq-pipe smoke tests stay simple.
     let (rules, taxonomies) = if results.is_empty() {
         (Vec::new(), Vec::new())
@@ -710,7 +710,7 @@ mod tests {
         })
     }
 
-    /// LAW 12: SARIF version + schema URI are pinned constants 
+    /// LAW 12: SARIF version + schema URI are pinned constants
     /// silently emitting a different version would break consumer
     /// validators.
     #[test]

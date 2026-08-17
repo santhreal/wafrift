@@ -27,7 +27,7 @@ use std::path::PathBuf;
 
 /// The canonical payload classes the scoreboard reports on. Adding a
 /// new class is a deliberate two-line edit: this slice + the renderer
-/// `CANONICAL_CLASSES` list. Removing one is a deliberate edit too 
+/// `CANONICAL_CLASSES` list. Removing one is a deliberate edit too
 /// not a silent drift.
 const REQUIRED_CLASSES: &[&str] = &[
     "sql",

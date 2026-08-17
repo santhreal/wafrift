@@ -375,7 +375,7 @@ fn classify_block_class(
     body_has_manual_review: bool,
     body_has_rate_limit: bool,
 ) -> BlockClass {
-    // `Retry-After` header is the strongest unambiguous rate-limit signal 
+    // `Retry-After` header is the strongest unambiguous rate-limit signal
     // it wins over everything, even an explicit cf-mitigated header, because
     // a cf-mitigated:block response that ALSO carries Retry-After is CF's
     // way of combining a temporary ban with a structured retry directive.
@@ -1316,7 +1316,7 @@ mod tests {
 
     #[test]
     fn retry_after_overrides_block_mitigated_to_rate_limited() {
-        // Retry-After header (strong) must still win even over cf-mitigated: block 
+        // Retry-After header (strong) must still win even over cf-mitigated: block
         // this is the "temporary ban with retry directive" CF pattern.
         let hdrs = vec![
             h("cf-ray", "78f00b1c2d3e4f5a-EWR"),

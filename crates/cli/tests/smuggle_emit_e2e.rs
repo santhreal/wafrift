@@ -416,7 +416,7 @@ fn smuggle_emit_canary_header_flag_populates_extra_headers() {
 
 #[test]
 fn smuggle_emit_without_canary_header_flag_omits_extra_headers() {
-    // Anti-rig: skip_serializing_if = Vec::is_empty must hold 
+    // Anti-rig: skip_serializing_if = Vec::is_empty must hold
     // operators that don't ask for extra_headers must not see the
     // field in the JSON.
     let (code, stdout, _stderr) = wafrift(&["smuggle-emit", "--family", "cookie"]);

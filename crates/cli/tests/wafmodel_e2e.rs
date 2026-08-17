@@ -248,7 +248,7 @@ fn harden_json_classes_have_required_fields_and_added_rules() {
             "harden must add rules for class: {class}"
         );
 
-        // Each rule must have transforms as an ARRAY (not a string 
+        // Each rule must have transforms as an ARRAY (not a string
         // this was the pre-fix bug).
         for rule in rules {
             assert!(rule["id"].is_string(), "rule.id must be string: {rule}");

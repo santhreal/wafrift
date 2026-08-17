@@ -154,7 +154,7 @@ pub fn slash_encoded_path(segments: &[&str]) -> String {
 /// the canonical post-normalization path so tests and oracles can
 /// verify that every variant collapses to the same target.
 ///
-/// This is a faithful implementation of the reference algorithm 
+/// This is a faithful implementation of the reference algorithm
 /// no shortcuts, no special-casing, so it can also serve as the
 /// ground-truth normalizer for differential-fuzzing comparisons.
 ///

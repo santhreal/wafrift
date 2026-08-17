@@ -229,7 +229,7 @@ impl BypassCorpus {
     pub const CURRENT_SCHEMA: u32 = 1;
 
     /// Maximum number of bypass entries retained in memory. Bypasses are
-    /// valuable (the whole point of a campaign), so this is generous 
+    /// valuable (the whole point of a campaign), so this is generous
     /// but it is NOT unbounded: a hostile target that yields a fresh
     /// "bypass" per probe would otherwise grow `entries` straight toward
     /// the 256 MiB save/load cliff (`MAX_CORPUS_BYTES`), which discards

@@ -16,7 +16,7 @@
 //! detect false-negative + the import-curl README example breakage
 //! in the dogfood session that motivated this harness.
 //!
-//! Runs on every `cargo test` regardless of docker availability 
+//! Runs on every `cargo test` regardless of docker availability
 //! complements the docker-bench scoreboard, doesn't replace it.
 
 use std::sync::Arc;
@@ -715,7 +715,7 @@ fn count_md_reports(dir: &std::path::Path) -> usize {
 
 /// #290 value proof: when the corpus records the delivery shape, harvest
 /// re-fires that EXACT shape (faithful re-fire) instead of guessing the
-/// standard shapes. Here the recorded shape is a request HEADER 
+/// standard shapes. Here the recorded shape is a request HEADER
 /// `build_request_for_delivery` routes it to `/headers` with the payload
 /// in `X-Forwarded-Host`. With the shape recorded, the report's
 /// reproduction is that exact header request; without it, harvest falls

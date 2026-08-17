@@ -24,7 +24,7 @@ fn len_is_zero_on_fresh_store() {
 
 #[test]
 fn len_increments_on_record_and_decrements_on_forget() {
-    // PROPERTY: `len()` must reflect the number of live entries 
+    // PROPERTY: `len()` must reflect the number of live entries
     // increment on `record`, decrement on `forget`.
     let s = ChallengeStore::new();
     s.record(

@@ -190,7 +190,7 @@ fn read_bounded_file(path: &std::path::Path, max_bytes: usize) -> Result<Vec<u8>
     let f = std::fs::File::open(path).map_err(|e| {
         // Operator footgun: many users assume `--input PAYLOAD` is
         // the payload string itself, not a file path.  When the
-        // "file" doesn't exist, point them at the correct flag 
+        // "file" doesn't exist, point them at the correct flag
         // `--stdin` for inline strings (the only argv-NUL-safe
         // path) or `echo 'X' | wafrift compress --stdin`.
         format!(
@@ -476,7 +476,7 @@ mod tests {
     fn parse_algorithms_accepts_brotli_full_name_as_cli_alias_for_br() {
         // DOGFOOD (R2): the `compress` help prose names the algorithm in
         // full ("gzip / deflate / brotli / chain", "Brotli is the headline
-        // gap"), so an operator following the docs types `--algo brotli` 
+        // gap"), so an operator following the docs types `--algo brotli`
         // but `br` is the only valid HTTP Content-Encoding token, so the
         // wire-token parser (`Algorithm::from_token`, also used to parse real
         // header strings in `decompress`) correctly rejects `brotli`. The CLI

@@ -71,7 +71,7 @@ pub(crate) struct Vector {
 /// the WAF gap exploited and points at the backend behaviour that
 /// makes the vector land.
 ///
-/// Display ordering is functionally meaningful only at the head 
+/// Display ordering is functionally meaningful only at the head
 /// the operator's text-mode scan-output table starts with the
 /// natural body shapes (POST-form / POST-json) so the most-common
 /// surface is visible first. Beyond the baselines, ordering reflects

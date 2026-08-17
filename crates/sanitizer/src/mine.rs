@@ -112,7 +112,7 @@ fn vector_class(payload: &str) -> &'static str {
 /// Per-equivalence-round membership-query budget. The membership predicate is a
 /// pure in-process function (cost is CPU, not HTTP round-trips), but the BFS
 /// frontier over the 24-symbol XSS alphabet reaches ~1M words at `eq_max_len=6`,
-/// and a *strict* (no-bypass) model must reject every one of them every round 
+/// and a *strict* (no-bypass) model must reject every one of them every round
 /// an unbounded sweep that, combined with per-query regex compilation, hung the
 /// decompiler for minutes. Capping per-round queries bounds the sweep to a fixed
 /// budget; the obvious bypasses are guaranteed by the Tier-B canonical-vector

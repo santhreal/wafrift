@@ -176,7 +176,7 @@ pub fn pad(body: &[u8], content_type: &str, requested_bytes: usize) -> PadOutcom
 fn pad_json(body: &[u8], requested_bytes: usize) -> PadOutcome {
     // Hard guard: a body larger than MAX_USEFUL_PAD is never useful
     // to feed through serde_json::from_slice OR through the
-    // "treat as opaque text and embed as a string" fallback below 
+    // "treat as opaque text and embed as a string" fallback below
     // both paths would allocate at least body.len() bytes a second
     // time. Skip-and-pass-through is correct: cloud-WAF inspection
     // bypasses target SMALL bodies (the WAF inspects the first 8KB or
@@ -313,7 +313,7 @@ fn pad_multipart(body: &[u8], boundary: &str, requested_bytes: usize) -> PadOutc
     // so we splice ours in front and let the original's first line
     // continue as the second part's separator.
     //
-    // If the body doesn't start with `--<boundary>` it's malformed 
+    // If the body doesn't start with `--<boundary>` it's malformed
     // skip rather than corrupt further.
     let prefix = format!("--{boundary}");
     let body_str = std::str::from_utf8(body).unwrap_or("");

@@ -276,7 +276,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
                 continue;
             };
             let mutated = strat.tamper(&payload, context_str);
-            // Record the tamper outcome in the explain trace 
+            // Record the tamper outcome in the explain trace
             // operator running `--explain` must see whether a
             // selected tamper actually fired or was a no-op /
             // duplicate on this specific payload.
@@ -492,7 +492,7 @@ pub(crate) fn run_evade(args: EvadeArgs, quiet: bool) -> ExitCode {
             // Escape non-printable ASCII control bytes so tampers
             // like `bell_separator` (BEL 0x07), `null_byte` (NUL),
             // and the zero-width Unicode injectors don't render as
-            // invisible characters in the operator's terminal 
+            // invisible characters in the operator's terminal
             // the terminal silently swallows BEL / NUL / NULL and
             // the operator can't tell the tamper fired.  This is
             // the "byte-level visibility" requirement called out
@@ -888,7 +888,7 @@ mod tests {
 
     // ── Tamper wiring (added 2026-05) ──────────────────────
     //
-    // These exercise the policy that tampers are opt-in for evade 
+    // These exercise the policy that tampers are opt-in for evade
     // default flows produce zero tamper variants, an explicit
     // `--only tamper/...` selector produces one variant per matched
     // tamper (deduped against the original + existing variants).
@@ -1052,7 +1052,7 @@ mod tests {
 
     #[test]
     fn visualize_passes_high_unicode_printable_chars() {
-        // Fullwidth bracket (U+FF1C) from bracket_confusable 
+        // Fullwidth bracket (U+FF1C) from bracket_confusable
         // visually distinct, leave verbatim.
         assert_eq!(visualize_invisible_bytes("a\u{FF1C}b"), "a\u{FF1C}b");
     }

@@ -403,7 +403,7 @@ impl WasmRuntime {
         // §15 host-OOM defence: `result_len` is attacker-controlled, the low
         // 32 bits of the UNTRUSTED guest's return value, up to ~4 GiB. The
         // guest's own linear memory is capped (4 MiB), so any (ptr, len) that
-        // does not fit inside the current guest memory is necessarily a lie 
+        // does not fit inside the current guest memory is necessarily a lie
         // and a naive `vec![0u8; result_len]` would allocate gigabytes on the
         // HOST and OOM it BEFORE `memory.read` (which only bounds-checks the
         // read itself) ever runs. Reject the out-of-bounds/oversized result

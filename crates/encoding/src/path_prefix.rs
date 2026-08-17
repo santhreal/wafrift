@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn non_root_relative_input_passes_through() {
-        // Path that doesn't start with `/` is a contract violation 
+        // Path that doesn't start with `/` is a contract violation
         // return unchanged rather than producing a malformed mutation.
         // Matches `mutate_url`'s "doesn't look like a path" guard.
         assert_eq!(PathPrefixStrategy::DoubleSlash.apply("admin"), "admin");

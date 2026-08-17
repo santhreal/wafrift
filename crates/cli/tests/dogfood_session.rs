@@ -9,7 +9,7 @@
 //! 3. Carry the shared-shape contract for its family (probes /
 //!    bypass_variants / divergences keys, curl reproducer per row).
 //!
-//! This is the integration-level "use the tool end-to-end" proof 
+//! This is the integration-level "use the tool end-to-end" proof
 //! if a subcommand passes its unit tests but fails here, the wire
 //! between clap → run_* → JSON emission has a hole.
 
@@ -57,8 +57,7 @@ async fn spawn_realistic_mock() -> std::net::SocketAddr {
                 } else if internal_via_header || leaked {
                     (
                         "200 OK",
-                        "<html>internal / leaked, long body for delta detection</html>"
-                            .to_string(),
+                        "<html>internal / leaked, long body for delta detection</html>".to_string(),
                     )
                 } else {
                     ("200 OK", "<html>baseline</html>".to_string())

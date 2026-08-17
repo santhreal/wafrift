@@ -44,11 +44,11 @@ mod interactive;
 #[cfg(feature = "tls-impersonate")]
 mod ja3_diff_cmd;
 mod jwt_diff_cmd;
-mod oneshot;
 mod listener_cmd;
 mod man_cmd;
 mod method_diff_cmd;
 mod model_evade_cmd;
+mod oneshot;
 mod origin_hints;
 mod parser_diff_cmd;
 mod parser_diff_common;
@@ -132,7 +132,7 @@ struct Cli {
     config: Option<PathBuf>,
 
     /// Differential-baseline bypass verification. Credit a payload as a WAF
-    /// bypass only when the UN-EVADED base is BLOCKED in the same delivery 
+    /// bypass only when the UN-EVADED base is BLOCKED in the same delivery
     /// proving the evasion is what passed it, not a payload the WAF never
     /// policed. Off by default (anti-rig: the headline bypass metric is
     /// unchanged unless you opt in). Costs ~one extra probe per delivery arm.
@@ -384,7 +384,7 @@ enum Commands {
     SmuggleFire(smuggle_fire_cmd::SmuggleFireArgs),
     /// Adversarial distillation via Zeller's ddmin: take a KNOWN-
     /// working bypass payload and find the minimum-edit-distance
-    /// subset that STILL bypasses. Useful for pentest reports 
+    /// subset that STILL bypasses. Useful for pentest reports
     /// shorter payloads are easier for clients to reproduce, and
     /// the reduction reveals which payload features the WAF
     /// actually objected to vs. which were noise. Typically chained
@@ -699,7 +699,7 @@ pub struct ScanArgs {
     /// capture cookies + Authorization, then re-use them on every
     /// variant. The file format is identical to `wafrift import-curl`'s
     /// input (Burp / Chromium "Copy as cURL" pastes work verbatim).
-    /// Defeats WAFs that scrutinise unauthenticated traffic more 
+    /// Defeats WAFs that scrutinise unauthenticated traffic more
     /// most do, by a wide margin.
     #[arg(long, value_name = "CURL_FILE")]
     pub session_init: Option<PathBuf>,
@@ -790,7 +790,7 @@ pub struct ScanArgs {
     /// Path to a Burp-style raw HTTP request file (the bytes from
     /// *Copy → Save raw → File* in Burp Repeater / Proxy). When set,
     /// wafrift loads the file as the request TEMPLATE and substitutes
-    /// each candidate payload at every `§§` marker before firing 
+    /// each candidate payload at every `§§` marker before firing
     /// instead of building requests from `--target` / `--param`.
     ///
     /// Pentester workflow: intercept the real target request in Burp,
@@ -960,7 +960,7 @@ pub struct ScanArgs {
     ///
     /// This is a cap on TOTAL scan runtime, distinct from `--timeout-secs`
     /// which is a per-request HTTP timeout.  Use `--scan-timeout-secs` to
-    /// hard-bound a CI job that runs against a rate-limited target 
+    /// hard-bound a CI job that runs against a rate-limited target
     /// e.g. `--scan-timeout-secs 120` caps the scan at 2 minutes and
     /// guarantees the CI step exits cleanly regardless of WAF latency.
     ///

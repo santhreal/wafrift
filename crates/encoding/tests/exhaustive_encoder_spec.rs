@@ -158,7 +158,7 @@ fn url_encoders_round_trip_exactly() {
         assert_eq!(c, inp, "TripleUrlEncode not 3-layer reversible for {inp:?}");
     }
 
-    // Explicit pin of the deliberate pre-encoded-preservation contract 
+    // Explicit pin of the deliberate pre-encoded-preservation contract
     // the path-traversal evasion this tool exists to carry: one
     // server-side decode of the double-encoded form must yield the
     // traversal, not the literal `%2f` bytes.

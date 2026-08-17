@@ -150,7 +150,7 @@ impl ClientChannel {
     }
 
     /// The concrete browser action that lands `payload` in this channel's taint
-    /// source against `target`. This is the WAF-blind delivery *instruction* 
+    /// source against `target`. This is the WAF-blind delivery *instruction*
     /// the dual of a server [`super::DeliveryShape`]'s wire request, that scald
     /// (or a human with a browser) executes to confirm DOM execution. Nothing it
     /// describes traverses the WAF.
@@ -589,7 +589,7 @@ mod tests {
 
     #[test]
     fn every_catalog_channel_yields_a_describable_action() {
-        // Anti-rig: no channel may produce an empty or panicking instruction 
+        // Anti-rig: no channel may produce an empty or panicking instruction
         // the operator must get a usable line for every WAF-blind lane.
         for c in ClientChannel::catalog() {
             let a = c.delivery_action("https://t/path", "javascript:alert(1)");

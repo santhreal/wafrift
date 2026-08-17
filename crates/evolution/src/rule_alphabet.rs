@@ -38,7 +38,7 @@ use wafrift_wafmodel::Alphabet;
 use crate::rule_corpus::RuleBucket;
 
 /// Default number of distinguished bytes the inferred alphabet
-/// carries. Eight has been the sweet spot in empirical sweeps 
+/// carries. Eight has been the sweet spot in empirical sweeps
 /// large enough to cover every rule we've examined so far in the
 /// CRS, small enough to keep L\* table size O(k²) tractable.
 pub const DEFAULT_DISTINGUISHED_COUNT: usize = 8;
@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     fn distinguished_excludes_filler_bytes() {
-        // Space appears in every blocked payload but is HTTP filler 
+        // Space appears in every blocked payload but is HTTP filler
         // must be filtered out even with discrimination=1.0.
         let b = bucket_with(vec!["a b", "c d", "e f"], vec!["abcdef", "qwert", "zxcvb"]);
         let dist = distinguished_bytes(&b, 5);

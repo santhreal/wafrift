@@ -8,7 +8,7 @@
 //!
 //! - `body_delta_pct(baseline_len, probe_len)`: signed percentage
 //!   change in body length.
-//! - `severity_of(baseline_status, probe_status, body_delta)` 
+//! - `severity_of(baseline_status, probe_status, body_delta)`
 //!   `"high"` when the HTTP status class flipped (200 → 403, 200 →
 //!   500, etc.), `"medium"` when the body shifted by more than 20%
 //!   with status preserved, `"none"` otherwise.
@@ -41,7 +41,7 @@ use reqwest::Client;
 ///
 /// R55 pass-17 I5b (CLAUDE.md §7 DEDUP): every `emit_output` in the
 /// parser-diff family started with the same two `iter().filter(...)
-/// .collect()` allocations. The collects were never used as Vecs 
+/// .collect()` allocations. The collects were never used as Vecs
 /// every consumer immediately called `.len()` on them. A two-line
 /// `count_*` helper removes 14 lines of duplicated filtering across
 /// the diff family and avoids the unnecessary allocation.
@@ -157,7 +157,7 @@ use crate::scan::pentest_client;
 /// operator-configured UA and profile headers flow through, and finally
 /// the pentest-plumbing of `--proxy` + `-H/--header` via
 /// [`pentest_client::apply_pentest_flags`]. Errors
-/// emit a red diagnostic on stderr and return `ExitCode::from(1)` 
+/// emit a red diagnostic on stderr and return `ExitCode::from(1)`
 /// matching the prior copy-pasted behaviour byte-for-byte so existing
 /// CI gates keep their exit-code contract.
 pub(crate) fn build_diff_http_client(
@@ -192,7 +192,7 @@ pub(crate) fn build_diff_http_client(
 /// Read-only view of the HTTP-client knobs every parser-diff cmd
 /// already exposes on its Args struct: `--timeout-secs`,
 /// `--insecure`, `--proxy`, `-H/--header`. Lifting this lets every
-/// cmd build its client with a single call 
+/// cmd build its client with a single call
 /// `build_diff_http_client_for(&args)?`: instead of repeating
 /// the 4-arg unpack at every site. A new diff cmd just adds a
 /// one-liner `impl_parser_diff_http_args!(NewDiffArgs);` (or
@@ -220,7 +220,7 @@ pub(crate) async fn fire_get_status_len(
     // §15 OOM / decompression-bomb: cap the body so a hostile target can't
     // serve a compressed bomb. The diff commands only need the body LENGTH
     // to detect parser differentials; 8 MiB is far more than any real response.
-    // On overrun return the cap as the observed length (still a real signal 
+    // On overrun return the cap as the observed length (still a real signal
     // a response the bomb-cap fires on is structurally distinct from a 200-byte
     // block page).
     let body = crate::safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)

@@ -34,7 +34,7 @@ use std::path::PathBuf;
 /// so a future scan against `(waf, payload_class)` can warm-start
 /// from the class-specific winners instead of the global average.
 ///
-/// Why a separate struct: the JSON shape is forward-compatible 
+/// Why a separate struct: the JSON shape is forward-compatible
 /// adding a new field here doesn't change the parent
 /// `TechniqueRecord` schema, and old genomes (pre-per-class) still
 /// deserialise via `#[serde(default)]` on the parent's `per_class`

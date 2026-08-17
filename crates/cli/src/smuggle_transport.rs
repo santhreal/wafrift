@@ -42,7 +42,7 @@ use reqwest::redirect::Policy;
 
 use wafrift_types::probe::ComposedArtifact;
 
-/// Hard cap on response body bytes read per probe. Set to 4 MiB 
+/// Hard cap on response body bytes read per probe. Set to 4 MiB
 /// well above any realistic WAF response page (Cloudflare's
 /// challenge page is ~32 KiB; ModSecurity blocks ~200 B). Anything
 /// beyond this size is almost certainly a decompression bomb or a
@@ -198,7 +198,7 @@ pub async fn fire_baseline(
 ///
 /// Returns a [`FireOutcome`] on success. When `canary_header_name`
 /// placed the canary tokens on the wire, the response headers AND
-/// body are scanned for verbatim reflection of those tokens 
+/// body are scanned for verbatim reflection of those tokens
 /// populating `reflected_canaries`. Body reads are bounded.
 #[tracing::instrument(skip(client, headers, body, canaries), fields(target = %target, header_count = headers.len(), has_body = body.is_some()))]
 pub async fn fire_smuggle_request(

@@ -17,7 +17,7 @@
 //! [`LiveVerdict::Blocked`], or [`LiveVerdict::Transient`] using the status code
 //! AND a Tier-B set of block-page body signatures, then drives a **bounded
 //! retry** on transient (honouring `Retry-After`) so rate-limiting degrades to
-//! "inconclusive", never to a wrong answer. The core is pure and network-free 
+//! "inconclusive", never to a wrong answer. The core is pure and network-free
 //! the live oracle injects the probe and the sleep.
 
 use std::time::Duration;
@@ -106,7 +106,7 @@ fn backoff_delay(retry_number: usize, retry_after_secs: Option<u64>) -> Duration
 
 /// Probe `probe` and classify each response with the injected `classify`,
 /// retrying on [`LiveVerdict::Transient`] up to `max_retries` times (sleeping
-/// via the injected `sleep`). On exhaustion the result is an `Oracle` error 
+/// via the injected `sleep`). On exhaustion the result is an `Oracle` error
 /// i.e. **inconclusive**, never a fabricated `Block`: so a rate-limited target
 /// degrades safely.
 ///

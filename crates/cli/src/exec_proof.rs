@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn missing_binary_degrades_to_none() {
-        // A definitely-absent binary must yield None / false, never panic 
+        // A definitely-absent binary must yield None / false, never panic
         // no env mutation needed (the _with form takes the path directly).
         let bogus = OsStr::new("/nonexistent/detonate-xyz-should-not-exist");
         assert!(prove_execution_with(bogus, "<script>alert(1)</script>", "https://x/").is_none());

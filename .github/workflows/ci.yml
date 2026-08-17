@@ -193,7 +193,7 @@ jobs:
       - run: cargo test  -p wafrift-proxy   --features tls-impersonate
 
   depth:
-    name: depth (full wafmodel matrix: 10k props / 1000 configs)
+    name: "depth (full wafmodel matrix: 10k props / 1000 configs)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

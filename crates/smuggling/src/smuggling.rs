@@ -1090,7 +1090,7 @@ pub fn vh_masked_header(
 /// Many front-ends respond to `Expect: 100-continue` immediately with a
 /// `100 Continue` response and do not wait for body bytes.  This means the
 /// front-end treats the request as complete (0 body bytes consumed), while the
-/// back-end honors `Content-Length: <cl>` and reads that many bytes 
+/// back-end honors `Content-Length: <cl>` and reads that many bytes
 /// including `smuggled_request`: off the shared connection.
 ///
 /// Wire format:

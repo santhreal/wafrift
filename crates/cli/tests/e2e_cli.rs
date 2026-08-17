@@ -560,7 +560,7 @@ fn evade_stdin_rejects_interactive_terminal() {
         "--stdin on a TTY-less non-pipe must error, not hang"
     );
     // In CI / our test harness stdin is closed (no TTY, no pipe), so the
-    // is_terminal check is false and the read_to_string returns empty 
+    // is_terminal check is false and the read_to_string returns empty
     // either path must produce a clear error, not hang.
     assert!(
         stderr.contains("stdin") || stderr.contains("empty") || stderr.contains("pipe"),

@@ -367,10 +367,7 @@ fn classify_cors(
                 "ACAO reflects Origin AND ACAC:true, credentials leak",
             )
         } else {
-            (
-                "medium",
-                "ACAO reflects Origin, non-credentialed data leak",
-            )
+            ("medium", "ACAO reflects Origin, non-credentialed data leak")
         }
     } else if allow == "*" && creds_true {
         // Browsers reject this combo, but the server emitting it is

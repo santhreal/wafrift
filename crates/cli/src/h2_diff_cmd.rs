@@ -239,7 +239,7 @@ fn build_diff_result(
         Err(e) => (0, 0, Some(e)),
     };
     let delta = if h2_error.is_some() {
-        // When H2 errored, the divergence is "H2 not reachable" 
+        // When H2 errored, the divergence is "H2 not reachable"
         // not a parser disagreement. Skip the body-delta math; set
         // severity by H2 status alone.
         0.0

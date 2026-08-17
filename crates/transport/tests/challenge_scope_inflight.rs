@@ -210,7 +210,7 @@ fn dispatch_returns_longer_wait_when_solver_in_flight() {
 fn solver_in_flight_ttl_lets_another_caller_take_over_after_expiry() {
     // Ensure SOLVER_INFLIGHT_TTL is the right scale (not millis).
     assert!(SOLVER_INFLIGHT_TTL >= Duration::from_secs(10));
-    // Real eviction test would need to wait SOLVER_INFLIGHT_TTL 
+    // Real eviction test would need to wait SOLVER_INFLIGHT_TTL
     // skip (don't sleep 60s in unit tests). The eviction logic is
     // exercised by mark_solver_pending's GC loop on every call.
 }

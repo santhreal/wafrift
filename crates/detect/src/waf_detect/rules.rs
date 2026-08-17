@@ -49,7 +49,7 @@ const BODY_ONLY_MIN_CONFIDENCE: f64 = 0.5;
 /// never panic.
 ///
 /// `Regex::find` returns char-boundary-aligned `start`/`end`, but the
-/// previous code computed the end as `m.end().min(m.start() + 40)` 
+/// previous code computed the end as `m.end().min(m.start() + 40)`
 /// `m.start() + 40` is an arbitrary byte offset that lands mid-codepoint
 /// whenever a multibyte character (any non-ASCII byte in a WAF block
 /// page or header value: `é`, `”`, `→`, NBSP, …) straddles it. That

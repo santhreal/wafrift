@@ -93,7 +93,7 @@ pub fn manipulate(
     // serde_json's `IndexMut<&str>` PANICS ("cannot access key … in JSON
     // {array,string,number,bool}") when the value is not an object (it only
     // promotes `null`). A malicious/fuzzed token whose header decodes to a
-    // non-object, e.g. `WzEsMiwzXQ` → `[1,2,3]`, or a bare string/number 
+    // non-object, e.g. `WzEsMiwzXQ` → `[1,2,3]`, or a bare string/number
     // would otherwise crash the process (§15 panic-in-production). Reject
     // loudly instead. `null` is also rejected: it is not a valid JOSE header.
     if !header.is_object() {

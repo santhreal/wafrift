@@ -126,7 +126,7 @@ fn executable_detector_rejects_plain_text() {
 
 #[test]
 fn executable_detector_rejects_a_bare_javascript_scheme_string() {
-    // A bare `javascript:` in text (no tag/handler) is inert in a markup sink 
+    // A bare `javascript:` in text (no tag/handler) is inert in a markup sink
     // flagging it would over-report. Documented soundness choice.
     assert!(!is_executable_html(
         "the string javascript:alert(1) as text"

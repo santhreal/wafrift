@@ -4,7 +4,7 @@
 //! server (axum) that returns 200, then pounds the proxy with 200 concurrent
 //! clients × 50 requests each. Asserts:
 //!
-//!  1. Every response is either 200 (origin up) or 502/504 (origin timeout) 
+//!  1. Every response is either 200 (origin up) or 502/504 (origin timeout)
 //!     NEVER a connection hang past 30 s, NEVER a 500 from the proxy itself.
 //!  2. The host-state map stays at or below 10 000 (the proxy's DoS cap).
 //!  3. No tokio task panics (any unhandled panic propagates to JoinSet).

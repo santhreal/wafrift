@@ -861,7 +861,7 @@ fn evade(bypass_rate: f64, variants_total: usize) -> EvadeResult {
 }
 
 // ── honest bypass-vs-exploit gate (detonate_bypass_body) ──
-// The execution oracle must NOT claim execution for a non-HTML reflection 
+// The execution oracle must NOT claim execution for a non-HTML reflection
 // this is exactly why bench reported 0 against the httpbin (JSON) backend: a
 // payload that BYPASSES the WAF but is echoed as JSON cannot execute. These
 // tests pin that distinction without needing the detonate subprocess (the

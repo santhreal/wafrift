@@ -30,9 +30,9 @@
 //! - **Percent-encoded key name.** `?%71=attack` (decoded as
 //!   `q=attack`). WAFs that match by raw key-string never see a
 //!   `q` parameter; origins that URL-decode keys before lookup do.
-//! - **Trailing percent + null in value.** `?q=safe%00.attack` 
+//! - **Trailing percent + null in value.** `?q=safe%00.attack`
 //!   C-style truncation parsers see `safe`, Python sees `safe\0.attack`.
-//! - **Fragment leak via percent-encoded `#`.** `?q=attack%23` 
+//! - **Fragment leak via percent-encoded `#`.** `?q=attack%23`
 //!   the literal `#` AFTER decoding can confuse parsers that
 //!   re-encode + re-split.
 //! - **Semicolon as separator.** `?a=1;b=2`: RFC 3986 reserves

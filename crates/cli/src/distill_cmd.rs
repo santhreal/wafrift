@@ -23,7 +23,7 @@
 //!    (one HTTP fire).
 //!
 //! The semantic clause runs FIRST and in-process, so a candidate that
-//! has lost the attack is rejected without spending an HTTP fire 
+//! has lost the attack is rejected without spending an HTTP fire
 //! correctness and stealth (fewer requests at a rate-limited target)
 //! in one. `--class` overrides the auto-detected class; `--class none`
 //! disables the gate (WAF-bypass only, the result may not still
@@ -552,7 +552,7 @@ mod tests {
             |s| async move { s.contains('X') && s.contains('Y') },
         )
         .await;
-        // Should reduce to the minimum subset that contains both 
+        // Should reduce to the minimum subset that contains both
         // 'XY' or 'XbcdY' or shorter. Both load-bearing chars must
         // survive.
         assert!(

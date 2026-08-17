@@ -29,7 +29,7 @@
 //! - **Trailing whitespace.** `X-Real-User: admin   `: some parsers
 //!   trim, some don't. If the WAF allowlists by exact string match
 //!   but the origin trims, padded whitespace bypasses the allowlist.
-//! - **NULL byte truncation.** `X-Real-User: admin\x00.attacker` 
+//! - **NULL byte truncation.** `X-Real-User: admin\x00.attacker`
 //!   some C-style parsers truncate at NUL; the WAF sees the longer
 //!   form, the origin sees `admin`.
 //! - **Colon-adjacent whitespace.** `X-Foo : value` (with space before
@@ -223,8 +223,7 @@ pub(crate) fn generate_header_variants() -> Vec<HeaderDisagreement> {
     // ── 5. Host-header smuggling (parser-disagreement bypass) ──
     out.push(HeaderDisagreement {
         kind: "dup-host",
-        description:
-            "Two Host headers, origin frameworks differ on which wins; routing bypass for \
+        description: "Two Host headers, origin frameworks differ on which wins; routing bypass for \
              virtual-host-based access control",
         headers: vec![
             ("Host".into(), "internal.svc".into()),

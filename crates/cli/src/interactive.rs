@@ -155,7 +155,7 @@ pub(crate) fn run_interactive() -> ExitCode {
                 .split(chunks[1]);
 
             // Menu. Use a ▶ prefix on the selected row plus REVERSED
-            // video so the selection is visible on every terminal 
+            // video so the selection is visible on every terminal
             // bg/fg color overrides alone don't render reliably under
             // some emulators (notably when a row's background hasn't
             // been pre-painted), so the prefix + reverse pair gives

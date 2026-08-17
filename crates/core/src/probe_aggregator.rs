@@ -80,7 +80,7 @@ impl<'a> Default for ProbeSeeds<'a> {
 /// normalization, then host-header, then multipart, then JSON, then
 /// HTTP/3 capsule, then QUIC datagram, then WebSocket compression.
 /// The relative order within each family follows that family's own
-/// `all_variants` / `generate_smuggle_variants` output 
+/// `all_variants` / `generate_smuggle_variants` output
 /// preserve-on-shape so operators that key on technique-id get
 /// reproducible iteration.
 #[must_use]

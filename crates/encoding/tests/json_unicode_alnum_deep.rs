@@ -330,7 +330,7 @@ fn xxe_external_entity() {
 #[test]
 fn ssrf_internal_url() {
     let out = run("http://169.254.169.254/latest/meta-data/");
-    // `http`, `latest`, `meta`, `data`, AND the digits all encoded 
+    // `http`, `latest`, `meta`, `data`, AND the digits all encoded
     // every alphanumeric in the metadata-IP URL disappears from the
     // wire bytes. Only the structural delimiters (`:`, `/`, `.`, `-`)
     // remain bare.

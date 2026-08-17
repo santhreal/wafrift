@@ -154,7 +154,7 @@ pub(crate) struct Registry {
     tokens: RwLock<HashMap<String, ()>>,
     // VecDeque (not Vec) so the FIFO eviction at the MAX_CALLBACK_LOG
     // cap is O(1) via pop_front() instead of O(n) via Vec::remove(0).
-    // Critical under the exact DoS scenario the cap defends against 
+    // Critical under the exact DoS scenario the cap defends against
     // token-replay flood, where holding the write-guard for an O(n)
     // shift of up to 100 000 entries would starve every concurrent
     // /_wafrift/check poll from the scan engine. Per perf-hunt N02.

@@ -229,9 +229,7 @@ impl CookieSmuggleProbe {
         Self::finalise(
             CookieSmuggleVariant::ControlByteInValue,
             header,
-            format!(
-                "Control byte 0x{ctl:02x} inside cookie value, strict CTL-reject vs lax-strip"
-            ),
+            format!("Control byte 0x{ctl:02x} inside cookie value, strict CTL-reject vs lax-strip"),
         )
     }
 

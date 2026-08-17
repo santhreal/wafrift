@@ -32,14 +32,14 @@
 //!
 //! Encoding-chain attacks add layers (e.g. `gzip → base64 → urlenc`).
 //! The WAF, which normalises only a fixed number of decode passes
-//! (usually 1, sometimes 2), stops short of the original payload 
+//! (usually 1, sometimes 2), stops short of the original payload
 //! while the origin's parser stack (which decodes more layers as
 //! Content-Type / Content-Encoding direct) reaches it. `chain` is
 //! the primitive for this attack.
 //!
 //! ## Pristine code
 //!
-//! - Every public function returns `Result<_, CompressionError>` 
+//! - Every public function returns `Result<_, CompressionError>`
 //!   no `unwrap()` reachable on bad input.
 //! - The chain function caps at 16 layers so a misconfiguration
 //!   (`gzip,gzip,gzip,...`) can't run away.
@@ -415,7 +415,7 @@ mod tests {
     #[test]
     fn chain_with_two_algos_round_trips() {
         // The classic compression-confusion attack: gzip(brotli(payload)).
-        // The WAF sees gzip, decodes one layer, gets brotli bytes 
+        // The WAF sees gzip, decodes one layer, gets brotli bytes
         // doesn't recognise (passes through. Origin decodes both).
         let original = b"' UNION SELECT username,password FROM users --";
         let chained = chain(original, &[Algorithm::Gzip, Algorithm::Brotli]).expect("chain");
@@ -699,7 +699,7 @@ mod tests {
             buf.len() > cap,
             "Read::take(cap+1) must produce cap+1 bytes for a > cap source"
         );
-        // The error promotion is purely a buf.len() > cap check 
+        // The error promotion is purely a buf.len() > cap check
         // already exercised in identity_decompress_rejects_oversize_input.
     }
 }

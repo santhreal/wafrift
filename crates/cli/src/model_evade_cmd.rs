@@ -705,7 +705,7 @@ pub(crate) fn run_model_evade(mut args: ModelEvadeArgs) -> ExitCode {
 
     // max_queries caps the EQ oracle's HTTP round-trips per equivalence
     // round. With a 22-symbol sqli alphabet the BFS frontier reaches
-    // 22⁵ ≈ 5 M entries at depth 5, capped to 1 M by FRONTIER_CAP 
+    // 22⁵ ≈ 5 M entries at depth 5, capped to 1 M by FRONTIER_CAP
     // still 1 M HTTP calls per EQ round without this gate.
     //
     // §13 dogfood round-2 DEFECT 3: tie this cap to `--budget` instead of a
@@ -1143,7 +1143,6 @@ mod tests {
     }
 
     // ── bypass_entry schema ─────────────────────────────────────────
-
 
     #[test]
     fn bypass_entry_serializes_payload_hex() {

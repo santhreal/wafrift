@@ -826,7 +826,7 @@ fn genome_with_wrong_per_class_type_errors_cleanly() {
 fn max_techniques_cap_prevents_unbounded_per_class_growth() {
     // The MAX_TECHNIQUES cap (1024) applies to NEW techniques even
     // when called via merge_session_for_class. Verify: after we
-    // hit the cap, additional new technique NAMES are dropped 
+    // hit the cap, additional new technique NAMES are dropped
     // the per_class breakdown for an EXISTING technique can still
     // grow, but a brand-new technique name above the cap won't.
     let mut genome = WafGenome::new("CapTest");

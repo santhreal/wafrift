@@ -594,7 +594,7 @@ mod tests {
     fn winner_pick_varies_with_request_url() {
         // F146 regression: pre-fix `current_winner` used
         // `state.rotation_index % state.proven_winners.len()` but `evade`
-        // gets a CLONED &HostState that is dropped after each call 
+        // gets a CLONED &HostState that is dropped after each call
         // `rotation_index` is never advanced from the transport path, so
         // every request picked `proven_winners[0]` and the round-robin
         // claim was a lie. Post-fix the pick hashes (URL + method), so

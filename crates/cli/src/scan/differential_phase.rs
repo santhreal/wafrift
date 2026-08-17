@@ -32,7 +32,7 @@ use super::scan_url_with_param;
 /// can no longer leak ~13 concurrent fires past the operator's ceiling
 /// (the dogfood `--variants-cap 1 --exploit-cap 0 --max-fires 5 → 85
 /// fires` bug). Because the phase only ever fires what it actually sends,
-/// `intel_loop.probes_completed()` stays an accurate denominator input 
+/// `intel_loop.probes_completed()` stays an accurate denominator input
 /// the cap changes the COUNT of fires, never the bypass-rate accounting.
 pub(crate) async fn run(
     http: &reqwest::Client,

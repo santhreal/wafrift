@@ -143,7 +143,7 @@ fn normalize(s: &str) -> String {
     // QUOTED, so any whitespace byte it yields does NOT field-split: it glues
     // to its neighbours as one word. This both recovers the hidden verb/target
     // (recall) and rejects the unsound quoted-whitespace "separator"
-    // (`cat$'\x20'etc/passwd` → glued `catetc/passwd`, fails verb survival 
+    // (`cat$'\x20'etc/passwd` → glued `catetc/passwd`, fails verb survival
     // exactly bash's one-non-existent-word behaviour). See [`decode_ansi_c`].
     let mut t = decode_ansi_c(s);
     // UNQUOTED expansions field-split → one argument boundary (a space).
@@ -570,7 +570,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    
+
     out.truncate(cfg.max);
     out
 }

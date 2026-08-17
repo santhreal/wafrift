@@ -4,7 +4,7 @@
 //! Two textual copies of the SSRF policy live in the tree (see the
 //! module-doc in `wafrift-types/src/bogon.rs` for the layering
 //! reason, pulling scanclient's reqwest tree into the foundation
-//! types crate is unacceptable). This test exists so any drift 
+//! types crate is unacceptable). This test exists so any drift
 //! a new range added to one, a fix landing only in one, fails CI
 //! instead of leaking through to production.
 //!

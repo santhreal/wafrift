@@ -22,7 +22,7 @@
 //!   2. is **bypass-relevantly richer** than the benign baseline: the
 //!      *fragment itself* introduced a boolean connective (`& | !`) or
 //!      a match-all `*` value. A mere extra/duplicate leaf with no new
-//!      operator and no wildcard (`bob)(uid=bob`) is NOT an injection 
+//!      operator and no wildcard (`bob)(uid=bob`) is NOT an injection
 //!      counting absolute leaves would re-introduce the rig via an
 //!      AND-wrapped host whose own `&` is not the fragment's doing.
 //!
@@ -253,7 +253,7 @@ fn skeleton(s: &str) -> Skeleton {
 
 /// Did `fragment`, spliced into `(prefix,suffix)`, structurally inject
 /// (vs. the benign baseline for that exact context)? Soundness: the
-/// only accepted signals are ones the *fragment* is responsible for 
+/// only accepted signals are ones the *fragment* is responsible for
 /// a boolean connective the baseline did not have, or a match-all `*`
 /// where the baseline had a literal. Extra leaves alone never qualify
 /// (a host's own `&` would otherwise launder a duplicate-literal).

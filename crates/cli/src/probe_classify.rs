@@ -46,7 +46,7 @@ pub(crate) fn is_throttle_or_unavailable(status: u16) -> bool {
 /// R55 pass-18 I4 (CLAUDE.md §7 DEDUP): delegated to
 /// [`crate::parser_diff_common::body_delta_pct`] (which itself routes
 /// through `respdiff::body_size_delta_pct`) so a tuning of the
-/// rule, e.g. switching from raw bytes to ratio of similarity 
+/// rule, e.g. switching from raw bytes to ratio of similarity
 /// reaches every diff family from one place. Pre-fix this module
 /// carried its own inline formula and the parser-diff path went
 /// through respdiff; they happened to agree but were silently drift-

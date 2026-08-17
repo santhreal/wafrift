@@ -1627,7 +1627,7 @@ async fn forward_wafrift_request(
     // ── URL/query mutation (--mutate-url, off by default) ───────────
     // Applied AFTER SSRF policy validation but BEFORE upstream fetch
     // so the unmodified URL is what gets gated, while the WAF on the
-    // wire sees the mutated query bytes. Path is left intact 
+    // wire sees the mutated query bytes. Path is left intact
     // mutating the path's last segment is reserved for the more
     // aggressive `evade_smart` URL-aware variants and is not
     // something a passive proxy should do silently.
@@ -1755,7 +1755,7 @@ async fn forward_wafrift_request(
             evasion_result.request.method.as_str(),
             path_for_intercept,
         );
-        // RAII cleanup: cancel the registration on ANY exit from this scope 
+        // RAII cleanup: cancel the registration on ANY exit from this scope
         // crucially including async task-cancellation. If the client
         // disconnects, hyper drops this request future mid-`select!`-await;
         // NEITHER arm runs, so the explicit timeout-arm cancel cannot fire and
@@ -1969,7 +1969,7 @@ async fn forward_wafrift_request(
     // ── Rich response classification ────────────────────────────────
     // Classify the upstream response through loaded WAF profiles
     // (rules/responses/*.toml). The signal distinguishes hard blocks,
-    // soft blocks (200+block-page), rate limits, and JS challenges 
+    // soft blocks (200+block-page), rate limits, and JS challenges
     // each gets different treatment by record_signal below. This
     // replaces the binary is_waf_block check.
     let header_pairs: Vec<(String, String)> = response_builder
@@ -2152,7 +2152,7 @@ async fn forward_wafrift_request(
     }
 
     // ── Feedback loop: rich signal replaces binary block/pass ────────
-    // Key insight: a 429 (rate limit) is NOT a technique failure 
+    // Key insight: a 429 (rate limit) is NOT a technique failure
     // the WAF is saying "slow down," not "I caught your payload."
     // Same for JS challenges. Only HardBlock and SoftBlock penalize
     // the current evasion technique. record_signal also ingests the
@@ -2280,7 +2280,7 @@ async fn forward_wafrift_request(
 
     // ── Finding classification (wafrift-as-a-proxy) ─────────────────────
     // As another tool (sqlmap / Burp / ffuf / manual) drives payloads
-    // through us, classify whether its input REFLECTED in the response 
+    // through us, classify whether its input REFLECTED in the response
     // and, when a `detonate` binary is configured, whether it EXECUTES.
     // This turns wafrift-as-a-proxy into a live finding classifier for
     // whatever drives it: separating "the input came back" (scanner noise)
@@ -2418,7 +2418,7 @@ async fn mitm_plaintext_request(
 
     let log_uri = wafrift_req.url.clone();
 
-    // Per-host rate limit applies to BOTH evade and passthrough paths 
+    // Per-host rate limit applies to BOTH evade and passthrough paths
     // it bounds raw request volume hitting the upstream.
     rate_limiter.acquire(&host).await;
 

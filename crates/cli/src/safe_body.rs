@@ -63,7 +63,7 @@ use futures_util::StreamExt;
 use reqwest::Response;
 use std::fmt;
 
-/// Default size cap for an arbitrary target's response body 
+/// Default size cap for an arbitrary target's response body
 /// 8 MiB. Bigger than any legitimate WAF block page or JSON API
 /// envelope, smaller than any laptop's free RAM by orders of
 /// magnitude.

@@ -315,7 +315,7 @@ pub(crate) fn classify_differential(
             "server header changed: '{baseline_server}' → '{attack_server}'"
         ));
     }
-    // 3. Body length swing > 50%. The threshold is generous 
+    // 3. Body length swing > 50%. The threshold is generous
     // small differences (different timestamps, request IDs) don't
     // count; a swing from 1 KB origin response to 200-byte block
     // page does.
@@ -597,7 +597,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
     // we have a URL to resolve, manual --status/--headers mode
     // skips DNS (no host to look up).
     let cname_probe: Option<DnsProbe> = resolved_url.as_deref().and_then(fetch_cname_chain);
-    // Trigger CNAME-rule detection whenever we have ANY DNS signal 
+    // Trigger CNAME-rule detection whenever we have ANY DNS signal
     // the chain (forward CNAME hops), a PTR record on the leaf IP,
     // or an ASN org name.  Gating only on the chain swallowed the
     // PTR axis; gating only on chain+PTR swallowed the ASN axis
@@ -747,7 +747,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
     }
 
     // JSON output is selected by either `--quiet` (legacy) OR the
-    // newer `--format json` (uniform with every other subcommand 
+    // newer `--format json` (uniform with every other subcommand
     // closes the dogfood bug where `wafrift detect --url X --format
     // json` failed with "unexpected argument").
     let emit_json = quiet || args.format == "json" || args.json;
@@ -1379,7 +1379,7 @@ mod tests {
 
     #[test]
     fn differential_server_change_is_case_insensitive() {
-        // Apache vs apache should NOT count as a server change 
+        // Apache vs apache should NOT count as a server change
         // it's the same software, just different casing on the
         // server's part.
         let ev = classify_differential(403, &hdr("Apache"), 100, 403, &hdr("apache"), 100);

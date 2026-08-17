@@ -480,7 +480,7 @@ pub fn classify(payload: &str) -> PayloadType {
 /// Check if a string contains a common shell command as a whole token.
 ///
 /// Pre-fix this used `.contains()` substring matching, so short command
-/// names like `id` and `nc` matched as substrings inside ordinary words 
+/// names like `id` and `nc` matched as substrings inside ordinary words
 /// `consider`, `validate`, `android`, `since`, `concert`. The classifier
 /// would then mis-route benign text as command injection.
 fn contains_shell_command(s: &str) -> bool {
@@ -802,7 +802,7 @@ pub fn mutate_as(
                     .map(|(&t, &l)| (t, l))
                     .collect();
                 'xss_outer: for _ in 0..budget {
-                    // Once converged, further expansions are deterministic 
+                    // Once converged, further expansions are deterministic
                     // break to avoid emitting identical duplicates.
                     if mutator.is_converged() {
                         break;
@@ -835,7 +835,7 @@ pub fn mutate_as(
             // Unicode normalization-differential mutations: WAFs normalising
             // to NFC miss fullwidth/math-bold forms; NFKC-capable back-ends
             // reconstruct the attack. Add these as additional XSS variants.
-            // §12 TESTING: validate with still_executes_xss before adding 
+            // §12 TESTING: validate with still_executes_xss before adding
             // fullwidth Unicode normalisation doesn't preserve structured
             // exfil markers (//drop.evil.tld/) in the oracle's normaliser, so
             // those variants must not escape into the output for structured
@@ -844,7 +844,7 @@ pub fn mutate_as(
                 // nfkc_preimage: the complete inverse-NFKC homoglyph set (every
                 // codepoint Unicode folds to ASCII), generated via style-pass,
                 // single-codepoint, and alternating strategies, which strictly
-                // subsume the former hand-rolled fullwidth/math/mixed styles 
+                // subsume the former hand-rolled fullwidth/math/mixed styles
                 // each gated by NFKC(variant)==payload.
                 let norm_variants = nfkc_preimage::variants(payload, 24)
                     .into_iter()
@@ -1500,7 +1500,7 @@ mod tests {
     }
 
     /// LAW 1 anti-rig: plain HTML comments without the SSI `#` are
-    /// NOT classified as SSI. (Other classifiers may pick them up 
+    /// NOT classified as SSI. (Other classifiers may pick them up
     /// Pug declares `- ` as a delimiter for inline JS, which `<!-- `
     /// contains, but the bug we're guarding against is SSI's
     /// classify_ssi short-circuit accidentally claiming non-SSI

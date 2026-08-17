@@ -1996,7 +1996,7 @@ mod tests {
         let payload = "' UNION SELECT 'admin','password' FROM users--";
         let out = sql_concat_split(payload);
         // Outer ' is unbalanced; collects up to ' before admin then closes there.
-        // The first CONCAT contains the OR/UNION/SELECT keywords as char args 
+        // The first CONCAT contains the OR/UNION/SELECT keywords as char args
         // not a useful execution path, but it demonstrates the tamper is
         // applied uniformly. The point is: every single-quoted region becomes
         // CONCAT, so a downstream layer can compose this with other tampers.
@@ -2195,7 +2195,7 @@ mod tests {
             !encoded.contains('\u{2019}'),
             "U+2019 right-single-quote must NOT appear: {encoded}"
         );
-        // But the equals sign (non-delimiter) still gets mutated 
+        // But the equals sign (non-delimiter) still gets mutated
         // proves the function isn't a complete no-op.
         assert!(
             encoded.contains('\u{FF1D}'),
@@ -2263,7 +2263,7 @@ mod tests {
     #[test]
     fn iis_unicode_encode_lowest_non_bmp_u10000() {
         // U+10000 is the very first supplementary-plane codepoint (LINEAR B
-        // SYLLABLE B008 A). Pre-fix: emitted `%u10000` (5 hex digits 
+        // SYLLABLE B008 A). Pre-fix: emitted `%u10000` (5 hex digits
         // invalid IIS format). Post-fix: must emit the surrogate pair
         // %uD800%uDC00 (high=0xD800, low=0xDC00 for U+10000).
         let ch = '\u{10000}'; // U+10000

@@ -264,7 +264,7 @@ impl SearchAlgorithm for MapElites {
         Ok(())
     }
 
-    /// Every grid cell holds an elite chromosome 
+    /// Every grid cell holds an elite chromosome
     /// the elite set IS the live population for diversity purposes.
     fn population_snapshot(&self) -> Vec<Chromosome> {
         self.grid.values().cloned().collect()

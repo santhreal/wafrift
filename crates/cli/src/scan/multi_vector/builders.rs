@@ -67,7 +67,7 @@ fn json_dupkey_body(param: &str, payload: &str) -> String {
 
 /// Build the reqwest::RequestBuilder for `vector` against the
 /// target with `payload`. Returns `None` when the vector chooses
-/// to skip this fire (e.g. a transient compression failure 
+/// to skip this fire (e.g. a transient compression failure
 /// caller logs and moves on). Centralising the per-vector wire
 /// shape here is the dedup win: scan/mod.rs no longer carries a
 /// 400-line match.

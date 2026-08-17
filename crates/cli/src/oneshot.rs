@@ -180,7 +180,7 @@ struct PhaseBypassProbe {
 }
 
 /// One bypass-probe finding row. Matches the shape `bypass_probe.rs`
-/// emits per-divergence under `--format json`. Narrow on purpose 
+/// emits per-divergence under `--format json`. Narrow on purpose
 /// the demo report keeps the executive view; full details live in
 /// the underlying JSON capture.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -257,7 +257,7 @@ struct PhaseScan {
 /// One row of the bypass-variants table embedded in the markdown
 /// report. Mirrors the shape emitted by `scan` under `--format json`
 /// (see `scan/mod.rs` ~line 1897). Kept narrow on purpose: the demo
-/// report is the operator-facing summary, not a full scan record 
+/// report is the operator-facing summary, not a full scan record
 /// extra fields belong in the underlying scan JSON.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct BypassVariantSummary {
@@ -748,7 +748,7 @@ fn apply_scan_json(phase: &mut PhaseScan, root: &serde_json::Value) {
 /// Drain a bypass-probe JSON envelope (the shape emitted by
 /// `bypass_probe.rs` under `--format json`) into the full
 /// report's `PhaseBypassProbe`. The JSON has shape
-/// `{"results": [{"target":..., "divergences":[...], ...}]}` 
+/// `{"results": [{"target":..., "divergences":[...], ...}]}`
 /// we flatten across URL results so the renderer sees a single
 /// divergence list. Tolerant of missing fields, same as the scan
 /// drain.
@@ -1059,7 +1059,7 @@ fn render_markdown(r: &OneshotReport) -> String {
                      command at the bottom of this section._\n\n"
                 ));
             }
-            // Group HIGH severity first, then MEDIUM, then LOW 
+            // Group HIGH severity first, then MEDIUM, then LOW
             // pentest deliverable readers want the alarming findings
             // up top.
             let mut ranked: Vec<&DivergenceSummary> = r.bypass_probe.divergences.iter().collect();
@@ -1337,7 +1337,7 @@ fn render_text(r: &OneshotReport) -> String {
 
 /// A bypass payload that contains literal triple-backticks would
 /// break the markdown code fence around it. The standard escape is
-/// to wrap the fence in MORE backticks than the payload contains 
+/// to wrap the fence in MORE backticks than the payload contains
 /// computing the right delimiter is fiddly, so we take the simpler
 /// path of inserting a zero-width space into the literal sequence
 /// (the rendered text reads identically, but the fence parser no
@@ -1429,7 +1429,7 @@ mod tests {
         // BYTE cap, not a char count, so for n=3 on Greek text (2 bytes
         // per char): cap = 2 bytes → the cut lands after the first char
         // `α` (byte boundary at offset 2). The output is "α…", not "αβγ…".
-        // This is intentional and documented in probe_classify::truncate 
+        // This is intentional and documented in probe_classify::truncate
         // the byte cap is strictly tighter and avoids multi-byte overruns.
         let s = "αβγδεζηθικλμ";
         let t = truncate(s, 3);
@@ -1457,7 +1457,7 @@ mod tests {
     fn markdown_bypass_probe_scope_cites_canonical_probe_count() {
         // §10 COHERENCE: the full markdown is a client deliverable.
         // Its bypass-probe scope sentence must cite the real auth-bypass
-        // corpus size (AUTH_BYPASS_PROBE_COUNT), never a stale literal 
+        // corpus size (AUTH_BYPASS_PROBE_COUNT), never a stale literal
         // pre-fix it claimed a "136-probe" set and a "150-probe sweep"
         // long after the corpus grew to 230. This pins the 4th doc site
         // the count integrity test (auth_bypass_probe_count_documented)
@@ -2316,7 +2316,7 @@ mod tests {
         );
         assert!(md.contains("| 50 |"), "total_variants value missing");
         assert!(md.contains("**2**"), "bypassed bolded count missing");
-        // The variant payload must be in the rendered output 
+        // The variant payload must be in the rendered output
         // this is the entire point of the fix.
         assert!(md.contains("Variant #5"), "variant header missing");
         assert!(md.contains("%27 OR 1=1--"), "variant payload missing");

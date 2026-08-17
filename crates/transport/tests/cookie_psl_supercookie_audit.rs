@@ -1,6 +1,6 @@
 //! Regression coverage for the 2026-05-10 swarm-audit CRITICAL:
 //!   Cookie Domain attribute had no PSL guard. `Domain=co.uk`,
-//!   `Domain=com`, `Domain=github.io`, etc. were silently accepted 
+//!   `Domain=com`, `Domain=github.io`, etc. were silently accepted
 //!   a captured cookie would then replay on EVERY site under that
 //!   suffix (the classic supercookie vulnerability). RFC 6265 §5.2.3
 //!   plus Mozilla's PSL project document this exact failure mode.

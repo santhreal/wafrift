@@ -84,7 +84,7 @@ pub enum ContentTypeTechnique {
     /// star-form; Busboy, Werkzeug, Django all decode `filename*` and
     /// see the original `shell.php`. Sicuranext 2025.
     MultipartFilenameStarEncoded,
-    /// Two `Content-Disposition` lines in the SAME multipart part 
+    /// Two `Content-Disposition` lines in the SAME multipart part
     /// first has `filename="evil.php"`, second has `filename="safe.txt"`.
     /// WAF reads the second; PHP `$_FILES` reads the first. Sicuranext
     /// 2025 confirmed against FortiWeb + PHP.
@@ -466,7 +466,7 @@ pub fn generate_variants(params: &[(String, String)]) -> Vec<ContentTypeVariant>
     // not impossible, and *guaranteed* possible if an attacker knows
     // the format and crafts the request body), the multipart body would
     // self-frame and let arbitrary content escape the form parser. We
-    // collect the param value strings once and use unique_boundary 
+    // collect the param value strings once and use unique_boundary
     // which already exists, was tested, and was never wired up.
     let value_refs: Vec<&str> = params.iter().map(|(_, v)| v.as_str()).collect();
 
@@ -694,7 +694,7 @@ pub fn generate_variants(params: &[(String, String)]) -> Vec<ContentTypeVariant>
     //
     // OWASP CRS 922110 iterates MULTIPART_PART_HEADERS, captures
     // each part's charset to TX:1, OVERWRITES on every iteration.
-    // The chained validation rule fires once after the loop 
+    // The chained validation rule fires once after the loop
     // seeing only the LAST part's charset. Place the dangerous
     // charset (utf-7) on part[0] (which actually carries the payload)
     // and utf-8 on the trailing dummy part. CRS sees utf-8 on TX:1
@@ -742,7 +742,7 @@ pub fn generate_variants(params: &[(String, String)]) -> Vec<ContentTypeVariant>
     // are non-empty.
     if !params.is_empty() {
         let (k, v) = &params[0];
-        // Construct hand-rolled JSON so the duplicate key survives 
+        // Construct hand-rolled JSON so the duplicate key survives
         // serde_json::to_string collapses duplicates.
         //
         // Pre-fix: `k` was interpolated raw into `{"k":...,"k":...}`.
@@ -807,8 +807,8 @@ pub fn generate_variants(params: &[(String, String)]) -> Vec<ContentTypeVariant>
             content_type: format!("multipart/form-data; boundary={boundary}"),
             body,
             technique: ContentTypeTechnique::MultipartFilenameStarEncoded,
-            description:
-                "RFC 5987 filename* with percent-encoded dot. WAF inspects filename= only".into(),
+            description: "RFC 5987 filename* with percent-encoded dot. WAF inspects filename= only"
+                .into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
     }

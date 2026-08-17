@@ -191,7 +191,7 @@ impl FilterProfile {
 ///
 /// Best-effort and total: a transport error on either half of a probe yields
 /// an `Inconclusive`(Verdict::Inconclusive) finding (and increments
-/// [`FilterProfile::transport_errors`]) rather than aborting the whole sweep 
+/// [`FilterProfile::transport_errors`]) rather than aborting the whole sweep
 /// one flaky probe must not discard the intelligence from the rest.
 pub fn characterize<O, F>(
     oracle: &mut O,
@@ -251,7 +251,7 @@ pub struct DecodeGap {
 }
 
 /// The single-stage origin transforms a WAF may or may not replicate before
-/// matching. Each is probed as `preimage_for(token, [stage], encode_all)` 
+/// matching. Each is probed as `preimage_for(token, [stage], encode_all)`
 /// reusing the canonical solver encoder, so no encoding logic is duplicated.
 fn decode_probe_stages() -> Vec<(&'static str, Stage)> {
     vec![

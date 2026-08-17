@@ -236,7 +236,7 @@ impl EdgePopCoverage {
         out
     }
 
-    /// Egress entries that are NOT yet exhausted for `target` 
+    /// Egress entries that are NOT yet exhausted for `target`
     /// these are the candidates the hunt loop should prioritize for
     /// new probes, sorted ascending by current POP count so we
     /// favor entries with the most room to grow.

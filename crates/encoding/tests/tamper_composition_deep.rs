@@ -136,7 +136,7 @@ fn json_unicode_alnum_then_sql_adjacent() {
     let p = "WHERE n='admin'";
     let a = tamper("json_unicode_alnum", p, None).unwrap();
     let b = tamper("sql_adjacent_string_concat", &a, None).unwrap();
-    // The 'admin' literal in the JSON-encoded form is still quoted 
+    // The 'admin' literal in the JSON-encoded form is still quoted
     // sql_adjacent_string_concat should shatter it.
     assert!(b.contains("' '"));
 }

@@ -519,7 +519,7 @@ fn host_token_present(haystack: &str, needle: &str) -> bool {
     if h.len() < n.len() {
         return false;
     }
-    // A char that may NOT bound a host token: digits, letters, `-` 
+    // A char that may NOT bound a host token: digits, letters, `-`
     // the LDH chars that live INSIDE a single DNS label. Anything
     // else (`.`, `:`, `/`, whitespace, end-of-string) marks a label
     // or token boundary.
@@ -726,7 +726,7 @@ mod tests {
         );
     }
 
-    /// A malformed data file must degrade to the built-in set without panic 
+    /// A malformed data file must degrade to the built-in set without panic
     /// the exact path `variants()` takes on a TOML parse error.
     #[test]
     fn malformed_toml_falls_back_to_builtin() {

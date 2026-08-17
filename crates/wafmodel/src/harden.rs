@@ -42,7 +42,7 @@ fn body(bytes: &[u8]) -> Request {
 
 /// Enumeration cap for hole-search. Bounded to keep memory + WAF
 /// query count predictable on huge attack grammars. A hit at this
-/// boundary means the enumeration was TRUNCATED, not exhaustive 
+/// boundary means the enumeration was TRUNCATED, not exhaustive
 /// see `holes()` for how that fact propagates into `proven_closed`.
 const HOLES_ENUM_CAP: usize = 4096;
 
@@ -160,7 +160,7 @@ pub fn synthesize_closure(
         benign_false_positives: benign_fp,
         // F102: pre-fix `proven_closed = after.is_empty() && benign_fp
         // == 0`. If the post-hardening enumeration hit the 4096-cap
-        // and ALL 4096 examined were blocked, the flag flipped true 
+        // and ALL 4096 examined were blocked, the flag flipped true
         // but longer attack members beyond the cap might still pass.
         // A defender deploys the synthesized rules trusting a proof
         // that doesn't hold. Require the enumeration to have been

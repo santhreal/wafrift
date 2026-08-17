@@ -152,7 +152,7 @@ fn raw_symbols_round_trip_via_from_raw_symbols() {
 #[test]
 #[should_panic]
 fn from_raw_symbols_panics_on_empty_vec() {
-    // PROPERTY: an empty symbol table is a corrupt artifact 
+    // PROPERTY: an empty symbol table is a corrupt artifact
     // from_raw_symbols must panic (fail fast) rather than silently
     // construct a zero-length alphabet that would cause a panic later
     // inside the learner's 0..alpha.len() loops.

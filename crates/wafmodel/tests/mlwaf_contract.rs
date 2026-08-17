@@ -111,7 +111,7 @@ fn an_ml_waf_covering_the_whole_manifold_yields_none_not_a_fabrication() {
 
 #[test]
 fn non_attack_start_is_rejected_no_vacuous_bypass() {
-    // If the seed is not even an attack, there is nothing to evade 
+    // If the seed is not even an attack, there is nothing to evade
     // must return None rather than declare a meaningless success.
     let mut waf = BrittleMl { expose_score: true };
     let out = evade_ml(b"hello world", &mut waf, &is_attack, &body, 1000, 0).unwrap();

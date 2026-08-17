@@ -271,7 +271,7 @@ impl EvasionClient {
             // multi-host load. The proxy crate already learned this
             // (it snapshots state then runs `evade` in spawn_blocking
             // outside the lock); the transport client now matches.
-            // `evade` borrows only `&request`/`&state`/`&self.config` 
+            // `evade` borrows only `&request`/`&state`/`&self.config`
             // never the locked map (so the early release is sound).
             let state = {
                 let states = self.lock_states();

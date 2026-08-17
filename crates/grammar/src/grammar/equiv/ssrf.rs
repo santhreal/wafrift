@@ -17,7 +17,7 @@
 //! `8.8.8.8`, or dropped the metadata path, is rejected, the
 //! equivalence holds only for address forms that provably canonicalise
 //! to the original, never "any host looks fine". Enclosed-alphanumeric
-//! / fullwidth host glyphs are NOT emitted (no resolver decodes them 
+//! / fullwidth host glyphs are NOT emitted (no resolver decodes them
 //! that would be an unsound non-attack).
 
 use super::{DeliveryShape, Dialect, EquivConfig, EquivPayload, Rng};
@@ -358,7 +358,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    
+
     out.truncate(cfg.max);
     out
 }

@@ -683,7 +683,7 @@ mod tests {
 
     #[test]
     fn extract_host_from_url_returns_none_for_empty() {
-        // Post-D9 the underlying helper accepts any scheme (or none) 
+        // Post-D9 the underlying helper accepts any scheme (or none)
         // the prior `ftp://x → None` assertion was over-strict
         // paranoia, since replay's callers only ever construct
         // http/https URLs from already-validated inputs upstream.

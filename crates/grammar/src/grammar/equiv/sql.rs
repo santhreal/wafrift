@@ -438,7 +438,7 @@ fn rw_whitespace(toks: &mut [Tok], rng: &mut Rng) -> bool {
 /// Split / case-permute keyword Words. Equivalence holds at the SQL
 /// parser (comments fold out, SQL keywords are case-insensitive);
 /// surviving the WAF normalizer is Phase C's selection job.
-// SOUND keyword evasions only. The classic `UN/**/ION` is NOT sound 
+// SOUND keyword evasions only. The classic `UN/**/ION` is NOT sound
 // a comment is a *token separator* in SQL, so it SPLITS the keyword
 // into two identifiers rather than gluing it (the verifier rejected
 // those anyway; emitting them was wasted work and conceptually wrong).
@@ -899,7 +899,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    
+
     out.truncate(cfg.max);
     out
 }

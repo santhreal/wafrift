@@ -178,7 +178,7 @@ impl SimRegexWaf {
         &self.rules
     }
 
-    /// A copy of this WAF with extra rules appended (same threshold) 
+    /// A copy of this WAF with extra rules appended (same threshold)
     /// the hardened configuration a defender would deploy.
     #[must_use]
     pub fn with_rules_added(&self, extra: Vec<Rule>) -> SimRegexWaf {

@@ -3,7 +3,7 @@
 //! rustls 0.23 panics ("no process-level CryptoProvider available") when a
 //! `ClientConfig` is built before a default crypto provider is installed.
 //! `trailer_diff_cmd::exchange_https` builds a `ClientConfig` directly, so
-//! EVERY https target crashed the process (exit 101) at the builder call 
+//! EVERY https target crashed the process (exit 101) at the builder call
 //! before any handshake. `main()` now installs the ring provider at
 //! startup; this test pins that the https path runs without panicking.
 //!
