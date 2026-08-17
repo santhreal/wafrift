@@ -19,71 +19,40 @@ fn empty_input() {
 }
 
 #[test]
-fn empty_literal_passthrough() {
-    assert_eq!(run("''"), "''");
+fn passthrough_inputs_unchanged() {
+    // Inputs with no shatterable content must pass through verbatim:
+    // empty literal, single-char literals, no-quote input, unterminated
+    // quotes, and a lone quote character.
+    let passthrough = [
+        "''",
+        "'a'",
+        "'Z'",
+        "'1'",
+        "' '",
+        "SELECT * FROM users",
+        "1 OR 1=1",
+        "'",
+        "'unclosed",
+        "text '",
+    ];
+    for input in passthrough {
+        assert_eq!(run(input), input, "must pass through unchanged: {input:?}");
+    }
 }
 
 #[test]
-fn single_char_literal_passthrough() {
-    assert_eq!(run("'a'"), "'a'");
-    assert_eq!(run("'Z'"), "'Z'");
-    assert_eq!(run("'1'"), "'1'");
-    assert_eq!(run("' '"), "' '");
-}
-
-#[test]
-fn two_char_literal_shatters() {
-    assert_eq!(run("'ab'"), "'a' 'b'");
-}
-
-#[test]
-fn three_char_literal_shatters() {
-    assert_eq!(run("'abc'"), "'a' 'b' 'c'");
-}
-
-#[test]
-fn no_quotes_in_input_passthrough() {
-    assert_eq!(run("SELECT * FROM users"), "SELECT * FROM users");
-    assert_eq!(run("1 OR 1=1"), "1 OR 1=1");
-}
-
-#[test]
-fn input_is_only_a_single_quote() {
-    // Unterminated quote: `'` alone is not a closed literal.
-    assert_eq!(run("'"), "'");
-}
-
-#[test]
-fn input_is_two_single_quotes_no_content() {
-    // `''` parses as an empty literal in my code (escape detection
-    // only triggers inside an OPEN literal). Pass through as-is.
-    assert_eq!(run("''"), "''");
-}
-
-#[test]
-fn input_is_three_single_quotes_unterminated_escape() {
-    // `'''`: open literal, escape `''` (push `'` to literal), then EOF
-    // without closing. Behavior: unterminated branch, output `'` + literal.
-    let out = run("'''");
-    // The first `'` opens. Inner loop: reads `'`, peek is `'` → push to
-    // literal, consume. Now chars empty → exit loop with closed=false.
-    // Output: `'` + `'` = `''`. Wait actually the literal is `'` and
-    // the unterminated branch pushes that plus the leading `'`.
-    assert!(!out.is_empty());
-}
-
-// ────────────────────────────────────────────────────────────────
-// Realistic SQL injection literals
-// ────────────────────────────────────────────────────────────────
-
-#[test]
-fn admin_credential() {
-    assert_eq!(run("'admin'"), "'a' 'd' 'm' 'i' 'n'");
-}
-
-#[test]
-fn root_credential() {
-    assert_eq!(run("'root'"), "'r' 'o' 'o' 't'");
+fn short_literals_shatter_into_single_chars() {
+    // Literals with 2+ characters must shatter into individual single-char
+    // literals separated by spaces.
+    let cases: &[(&str, &str)] = &[
+        ("'ab'", "'a' 'b'"),
+        ("'abc'", "'a' 'b' 'c'"),
+        ("'admin'", "'a' 'd' 'm' 'i' 'n'"),
+        ("'root'", "'r' 'o' 'o' 't'"),
+    ];
+    for &(input, expected) in cases {
+        assert_eq!(run(input), expected, "shattering: {input}");
+    }
 }
 
 #[test]
@@ -202,16 +171,6 @@ fn dogfood_b5_its_a_test_shatters() {
 // ────────────────────────────────────────────────────────────────
 // Unterminated quote, graceful handling
 // ────────────────────────────────────────────────────────────────
-
-#[test]
-fn unterminated_quote_at_end_passthrough() {
-    assert_eq!(run("'unclosed"), "'unclosed");
-}
-
-#[test]
-fn unterminated_with_no_content() {
-    assert_eq!(run("text '"), "text '");
-}
 
 #[test]
 fn unterminated_after_closed_literal() {
