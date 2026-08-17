@@ -137,111 +137,18 @@ fn name_returned_by_strategy_matches_registry_key() {
 // ────────────────────────────────────────────────────────────────
 
 #[test]
-fn no_panic_on_empty_input() {
-    for name in all_default_names() {
-        let _ = tamper(name, "", None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_single_ascii_char() {
-    for c in b'!'..=b'~' {
-        let s = (c as char).to_string();
-        for name in all_default_names() {
-            let _ = tamper(name, &s, None).expect(name);
-        }
-    }
-}
-
-#[test]
-fn no_panic_on_null_byte() {
-    for name in all_default_names() {
-        let _ = tamper(name, "\0", None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_control_chars() {
-    let payload: String = (0u8..=0x1F).map(|b| b as char).collect();
-    for name in all_default_names() {
-        let _ = tamper(name, &payload, None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_high_unicode() {
-    let payload = "日本語🔥💀👻 ñ é ü ÿ";
-    for name in all_default_names() {
-        let _ = tamper(name, payload, None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_only_whitespace() {
-    for name in all_default_names() {
-        let _ = tamper(name, "   \t\n\r ", None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_only_quotes() {
-    for name in all_default_names() {
-        let _ = tamper(name, "''''", None).expect(name);
-        let _ = tamper(name, "\"\"\"\"", None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_only_backslashes() {
-    for name in all_default_names() {
-        let _ = tamper(name, "\\\\\\\\", None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_huge_alphanumeric_input() {
-    let p: String = "A".repeat(50_000);
-    for name in all_default_names() {
-        let _ = tamper(name, &p, None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_huge_unicode_input() {
-    let p: String = "日".repeat(10_000);
-    for name in all_default_names() {
-        let _ = tamper(name, &p, None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_huge_punctuation() {
-    let p: String = "()[]{}<>!@#$%^&*-+=/\\|".repeat(2_500);
-    for name in all_default_names() {
-        let _ = tamper(name, &p, None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_repeated_quote_alternation() {
-    let p: String = "'a'b'c'd'e'f'g'h'i'j'k'l'm'n'o'p'q'r'".repeat(50);
-    for name in all_default_names() {
-        let _ = tamper(name, &p, None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_only_format_chars() {
-    // ZWSP, ZWNJ, ZWJ, BOM, U+200D, etc.
-    let p = "\u{200B}\u{200C}\u{200D}\u{FEFF}";
-    for name in all_default_names() {
-        let _ = tamper(name, p, None).expect(name);
-    }
-}
-
-#[test]
-fn no_panic_on_combined_attack_payloads() {
-    let payloads = [
+fn no_panic_on_adversarial_payloads() {
+    // Every default tamper must survive every adversarial payload without
+    // panicking. Consolidated from per-payload tests; the exhaustive
+    // `no_panic_on_single_ascii_char` test below covers the full ASCII range.
+    let static_payloads: &[&str] = &[
+        "",
+        "\0",
+        "   \t\n\r ",
+        "''''",
+        "\"\"\"\"",
+        "\\\\\\\\",
+        "\u{200B}\u{200C}\u{200D}\u{FEFF}",
         "<script>alert(1)</script>",
         "' UNION SELECT NULL--",
         "${jndi:ldap://x.y/z}",
@@ -255,9 +162,33 @@ fn no_panic_on_combined_attack_payloads() {
         "\\u003cscript\\u003e",
         "&#x3c;script&#x3e;",
     ];
-    for p in &payloads {
+    let computed: Vec<String> = vec![
+        (0u8..=0x1F).map(|b| b as char).collect(),
+        "日本語🔥💀👻 ñ é ü ÿ".to_string(),
+        "A".repeat(50_000),
+        "日".repeat(10_000),
+        "()[]{}<>!@#$%^&*-+=/\\|".repeat(2_500),
+        "'a'b'c'd'e'f'g'h'i'j'k'l'm'n'o'p'q'r'".repeat(50),
+    ];
+    for p in static_payloads {
         for name in all_default_names() {
             let _ = tamper(name, p, None).expect(name);
+        }
+    }
+    for p in &computed {
+        for name in all_default_names() {
+            let _ = tamper(name, p, None).expect(name);
+        }
+    }
+}
+
+#[test]
+fn no_panic_on_single_ascii_char() {
+    // Exhaustive: every printable ASCII char must survive every tamper.
+    for c in b'!'..=b'~' {
+        let s = (c as char).to_string();
+        for name in all_default_names() {
+            let _ = tamper(name, &s, None).expect(name);
         }
     }
 }
