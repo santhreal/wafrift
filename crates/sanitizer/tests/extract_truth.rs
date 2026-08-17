@@ -170,21 +170,21 @@ fn multiple_strip_patterns_are_all_captured() {
 // ── Event-handler stripping ──────────────────────────────────────────────────
 
 #[test]
-fn handler_strip_detected_via_backslash_s_on() {
-    let m = extract_sanitizer(r"s = s.replace(/\son\w+=/gi, '');");
-    assert!(m.strips_event_handlers);
-}
-
-#[test]
-fn handler_strip_detected_via_on_w() {
-    let m = extract_sanitizer(r"if (/on\w+/i.test(attr)) drop(attr);");
-    assert!(m.strips_event_handlers);
-}
-
-#[test]
-fn handler_strip_detected_via_onerror_onload_enumeration() {
-    let m = extract_sanitizer("const bad = ['onerror','onload','onclick'];");
-    assert!(m.strips_event_handlers);
+fn handler_strip_detected_via_various_patterns() {
+    // The detector must recognize event-handler stripping in all
+    // common forms: regex /\son\w+=/, /on\w+/, and explicit enumeration.
+    let sources = [
+        r"s = s.replace(/\son\w+=/gi, '');",
+        r"if (/on\w+/i.test(attr)) drop(attr);",
+        "const bad = ['onerror','onload','onclick'];",
+    ];
+    for src in sources {
+        let m = extract_sanitizer(src);
+        assert!(
+            m.strips_event_handlers,
+            "must detect handler stripping: {src}"
+        );
+    }
 }
 
 #[test]
@@ -196,21 +196,24 @@ fn handler_strip_absent_is_false() {
 // ── Blocked URL schemes ──────────────────────────────────────────────────────
 
 #[test]
-fn javascript_scheme_blocked() {
-    let m = extract_sanitizer("if (url.startsWith('javascript:')) return '';");
-    assert!(has(&m.blocked_schemes, "javascript"));
-}
-
-#[test]
-fn data_scheme_blocked_via_text_html() {
-    let m = extract_sanitizer("if (/data:text\\/html/i.test(u)) reject(u);");
-    assert!(has(&m.blocked_schemes, "data"));
-}
-
-#[test]
-fn data_scheme_blocked_via_anchored_pattern() {
-    let m = extract_sanitizer(r"if (/^data:/.test(scheme)) drop();");
-    assert!(has(&m.blocked_schemes, "data"));
+fn blocked_schemes_detected_from_various_patterns() {
+    // javascript: and data: schemes must be detected from multiple
+    // code patterns: startsWith, regex test, anchored regex.
+    let cases: &[(&str, &str)] = &[
+        (
+            "if (url.startsWith('javascript:')) return '';",
+            "javascript",
+        ),
+        ("if (/data:text\\/html/i.test(u)) reject(u);", "data"),
+        (r"if (/^data:/.test(scheme)) drop();", "data"),
+    ];
+    for &(src, scheme) in cases {
+        let m = extract_sanitizer(src);
+        assert!(
+            has(&m.blocked_schemes, scheme),
+            "must block {scheme}: {src}"
+        );
+    }
 }
 
 #[test]
