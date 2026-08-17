@@ -299,15 +299,14 @@ fn harden_double_decode_rules_have_urldecodeuni_twice() {
 }
 
 #[test]
-fn harden_class_xss_exits_0() {
-    let (code, _stdout, stderr) = wafrift(&["harden", "--class", "xss"]);
-    assert_eq!(code, 0, "harden --class xss must exit 0; stderr: {stderr}");
-}
-
-#[test]
-fn harden_class_sqli_exits_0() {
-    let (code, _stdout, stderr) = wafrift(&["harden", "--class", "sqli"]);
-    assert_eq!(code, 0, "harden --class sqli must exit 0; stderr: {stderr}");
+fn harden_class_exits_0_for_all_classes() {
+    for class in ["xss", "sqli"] {
+        let (code, _stdout, stderr) = wafrift(&["harden", "--class", class]);
+        assert_eq!(
+            code, 0,
+            "harden --class {class} must exit 0; stderr: {stderr}"
+        );
+    }
 }
 
 #[test]
