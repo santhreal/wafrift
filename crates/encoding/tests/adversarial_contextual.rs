@@ -161,27 +161,20 @@ fn max_size_plus_one_all_contexts() {
 // ── Injection attempts in metadata ─────────────────────────────────────────
 
 #[test]
-fn header_value_crlf_injection_prevented() {
-    // CR/LF in header values can lead to HTTP response splitting / header injection
-    let err = encode_in_context(
-        b"value\r\nX-Injection: evil",
-        Strategy::CaseAlternation,
-        InjectionContext::HeaderValue,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
-}
-
-#[test]
-fn multipart_field_crlf_injection_prevented() {
-    // CR/LF in multipart fields breaks the boundary structure
-    let err = encode_in_context(
-        b"field\r\n--boundary",
-        Strategy::CaseAlternation,
-        InjectionContext::MultipartField,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
+fn crlf_injection_rejected_in_structural_contexts() {
+    // CR/LF in header values and multipart fields can lead to response
+    // splitting / boundary breaking; both must be rejected.
+    let cases: &[(&[u8], InjectionContext)] = &[
+        (b"value\r\nX-Injection: evil", InjectionContext::HeaderValue),
+        (b"field\r\n--boundary", InjectionContext::MultipartField),
+    ];
+    for (input, ctx) in cases {
+        let err = encode_in_context(input, Strategy::CaseAlternation, *ctx).unwrap_err();
+        assert!(
+            err.to_string().contains("incompatible"),
+            "must reject CRLF in {ctx:?}"
+        );
+    }
 }
 
 #[test]
