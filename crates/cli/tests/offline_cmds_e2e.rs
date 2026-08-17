@@ -102,56 +102,29 @@ fn completion_help_exits_0() {
 }
 
 #[test]
-fn completion_bash_emits_shell_script() {
-    let (code, stdout, stderr) = wafrift(&["completion", "bash"]);
-    assert_eq!(code, 0, "completion bash must exit 0; stderr: {stderr}");
-    assert!(
-        !stdout.trim().is_empty(),
-        "completion bash must emit content: {stderr}"
-    );
-    // Bash completions always define a `_wafrift` function.
-    assert!(
-        stdout.contains("_wafrift") || stdout.contains("wafrift"),
-        "bash completion must reference 'wafrift': {stdout}"
-    );
-}
-
-#[test]
-fn completion_zsh_emits_content() {
-    let (code, stdout, stderr) = wafrift(&["completion", "zsh"]);
-    assert_eq!(code, 0, "completion zsh must exit 0; stderr: {stderr}");
-    assert!(
-        !stdout.trim().is_empty(),
-        "completion zsh must emit content: {stderr}"
-    );
-}
-
-#[test]
-fn completion_powershell_emits_content() {
-    let (code, stdout, stderr) = wafrift(&["completion", "powershell"]);
-    assert_eq!(
-        code, 0,
-        "completion powershell must exit 0; stderr: {stderr}"
-    );
-    assert!(
-        !stdout.trim().is_empty(),
-        "completion powershell must emit content: {stderr}"
-    );
-    // PowerShell completions reference Register-ArgumentCompleter or similar.
-    assert!(
-        stdout.contains("wafrift") || stdout.contains("Register"),
-        "powershell completion must reference wafrift or Register: {stdout}"
-    );
-}
-
-#[test]
-fn completion_fish_emits_content() {
-    let (code, stdout, stderr) = wafrift(&["completion", "fish"]);
-    assert_eq!(code, 0, "completion fish must exit 0; stderr: {stderr}");
-    assert!(
-        !stdout.trim().is_empty(),
-        "completion fish must emit content: {stderr}"
-    );
+fn completion_each_shell_emits_non_empty_script() {
+    // Each supported shell must exit 0 and produce non-empty stdout.
+    // Bash and PowerShell completions must additionally reference "wafrift".
+    let cases: &[(&str, Option<&str>)] = &[
+        ("bash", Some("wafrift")),
+        ("zsh", None),
+        ("powershell", Some("wafrift")),
+        ("fish", None),
+    ];
+    for (shell, expected) in cases {
+        let (code, stdout, stderr) = wafrift(&["completion", shell]);
+        assert_eq!(code, 0, "completion {shell} must exit 0; stderr: {stderr}");
+        assert!(
+            !stdout.trim().is_empty(),
+            "completion {shell} must emit content: {stderr}"
+        );
+        if let Some(marker) = expected {
+            assert!(
+                stdout.contains(marker),
+                "completion {shell} must reference '{marker}': {stdout}"
+            );
+        }
+    }
 }
 
 #[test]
