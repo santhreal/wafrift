@@ -21,81 +21,28 @@ fn load(name: &str) -> (u16, Vec<(String, String)>, Vec<u8>) {
 }
 
 #[test]
-fn corpus_cloudflare_named() {
-    let (st, h, b) = load("cloudflare.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits
-        .first()
-        .expect("Fix: Cloudflare corpus must detect Cloudflare");
-    assert_eq!(top.name, "Cloudflare");
-}
-
-#[test]
-fn corpus_akamai_kona_named() {
-    let (st, h, b) = load("akamai.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits.first().expect("Fix: Akamai (Kona) corpus must detect");
-    assert_eq!(top.name, "Kona SiteDefender");
-}
-
-#[test]
-fn corpus_aws_waf_named() {
-    let (st, h, b) = load("aws-waf.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits
-        .first()
-        .expect("Fix: AWS corpus must detect ELB/WAF rule pack entry");
-    assert_eq!(top.name, "AWS Elastic Load Balancer");
-}
-
-#[test]
-fn corpus_sucuri_named() {
-    let (st, h, b) = load("sucuri.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits.first().expect("Fix: Sucuri corpus must detect");
-    assert_eq!(top.name, "Sucuri CloudProxy");
-}
-
-#[test]
-fn corpus_imperva_incapsula_named() {
-    let (st, h, b) = load("imperva.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits
-        .first()
-        .expect("Fix: Imperva/Incapsula corpus must detect");
-    assert_eq!(top.name, "Incapsula");
-}
-
-#[test]
-fn corpus_f5_big_ip_asm_named() {
-    let (st, h, b) = load("f5-big-ip.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits.first().expect("Fix: F5 BIG-IP ASM corpus must detect");
-    assert_eq!(top.name, "BIG-IP AppSec Manager");
-}
-
-#[test]
-fn corpus_fortinet_named() {
-    let (st, h, b) = load("fortinet.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits.first().expect("Fix: Fortinet corpus must detect");
-    assert_eq!(top.name, "FortiGate");
-}
-
-#[test]
-fn corpus_barracuda_named() {
-    let (st, h, b) = load("barracuda.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits.first().expect("Fix: Barracuda corpus must detect");
-    assert_eq!(top.name, "Barracuda");
-}
-
-#[test]
-fn corpus_cloudfront_named() {
-    let (st, h, b) = load("cloudfront.txt");
-    let hits = detect(st, &h, &b);
-    let top = hits.first().expect("Fix: CloudFront corpus must detect");
-    assert_eq!(top.name, "Cloudfront");
+fn corpus_fixtures_detect_correct_vendor() {
+    // Each vendored fingerprint fixture must produce the expected WAF
+    // name as the top detection hit.
+    let cases: &[(&str, &str)] = &[
+        ("cloudflare.txt", "Cloudflare"),
+        ("akamai.txt", "Kona SiteDefender"),
+        ("aws-waf.txt", "AWS Elastic Load Balancer"),
+        ("sucuri.txt", "Sucuri CloudProxy"),
+        ("imperva.txt", "Incapsula"),
+        ("f5-big-ip.txt", "BIG-IP AppSec Manager"),
+        ("fortinet.txt", "FortiGate"),
+        ("barracuda.txt", "Barracuda"),
+        ("cloudfront.txt", "Cloudfront"),
+    ];
+    for (fixture, expected) in cases {
+        let (st, h, b) = load(fixture);
+        let hits = detect(st, &h, &b);
+        let top = hits
+            .first()
+            .unwrap_or_else(|| panic!("Fix: {fixture} corpus must detect {expected}"));
+        assert_eq!(top.name, *expected, "{fixture}: wrong top detection");
+    }
 }
 
 /// Each positive fingerprint file `X.txt` has `X.twin.txt` with banners
