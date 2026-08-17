@@ -77,7 +77,7 @@ pub fn header_order_for_stealth_profile(profile: StealthProfile) -> Option<Heade
 /// (which spawns tokio tasks freely and needs cheap clones).
 ///
 /// The pool itself uses interior `RwLock`s so the `Arc` does not
-/// add lock contention beyond what `SessionPool` already manages 
+/// add lock contention beyond what `SessionPool` already manages
 /// it only saves the per-clone heap allocation of cloning the
 /// underlying `Vec<&'static HeaderProfile>` profile list.
 #[derive(Clone)]

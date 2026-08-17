@@ -91,9 +91,7 @@ impl HostSmuggleTechnique {
                 "Underscore in subdomain: RFC 3986 forbidden, accepted by lenient parsers"
             }
             Self::HostWithFullwidthDot => "U+FF0E fullwidth dot. NFKC normalization differential",
-            Self::HostWithEmbeddedTab => {
-                "Embedded TAB in host value, strip-vs-reject differential"
-            }
+            Self::HostWithEmbeddedTab => "Embedded TAB in host value, strip-vs-reject differential",
         }
     }
 }

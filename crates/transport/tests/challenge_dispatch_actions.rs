@@ -100,9 +100,9 @@ fn dispatch_replays_for_every_kind_when_store_has_active_cookie() {
                     "Fix: replay must echo stored Cookie: line exactly"
                 );
             }
-            other => panic!(
-                "Fix: stored cookie for {kind:?} must force ReplayWithCookie, got {other:?}"
-            ),
+            other => {
+                panic!("Fix: stored cookie for {kind:?} must force ReplayWithCookie, got {other:?}")
+            }
         }
     }
 }

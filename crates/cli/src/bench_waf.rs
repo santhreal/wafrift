@@ -191,7 +191,7 @@ pub struct BenchWafArgs {
     pub format: String,
 
     /// Also write the JSON result blob to this file. Refuses to
-    /// clobber an existing file unless `--force-overwrite` is set 
+    /// clobber an existing file unless `--force-overwrite` is set
     /// CLAUDE.md §7 + §11: two back-to-back bench-waf runs with the
     /// same --output silently wiped the first result before R48.
     /// `-`, `/dev/stdout`, and `/dev/fd/N` are always permitted (not
@@ -481,7 +481,7 @@ pub(crate) struct BenchCase {
     /// body `q=<urlenc payload>`). Alternatives: `url_query_q`, `raw_body`.
     #[serde(default = "default_mode")]
     pub(crate) mode: String,
-    /// Free-form one-line documentation of what the case exercises 
+    /// Free-form one-line documentation of what the case exercises
     /// rides through to the per-case [`CaseResult`] output so an
     /// operator scanning bench results sees WHY the case exists.
     #[serde(default)]
@@ -662,7 +662,7 @@ pub fn run_bench_waf(args: BenchWafArgs) -> ExitCode {
     // §13 dogfood (round 2, DEFECT 1): an unusable `--corpus` is an INPUT
     // error, not a runtime error. The bench cannot start without a corpus,
     // and the exit-code contract (see main.rs `after_help`) reserves 2 for
-    // argument/input errors ("malformed value, missing required field") 
+    // argument/input errors ("malformed value, missing required field")
     // exactly what a nonexistent `--corpus <path>` is. Pre-validate the
     // path here (reusing `resolve_corpus_path`, no §7 fork) so the failure
     // returns 2 consistently for BOTH `bench-waf` and `scan --corpus`,
@@ -1330,7 +1330,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
         }
         // R53 pass-15 §11-B (CLAUDE.md §11 UTILIZATION): wire
         // --tailscale-exit-node + --tailscale-socks-addr too.
-        // Pre-fix both args were declared, populated, persisted 
+        // Pre-fix both args were declared, populated, persisted
         // and silently ignored by the pool build.
         if !args.egress_tailscale_nodes.is_empty() {
             let socks = if args.egress_tailscale_socks_addr.is_empty() {
@@ -2022,7 +2022,7 @@ fn record_equiv_bypass(
 }
 
 /// Strategy: Phase-B joint `(payload × delivery)` equivalence generator.
-/// Draws members of the (effectively infinite) equivalence class 
+/// Draws members of the (effectively infinite) equivalence class
 /// every one sound-by-construction, and delivers each via its
 /// WAF-blind shape. Still gated by the INDEPENDENT `verified_bypass`
 /// oracle (defense in depth: a member counts only if equiv's generator
@@ -2283,7 +2283,7 @@ async fn run_equiv_cegis_strategy(
         ));
         // Persist the concrete winning wire payload + its response
         // envelope to the rule-bypass corpus (with H1 dedup) so a hunt
-        // campaign yields a re-verifiable, submittable bypass set 
+        // campaign yields a re-verifiable, submittable bypass set
         // technique tags alone can't reconstruct the payload.
         if let Some(rec) = recorder {
             record_equiv_bypass(
@@ -2566,7 +2566,7 @@ async fn run_mcts_strategy(
         *total += 1;
         match send(client, &evaded.request, args.timeout_secs).await {
             Ok((_s, blocked, _l)) if !blocked => {
-                // MCTS applies grammar/encoding ACTIONS to the request 
+                // MCTS applies grammar/encoding ACTIONS to the request
                 // it does NOT provably preserve the payload (the old
                 // "preserves semantics by construction" comment was an
                 // unverified assertion used to fake `oracle_valid += 1`).
@@ -2846,7 +2846,7 @@ async fn run_redos_strategy(
         *total += 1;
         match send(client, &req, args.timeout_secs).await {
             Ok((status, blocked, _l)) => {
-                // The redos `blob` is `<storm-prefix><original payload>` 
+                // The redos `blob` is `<storm-prefix><original payload>`
                 // the attack is still present, so oracle-gate on the blob.
                 if verified_bypass(&case.class, &case.payload, blob, blocked, status) {
                     stat.bypassed += 1;

@@ -197,7 +197,7 @@ fn rw_attr_case(s: &str, rng: &mut Rng) -> String {
 /// numeric OID instead of its short name. `(uid=*)` → `(0.9.2342.\
 /// 19200300.100.1.1=*)`. The directory resolves both to the same
 /// attribute; a WAF keyed on `uid=` / `cn=` matches neither.
-/// Descriptor-position only (the run of letters before `=` / `:`) 
+/// Descriptor-position only (the run of letters before `=` / `:`)
 /// never the value (anti-rig: the injection's value bytes are
 /// untouched). `normalize` folds the OID back so [`still_matches`]
 /// independently re-confirms equivalence.
@@ -480,7 +480,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    
+
     out.truncate(cfg.max);
     out
 }
@@ -641,7 +641,7 @@ mod tests {
     fn generator_emits_the_new_sound_classes_and_all_verify() {
         // Must carry LITERAL alnum values: `rfc4515_full_hex` escapes
         // value bytes, so a wildcard-only payload (`uid=*`) has nothing
-        // to escape and the class is legitimately unreachable on it 
+        // to escape and the class is legitimately unreachable on it
         // asserting it there would assert a falsehood. A real
         // credential-bearing filter-break exercises all four classes.
         let atk = "*)(&(uid=admin)(userPassword=secret))";

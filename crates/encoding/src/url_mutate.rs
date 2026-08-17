@@ -30,7 +30,7 @@
 /// WAF-visible side carries the WAF inspection while the backend
 /// reads the attack payload from a duplicate.
 ///
-/// Pre-R74 the [`UrlStrategy::Hpp`] variant was a documented stub 
+/// Pre-R74 the [`UrlStrategy::Hpp`] variant was a documented stub
 /// `apply_bytes` only sees one value, so it had no way to add a second
 /// pair. The architectural fix lives here, operating on the
 /// `(name, value)` pair list directly.
@@ -89,7 +89,7 @@ pub fn query_pollute_pairs(
     let mut out: Vec<(String, String)> = Vec::with_capacity(pairs.len() * 2);
     for (name, value) in pairs {
         // Defensive: a name containing structural delimiters would
-        // round-trip ambiguously. Pass through without polluting 
+        // round-trip ambiguously. Pass through without polluting
         // honest no-op rather than producing malformed wire bytes.
         if name.contains(['&', '=', '#']) {
             out.push((name.clone(), value.clone()));
@@ -284,7 +284,7 @@ impl UrlStrategy {
 /// Never panics, never returns empty for non-empty input.
 #[must_use]
 pub fn mutate_url(path_and_query: &str, cfg: &UrlMutateConfig) -> (String, Vec<&'static str>) {
-    // Reject full URLs (with scheme://host/...) at the boundary 
+    // Reject full URLs (with scheme://host/...) at the boundary
     // mutate_url's contract is "path-and-query only". Pre-fix a full
     // URL got split on '?' such that the scheme + host leaked into
     // the "path" and got mutated, e.g. `https://example.com/p?q=1`

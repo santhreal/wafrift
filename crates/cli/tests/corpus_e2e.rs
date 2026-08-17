@@ -57,7 +57,7 @@ fn corpus_help_documents_stats_subcommand() {
     );
 }
 
-// Surface reduction: corpus is dev/QA tooling hidden from the user-facing menu (LAW 2 
+// Surface reduction: corpus is dev/QA tooling hidden from the user-facing menu (LAW 2
 // the command still runs, just not advertised at the top level).
 #[test]
 fn corpus_hidden_from_menu_but_still_runs() {

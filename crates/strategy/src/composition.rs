@@ -25,7 +25,7 @@ pub enum EvasionLayer {
     /// Body-size inspection bypass: pre-pend N bytes of inert filler so
     /// the malicious payload sits past the cloud-WAF inspection window
     /// (Cloudflare Pro 8 KB, AWS WAF 16 KB, Akamai 8 KB). Runs LAST in
-    /// the pipeline because it operates on the assembled body bytes 
+    /// the pipeline because it operates on the assembled body bytes
     /// any layer that re-builds the body (Encoding, `ContentType`,
     /// Smuggling) must complete first.
     BodyPadding,
@@ -283,7 +283,7 @@ mod tests {
     fn canonicalize_terminates_on_reverse_sorted_input() {
         // Defensive: the bubble-sort loop must TERMINATE even on
         // a reverse-sorted sequence (a stress test for the
-        // `changed` flag).  We don't assert full validity here 
+        // `changed` flag).  We don't assert full validity here
         // canonicalize is best-effort over partial orderings; some
         // multi-prereq layers (Smuggling needs BOTH Header AND
         // ContentType) may not land in a fully-valid position from

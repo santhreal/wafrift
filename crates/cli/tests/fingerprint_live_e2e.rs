@@ -1,6 +1,6 @@
 //! End-to-end dogfood of the shipped `wafrift fingerprint` binary against a
 //! REAL local target that exhibits a normalization-mismatch hole: it gates on
-//! the raw (framework-url-decoded) parameter, blocking `<script` with 403 
+//! the raw (framework-url-decoded) parameter, blocking `<script` with 403
 //! but its *origin* base64-decodes the same parameter before using it. So a
 //! base64-wrapped payload sails past the gate and reconstitutes the attack at
 //! the origin. This is exactly the class the live decompiler is built to find.
@@ -292,7 +292,7 @@ fn fingerprint_binary_detects_base64_origin_reflected_only_in_a_header() {
 /// A WAF-shaped origin for the differential filter-characterization path: it
 /// BLOCKS (403) any request whose `q` value url-decodes to contain the literal
 /// `<script>` token, and otherwise reflects the decoded value (200 echo). So the
-/// `<script>` probe blocks while its signature-broken twin `<scrupt>` passes 
+/// `<script>` probe blocks while its signature-broken twin `<scrupt>` passes
 /// the differential must read `<script>` as Policed and leave the other-class
 /// tokens (which never contain `<script>`) Unpoliced.
 fn handle_script_blocking_waf(mut stream: TcpStream) {
@@ -361,7 +361,7 @@ fn handle_base64_reflect_no_block(mut stream: TcpStream) {
         .unwrap_or(buf.len());
     let path = buf[..line_end].split(|&b| b == b' ').nth(1).unwrap_or(b"");
     let decoded = pct_decode_once(&extract_q(path));
-    // Base64-decode the param (the detectable origin normalization), then echo 
+    // Base64-decode the param (the detectable origin normalization), then echo
     // but unconditionally 200: this origin gates nothing.
     let reflected = base64::engine::general_purpose::STANDARD
         .decode(&decoded)
@@ -613,7 +613,7 @@ fn fingerprint_custom_filter_battery_overrides_the_default_token_set() {
 /// A WAF that blocks attacks with a **200** body containing NO standard block
 /// signature (`northstar gateway intercept …`) and reflects clean values
 /// otherwise. The static classifier cannot recognise this block page; only
-/// per-target calibration, which learns the shape from the malicious controls 
+/// per-target calibration, which learns the shape from the malicious controls
 /// can. Proves the self-calibration path end-to-end.
 fn handle_bespoke_200_block_waf(mut stream: TcpStream) {
     let mut buf = Vec::new();

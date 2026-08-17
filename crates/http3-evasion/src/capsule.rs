@@ -246,7 +246,7 @@ impl CapsuleSmuggleAttack {
         }
     }
 
-    /// Build a GREASE-type probe. `n` selects which GREASE slot 
+    /// Build a GREASE-type probe. `n` selects which GREASE slot
     /// the type is computed as `0x1f * n + 0x21` per RFC 9297 §3.4.
     /// `n` is clamped to a sane range so the resulting type still
     /// fits in a 4-byte varint (i.e. `< 2^30`).

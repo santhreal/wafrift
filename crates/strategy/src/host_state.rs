@@ -47,7 +47,7 @@ const DRIFT_BLOCK_LIMIT: u32 = 2;
 /// follows because both alias the same workspace constant.
 const MAX_HINTS_PER_LIST: usize = wafrift_types::HOST_TECHNIQUE_HINTS_CAP;
 
-/// Hard cap on `technique_stats` and `winner_consecutive_blocks` 
+/// Hard cap on `technique_stats` and `winner_consecutive_blocks`
 /// per-host structures that key on the technique name. With ~100
 /// distinct names in the standard catalogue, 500 is generous headroom
 /// while still bounding worst-case adversarial growth. Audit (2026-05-10).
@@ -209,7 +209,7 @@ impl HostState {
             .iter_mut()
             .find(|(n, _, _)| n == technique_name)
         {
-            // saturating_add avoids the u32 overflow audit finding 
+            // saturating_add avoids the u32 overflow audit finding
             // pre-fix `stat.2 += 1` would panic in debug or wrap in
             // release after 2^32 attempts.
             stat.2 = stat.2.saturating_add(1);

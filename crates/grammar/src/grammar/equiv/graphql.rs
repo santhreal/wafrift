@@ -74,14 +74,14 @@ fn sig_tokens(payload: &str) -> Vec<String> {
                         break;
                     }
                 }
-                if let Some(&nc) = chars.peek() {
-                    if nc.is_alphabetic() || nc == '_' {
-                        while let Some(&sc) = chars.peek() {
-                            if sc.is_alphanumeric() || sc == '_' {
-                                chars.next();
-                            } else {
-                                break;
-                            }
+                if let Some(&nc) = chars.peek()
+                    && (nc.is_alphabetic() || nc == '_')
+                {
+                    while let Some(&sc) = chars.peek() {
+                        if sc.is_alphanumeric() || sc == '_' {
+                            chars.next();
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -151,8 +151,7 @@ pub fn still_executes_graphql(original: &str, cand: &str) -> bool {
     let cand_query = extract_query(cand);
 
     // Introspection queries must still contain __schema or __type.
-    let orig_has_introspection =
-        orig_query.contains("__schema") || orig_query.contains("__type");
+    let orig_has_introspection = orig_query.contains("__schema") || orig_query.contains("__type");
     if orig_has_introspection {
         // Check both raw and unicode-escaped forms.
         let cand_has = cand_query.contains("__schema")
@@ -258,7 +257,10 @@ fn rw_alias_rename(payload: &str, rng: &mut Rng) -> Option<String> {
             let after = &rest[colon_idx + 1..].trim_start();
             if is_identifier(before)
                 && !before.is_empty()
-                && after.chars().next().map_or(false, |c| c.is_alphabetic() || c == '_')
+                && after
+                    .chars()
+                    .next()
+                    .is_some_and(|c| c.is_alphabetic() || c == '_')
             {
                 // Check this isn't an argument (arg: value) — arguments
                 // have the identifier as a known argument name. We
@@ -389,7 +391,9 @@ fn rewrap(original: &str, new_query: &str) -> Option<String> {
 fn is_identifier(s: &str) -> bool {
     !s.is_empty()
         && s.chars().all(|c| c.is_alphanumeric() || c == '_')
-        && s.chars().next().map_or(false, |c| c.is_alphabetic() || c == '_')
+        && s.chars()
+            .next()
+            .is_some_and(|c| c.is_alphabetic() || c == '_')
 }
 
 fn random_alias(rng: &mut Rng) -> String {
@@ -611,7 +615,15 @@ mod tests {
 
     #[test]
     fn generator_never_panics_on_arbitrary_input() {
-        for input in ["", "x", "{}", "null", r#"{"query":null}"#, r#"{"query":"}""#, "🦀"] {
+        for input in [
+            "",
+            "x",
+            "{}",
+            "null",
+            r#"{"query":null}"#,
+            r#"{"query":"}""#,
+            "🦀",
+        ] {
             let _ = generate(input, &cfg(42, 8));
         }
     }

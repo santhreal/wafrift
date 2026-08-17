@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn refused_verdict_for_whitespace_permission_string() {
-        // Whitespace-only justifications must NOT grant authorization 
+        // Whitespace-only justifications must NOT grant authorization
         // they're a common operator typo (e.g. `--i-have-permission "  "`).
         let v = check_permission("https://arbitrary-target.example.com/", Some("  \t "));
         assert!(

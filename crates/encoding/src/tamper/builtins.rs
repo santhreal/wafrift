@@ -696,7 +696,7 @@ impl TamperStrategy for HexLiteralKeywordTamper {
 /// the canonical ` `, `\t`, `\r`, `\n` quartet.  BEL bypasses
 /// pattern matches like `UNION\s+SELECT`.
 ///
-/// Out of `[\t\n\v\f\r ]`, BEL (`\x07`) is the least-handled 
+/// Out of `[\t\n\v\f\r ]`, BEL (`\x07`) is the least-handled
 /// I tested against ModSec, Coraza, AWS WAF, and Cloudflare's
 /// CRS as of 2026-05; only ModSec PL4 catches it consistently.
 pub struct BellSeparatorTamper;
@@ -813,7 +813,7 @@ impl TamperStrategy for MxssNamespaceWrapTamper {
 /// duplicate; the backend's deserialiser consumes the LAST
 /// (PHP/Apache/Rails) or merges (ASP.NET) and unwraps the attack
 /// payload. Confirmed against all five major WAFs (AWS / Azure /
-/// Cloudflare / Cloud Armor / ModSec) by the WAFFLED 2025 study 
+/// Cloudflare / Cloud Armor / ModSec) by the WAFFLED 2025 study
 /// 557 JSON bypasses across the corpus.
 ///
 /// The harness uses param `"q"` as the colliding key, the same
@@ -903,7 +903,7 @@ impl TamperStrategy for CtStarvationTamper {
 
     fn tamper(&self, payload: &str, context: Option<&str>) -> String {
         // When the carrier is body-shaped (form/json/multipart),
-        // wrap the payload in a minimal `q=<payload>` form pair 
+        // wrap the payload in a minimal `q=<payload>` form pair
         // the same shape `wafrift scan` uses by default. The
         // operator pairs this with the non-canonical Content-Type
         // via `ct_starvation_header_for`. For header/cookie
@@ -1577,7 +1577,7 @@ mod tests {
     #[test]
     fn zero_width_inject_skips_non_alpha_chars() {
         let strategy = ZeroWidthInjectTamper;
-        // Spaces and quotes do NOT get zero-width followers 
+        // Spaces and quotes do NOT get zero-width followers
         // injecting them would break SQL parsing.
         let out = strategy.tamper("a 1 ' \"", None);
         // Only the alphabetic `a` should produce an injection.
@@ -2203,7 +2203,7 @@ mod tests {
     #[test]
     fn json_dup_key_is_registered_in_default_registry() {
         // Anti-regression: forgetting to add the tamper to
-        // DEFAULT_NAMES + the with_defaults match arm is silent 
+        // DEFAULT_NAMES + the with_defaults match arm is silent
         // the tamper exists but can't be selected via `--only`.
         // This test pins the wiring.
         let registry = crate::tamper::TamperRegistry::with_defaults();

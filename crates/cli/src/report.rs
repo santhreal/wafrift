@@ -257,7 +257,7 @@ fn ingest_scan_json(raw: &str, src: &str) -> Result<PersistedGeneBank, String> {
                     }
                 }
             }
-            // Preserve the concrete bypass payload + repro_curl 
+            // Preserve the concrete bypass payload + repro_curl
             // the previous cut threw these away and the rendered
             // report only carried the technique class, which made
             // the pentest deliverable answer "what bypassed?" with
@@ -1120,7 +1120,7 @@ mod tests {
     #[test]
     fn ingest_scan_json_treats_waf_none_as_no_waf_name() {
         // The scan JSON emits `"waf": "None"` when no WAF detected.
-        // ingest_scan_json should NOT set a waf_name in that case 
+        // ingest_scan_json should NOT set a waf_name in that case
         // matched waf_name: None.
         let json = r#"{
             "target": "http://example.com",
@@ -1185,7 +1185,7 @@ mod tests {
 
     #[test]
     fn curl_reproducer_handles_path_placeholder_target_via_url_encoding() {
-        // The default report target is `https://{host}/<PATH>` 
+        // The default report target is `https://{host}/<PATH>`
         // reqwest::Url::parse accepts it by URL-encoding `<` and `>`
         // to `%3C` / `%3E`. Operator hand-edits the path before
         // running. Still produces a usable curl line.

@@ -549,7 +549,7 @@ struct ReverifyProof {
     /// Human description of the delivery that reproduced the bypass
     /// (for the report's "Delivery:" line).
     delivery_desc: String,
-    /// Ready-to-paste curl that reproduces EXACTLY this delivery 
+    /// Ready-to-paste curl that reproduces EXACTLY this delivery
     /// rendered from the request actually fired, so it matches whatever
     /// shape (faithful recorded shape or standard fallback) reproduced.
     repro_curl: String,

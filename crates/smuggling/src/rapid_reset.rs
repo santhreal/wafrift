@@ -19,7 +19,7 @@
 //! consuming server-side resources without the client having sent DATA.
 //! The exact frame ordering is: PRIORITY(stream=X, dep=Y, exclusive=1) →
 //! HEADERS(stream=X, END_HEADERS|END_STREAM). RFC 7540 §5.3.1 is silent on
-//! whether a PRIORITY frame referencing an idle/closed stream is legal 
+//! whether a PRIORITY frame referencing an idle/closed stream is legal
 //! this ambiguity is the root cause.
 
 use crate::h2_evasion::{H2PriorityFrame, priority_frame_to_bytes};
@@ -957,7 +957,7 @@ mod tests {
     fn classic_rapid_reset_long_authority_does_not_panic() {
         // A 300-byte authority would have caused a panic in the pre-fix code
         // via the truncated length byte making the HPACK block appear to have
-        // a 0-length :authority with 300 bytes of garbage following it 
+        // a 0-length :authority with 300 bytes of garbage following it
         // though the panic would only surface at the remote parser, not here.
         // The fix must produce a well-formed HPACK block without panicking.
         let authority = "very-long-domain-".repeat(18); // 306 bytes

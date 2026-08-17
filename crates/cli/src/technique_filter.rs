@@ -524,7 +524,7 @@ mod tests {
     #[test]
     fn frontier_2026_tampers_are_recognised() {
         // Specific guard for the SIX frontier-2026 tampers shipped
-        // in this release (keyword_comment_split was removed 
+        // in this release (keyword_comment_split was removed
         // see encoding::tamper::tests::obsolete_keyword_comment_split_tamper_was_removed
         // for the parser-correctness rationale).
         for name in [

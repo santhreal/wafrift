@@ -165,7 +165,7 @@ async fn run_async(args: BypassProbeArgs) -> Result<(), String> {
         );
     }
 
-    // Shared floor: timeout + insecure-toggle + (no UA override here 
+    // Shared floor: timeout + insecure-toggle + (no UA override here
     // bypass_probe historically sends reqwest's default UA so the
     // target sees a "neutral" client identity during the probe).
     // Redirect policy stays caller-owned: we INTENTIONALLY refuse to
@@ -281,7 +281,7 @@ fn build_url_list(args: &BypassProbeArgs) -> Result<Vec<String>, String> {
     let Some(ref pf) = args.paths_file else {
         return Ok(vec![args.url.clone()]);
     };
-    // §15 TOCTOU fix: the previous stat()+read_to_string() had a race window 
+    // §15 TOCTOU fix: the previous stat()+read_to_string() had a race window
     // the file could be replaced with a symlink to /dev/zero or a huge file
     // between the two calls. read_bounded_text_file opens once and reads with
     // a hard byte cap in the same open fd, eliminating the TOCTOU entirely.
@@ -734,7 +734,7 @@ async fn run_probe_job(
                 body_thresh,
                 || {
                     // Pre-fix: `'{}: {}' '{url}'` raw-interpolated header,
-                    // value, and url with bare single-quote delimiters 
+                    // value, and url with bare single-quote delimiters
                     // any `'` in the URL path or the rewrite-probe
                     // value (probe.value carries the operator's path
                     // for X-Original-URL / X-Rewrite-URL probes)

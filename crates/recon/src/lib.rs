@@ -11,7 +11,7 @@
 //!
 //! # Examples
 //!
-//! Filter a candidate IP list to drop known CDN/WAF edge addresses 
+//! Filter a candidate IP list to drop known CDN/WAF edge addresses
 //! the IPs left over are origin candidates worth probing directly:
 //!
 //! ```

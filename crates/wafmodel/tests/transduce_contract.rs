@@ -77,7 +77,7 @@ fn normalization_mismatch_bypass_emerges_from_composition() {
         "sink must reconstruct the live attack"
     );
 
-    // Anti-rig twin: a sink that decodes only ONCE keeps it inert 
+    // Anti-rig twin: a sink that decodes only ONCE keeps it inert
     // the bypass is a property of the *mismatch*, not the payload.
     let single_sink = Pipeline(vec![Stage::UrlDecode {
         plus_is_space: false,

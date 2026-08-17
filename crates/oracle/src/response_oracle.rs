@@ -99,12 +99,12 @@ impl ResponseOracle {
                 if let Some(oracle) = cal.build_timing_oracle() {
                     // >= 3 latency samples: the statistical oracle is authoritative,
                     // including its "not anomalous" verdict (no fallback override).
-                    oracle.is_anomalous(ctx.response_time_ms as f64).then(|| {
+                    oracle.is_anomalous(ctx.response_time_ms as f64).then_some(
                         wafrift_types::Signal::ResponseTimeAnomaly {
                             baseline_ms: oracle.baseline_ms as u64,
                             actual_ms: ctx.response_time_ms,
-                        }
-                    })
+                        },
+                    )
                 } else {
                     // Fewer than 3 samples: crude ratio against the benign latency.
                     let baseline_ms = cal.benign_latency_ms.unwrap_or(200);
@@ -268,9 +268,13 @@ impl ResponseOracle {
             competing.push((
                 Verdict::blocked_with_reason(
                     reason.unwrap_or(BlockReason::Unknown),
-                    vec![Signal::FingerprintDrift("closer to blocked baseline".into())],
+                    vec![Signal::FingerprintDrift(
+                        "closer to blocked baseline".into(),
+                    )],
                 ),
-                vec![Signal::FingerprintDrift("closer to blocked baseline".into())],
+                vec![Signal::FingerprintDrift(
+                    "closer to blocked baseline".into(),
+                )],
             ));
         }
         if status_verdict.is_blocked() && drift_toward_benign && !has_success_marker {
@@ -517,7 +521,7 @@ mod tests {
         );
     }
 
-    /// §6: a benign 200 with a "press F5 to refresh" hint must stay Allowed 
+    /// §6: a benign 200 with a "press F5 to refresh" hint must stay Allowed
     /// the old bare "f5" block marker matched the refresh-key text and forced
     /// a false Ambiguous via the allowed-vs-block conflict rule.
     #[test]

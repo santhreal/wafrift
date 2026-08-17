@@ -88,7 +88,7 @@ pub struct SmuggleCrossProductArgs {
     /// set this to e.g. `X-Wafrift-Canary` so OOB callbacks land
     /// already tagged with both component techniques' canaries
     /// (chain attribution is automatic). In `--fire-target` mode the
-    /// response headers and body are also scanned for these tokens 
+    /// response headers and body are also scanned for these tokens
     /// a verbatim echo yields the `canary-reflected` signal and the
     /// matching tokens appear in each report's `reflected_canaries`.
     #[arg(long, default_value = "", value_name = "HEADER_NAME")]

@@ -25,7 +25,7 @@ fn cl_te_rfc7230_upstream_two_requests() {
 fn cl_te_content_length_only_front_single_logical_body() {
     // A CL-only front-end reads exactly Content-Length bytes from the body and
     // stops there.  Since cl_te() now correctly sets CL = len(chunk_terminator +
-    // smuggled_prefix), the CL-only parser consumes ALL body bytes in one shot 
+    // smuggled_prefix), the CL-only parser consumes ALL body bytes in one shot
     // the smuggled request is treated as opaque body data, never as a second
     // HTTP message.  This is the correct desync property: the CL-following front
     // end sees one clean request; the TE-following back end splits it into two.

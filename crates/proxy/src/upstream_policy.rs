@@ -238,7 +238,7 @@ pub async fn resolve_connect_target_allowed(
 /// to a public IP at policy-check time can't suddenly resolve to
 /// 169.254.169.254 / 127.0.0.1 / RFC1918 at fetch time.
 ///
-/// The wrapper is permissive when `allow_private_upstream` is set 
+/// The wrapper is permissive when `allow_private_upstream` is set
 /// caller flips that switch when targeting localhost on purpose
 /// (e.g. lab tests).
 pub struct BogonFilteringResolver {

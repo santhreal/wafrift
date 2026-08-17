@@ -30,7 +30,7 @@
 //! - **BOM-prefixed JSON.** `\xEF\xBB\xBF{"q":"attack"}`: some
 //!   strict-JSON parsers (RFC 8259 forbids leading BOM) reject the
 //!   body outright; the WAF skips parsing and lets the request
-//!   through; an origin that accepts BOM-prefixed JSON (many do 
+//!   through; an origin that accepts BOM-prefixed JSON (many do
 //!   it's the standard "UTF-8 with BOM" file format) processes
 //!   the attack.
 //! - **Form-urlencoded HPP.** `q=safe&q=attack` in the BODY (not

@@ -157,7 +157,7 @@ fn raw_channel_selection_is_thread_pure() {
     }
 }
 
-/// SCALD-SHAPED E2E: mirror exactly what `scald::waf_delivery` does 
+/// SCALD-SHAPED E2E: mirror exactly what `scald::waf_delivery` does
 /// iterate the delivered class, build the live request, and assert
 /// the raw channels appear and each is a sound, smuggle-free carrier
 /// of the instrumented marker payload.

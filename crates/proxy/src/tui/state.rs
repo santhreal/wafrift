@@ -528,7 +528,7 @@ impl State {
     }
 
     /// Compute a percentile (e.g. `0.95`) from the latency-sample ring.
-    /// Returns 0 when the ring is empty. Sorts a copy on every call 
+    /// Returns 0 when the ring is empty. Sorts a copy on every call
     /// fine at dashboard refresh rate (≤7 Hz) for a 1024-entry ring.
     pub fn latency_percentile(&self, p: f64) -> u64 {
         if self.latency_samples.is_empty() {

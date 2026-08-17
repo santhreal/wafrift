@@ -16,7 +16,7 @@
 //!   in front of Tomcat almost always sees the full `/admin;x=y`
 //!   string and matches a rule that fires on `/admin` only.
 //! - **IIS treats backslash as a path separator**
-//!   (`/api\\admin`). nginx / Apache / WAFs typically don't 
+//!   (`/api\\admin`). nginx / Apache / WAFs typically don't
 //!   so the WAF sees `/api\admin` (whole component, no match);
 //!   IIS sees `/api/admin`.
 //! - **Java truncates strings at NUL**. A `/admin%00.jpg` is
@@ -973,7 +973,7 @@ mod tests {
     }
 
     /// With a zero baseline (simulated by an empty-body server), the
-    /// inline delta formula uses `100.0` for any non-empty probe 
+    /// inline delta formula uses `100.0` for any non-empty probe
     /// before F139 this produced a false-positive storm with no warning
     /// because the overrun case silently returned `Vec::new()`.
     /// Post-F139, an actual overrun returns `Err`, but a legitimately

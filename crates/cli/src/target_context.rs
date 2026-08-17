@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn parameter_pollution_allowed_in_query_and_body() {
-        // Body is OK because form-urlencoded bodies use `a=1&b=2` syntax 
+        // Body is OK because form-urlencoded bodies use `a=1&b=2` syntax
         // we don't model body subtypes, so we leave the judgment to the user.
         assert!(
             context_applicability(Strategy::ParameterPollution, TargetContext::QueryParam).is_ok()

@@ -350,7 +350,7 @@ pub(crate) fn render_bypass_variants_text_block(
         // §15 CRLF/control-byte injection in emitted reproducer:
         // - `param` was unquoted, a param containing shell metacharacters
         //   (`[`, `]`, `(`, `;`, etc.) breaks the pasted command.
-        // - `target` was naively single-quoted with no apostrophe escape 
+        // - `target` was naively single-quoted with no apostrophe escape
         //   a URL containing `'` would silently break the quoting.
         // - payload bytes CR / NUL / TAB inside `$'...'` passed through raw,
         //   resetting the terminal cursor (CR) or truncating at libc level
@@ -531,7 +531,7 @@ pub(crate) async fn run_scan(
     // payload contains `{{CALLBACK}}`, mint a fresh token, substitute
     // the placeholder, and surface the assigned callback URL so the
     // operator can correlate any inbound hit at their listener back
-    // to this scan. Skipped silently when either side is absent 
+    // to this scan. Skipped silently when either side is absent
     // unchanged behaviour for scans that don't use OOB verification.
     //
     // The (token, callback_url, base_url) tuple is captured into
@@ -637,7 +637,7 @@ pub(crate) async fn run_scan(
             if all_names.is_empty() {
                 // Cold install (no per-WAF history yet): warm-start from the
                 // bundled default's proven generic techniques so the FIRST scan
-                // fires known winners instead of discovering from zero 
+                // fires known winners instead of discovering from zero
                 // CLAUDE.md "what pentesters want".
                 GeneBank::default_seed_winners()
             } else {
@@ -659,7 +659,7 @@ pub(crate) async fn run_scan(
         // the Debug-format substring contains was correct only by luck
         // for plain `encoding::X` entries and silently MISSED any
         // chain:: prefixed entries (e.g. chain::TripleUrlEncode), so
-        // chain techniques from prior scans were never promoted 
+        // chain techniques from prior scans were never promoted
         // warm-start info wasted. Both spellings + the canonical
         // hierarchical path are now matched.
         let matches_winner = |strat: &wafrift_encoding::Strategy| {
@@ -1707,7 +1707,15 @@ pub(crate) async fn run_scan(
                     &oracle,
                 )
                 .await;
-                (index, payload, techniques, confidence, verdict, retry_after, status)
+                (
+                    index,
+                    payload,
+                    techniques,
+                    confidence,
+                    verdict,
+                    retry_after,
+                    status,
+                )
             });
         }
 
@@ -1718,7 +1726,8 @@ pub(crate) async fn run_scan(
         // back to the existing exponential-backoff curve.
         let mut batch_retry_after: Option<Duration> = None;
         while let Some(result) = tasks.join_next().await {
-            let Ok((index, payload, techniques, confidence, verdict_opt, retry_after_opt, status)) = result
+            let Ok((index, payload, techniques, confidence, verdict_opt, retry_after_opt, status)) =
+                result
             else {
                 errors += 1;
                 continue;
@@ -1756,9 +1765,8 @@ pub(crate) async fn run_scan(
                 }
             } else {
                 let class = class_for_payload_type(payload_type);
-                let counts = class.is_some_and(|c| {
-                    verified_bypass(c, &args.payload, &payload, false, status)
-                });
+                let counts = class
+                    .is_some_and(|c| verified_bypass(c, &args.payload, &payload, false, status));
                 if counts {
                     bypassed += 1;
                     meaningful_bypassed += 1;
@@ -2921,7 +2929,7 @@ pub(crate) async fn run_scan(
     // minimum-edit-distance payload that STILL bypasses via the
     // URL-query shape. Off by default; opt-in via `--auto-distill`.
     // Distillation always fires via `scan_url_with_param`
-    // regardless of which phase originally produced the bypass 
+    // regardless of which phase originally produced the bypass
     // for multi-vector / header-obf bypasses the distilled form
     // tells the operator what the minimum URL-query equivalent is
     // (a useful artefact even when the original used a different
@@ -4186,7 +4194,7 @@ mod tests {
     #[test]
     fn scan_json_bypass_variant_replay_command_null_when_no_techniques() {
         // When techniques is empty (edge case: a bypass recorded without
-        // a technique attribution), repro_replay_command must be null 
+        // a technique attribution), repro_replay_command must be null
         // not a shell command with an empty --technique argument.
         let variants = vec![(0usize, "payload".to_string(), vec![], 0.5_f64)];
         let minimal: Vec<Option<String>> = vec![None];

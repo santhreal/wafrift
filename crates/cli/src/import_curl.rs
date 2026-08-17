@@ -21,7 +21,7 @@ use crate::scan::ScanArgs;
 
 #[derive(Args, Debug)]
 pub(crate) struct ImportCurlArgs {
-    /// The curl invocation itself, as one shell-quoted argument 
+    /// The curl invocation itself, as one shell-quoted argument
     /// `wafrift import-curl 'curl -s https://t/login -H "Cookie: s=1"'`.
     /// This is the form you get from Burp / Chromium "Copy as cURL".
     /// Mutually exclusive with `--curl-file` / `--from-stdin`.
@@ -222,7 +222,7 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
                 // curl's `@file` forms require disk access on the
                 // operator's box; we don't model that. The two real
                 // file forms are bare `@file` and `name=@file`. A
-                // legitimate value like `email=foo@bar.com` is fine 
+                // legitimate value like `email=foo@bar.com` is fine
                 // the `@` is in the middle, not at the start of the
                 // bare value or the post-`=` value.
                 let is_file_form = match v.split_once('=') {
@@ -302,13 +302,11 @@ pub(crate) fn parse_curl(tokens: &[String]) -> Result<ParsedCurl, String> {
         i += 1;
     }
     if p.url.is_none() {
-        return Err(
-            "no URL found in curl invocation, possibly an unrecognised \
+        return Err("no URL found in curl invocation, possibly an unrecognised \
              curl flag consumed the URL token. If a `--longflag value` \
              pattern is being mistaken for a flag-then-URL pair, add \
              the flag to the explicit whitelist in parse_curl."
-                .to_string(),
-        );
+            .to_string());
     }
     Ok(p)
 }

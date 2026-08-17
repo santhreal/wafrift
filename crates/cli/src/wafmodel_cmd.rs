@@ -570,7 +570,7 @@ fn run_harden_inner(args: HardenArgs) -> u8 {
             if r.holes_after > 0 {
                 // Honest, structural disclosure (NOT a silent limitation):
                 // CRS has no JSON body transform, so a JSON-unescape
-                // normalization-mismatch is unclosable by ANY CRS rule 
+                // normalization-mismatch is unclosable by ANY CRS rule
                 // it requires a JSON request-body processor at the WAF.
                 println!(
                     "  residual     : {} hole(s) a CRS rule cannot close \
@@ -963,7 +963,7 @@ fn run_filter_characterization(
     }
 
     // First: which tokens are policed at all. Then, for the (usually few)
-    // policed tokens, which encodings the WAF fails to decode before matching 
+    // policed tokens, which encodings the WAF fails to decode before matching
     // the candidate bypass surface. `&carrier` is reused across both probes.
     let profile = characterize(&mut oracle, &battery, &carrier).map_err(|e| e.to_string())?;
     let gaps = probe_decode_gaps(&mut oracle, &profile, &carrier).map_err(|e| e.to_string())?;
@@ -972,7 +972,7 @@ fn run_filter_characterization(
     // is better-informed; persist when the operator supplied a history file.
     observe_findings_into_history(&mut history, &profile);
     if let Some(p) = &history_path {
-        // Warn, don't die: the profile is already computed and worth returning 
+        // Warn, don't die: the profile is already computed and worth returning
         // a write hiccup must not discard a run that already spent live queries.
         if let Err(e) = crate::info_gain_sched::save_history(p, &history) {
             eprintln!("warn: filter history write to {} failed: {e}", p.display());

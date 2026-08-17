@@ -709,7 +709,7 @@ mod tests {
             .await
             .expect_err("empty must error");
         // An empty token list -> ParsedCurl with no URL -> NoUrl.
-        // (The Parse path could also reach this; either is fine 
+        // (The Parse path could also reach this; either is fine
         // both are typed, neither panics.)
         match err {
             SessionInitError::NoUrl | SessionInitError::Parse(_) => {}

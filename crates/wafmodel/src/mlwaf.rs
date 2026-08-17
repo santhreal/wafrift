@@ -1,7 +1,7 @@
 //! Constrained black-box evasion of **ML-WAFs**.
 //!
 //! Regex-WAFs are decompiled (P1) and solved (P2). The next-generation
-//! threat is a learned classifier. Cloudflare/AWS/Fastly ML-WAFs 
+//! threat is a learned classifier. Cloudflare/AWS/Fastly ML-WAFs
 //! where there is no rule to learn and no normalization to mismatch.
 //! The paradigm-correct tool there is a *decision-based boundary
 //! attack* (HopSkipJump-family): perturb a blocked attack toward the
@@ -19,13 +19,13 @@
 use crate::error::Result;
 use regex::Regex;
 use std::sync::LazyLock;
-use wafrift_types::Request;
-use wafrift_grammar::grammar::{classify, PayloadType, equiv};
+use wafrift_grammar::grammar::{PayloadType, classify, equiv};
+use wafrift_oracle::sql::{DatabaseDialect as SqlDialect, is_valid_expression_injection};
 use wafrift_oracle::{
-    cmdi::CmdiOracle, ldap::LdapOracle, ssi::SsiOracle, ssrf::SsrfOracle,
-    ssti::SstiOracle, traits::PayloadOracle, xss::XssOracle,
+    cmdi::CmdiOracle, ldap::LdapOracle, ssi::SsiOracle, ssrf::SsrfOracle, ssti::SstiOracle,
+    traits::PayloadOracle, xss::XssOracle,
 };
-use wafrift_oracle::sql::{is_valid_expression_injection, DatabaseDialect as SqlDialect};
+use wafrift_types::Request;
 /// An ML-WAF: a decision, and optionally a continuous score that lets
 /// the boundary attack descend instead of blind-search.
 pub trait MlWaf {
@@ -176,7 +176,7 @@ fn insert_empty_quotes_safe(v: &mut Vec<u8>, rng: &mut Rng) {
         return; // pathological (payload is all `$`): re-proposed by the caller.
     }
     let at = choices[rng.below(choices.len())];
-    v.splice(at..at, [b'"', b'"']);
+    v.splice(at..at, *b"\"\"");
 }
 
 /// Replace one existing ASCII space in `v` with `frag`. No-op (leaves `v`
@@ -309,18 +309,10 @@ pub fn is_attack_payload(bytes: &[u8]) -> bool {
         PayloadType::PathTraversal => equiv::path::still_resolves(s, s),
         PayloadType::NoSql => equiv::nosql::still_injects(s, s),
         PayloadType::Jndi => equiv::log4shell::still_executes(s, s),
-        PayloadType::Unknown => {
-            // The classifier misses some path shapes (UNC \server\share\file,
-            // bare Windows absolute paths without a traversal sequence). Re-use
-            // the same `mut_class` heuristic the proposer uses and verify the
-            // path with the grammar resolver, so those payloads still reach the
-            // correct operator set.
-            if mut_class(bytes) == MutClass::Path {
-                equiv::path::still_resolves(s, s)
-            } else {
-                false
-            }
+        PayloadType::Unknown if mut_class(bytes) == MutClass::Path => {
+            equiv::path::still_resolves(s, s)
         }
+        PayloadType::Unknown => false,
         _ => false,
     }
 }
@@ -622,10 +614,7 @@ mod attack_manifold_tests {
         // The structural XSS check must not be so strict that it rejects every
         // legitimate mutation; across 300 seeds a strong majority must still be
         // recognised as attacks.
-        let payloads: &[&[u8]] = &[
-            b"<script>alert(1)</script>",
-            b"<svg onload=alert(1)>",
-        ];
+        let payloads: &[&[u8]] = &[b"<script>alert(1)</script>", b"<svg onload=alert(1)>"];
         for payload in payloads {
             let on = (0..300u64)
                 .filter(|&seed| is_attack_payload(&propose_mutation(payload, seed)))

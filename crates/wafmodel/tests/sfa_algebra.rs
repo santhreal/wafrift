@@ -9,7 +9,7 @@
 use proptest::prelude::*;
 use wafrift_wafmodel::sfa::{BytePred, Sfa};
 
-/// Proptest case count: full (10k) by default, the full lane 
+/// Proptest case count: full (10k) by default, the full lane
 /// scaled down per-push via `WAFMODEL_PROPTEST_CASES` so the CI gate
 /// stays fast while the nightly `oneshot` job runs the full count.
 /// The *property* is identical at any count; only confidence scales.

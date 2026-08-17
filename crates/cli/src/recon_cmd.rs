@@ -73,7 +73,7 @@ struct ReconReport<'a> {
     probes: Vec<ProbeResult>,
 }
 
-/// One active-probe outcome per subdomain. JSON schema is stable 
+/// One active-probe outcome per subdomain. JSON schema is stable
 /// either `tags` is populated and `error` is None, or vice versa.
 #[derive(Serialize)]
 struct ProbeResult {
@@ -377,7 +377,7 @@ mod tests {
         assert!(!s.contains("\"tags\""));
     }
 
-    /// LAW 12 pin: the concurrency cap is a fixed safety boundary 
+    /// LAW 12 pin: the concurrency cap is a fixed safety boundary
     /// a silent re-tune up would expose the recon step to fd-exhaustion
     /// on large CT-log discoveries. If this constant changes, the bump
     /// must be deliberate.

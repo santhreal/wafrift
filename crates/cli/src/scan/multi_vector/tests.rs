@@ -407,7 +407,7 @@ fn build_post_multipart_dupbound_uses_two_distinct_boundaries() {
     // Header-declared boundary must appear in the Content-Type header.
     let ct = req.headers().get("content-type").unwrap().to_str().unwrap();
     assert!(ct.starts_with("multipart/form-data; boundary="));
-    // The body must contain TWO distinct boundary strings 
+    // The body must contain TWO distinct boundary strings
     // one in the header, one decoy. Both prefixed by --.
     assert!(body.contains("WafRiftA"));
     assert!(body.contains("WafRiftB"));

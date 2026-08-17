@@ -6,7 +6,7 @@
 //! `WMethodEq{extra_states:2}` to assert L\* / KV / passive all recover
 //! the exact language. For the self-overlapping pattern `<s/s` the
 //! first L\* hypothesis has **1** state, the target minimal DFA has
-//! **5**, and the shortest counterexample is `<s/s` itself (length 4) 
+//! **5**, and the shortest counterexample is `<s/s` itself (length 4)
 //! strictly outside W-method{2}'s `state_cover · Σ^{≤3} · W` horizon.
 //! W-method found no counterexample and *silently certified the trivial
 //! 1-state "accept-everything" automaton as exact*. `passive_learn`

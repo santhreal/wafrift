@@ -1404,7 +1404,10 @@ mod tests {
     fn sanitize_fingerprint_distinguishes_separator_variants() {
         let a = sanitize_fingerprint_for_filename("waf:v1:a.b.com");
         let b = sanitize_fingerprint_for_filename("waf:v1.a:b.com");
-        assert_ne!(a, b, "fingerprints differing only in separators must not collide");
+        assert_ne!(
+            a, b,
+            "fingerprints differing only in separators must not collide"
+        );
     }
 
     #[test]

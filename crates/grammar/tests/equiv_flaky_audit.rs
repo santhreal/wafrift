@@ -265,15 +265,15 @@ proptest! {
     }
 }
 
-/// EFFECTIVE-PAYLOAD SOUNDNESS (CumulusFire regression class):
-/// For every emitted member, the predicate must hold on the
-/// EFFECTIVE payload — what the backend actually receives after
-/// transport-level stripping — not just on `member.payload`. This is
-/// the property `enforce_transport_legal` violated: it pre-filtered
-/// variants that MIGHT be mangled, but when it was removed, the
-/// oracle had to verify the post-strip payload instead. A regression
-/// that lets a stripped payload certify as a valid attack (the rig)
-/// or that drops a sound variant (the recall killer) flips this.
+// EFFECTIVE-PAYLOAD SOUNDNESS (CumulusFire regression class):
+// For every emitted member, the predicate must hold on the
+// EFFECTIVE payload — what the backend actually receives after
+// transport-level stripping — not just on `member.payload`. This is
+// the property `enforce_transport_legal` violated: it pre-filtered
+// variants that MIGHT be mangled, but when it was removed, the
+// oracle had to verify the post-strip payload instead. A regression
+// that lets a stripped payload certify as a valid attack (the rig)
+// or that drops a sound variant (the recall killer) flips this.
 proptest! {
     #![proptest_config(ProptestConfig { cases: 2000, max_shrink_iters: 200, ..ProptestConfig::default() })]
 

@@ -108,10 +108,7 @@ fn body_diff_against_unreachable_target_exits_1() {
         "--timeout-secs",
         "2",
     ]);
-    assert_eq!(
-        code, 1,
-        "unreachable target must exit 1, stderr:\n{stderr}"
-    );
+    assert_eq!(code, 1, "unreachable target must exit 1, stderr:\n{stderr}");
 }
 
 #[test]

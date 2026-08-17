@@ -24,7 +24,7 @@ async fn start_redirect_origin() -> (u16, tokio::task::JoinHandle<()>) {
     let app = Router::new().route(
         "/",
         get(|| async {
-            // 169.254.169.254 is the AWS/Azure/GCP Instance Metadata Service 
+            // 169.254.169.254 is the AWS/Azure/GCP Instance Metadata Service
             // the canonical cloud SSRF target. The proxy MUST surface this 302
             // to the downstream client rather than following it.
             (

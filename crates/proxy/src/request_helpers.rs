@@ -25,7 +25,7 @@ pub fn header_value_to_string(name: &str, value: &hyper::header::HeaderValue) ->
 /// for the `--mutate-url` hook so the URL-mutator only sees the
 /// path-and-query portion (it never touches scheme or authority).
 ///
-/// Returns `None` for URLs without `://` (relative, malformed) 
+/// Returns `None` for URLs without `://` (relative, malformed)
 /// the caller leaves the URL alone in that case rather than risking
 /// a mutation that breaks routing.
 #[must_use]

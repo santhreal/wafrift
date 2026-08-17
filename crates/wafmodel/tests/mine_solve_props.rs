@@ -11,7 +11,7 @@
 //!     WAF actually passes `s.input` (CEGIS verifies internally; we
 //!     re-verify independently, the solver may never fabricate). A
 //!     `None` is always acceptable; an Identity sink against a WAF that
-//!     blocks the raw attack must be `None` (pinned precision twin 
+//!     blocks the raw attack must be `None` (pinned precision twin
 //!     no invented bypass).
 
 use proptest::prelude::*;
@@ -52,7 +52,7 @@ fn waf_lit(token: &[u8], tf: &[Transform]) -> SimRegexWaf {
 // Deliberately a TINY fixed alphabet {a,b,c}+catch-all with ≤2-byte
 // needles: the mining-soundness invariant is identical at any size, so
 // we keep every one of the 10k cases ~1ms (a 4-char needle over a
-// 6-symbol alphabet at depth 6 makes passive_learn rows ~56k entries 
+// 6-symbol alphabet at depth 6 makes passive_learn rows ~56k entries
 // 10k of those is ~1.8 h, an unacceptable depth-lane cost, with no
 // extra assurance).
 const NEEDLES: [&[u8]; 6] = [b"a", b"b", b"ab", b"bc", b"ca", b"ac"];

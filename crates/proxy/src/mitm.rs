@@ -606,7 +606,7 @@ mod tests {
 
     #[test]
     fn ca_is_stale_returns_false_for_freshly_written_file() {
-        // A CA we just wrote must NOT be flagged as stale 
+        // A CA we just wrote must NOT be flagged as stale
         // otherwise ensure_ca would regenerate-and-load on every
         // process startup.
         let dir = std::env::temp_dir().join(format!("wafrift_ca_fresh_{}", std::process::id()));

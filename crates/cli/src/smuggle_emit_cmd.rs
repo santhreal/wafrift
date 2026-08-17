@@ -91,7 +91,7 @@ pub struct SmuggleEmitArgs {
     pub canary_header: String,
 
     /// Maximum probes to emit after filtering. 0 = unlimited.
-    /// Useful when sampling against a rate-limited target 
+    /// Useful when sampling against a rate-limited target
     /// `--limit 10` gives an operator a small representative
     /// sweep without firing the full 78-probe corpus.
     #[arg(long, default_value_t = 0)]
@@ -110,7 +110,7 @@ pub struct SmuggleEmitArgs {
     /// Emit a ready-to-fire `curl` command per probe (one per
     /// line) targeting the supplied URL instead of JSON. Splices
     /// headers via `-H`, body via `-d`. Frame artifacts (HTTP/3
-    /// capsule, QUIC datagram, WS compression) can't ride curl 
+    /// capsule, QUIC datagram, WS compression) can't ride curl
     /// they're skipped with a stderr warning. Operators pipe to
     /// `bash`, paste into Repeater, or `xargs -I{}` for a quick
     /// dogfood sweep.
@@ -271,7 +271,7 @@ pub fn run_smuggle_emit(args: SmuggleEmitArgs) -> ExitCode {
 /// Reasons why curl rendering can fail for a given probe.
 enum CurlRenderError {
     /// Frame artifacts (HTTP/3 capsule, QUIC datagram, WS
-    /// compression) can't be expressed as a curl command line 
+    /// compression) can't be expressed as a curl command line
     /// they live at a lower transport layer than HTTP/1.1 / 2.
     FramesNotSupported,
 }

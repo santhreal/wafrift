@@ -498,7 +498,7 @@ impl ChallengeStore {
         // guard silently skipped GC for the first 60 s, so the entire
         // cap could be exhausted before a single drain fired. On
         // underflow, any existing entries are necessarily fresh (the
-        // window hasn't elapsed yet), so the loop is a no-op anyway 
+        // window hasn't elapsed yet), so the loop is a no-op anyway
         // but we still enter it to keep behaviour uniform.
         let cutoff = now.checked_sub(GLOBAL_PROMPT_WINDOW).unwrap_or(now);
         while let Some((_, ts)) = inner.global_prompt_window.front() {
@@ -634,7 +634,7 @@ impl ChallengeStore {
         Some(e.kind)
     }
 
-    /// Number of currently-stored entries (test/diagnostic only 
+    /// Number of currently-stored entries (test/diagnostic only
     /// not for production decisions).
     #[doc(hidden)]
     #[must_use]

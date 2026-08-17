@@ -117,7 +117,7 @@ fn ml_evasion_technique_carries_metadata() {
         })
         .expect("result must carry an MlEvasion technique");
 
-    // Contract: the strategy layer is I/O-free, so it queries NO live oracle 
+    // Contract: the strategy layer is I/O-free, so it queries NO live oracle
     // `queries` is 0 by design (the live queries belong to the scan/bench
     // layer that fires the mutated candidate). Pins the new semantics and
     // guards against a regression to the old fake-oracle query counter.

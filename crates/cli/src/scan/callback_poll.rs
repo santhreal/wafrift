@@ -32,7 +32,7 @@ pub(crate) struct CallbackPending {
 /// Result of the post-fire poll.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CallbackVerdict {
-    /// The listener confirmed an inbound matched the token 
+    /// The listener confirmed an inbound matched the token
     /// a blind / stored vuln is confirmed.
     Verified,
     /// The listener responded but no inbound matched, at least

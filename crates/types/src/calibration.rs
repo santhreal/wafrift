@@ -51,7 +51,7 @@ pub fn calibration_request(base_url: &str) -> Request {
     ))
 }
 
-/// Analyze a calibration response to determine if WAF is present 
+/// Analyze a calibration response to determine if WAF is present
 /// **broad, FN-expensive** classifier.
 ///
 /// Used by the one-shot calibration probe to decide "should I turn evasion

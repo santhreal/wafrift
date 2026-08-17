@@ -298,7 +298,7 @@ mod tests {
         // Don't await the receiver (we proved the return-fast contract).
     }
 
-    /// Transient poll errors do not abort the confirmation window 
+    /// Transient poll errors do not abort the confirmation window
     /// poll_until must retry up to MAX_CONSECUTIVE_POLL_ERRORS times
     /// before giving up, allowing a later successful poll to confirm.
     #[tokio::test]

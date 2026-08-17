@@ -24,7 +24,7 @@ use once_cell::sync::Lazy;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-/// Lazily-compiled `<title>` extractor. Was being compiled per call 
+/// Lazily-compiled `<title>` extractor. Was being compiled per call
 /// hot path runs once per upstream response, so the per-call cost
 /// scaled linearly with traffic.
 static TITLE_RE: Lazy<regex::Regex> = Lazy::new(|| {

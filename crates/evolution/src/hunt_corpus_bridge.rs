@@ -28,7 +28,7 @@ use crate::rule_corpus::RuleBypassCorpus;
 /// dep on oracle for trivial routing logic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProbeOutcome {
-    /// Origin received and processed the attack-class payload 
+    /// Origin received and processed the attack-class payload
     /// this is a confirmed WAF bypass.
     Bypass,
     /// WAF blocked the request (status 403/406/429/etc + body /

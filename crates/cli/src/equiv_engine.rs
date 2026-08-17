@@ -203,7 +203,7 @@ pub(crate) fn class_for_payload_type(pt: PayloadType) -> Option<&'static str> {
         // three now have a SAME-EXPLOIT arm in `oracle_valid` (ssrf via
         // `still_targets`, nosql via `still_injects`, log4shell via
         // `still_executes`). Pre-fix they fell through to `None`, so
-        // `--class auto` silently dropped the most consequential payloads 
+        // `--class auto` silently dropped the most consequential payloads
         // including the canonical Log4Shell string, to the WAF-only gate even
         // though a sound oracle existed. `Jndi` maps to the `"log4shell"`
         // oracle key (the class name in `oracle_valid`/`supports_class`).
@@ -511,7 +511,7 @@ pub(crate) struct EquivBypass {
     pub(crate) envelope: ProbeEnvelope,
 }
 
-// AUDIT (depth pass): anti-rig chain verified sound end-to-end 
+// AUDIT (depth pass): anti-rig chain verified sound end-to-end
 // send → is_waf_block (canonical FP-cheap classifier) → verified_bypass
 // (3 gates) → oracle_valid (parser-grounded). EquivOutcome counts ONLY
 // verified bypasses; `unverified_not_blocked` surfaces WAF-slips that
@@ -946,10 +946,7 @@ mod tests {
         assert!(header_value_from_payload("x\nINJECT: evil").is_ok());
         assert!(header_value_from_payload("x\u{0}y").is_ok());
         // The stripped result is the effective payload (CTL removed).
-        assert_eq!(
-            header_value_from_payload("x\r\ny").unwrap(),
-            "xy"
-        );
+        assert_eq!(header_value_from_payload("x\r\ny").unwrap(), "xy");
     }
 
     #[test]
@@ -1320,7 +1317,7 @@ mod tests {
 
     #[test]
     fn oracle_valid_cmdi_rejects_swapping_the_command() {
-        // A `cat /etc/passwd` finding must not reduce to a bare `id` probe 
+        // A `cat /etc/passwd` finding must not reduce to a bare `id` probe
         // different command, different finding. `still_executes_cmd` pins the
         // command verb + target as whole tokens.
         let read_passwd = "; cat /etc/passwd";
@@ -1514,11 +1511,17 @@ mod tests {
         assert_eq!(ck.effective_payload("a\r\nb"), "ab");
 
         // Encoding shapes: payload preserved exactly (backend recovers it).
-        let json = D::JsonBody { param: "q".into(), content_type: None };
+        let json = D::JsonBody {
+            param: "q".into(),
+            content_type: None,
+        };
         assert_eq!(json.effective_payload("UNION\x0BSELECT"), "UNION\x0BSELECT");
         let mp = D::MultipartField { name: "q".into() };
         assert_eq!(mp.effective_payload("UNION\x0BSELECT"), "UNION\x0BSELECT");
-        let xml = D::XmlBody { root: "r".into(), field: "f".into() };
+        let xml = D::XmlBody {
+            root: "r".into(),
+            field: "f".into(),
+        };
         assert_eq!(xml.effective_payload("UNION\x0BSELECT"), "UNION\x0BSELECT");
     }
 
@@ -1534,16 +1537,28 @@ mod tests {
         assert!(header_value_from_payload("UNION\x0CSELECT").is_ok());
         // The stripped result has CTL removed.
         assert_eq!(
-            header_value_from_payload("UNION\x0BSELECT").unwrap().to_str().unwrap(),
+            header_value_from_payload("UNION\x0BSELECT")
+                .unwrap()
+                .to_str()
+                .unwrap(),
             "UNIONSELECT"
         );
         // Multiple CTL bytes all stripped.
         assert_eq!(
-            header_value_from_payload("\x01\x02\x03OR\x0B1=1").unwrap().to_str().unwrap(),
+            header_value_from_payload("\x01\x02\x03OR\x0B1=1")
+                .unwrap()
+                .to_str()
+                .unwrap(),
             "OR1=1"
         );
         // DEL (0x7F) is also stripped.
         assert!(header_value_from_payload("a\x7Fb").is_ok());
-        assert_eq!(header_value_from_payload("a\x7Fb").unwrap().to_str().unwrap(), "ab");
+        assert_eq!(
+            header_value_from_payload("a\x7Fb")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "ab"
+        );
     }
 }

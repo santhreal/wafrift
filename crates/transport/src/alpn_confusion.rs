@@ -34,7 +34,7 @@
 //!
 //! The `TlsConnector::connect(server_name, tcp_stream)` call uses the
 //! `alpn_protocols` configured on the `ClientConfig` to negotiate ALPN.
-//! After the handshake completes the caller can write arbitrary bytes 
+//! After the handshake completes the caller can write arbitrary bytes
 //! the TLS record layer is already established.
 
 use thiserror::Error;

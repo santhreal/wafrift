@@ -899,7 +899,7 @@ mod tests {
 
     #[test]
     fn parse_chain_matches_the_named_catalog_equivalents() {
-        // The chain grammar must reproduce the hand-named composites exactly 
+        // The chain grammar must reproduce the hand-named composites exactly
         // proof the catalog rows ARE just pinned chains. `deflate.hex` ≡ zhex,
         // `deflate.b64` ≡ zb64, `b64.b64` ≡ b64x2.
         for (chain, name) in [

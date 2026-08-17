@@ -69,7 +69,7 @@ pub(crate) const TECHNIQUES: &[HeaderTechnique] = &[
 const HEADER_VALUE: &str = "application/x-www-form-urlencoded";
 
 /// Apply `technique` to `target_header` and return the obfuscated
-/// header-name string the request should carry. Pure function 
+/// header-name string the request should carry. Pure function
 /// no I/O.
 #[must_use]
 pub(crate) fn obfuscate(technique: &HeaderTechnique) -> String {
@@ -480,7 +480,7 @@ mod tests {
 
     #[test]
     fn obfuscate_null_byte_contains_only_one_null() {
-        // Defensive: exactly one NULL injected (per the spec 
+        // Defensive: exactly one NULL injected (per the spec
         // multiple nulls would be a different attack class with
         // its own coverage).
         let t = TECHNIQUES.iter().find(|t| t.name == "null_byte").unwrap();

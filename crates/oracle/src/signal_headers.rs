@@ -121,7 +121,9 @@ mod tests {
         });
         assert!(has_allow, "should detect AWS WAF allow action");
         assert!(
-            !signals.iter().any(|s| matches!(s, Signal::ChallengePlatform(_))),
+            !signals
+                .iter()
+                .any(|s| matches!(s, Signal::ChallengePlatform(_))),
             "allow is not a challenge"
         );
         assert!(
@@ -140,7 +142,9 @@ mod tests {
         let headers = vec![("cf-mitigated".to_string(), "challenge".to_string())];
         let signals = classify_headers(&headers);
         assert!(
-            signals.iter().any(|s| matches!(s, Signal::ChallengePlatform(_))),
+            signals
+                .iter()
+                .any(|s| matches!(s, Signal::ChallengePlatform(_))),
             "challenge header must emit ChallengePlatform, got {signals:?}"
         );
         assert!(
@@ -156,7 +160,9 @@ mod tests {
         let headers = vec![("x-amzn-waf-action".to_string(), "challenge".to_string())];
         let signals = classify_headers(&headers);
         assert!(
-            signals.iter().any(|s| matches!(s, Signal::ChallengePlatform(_))),
+            signals
+                .iter()
+                .any(|s| matches!(s, Signal::ChallengePlatform(_))),
             "x-amzn-waf-action:challenge must emit ChallengePlatform, got {signals:?}"
         );
         assert!(

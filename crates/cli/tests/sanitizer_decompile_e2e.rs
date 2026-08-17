@@ -1,7 +1,7 @@
 //! End-to-end dogfood of the shipped `wafrift sanitizer-decompile` binary.
 //!
 //! Drives the full operator path through the compiled binary: source-map
-//! recovery, sanitizer extraction, L*/SFA mining, and both output formats 
+//! recovery, sanitizer extraction, L*/SFA mining, and both output formats
 //! against fixtures that exercise a bypassable config, a strict config, and a
 //! file with no sanitizer. Sends nothing (the sanitizer oracle is in-process),
 //! so no mock server is needed.
@@ -121,7 +121,7 @@ fn bypassable_config_also_flags_reachable_mxss_candidates() {
 #[test]
 fn strict_config_has_no_mxss_candidates() {
     // A DOMPurify ALLOWED_TAGS allowlist of only inert tags makes every
-    // foreign-content root unreachable, so the mXSS advisory must be empty 
+    // foreign-content root unreachable, so the mXSS advisory must be empty
     // precise, not noise. (Uses DOMPurify's own key so the allowlist is parsed.)
     let js = temp_file(
         "mxss_strict_js",

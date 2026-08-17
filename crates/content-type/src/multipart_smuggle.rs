@@ -245,8 +245,8 @@ pub fn generate_smuggle_variants_with_config(
             content_type: format!("multipart/form-data; boundary={boundary}"),
             body,
             technique: ContentTypeTechnique::MultipartEpilogueSmuggle,
-            description:
-                "Epilogue after closing boundary: RFC says discard; lenient parsers don't".into(),
+            description: "Epilogue after closing boundary: RFC says discard; lenient parsers don't"
+                .into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
     }
@@ -319,8 +319,7 @@ pub fn generate_smuggle_variants_with_config(
             body,
             technique: ContentTypeTechnique::MultipartNestedEnvelope,
             description:
-                "Nested multipart inside a part, non-recursive WAFs miss the inner envelope"
-                    .into(),
+                "Nested multipart inside a part, non-recursive WAFs miss the inner envelope".into(),
             canary: wafrift_types::canary::Canary::generate(),
         });
     }

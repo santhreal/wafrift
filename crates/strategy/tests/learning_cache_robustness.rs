@@ -80,7 +80,7 @@ fn open_does_not_crash_on_corrupt_json() {
 fn open_does_not_crash_on_truncated_file() {
     let path = unique_tmp("truncated");
     let _ = fs::remove_file(&path);
-    // Write the first half of a valid pretty-printed JSON object 
+    // Write the first half of a valid pretty-printed JSON object
     // exactly what kill-9 mid-`fs::write` would leave.
     fs::write(&path, b"{\n  \"entries\": {\n    \"key1\": {\n      \"pip").unwrap();
 

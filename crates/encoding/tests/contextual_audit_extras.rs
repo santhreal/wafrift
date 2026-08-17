@@ -6,7 +6,7 @@
 //!     `<script>JSON</script>` or passed to `eval()`, an attacker-
 //!     controlled value could close the JS string and inject script.
 //!   HIGH: `CookieValue` percent-encoded only `; = \\r \\n \\0`. RFC 6265
-//!     §4.1.1 cookie-octet excludes space, `,`, `"`, `\\` as well 
+//!     §4.1.1 cookie-octet excludes space, `,`, `"`, `\\` as well
 //!     Chrome / Firefox / curl truncate cookies at the offending byte,
 //!     making bypass probes silently lie about the value sent.
 

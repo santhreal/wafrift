@@ -304,7 +304,7 @@ fn content_type_10kb_param_value_is_bounded_not_unbounded() {
 
     // The fix: the value is capped (8 KiB), so the JSON variant body is
     // far below an unbounded JSON-escape of 10 KB (which would be
-    // 10 KB × up-to-6 for \uXXXX ≈ 60 KB). Assert it stayed bounded 
+    // 10 KB × up-to-6 for \uXXXX ≈ 60 KB). Assert it stayed bounded
     // i.e. the amplification DoS is gone.
     if let Some(jv) = variants
         .iter()

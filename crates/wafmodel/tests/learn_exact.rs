@@ -187,7 +187,7 @@ fn lstar_kv_and_passive_learners_all_agree_with_the_waf() {
         // claim. `WMethodEq{extra_states:k}` only guarantees fault
         // discovery when (true_states − hyp_states) ≤ k; for `<s/s`
         // the very first hypothesis has 1 state, the target has 5, and
-        // the shortest counterexample is `<s/s` itself (length 4) 
+        // the shortest counterexample is `<s/s` itself (length 4)
         // outside W-method{2}'s ≤3 horizon, so it silently certifies
         // the trivial 1-state "accept-all" automaton. That is not a
         // passive_learn bug (passive recovers the exact 5-state DFA);

@@ -15,7 +15,7 @@
 //! ## Wire format (Source Map Revision 3)
 //!
 //! A JSON object: `version` (must be 3), `sources` (original file paths),
-//! optional `sourcesContent` (parallel to `sources`), `names`, and `mappings` 
+//! optional `sourcesContent` (parallel to `sources`), `names`, and `mappings`
 //! a string of `;`-separated lines, each a `,`-separated list of **Base64-VLQ**
 //! segments. Each segment is 1, 4, or 5 signed VLQ-encoded fields, all stored as
 //! *deltas* from the previous segment:
@@ -123,7 +123,7 @@ fn decode_vlq(chars: &[char], pos: usize) -> Result<(i64, usize), SourceMapError
         let continuation = digit & VLQ_CONTINUATION != 0;
         let payload = u64::from(digit & VLQ_MASK);
         // Guard overflow of the u64 accumulator. `payload` is < 2^5, occupying
-        // bits [shift, shift+5); `shift` advances by 5, so it never equals 63 
+        // bits [shift, shift+5); `shift` advances by 5, so it never equals 63
         // the boundary is `shift == 60` with `payload >= 16` (which would set
         // bit 64), plus any `shift >= 64`. Written this way it cannot itself
         // shift-overflow (the `1 << (64 - shift)` term only runs for shift in
@@ -234,7 +234,7 @@ impl SourceMap {
     }
 
     /// Recover every original source: its `sourceRoot`-resolved path and the
-    /// embedded content when present. This is the decompiler's headline output 
+    /// embedded content when present. This is the decompiler's headline output
     /// the readable module sources the minifier was supposed to obscure.
     #[must_use]
     pub fn recovered_sources(&self) -> Vec<RecoveredSource> {
@@ -613,7 +613,7 @@ mod tests {
             prop_assert_eq!(consumed, chars.len());
         }
 
-        /// A run of VLQ values concatenated decodes back to the same sequence 
+        /// A run of VLQ values concatenated decodes back to the same sequence
         /// the property a real `mappings` segment relies on.
         #[test]
         fn prop_vlq_sequence_roundtrips(vals in proptest::collection::vec(-100000i64..100000, 0..8)) {

@@ -322,7 +322,7 @@ fn active_bypass_scores_above_baseline_pass() {
 // `initialize` again. Because every SearchAlgorithm::initialize impl is
 // last-call-wins (HillClimbing overwrites current/best; MapElites clears the
 // grid; NoveltySearch overwrites self.population), the net effect was 2×
-// chromosome generation + 2× initialize calls for the same final state 
+// chromosome generation + 2× initialize calls for the same final state
 // twice as much entropy consumed, double the allocations. Critically,
 // determinism was still preserved (same seed → same second-call result), so
 // the bug was invisible in practice but wasted resources and indicated a

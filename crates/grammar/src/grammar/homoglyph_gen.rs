@@ -24,7 +24,7 @@ const MAX_PAYLOAD_BYTES: usize = 4096;
 /// and shares few literal bytes with the attack.
 ///
 /// Strategies: (A) full style passes, (C) minimal single-position perturbation
-///: the stealthiest evasion, breaking a literal token with one substitution 
+///: the stealthiest evasion, breaking a literal token with one substitution
 /// and (B) alternating fold.
 pub(crate) fn generate<F>(
     payload: &str,

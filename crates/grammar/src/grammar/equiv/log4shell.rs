@@ -371,7 +371,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    
+
     out.truncate(cfg.max);
     out
 }

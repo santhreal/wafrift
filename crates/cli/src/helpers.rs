@@ -113,7 +113,7 @@ pub fn render_artifact_as_curl(
     Some(render_curl_parts(method, url, &headers, body))
 }
 
-/// Splice the URL's path component with `new_path`. Pure URL utility 
+/// Splice the URL's path component with `new_path`. Pure URL utility
 /// honours a `?query` suffix in `new_path` (replacing the base URL's
 /// query) and returns the original URL unchanged on parse failure (no
 /// panic).
@@ -210,7 +210,7 @@ pub fn parse_form_pairs(s: &str) -> Vec<(String, String)> {
 /// tmp-path / TOCTOU). The PID is kept only as a human-readable hint,
 /// never as the security boundary.
 ///
-/// Single source of truth for transient tmp paths in production code 
+/// Single source of truth for transient tmp paths in production code
 /// before this, `oneshot` and the multi-job `scan` driver each
 /// hand-rolled `temp_dir().join("…-{pid}-{nanos}")` (and one used only
 /// `{pid}-{job_index}`, fully guessable). `tempfile` would add O_EXCL +
@@ -336,7 +336,7 @@ pub(crate) fn block_on_with_runtime<F>(fut: F) -> std::process::ExitCode
 where
     F: std::future::Future<Output = std::process::ExitCode>,
 {
-    // Tokio worker + blocking-pool threads default to a ~2 MiB stack 
+    // Tokio worker + blocking-pool threads default to a ~2 MiB stack
     // too small for wafrift's deep (bounded) search frames. `wafrift hunt`
     // runs bench-waf nested inside a `spawn_blocking` thread, so the
     // equiv-cegis synthesis lands on a runtime-spawned thread and overflows
@@ -393,7 +393,7 @@ pub(crate) fn confirm_output_overwrite_safe(
     force: bool,
 ) -> Result<(), String> {
     // R52 pass-14 I2 fix (CLAUDE.md §15 AUDIT): the prior
-    // `starts_with("/dev/fd/")` check was traversal-bypassable 
+    // `starts_with("/dev/fd/")` check was traversal-bypassable
     // `--output /dev/fd/../etc/shadow` matched and skipped the
     // existence check, then `fs::write` resolved through the symlink
     // upward into a non-FD path. Tighten the check so the suffix
@@ -450,7 +450,7 @@ pub(crate) fn parse_headers(raw_headers: &[String]) -> Result<Vec<(String, Strin
 /// Walk a `reqwest::Error`'s cause chain and return a string that includes
 /// every level, joined by " (caused by: ").
 ///
-/// reqwest's own `Display` is famously short: "error sending request" 
+/// reqwest's own `Display` is famously short: "error sending request"
 /// without the underlying DNS / TCP / TLS cause.  This helper, first
 /// extracted during dogfood pass 5 (2026-05), surfaces the full chain
 /// (e.g. "dns error, caused by: No such host is known. (os error 11001)")
@@ -938,7 +938,7 @@ mod tests {
         // characters must NOT be treated as a virtual-fd shortcut.
         // It falls through to the existence check; since the
         // string `/dev/fd/../etc/shadow` doesn't resolve to an
-        // existing file from the test cwd, the guard returns Ok 
+        // existing file from the test cwd, the guard returns Ok
         // but the important thing is it does NOT short-circuit
         // (which would skip the existence check entirely even on
         // a real file).
@@ -1530,7 +1530,7 @@ mod tests {
             http_status_from_raw(b"HTTP/1.0 404 Not Found\r\n\r\n"),
             Some(404)
         );
-        // Non-HTTP first line (raw banner) must NOT be mis-read as a status 
+        // Non-HTTP first line (raw banner) must NOT be mis-read as a status
         // the `HTTP/` prefix guard the old trailer_diff fork lacked.
         assert_eq!(
             http_status_from_raw(b"220 mail.example.com ESMTP\r\n"),

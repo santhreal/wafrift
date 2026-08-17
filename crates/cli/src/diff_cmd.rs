@@ -20,7 +20,7 @@
 //!
 //! ## Backwards compatibility (CLAUDE.md LAW 2)
 //!
-//! The eleven flat `<kind>-diff` commands (and `attack`) remain callable 
+//! The eleven flat `<kind>-diff` commands (and `attack`) remain callable
 //! they are kept as `#[command(hide = true)]` deprecated aliases in
 //! [`crate::Commands`], so every existing script / pipe / doc keeps
 //! working; the surface simply stops *advertising* the bloat. `diff` is

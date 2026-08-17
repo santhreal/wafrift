@@ -357,7 +357,7 @@ fn extract_object_keys(fragment: &str) -> Vec<String> {
     out
 }
 
-/// Extract regex sources from empty-replacement `.replace(/RE/flags, '')` calls 
+/// Extract regex sources from empty-replacement `.replace(/RE/flags, '')` calls
 /// the signature of a hand-rolled strip sanitizer.
 fn extract_strip_patterns(source: &str) -> Vec<String> {
     let mut out = Vec::new();

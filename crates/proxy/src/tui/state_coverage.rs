@@ -456,7 +456,7 @@ mod state_coverage_tests {
 
     #[test]
     fn outcome_filter_all_matches_everything() {
-        // PROPERTY: `OutcomeFilter::All.matches` must always return true 
+        // PROPERTY: `OutcomeFilter::All.matches` must always return true
         // no filtering when the operator has not selected a specific outcome.
         let rec = RequestRecord {
             timestamp: "t".into(),

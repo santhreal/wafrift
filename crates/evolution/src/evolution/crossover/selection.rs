@@ -20,7 +20,7 @@ pub fn tournament_select<'a>(population: &'a [Chromosome], rng: &mut impl Rng) -
 /// Tournament selection with explicit tournament size.
 ///
 /// # Panics
-/// Panics with a clear contract message if `population` is empty 
+/// Panics with a clear contract message if `population` is empty
 /// silently returning a "default" Chromosome would mask the caller's
 /// state-machine bug. Callers that may have an empty population
 /// should guard before invoking this helper.

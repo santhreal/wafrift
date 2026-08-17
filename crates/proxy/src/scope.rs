@@ -340,12 +340,12 @@ mod tests {
     /// The OLD recursive impl was O(|s|^k) with k wildcards. A pattern
     /// like `*a*a*a*a*a*a` (6 wildcards) against `bbbbbbbbbbbbbbbb`
     /// (16 bytes) would require ~16^6 ≈ 16M recursive calls. With 30
-    /// wildcards and a 128-byte non-matching subject that is 128^30 
+    /// wildcards and a 128-byte non-matching subject that is 128^30
     /// effectively infinite. The iterative two-pointer algorithm is
     /// O(|p|·|s|) = O(30×128) = 3840 steps.
     ///
     /// This test uses 30 `*a` pairs (30 wildcards) and a 128-byte
-    /// all-`b` subject, the worst-case combination for the old impl 
+    /// all-`b` subject, the worst-case combination for the old impl
     /// and asserts completion in under 100 ms (the iterative impl
     /// completes in microseconds on any modern CPU).
     #[test]

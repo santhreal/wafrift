@@ -404,7 +404,7 @@ fn rw_handler_synonym(payload: &str, rng: &mut Rng) -> Option<String> {
         return None;
     };
     let qb = format!("{q}{body}{q}");
-    // Every entry must AUTO-fire with EXACTLY the attributes written here 
+    // Every entry must AUTO-fire with EXACTLY the attributes written here
     // `still_executes_xss` only checks token presence, not real execution, so
     // this list is the sole soundness authority for "this carrier runs on its
     // own." Each below is a load/error/focus handler that fires with no user
@@ -506,7 +506,7 @@ fn escape_sink_letters(
 /// before the JS engine sees the handler; a WAF keyed on the literal sink
 /// is bypassed while the browser still executes `alert(…)`.
 ///
-/// Emits BOTH numeric-entity bases, hex (`&#xNN;`) and decimal (`&#NN;`) 
+/// Emits BOTH numeric-entity bases, hex (`&#xNN;`) and decimal (`&#NN;`)
 /// chosen per call. `normalize` decodes both (it branches on the `x`/`X`
 /// prefix, lines ~41/50), so `still_executes_xss` confirms equivalence
 /// either way. Decimal is a distinct sound bypass: many WAF signatures key
@@ -677,7 +677,7 @@ mod tests {
     fn structured_marker_buried_in_larger_identifier_is_rejected() {
         // SOUNDNESS regression (R2 §14 introspection: the same substring-
         // containment bug found+fixed in the SQL relation also lived here).
-        // The structured-marker gate used `lc.contains(t)`: raw substring 
+        // The structured-marker gate used `lc.contains(t)`: raw substring
         // so a candidate that buries each marker inside a LARGER token passed
         // even though the buried text is no longer the attack. Here the exfil
         // markers are `fetch(`, `document.cookie`, and host `evil.tld`.

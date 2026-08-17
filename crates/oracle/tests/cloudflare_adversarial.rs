@@ -200,7 +200,7 @@ fn body_with_thousand_open_tags_does_not_panic() {
 
 #[test]
 fn body_with_cf_error_code_1020_classifies_managed_rule() {
-    // Parser recognises the canonical CF block-page phrasings 
+    // Parser recognises the canonical CF block-page phrasings
     // `error code: 1020`, `<!-- error code: 1020 -->`,
     // `data-translate="error_code">1020<`, `::ERRORPAGESSTATUS::1020`.
     let body = b"<html>error code: 1020 - Access denied.</html>";
@@ -295,7 +295,7 @@ fn block_and_retry_after_takes_rate_limit() {
 
 #[test]
 fn cve_id_alone_produces_attribution() {
-    // CVE-2021-44228 in the body must produce SOME attribution 
+    // CVE-2021-44228 in the body must produce SOME attribution
     // the parser surfaces either the raw CVE id or the named class
     // "log4shell" (both are valid; the raw CVE id is more specific
     // because it pins which CVE the rule fired on).

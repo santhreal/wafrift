@@ -197,7 +197,7 @@ impl UpstreamClient {
     /// # Body bounding
     ///
     /// Bodies are truncated at `max_body` bytes (no error, the
-    /// truncated content is still useful for WAF-block detection 
+    /// truncated content is still useful for WAF-block detection
     /// matches `forward_wafrift_request`'s existing semantics).
     pub async fn send(
         &self,

@@ -115,9 +115,8 @@ impl DifferentialResult {
                 .iter()
                 .any(|function| function.contains("constructor"))
         {
-            suggestions.push(
-                "XSS via constructor chain, alert() blocked but prototype access not".into(),
-            );
+            suggestions
+                .push("XSS via constructor chain, alert() blocked but prototype access not".into());
         }
         if self
             .blocked_cmd_separators
@@ -128,8 +127,7 @@ impl DifferentialResult {
                 .iter()
                 .any(|separator| separator == "|")
         {
-            suggestions
-                .push("CMD injection via pipe (|), semicolons blocked but pipes not".into());
+            suggestions.push("CMD injection via pipe (|), semicolons blocked but pipes not".into());
         }
         if !self.blocked_cmd_commands.is_empty() {
             suggestions.push(
@@ -149,8 +147,7 @@ impl DifferentialResult {
         }
         if suggestions.is_empty() {
             suggestions.push(
-                "WAF appears comprehensive, try Content-Type switching or encoding layering"
-                    .into(),
+                "WAF appears comprehensive, try Content-Type switching or encoding layering".into(),
             );
         }
         suggestions

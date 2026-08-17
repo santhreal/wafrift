@@ -226,7 +226,7 @@ fn graphql_flag_forces_injection_at_base_url() {
     );
 }
 
-/// Test 4: All three payload classes, alias-flood, introspection, op-name-mismatch 
+/// Test 4: All three payload classes, alias-flood, introspection, op-name-mismatch
 /// appear in the bodies logged by the mock when `--graphql` is active.
 #[test]
 fn graphql_payload_set_covers_all_three_classes() {

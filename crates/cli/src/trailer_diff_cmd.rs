@@ -20,7 +20,7 @@
 //! ```
 //!
 //! WAFs typically inspect the initial header block (before the body).
-//! Many do NOT parse trailer fields that appear after the final chunk 
+//! Many do NOT parse trailer fields that appear after the final chunk
 //! they simply pass the connection to the backend, which reassembles
 //! the trailer into its header set and acts on the injected value.
 //! This creates a seam: a WAF-blocked payload delivered through a
@@ -323,7 +323,7 @@ pub(crate) enum RequestKind {
 /// \r\n
 /// ```
 ///
-/// The baseline is identical but omits the `<H>: <payload>` trailer line 
+/// The baseline is identical but omits the `<H>: <payload>` trailer line
 /// it terminates with `0\r\n\r\n`.
 pub(crate) fn build_chunked_request(
     parsed: &ParsedUrl,

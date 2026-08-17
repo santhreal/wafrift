@@ -20,7 +20,7 @@
 //! * `wafrift smuggle list`: enumerate the variants the engine
 //!   knows about, with their safety tier.
 //!
-//! * `wafrift smuggle dry-run --variant <V> --host <H> --smuggled-prefix <P>` 
+//! * `wafrift smuggle dry-run --variant <V> --host <H> --smuggled-prefix <P>`
 //!   render the raw wire bytes the variant would send. No network. The
 //!   single fastest way to inspect what wafrift would do, and the basis
 //!   for replaying with `nc`, `curl --raw`, or any other transport.
@@ -285,7 +285,7 @@ pub(crate) const VARIANTS: &[VariantInfo] = &[
     // ── Kettle BH-USA 2025 "HTTP/1.1 Must Die: The Desync Endgame" ──
     // Frontier desync primitives. The library implementations live in
     // `wafrift-smuggling::smuggling` (registered in KETTLE_DESYNC_PRIMITIVES)
-    // and have been unit-tested since pass-13 but carried no CLI surface 
+    // and have been unit-tested since pass-13 but carried no CLI surface
     // these wire them through `build_payload` exactly like the rapid-reset
     // family above, so an operator can drive each via
     // `wafrift smuggle probe --variant <K> --unsafe`. All Exploit-tier: each
@@ -459,7 +459,7 @@ pub(crate) fn unescape_prefix(s: &str) -> String {
 /// a variant is one row in `VARIANTS` plus one match arm here.
 /// Take the canonical (first) payload from a library fan-out that
 /// returns a `Vec<SmugglingPayload>`, mapping the safety error to a
-/// `String`. The smuggle CLI fires ONE payload per `--variant` key 
+/// `String`. The smuggle CLI fires ONE payload per `--variant` key
 /// the same single-representative contract as `te-te` (index 1) and
 /// `chunk-ext-lone-lf`: and each library builder emits its canonical
 /// variant first, so the head element is the one surfaced. The full
@@ -1467,7 +1467,7 @@ mod tests {
 
     #[test]
     fn classify_detection_handles_baseline_higher_than_probe() {
-        // A negative delta, probe came back FASTER than baseline 
+        // A negative delta, probe came back FASTER than baseline
         // is never a desync signal.
         let f = classify_detection(100, 500, 1500);
         assert!(!f.desync_inferred);

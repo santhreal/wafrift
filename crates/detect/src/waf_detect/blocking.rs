@@ -40,7 +40,7 @@ static BLOCK_AC: Lazy<AhoCorasick> = Lazy::new(|| {
         .expect("block indicators are valid AC patterns")
 });
 
-/// Returns `true` when an HTTP response looks like a WAF block page 
+/// Returns `true` when an HTTP response looks like a WAF block page
 /// **broad, learning-phase** classifier.
 ///
 /// Used by the detection/learning pipeline to decide "is this response

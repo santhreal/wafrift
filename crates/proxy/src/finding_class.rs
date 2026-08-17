@@ -5,7 +5,7 @@
 //! manual → wafrift-proxy → target). Those tools provide the payloads; wafrift,
 //! sitting in the path, classifies each transaction it forwards: did a request
 //! input **reflect** in the response, and does that reflection actually
-//! **execute**? This turns wafrift-as-a-proxy into a live exploit-classifier 
+//! **execute**? This turns wafrift-as-a-proxy into a live exploit-classifier
 //! separating "the input came back" (noise every scanner floods you with) from
 //! "the input runs" (a confirmed client-side exploit), for whatever tool is
 //! driving the traffic.

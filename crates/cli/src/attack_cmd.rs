@@ -234,7 +234,7 @@ pub(crate) async fn run_attack(mut args: AttackArgs) -> ExitCode {
     // R44-I3 fix (dogfood pass 4): pre-fix attack exited 0 even when
     // EVERY sub-probe failed because the target was unreachable. A
     // CI consumer piping `attack` on a dead host saw "0 divergences"
-    // / exit 0 and believed the target had no parser-diff issues 
+    // / exit 0 and believed the target had no parser-diff issues
     // when actually no probes had landed at all. Count error-flagged
     // sub-probes; if all 7 errored (or even just any of them errored
     // with "Cannot reach"), surface a non-zero exit so the failure
@@ -275,7 +275,7 @@ impl DivergenceCount {
 
 fn subprobe_args_path(args: &AttackArgs) -> Vec<String> {
     // R46-I1 fix (dogfood pass 7): parser-diff (the url-path sub-
-    // probe) does not currently accept --proxy / --insecure / -H 
+    // probe) does not currently accept --proxy / --insecure / -H
     // so push_common_flags would forward them and parser-diff
     // would exit 2 on "unexpected argument", silently dropping
     // that entire sub-probe from every `attack` run that set
@@ -331,7 +331,7 @@ fn subprobe_args_cache(args: &AttackArgs) -> Vec<String> {
 fn subprobe_args_h2(args: &AttackArgs) -> Vec<String> {
     // h2-diff is single-threaded by construction (H1 and H2 must
     // match request-shape exactly, no payload-axis fan-out), so it
-    // accepts a NARROWER flag set than the other sub-probes 
+    // accepts a NARROWER flag set than the other sub-probes
     // notably no `--concurrency`, no `--proxy`, no `-H/--header`.
     // Before this filter, every `attack` invocation silently
     // dropped the H1/H2 differential probe (sonnet dogfood pass 3,
@@ -653,7 +653,7 @@ mod tests {
         let v = into_value("body", Err("boom".to_string()));
         assert_eq!(v["family"], "body");
         assert_eq!(v["error"], "boom");
-        // Even on error the family carries empty divergence counts 
+        // Even on error the family carries empty divergence counts
         // keeps the orchestrator's totalling code branch-free.
         assert_eq!(v["divergences"]["high"], 0);
         assert_eq!(v["divergences"]["medium"], 0);

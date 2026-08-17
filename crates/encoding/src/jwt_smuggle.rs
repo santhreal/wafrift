@@ -167,7 +167,7 @@ impl JwtSmuggleProbe {
     /// admin token is built around the credential value.
     #[must_use]
     pub fn new(technique: JwtSmuggleTechnique, credential_value: &str) -> Self {
-        // Try to use the operator's --credential as a base JWT 
+        // Try to use the operator's --credential as a base JWT
         // if it's not a 3-segment JWT, build a synthetic one with
         // the credential spliced into the `sub` claim.
         let (base_header, base_payload, base_sig) = split_or_synthesize_jwt(credential_value);

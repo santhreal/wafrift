@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn embedded_rules_parses() {
         let r = HeaderRules::embedded();
-        // The embedded ruleset must produce at least one rule 
+        // The embedded ruleset must produce at least one rule
         // otherwise the include_str! has gone empty.
         assert!(!r.rules.is_empty());
     }

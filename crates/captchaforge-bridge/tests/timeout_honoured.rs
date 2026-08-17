@@ -39,7 +39,7 @@ async fn timeout_honoured_against_unresponsive_html() {
         navigate_first: false,
     };
 
-    // An HTML page with no captcha widgets and no external resources 
+    // An HTML page with no captcha widgets and no external resources
     // the browser would load it instantly, the solver chain returns
     // None quickly, but if Firefox is unavailable the launch fails
     // fast too. Either way the function must not outlive the budget.

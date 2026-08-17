@@ -558,7 +558,7 @@ fn load_priority_techniques(
 }
 
 /// Re-order the probe list so techniques in `priority` fire FIRST.
-/// Within each group, the original aggregator order is preserved 
+/// Within each group, the original aggregator order is preserved
 /// operators get reproducible iteration even after re-prioritisation.
 fn reorder_priority_first(
     probes: Vec<Box<dyn SmuggleProbe>>,

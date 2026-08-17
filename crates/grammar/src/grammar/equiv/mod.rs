@@ -207,9 +207,9 @@ pub enum DeliveryShape {
     /// score each occurrence independently) miss it; the payload is
     /// never split. Sound on last-occurrence-wins backends (PHP
     /// `$_GET`, Express, Spring `@RequestParam`, Rails); NOT sound on
-    /// first-wins or value-concatenating (legacy ASP.NET) backends 
+    /// first-wins or value-concatenating (legacy ASP.NET) backends
     /// the recovered value there is not the original payload. (The
-    /// decoys are throwaway markers, never fragments of the payload 
+    /// decoys are throwaway markers, never fragments of the payload
     /// this is deliberately NOT a payload-splitting/concat technique.)
     HppSplit { param: String, parts: usize },
     /// Payload as a **request header** value (e.g. `X-Forwarded-Host`,
@@ -301,7 +301,7 @@ pub enum DeliveryShape {
     },
     /// Multipart field part whose body is the payload UTF-7-encoded
     /// (RFC 2152), with the part header `Content-Type: text/plain;
-    /// charset=utf-7`. The SYNTAX metacharacters a signature anchors on 
+    /// charset=utf-7`. The SYNTAX metacharacters a signature anchors on
     /// `<`, `>`, `=`, space, `"`: are non-direct in RFC 2152 and become
     /// `+…-` shift sequences (`<script>` → `+ADw-script+AD4-`), so the WAF
     /// matches none of them as literal bytes; a backend that honours the
@@ -375,7 +375,10 @@ impl DeliveryShape {
                 // octets (RFC 9110 §5.5 field-content = 1*VCHAR / obs-text,
                 // plus OWS which is SP/HTAB). All other CTL (0x00-0x08,
                 // 0x0A-0x1F, 0x7F) are rejected by HeaderValue::from_bytes.
-                !edge_ows && bytes.iter().all(|&b| b == b' ' || b == b'\t' || (b > 0x20 && b != 0x7F))
+                !edge_ows
+                    && bytes
+                        .iter()
+                        .all(|&b| b == b' ' || b == b'\t' || (b > 0x20 && b != 0x7F))
             }
             Self::Cookie { .. } => {
                 // RFC 6265 cookie-octet: %x21 / %x23-2B / %x2D-3A /
@@ -517,7 +520,17 @@ pub fn equiv_sql(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
 pub fn supports_class(class: &str) -> bool {
     matches!(
         class,
-        "sql" | "xss" | "cmdi" | "path" | "ssti" | "ldap" | "ssrf" | "nosql" | "log4shell" | "xxe" | "graphql"
+        "sql"
+            | "xss"
+            | "cmdi"
+            | "path"
+            | "ssti"
+            | "ldap"
+            | "ssrf"
+            | "nosql"
+            | "log4shell"
+            | "xxe"
+            | "graphql"
     )
 }
 
@@ -550,7 +563,7 @@ pub fn equiv_for(class: &str, payload: &str, cfg: &EquivConfig) -> Vec<EquivPayl
 // segment / JSON-without-Content-Type reaches the backend sink while
 // the WAF inspects it differently. This renders an [`EquivPayload`]'s
 // `(payload × delivery)` into a transport-neutral [`wafrift_types::
-// Request`] that ANY consumer (scald, the proxy, the CLI) can send 
+// Request`] that ANY consumer (scald, the proxy, the CLI) can send
 // one single source of truth for the joint algebra.
 // ─────────────────────────────────────────────────────────────────────
 
@@ -615,7 +628,6 @@ fn effective_boundary(parts: &[&str]) -> String {
     }
     bnd
 }
-
 
 fn url_with_pair(target: &str, param: &str, raw_value: &str) -> String {
     let base = target.trim_end_matches('/');
@@ -844,7 +856,7 @@ impl DeliveryShape {
                 req
             }
             Self::GraphQLQuery { field, var } => {
-                // Same sanitization for the GraphQL identifier names 
+                // Same sanitization for the GraphQL identifier names
                 // attacker bytes there would mis-parse the query.
                 let f_safe = sanitize_graphql_name(field, "search");
                 let v_safe = sanitize_graphql_name(var, "v");
@@ -1379,10 +1391,22 @@ mod delivery_api_tests {
         // a header value, not just CR/LF/NUL. \x0B (VT) and \x0C (FF)
         // appear in WS_EQUIV and fail HeaderValue::from_bytes, causing
         // send_with_envelope to error and waste the fire budget.
-        assert!(!hv.transport_legal("a\x0Bb"), "VT is illegal in header value");
-        assert!(!hv.transport_legal("a\x0Cb"), "FF is illegal in header value");
-        assert!(!hv.transport_legal("a\x01b"), "SOH is illegal in header value");
-        assert!(!hv.transport_legal("a\x7Fb"), "DEL is illegal in header value");
+        assert!(
+            !hv.transport_legal("a\x0Bb"),
+            "VT is illegal in header value"
+        );
+        assert!(
+            !hv.transport_legal("a\x0Cb"),
+            "FF is illegal in header value"
+        );
+        assert!(
+            !hv.transport_legal("a\x01b"),
+            "SOH is illegal in header value"
+        );
+        assert!(
+            !hv.transport_legal("a\x7Fb"),
+            "DEL is illegal in header value"
+        );
         // Cookie-octet: space, `;`, `,`, `"`, `\`, CTL all illegal.
         assert!(ck.transport_legal("<svg/onload=alert(1)>"));
         assert!(!ck.transport_legal("<svg onload=alert(1)>")); // space
@@ -1782,7 +1806,7 @@ mod delivery_roundtrip_tests {
         // First-wins backend would see a benign decoy (evasion-safe,
         // exploit-inert) (never a partial payload).
         assert_eq!(vs.first().unwrap(), "v0");
-        // Concatenating backend would see decoys glued to the payload 
+        // Concatenating backend would see decoys glued to the payload
         // i.e. NOT the original. This is the documented unsound case;
         // asserting it keeps the variant doc honest.
         assert_ne!(vs.concat(), payload);

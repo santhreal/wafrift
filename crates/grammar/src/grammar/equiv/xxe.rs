@@ -4,7 +4,7 @@
 //! The sound equivalence is **external-id equivalence**: the set of
 //! URIs an XML parser dereferences when expanding the DTD is invariant
 //! under (a) the entity *name* (`&xxe;` vs `&z;`, consistently
-//! renamed), (b) `SYSTEM "U"` vs `PUBLIC "any" "U"` (XML 1.0 §4.2.2 
+//! renamed), (b) `SYSTEM "U"` vs `PUBLIC "any" "U"` (XML 1.0 §4.2.2
 //! the public id is advisory; the system literal `U` is fetched), (c)
 //! quote style `"U"` ↔ `'U'`, (d) DTD internal-subset whitespace, and
 //! (e) the local-file spellings that denote the same path
@@ -296,7 +296,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    
+
     out.truncate(cfg.max);
     out
 }

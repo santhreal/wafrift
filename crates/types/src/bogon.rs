@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn ipv4_compat_with_public_v4_not_bogon() {
-        // ::8.8.8.8 (IPv4-compatible, deprecated) must NOT be flagged 
+        // ::8.8.8.8 (IPv4-compatible, deprecated) must NOT be flagged
         // the embedded address is public, so neither branch blocks it.
         // Note: this form is deprecated (RFC 4291 §2.5.5.1) but must
         // not accidentally block legitimate traffic.

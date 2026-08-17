@@ -23,7 +23,7 @@
 //! assert_eq!(cfg.solve_timeout_ms, 60_000);
 //! assert!(cfg.headless);
 //!
-//! // Some Cloudflare managed challenges fingerprint headless mode 
+//! // Some Cloudflare managed challenges fingerprint headless mode
 //! // flip the flag for those targets.
 //! let visible = BridgeConfig { headless: false, ..BridgeConfig::default() };
 //! assert!(!visible.headless);
@@ -166,7 +166,6 @@ pub async fn solve_in_browser(
         }
         Ok(Ok(Ok(page))) => page,
     };
-
 
     let solve_fut = async {
         // Phase 1: Behavioral warm-up before the challenge evaluates us.
@@ -565,7 +564,6 @@ mod tests {
         };
         assert_eq!(c.solve_timeout_ms, 120_000);
     }
-
 
     // ── serde_json_escape edge cases ─────────────────────────────────────
 

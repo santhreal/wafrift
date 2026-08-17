@@ -81,10 +81,10 @@ fn main() {
     let rule_id_prefixes = read_strings(&rules_dir.join("rule_id_prefixes.toml"), |p| p.prefixes);
     let rule_categories = read_strings(&rules_dir.join("rule_categories.toml"), |p| p.categories);
     let vendors = read_strings(&rules_dir.join("vendors.toml"), |p| p.vendors);
-    let block_headers_raw = fs::read_to_string(rules_dir.join("block_headers.toml"))
-        .expect("read block_headers.toml");
-    let block_headers: BlockHeaders = toml::from_str(&block_headers_raw)
-        .expect("parse block_headers.toml");
+    let block_headers_raw =
+        fs::read_to_string(rules_dir.join("block_headers.toml")).expect("read block_headers.toml");
+    let block_headers: BlockHeaders =
+        toml::from_str(&block_headers_raw).expect("parse block_headers.toml");
 
     emit_str_array(&mut out, "BLOCK_MARKERS", &block);
     emit_str_array(&mut out, "CHALLENGE_MARKERS", &challenge);

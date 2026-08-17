@@ -164,7 +164,7 @@ pub fn featurize(payload: &str, delivery_arm: usize) -> Vec<f64> {
     // Design note on `--` and `0x` detection: these occur outside block
     // comments and pass through to `norm` verbatim. We detect them with a
     // post-loop `norm.contains()` call (a SIMD-optimised search on the full
-    // lowercased string) rather than tracking byte-by-byte in the loop 
+    // lowercased string) rather than tracking byte-by-byte in the loop
     // this avoids adding branch overhead per byte for longer payloads.
     // Only `has_block_comment` and `has_mysql_cond_comment` need inline
     // flags because block comment content is STRIPPED from `norm` (so
@@ -625,7 +625,7 @@ mod tests {
         use crate::grammar::equiv::sql::{DELIVERY_ARMS, delivery_kind_label};
         assert_eq!(feature_count(), FEATURES.len());
         // The one-hot delivery block is exactly the LAST `DELIVERY_ARMS`
-        // entries and is `dlv_<delivery_kind_label(i)>` for every arm 
+        // entries and is `dlv_<delivery_kind_label(i)>` for every arm
         // derived, not a hand-copied 8-list, so adding an arm (0.2.17
         // added header_value/cookie) is auto-checked and `featurize`'s
         // `dlv` mapper can never silently fold an arm into query.

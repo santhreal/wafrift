@@ -122,7 +122,7 @@ impl SanitizerModel {
             .collect()
     }
 
-    /// Simulate the sanitizer on `input` using a pre-compiled strip-pattern set 
+    /// Simulate the sanitizer on `input` using a pre-compiled strip-pattern set
     /// the hot path ([`SanitizerOracle`]) compiles once and calls this per query.
     #[must_use]
     pub fn sanitize_with(&self, input: &str, strip_res: &[Regex]) -> String {

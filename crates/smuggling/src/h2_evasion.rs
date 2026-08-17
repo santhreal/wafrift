@@ -971,7 +971,7 @@ pub struct SpcaTopology {
 ///
 /// In a circular dependency A→B→C→A, RFC 7540 §5.3.1 says the new
 /// dependency MUST be ignored or reshuffled. However several WAF inline
-/// parsers walk the dependency pointer chain for scheduling decisions 
+/// parsers walk the dependency pointer chain for scheduling decisions
 /// if they loop without a cycle-detection guard they either crash or
 /// silently truncate inspection. Streams 1, 3, 5, … are client-initiated;
 /// stream 0 is the connection control stream.

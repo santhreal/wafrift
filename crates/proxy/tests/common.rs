@@ -108,7 +108,7 @@ async fn child_still_alive_after_grace(child: &mut Child) -> bool {
 /// to bind and exits, which `wait_for_listen` reports as Err; or (2) the winning
 /// proxy answers our readiness probe, so `wait_for_listen` returns Ok against
 /// the *wrong* process (one likely lacking `--allow-private-upstream`, which
-/// then rejects the loopback upstream and fails the test on response status 
+/// then rejects the loopback upstream and fails the test on response status
 /// not on startup). `child_still_alive_after_grace` closes the second hole, and
 /// re-picking the port closes both. Returns the live child and its bound port.
 #[allow(dead_code)]

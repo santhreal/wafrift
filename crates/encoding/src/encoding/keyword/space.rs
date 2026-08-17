@@ -31,7 +31,7 @@ pub fn space_to_dash(payload: &str) -> String {
 /// injection delivered).
 ///
 /// Adding the trailing `\n` makes `#\n` a zero-content line comment
-/// that ends immediately, leaving the following token outside 
+/// that ends immediately, leaving the following token outside
 /// the same pattern `space_to_dash` uses with `--\n`. Result:
 /// MySQL parses the payload as whitespace-separated tokens that
 /// happen to have inline line-comment fillers between them.

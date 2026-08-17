@@ -129,7 +129,7 @@ pub fn asterisk_form_request_line(method: &str) -> String {
     format!("{method} * HTTP/1.1")
 }
 
-/// Authority-form request target (`host:port`). RFC 7230 §5.3.3 
+/// Authority-form request target (`host:port`). RFC 7230 §5.3.3
 /// only valid for `CONNECT`. A WAF that sees `CONNECT internal:8080`
 /// and the upstream proxy that accepts it can be tricked into
 /// tunneling to private addresses.

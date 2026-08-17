@@ -16,7 +16,7 @@ use crate::grammar::template::is_structured_ssti;
 /// re-wrap the expression can preserve the SAME delimiters they
 /// found. F103: pre-fix this returned only `(pre, expr, post)`,
 /// and every rewriter (`rw_inner_ws`, `rw_attr_subscript`,
-/// `rw_string_split`) hardcoded `{{` `}}` in the output 
+/// `rw_string_split`) hardcoded `{{` `}}` in the output
 /// silently rewriting a FreeMarker `${…}` payload into Jinja
 /// `{{ … }}` (different engine, the rewritten variant is a no-op
 /// on the target). Now the original delimiters round-trip.
@@ -194,7 +194,7 @@ fn rw_string_split(payload: &str, rng: &mut Rng) -> Option<String> {
             // sibling rewriters.
             if j < bytes.len() && j - st >= 2 && rng.chance(1, 2) {
                 let lit = &e[st..j];
-                // Split on a CHAR boundary, never a byte midpoint 
+                // Split on a CHAR boundary, never a byte midpoint
                 // `lit` may hold multibyte content and `split_at(byte)`
                 // panics inside a codepoint (hostile-input crash).
                 let lc: Vec<char> = lit.chars().collect();
@@ -306,7 +306,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    
+
     out.truncate(cfg.max);
     out
 }

@@ -55,13 +55,13 @@ use wafrift_transport::stealth::{ImpersonateProfile, StealthClient, supported_pr
 #[derive(Args, Debug)]
 pub(crate) struct Ja3DiffArgs {
     /// Target URL. Must be a non-bogon address (the stealth client
-    /// refuses 127.0.0.1, RFC1918, link-local, CGN, Teredo, IMDS 
+    /// refuses 127.0.0.1, RFC1918, link-local, CGN, Teredo, IMDS
     /// same SSRF gate the proxy uses).
     pub url: String,
 
     /// Comma-separated list of browser profiles to probe.
     /// Default: the full supported set. Each profile is one
-    /// `--tls-impersonate <profile>` value the proxy understands 
+    /// `--tls-impersonate <profile>` value the proxy understands
     /// when ja3-diff flags one as a bypass, you can immediately run
     /// `wafrift-proxy --tls-impersonate <best>` to route your scan
     /// through the winning fingerprint.
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn classify_body_shift_within_status_class_is_medium() {
-        // All 200, but one profile gets a body length that's 50% smaller 
+        // All 200, but one profile gets a body length that's 50% smaller
         // could be a JS challenge swapped in for that fingerprint.
         let mk = |name: &str, body: usize| ProbeOutcome {
             profile: name.into(),

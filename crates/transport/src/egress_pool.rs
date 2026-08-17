@@ -566,7 +566,7 @@ impl EgressPoolBuilder {
             .collect();
         // R63 pass-21 §6: route through `wafrift_types` constants so the
         // builder fallback and the CLI default never drift. Pre-fix the
-        // numbers `3` and `300` were open-coded here AND in cli/config 
+        // numbers `3` and `300` were open-coded here AND in cli/config
         // an operator who tuned the CLI default to e.g. 2/180 wouldn't
         // see it apply to clients built via this Builder.
         Ok(EgressPool {
