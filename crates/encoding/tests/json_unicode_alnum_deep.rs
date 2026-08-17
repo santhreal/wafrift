@@ -32,23 +32,12 @@ fn single_digit_encodes() {
 }
 
 #[test]
-fn single_space_passes_through() {
-    assert_eq!(run(" "), " ");
-}
-
-#[test]
-fn single_tab_passes_through() {
-    assert_eq!(run("\t"), "\t");
-}
-
-#[test]
-fn single_newline_passes_through() {
-    assert_eq!(run("\n"), "\n");
-}
-
-#[test]
-fn single_null_byte_passes_through() {
-    assert_eq!(run("\0"), "\0");
+fn single_non_alphanumeric_chars_pass_through() {
+    // Space, tab, newline, and NUL are not alphanumeric; they must
+    // pass through unchanged (only [A-Za-z0-9] gets \\uXXXX encoding).
+    for input in [" ", "\t", "\n", "\0"] {
+        assert_eq!(run(input), input, "{input:?} must pass through unchanged");
+    }
 }
 
 #[test]
@@ -69,36 +58,26 @@ fn single_punctuation_chars_pass_through() {
 // ────────────────────────────────────────────────────────────────
 
 #[test]
-fn latin_supplement_passes_through() {
-    assert_eq!(run("ñ"), "ñ");
-    assert_eq!(run("é"), "é");
-    assert_eq!(run("ÿ"), "ÿ");
-}
-
-#[test]
-fn cjk_passes_through() {
-    assert_eq!(run("日本語"), "日本語");
-    assert_eq!(run("中文"), "中文");
-    assert_eq!(run("한국어"), "한국어");
-}
-
-#[test]
-fn cyrillic_passes_through() {
-    // Cyrillic letters look like Latin but aren't ascii_alphanumeric.
-    assert_eq!(run("привет"), "привет");
-}
-
-#[test]
-fn emoji_passes_through() {
-    assert_eq!(run("🔥"), "🔥");
-    assert_eq!(run("👻💀"), "👻💀");
-}
-
-#[test]
-fn zero_width_chars_pass_through() {
-    // U+200B ZERO WIDTH SPACE (not alphanumeric).
-    assert_eq!(run("\u{200B}"), "\u{200B}");
-    assert_eq!(run("\u{FEFF}"), "\u{FEFF}"); // BOM
+fn non_ascii_unicode_passes_through() {
+    // Only ASCII alphanumeric chars get \\uXXXX encoding; everything
+    // else (Latin supplement, CJK, Cyrillic, emoji, zero-width) passes
+    // through verbatim.
+    let cases = [
+        "ñ",
+        "é",
+        "ÿ",
+        "日本語",
+        "中文",
+        "한국어",
+        "привет",
+        "🔥",
+        "👻💀",
+        "\u{200B}",
+        "\u{FEFF}",
+    ];
+    for input in cases {
+        assert_eq!(run(input), input, "{input:?} must pass through unchanged");
+    }
 }
 
 #[test]
@@ -603,17 +582,10 @@ fn underscore_is_not_alphanumeric_passes_through() {
 }
 
 #[test]
-fn dollar_sign_passes_through() {
+fn special_chars_pass_through() {
+    // $, %, / are not alphanumeric; they must pass through unchanged.
     assert_eq!(run("$"), "$");
-}
-
-#[test]
-fn percent_sign_passes_through() {
     assert_eq!(run("%"), "%");
-}
-
-#[test]
-fn slash_passes_through() {
     assert_eq!(run("/"), "/");
     assert_eq!(run("//"), "//");
 }
@@ -623,23 +595,17 @@ fn slash_passes_through() {
 // ────────────────────────────────────────────────────────────────
 
 #[test]
-fn context_none_works() {
-    let _ = tamper("json_unicode_alnum", "UNION", None).unwrap();
-}
-
-#[test]
-fn context_sql_works() {
-    let _ = tamper("json_unicode_alnum", "UNION", Some("sql")).unwrap();
-}
-
-#[test]
-fn context_xss_works() {
-    let _ = tamper("json_unicode_alnum", "<script>", Some("xss")).unwrap();
-}
-
-#[test]
-fn context_arbitrary_works() {
-    let _ = tamper("json_unicode_alnum", "x", Some("arbitrary_unknown_class")).unwrap();
+fn context_parameter_accepted_for_all_values() {
+    // json_unicode_alnum is context-insensitive, but the context
+    // parameter must still be accepted without error for any value.
+    for ctx in [
+        None,
+        Some("sql"),
+        Some("xss"),
+        Some("arbitrary_unknown_class"),
+    ] {
+        let _ = tamper("json_unicode_alnum", "UNION", ctx).unwrap();
+    }
 }
 
 #[test]
