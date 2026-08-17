@@ -435,40 +435,9 @@ fn payload_with_backslash_in_literal() {
 // Registry / dispatch integration
 // ────────────────────────────────────────────────────────────────
 
-#[test]
-fn registered_in_default_registry() {
-    let reg = TamperRegistry::with_defaults();
-    assert!(reg.get("sql_adjacent_string_concat").is_some());
-}
-
-#[test]
-fn registered_strategy_name_matches() {
-    let reg = TamperRegistry::with_defaults();
-    let strat = reg.get("sql_adjacent_string_concat").unwrap();
-    assert_eq!(strat.name(), "sql_adjacent_string_concat");
-}
-
-#[test]
-fn registered_aggressiveness_in_range() {
-    let reg = TamperRegistry::with_defaults();
-    let strat = reg.get("sql_adjacent_string_concat").unwrap();
-    let a = strat.aggressiveness();
-    assert!((0.0..=1.0).contains(&a));
-    assert!(!a.is_nan());
-}
-
-#[test]
-fn registered_description_non_empty() {
-    let reg = TamperRegistry::with_defaults();
-    let strat = reg.get("sql_adjacent_string_concat").unwrap();
-    assert!(!strat.description().is_empty());
-}
-
-#[test]
-fn appears_in_all_tamper_names() {
-    let names = wafrift_encoding::all_tamper_names();
-    assert!(names.contains(&"sql_adjacent_string_concat"));
-}
+// Registry invariants (registered, name matches, aggressiveness,
+// description non-empty, appears in all_tamper_names) are covered
+// universally by tamper_universal_invariants.rs.
 
 // ────────────────────────────────────────────────────────────────
 // Concurrency
