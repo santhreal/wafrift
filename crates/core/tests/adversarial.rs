@@ -58,36 +58,11 @@ fn encoding_null_bytes_in_payload() {
     assert!(encoded.contains("%00"));
 }
 
-#[test]
-fn encoding_sql_injection_basic() {
-    let sqli = "' OR '1'='1' --";
-    let encoded = encoding::encode(sqli, Strategy::UrlEncode).unwrap();
-    assert!(encoded.contains("%27")); // Single quote
-    assert!(encoded.contains("%3D")); // Equals sign
-}
-
-#[test]
-fn encoding_sql_injection_union() {
-    let sqli = "UNION SELECT username, password FROM admin--";
-    let encoded = encoding::encode(sqli, Strategy::CaseAlternation).unwrap();
-    // Should alternate case
-    assert_ne!(encoded, sqli);
-    assert!(encoded.to_ascii_lowercase().contains("union"));
-}
-
-#[test]
-fn encoding_sql_injection_comment_insertion() {
-    let sqli = "SELECT * FROM users WHERE id=1";
-    let encoded = encoding::encode(sqli, Strategy::SqlCommentInsertion).unwrap();
-    assert!(encoded.contains("/**/"));
-}
-
-#[test]
-fn encoding_sql_injection_whitespace() {
-    let sqli = "SELECT * FROM users";
-    let encoded = encoding::encode(sqli, Strategy::WhitespaceInsertion).unwrap();
-    assert!(encoded.contains('\t'));
-}
+// SQL injection encoding tests (basic, union, comment insertion,
+// whitespace) are covered by stricter per-strategy tests in
+// encoding_depth.rs (sql_classic_or_1_equals_1_url_encode,
+// sql_union_select_case_alternation, sql_union_select_sql_comment,
+// sql_union_select_whitespace_insertion).
 
 #[test]
 fn encoding_xss_basic() {
