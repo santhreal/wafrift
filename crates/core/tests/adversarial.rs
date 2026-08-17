@@ -248,33 +248,24 @@ fn content_type_duplicate_boundary_parsing() {
 // ============================================================================
 
 #[test]
-fn strategy_escalation_none_to_light() {
-    let mut state = HostState::default();
-    assert_eq!(state.escalation_level(), EscalationLevel::None);
-
-    state.record_block();
-    assert_eq!(state.escalation_level(), EscalationLevel::Light);
-
-    state.record_block();
-    assert_eq!(state.escalation_level(), EscalationLevel::Light);
-}
-
-#[test]
-fn strategy_escalation_light_to_medium() {
-    let mut state = HostState::default();
-    for _ in 0..3 {
-        state.record_block();
+fn strategy_escalation_curve() {
+    // After N blocks, the escalation level must match the expected
+    // tier. Tests the full None→Light→Medium→Heavy curve in one
+    // table-driven case instead of three separate tests.
+    let cases: &[(usize, EscalationLevel)] = &[
+        (0, EscalationLevel::None),
+        (1, EscalationLevel::Light),
+        (2, EscalationLevel::Light),
+        (3, EscalationLevel::Medium),
+        (6, EscalationLevel::Heavy),
+    ];
+    for (blocks, expected) in cases {
+        let mut state = HostState::default();
+        for _ in 0..*blocks {
+            state.record_block();
+        }
+        assert_eq!(state.escalation_level(), *expected, "after {blocks} blocks");
     }
-    assert_eq!(state.escalation_level(), EscalationLevel::Medium);
-}
-
-#[test]
-fn strategy_escalation_medium_to_heavy() {
-    let mut state = HostState::default();
-    for _ in 0..6 {
-        state.record_block();
-    }
-    assert_eq!(state.escalation_level(), EscalationLevel::Heavy);
 }
 
 #[test]
@@ -444,27 +435,22 @@ fn waf_detect_no_false_positives() {
 // ============================================================================
 
 #[test]
-fn fingerprint_profile_uniqueness() {
+fn fingerprint_profile_and_ua_uniqueness() {
     use std::collections::HashSet;
 
-    let names: Vec<&str> = PROFILES.iter().map(|p| p.name).collect();
-    let unique: HashSet<&&str> = names.iter().collect();
-
-    assert_eq!(names.len(), unique.len(), "Duplicate profile names found");
-}
-
-#[test]
-fn fingerprint_user_agent_uniqueness() {
-    use std::collections::HashSet;
-
-    let uas: Vec<&str> = PROFILES.iter().map(|p| p.user_agent).collect();
-    let unique: HashSet<&&str> = uas.iter().collect();
-
-    assert_eq!(
-        uas.len(),
-        unique.len(),
-        "Duplicate User-Agent strings found"
-    );
+    for (field, label) in [
+        (
+            PROFILES.iter().map(|p| p.name).collect::<Vec<_>>(),
+            "profile name",
+        ),
+        (
+            PROFILES.iter().map(|p| p.user_agent).collect::<Vec<_>>(),
+            "User-Agent",
+        ),
+    ] {
+        let unique: HashSet<&&str> = field.iter().collect();
+        assert_eq!(field.len(), unique.len(), "Duplicate {label} found");
+    }
 }
 
 #[test]
