@@ -220,46 +220,35 @@ fn leading_ampersand_in_query_is_preserved() {
 // ── HIGH: non-UTF-8 bytes survive round-trip (no U+FFFD mangling) ──
 
 #[test]
-fn non_utf8_byte_sequence_survives_query_value_round_trip() {
+fn adversarial_byte_sequences_survive_query_value_round_trip() {
     let cfg = UrlMutateConfig {
         mutate_query_values: true,
         mutate_last_path_segment: false,
         strategy: UrlStrategy::PercentEncodeAggressive,
     };
-    // %FF%FE is a classic invalid-UTF-8 byte pair (start of a UTF-16
-    // BOM, but invalid as UTF-8). Pre-fix from_utf8_lossy turned it
-    // into U+FFFD (3 bytes EF BF BD) and the encoder re-emitted
-    // %EF%BF%BD, destroying the original bytes.
-    let (out, _) = mutate_url("/?q=%FF%FE", &cfg);
-    assert!(
-        out.contains("%FF") && out.contains("%FE"),
-        "non-UTF-8 byte pair must survive intact; got: {out}"
-    );
-    assert!(
-        !out.contains("%EF%BF%BD"),
-        "must NOT have been mangled into U+FFFD; got: {out}"
-    );
-}
-
-#[test]
-fn overlong_utf8_sequence_survives_query_value_round_trip() {
-    let cfg = UrlMutateConfig {
-        mutate_query_values: true,
-        mutate_last_path_segment: false,
-        strategy: UrlStrategy::PercentEncodeAggressive,
-    };
-    // %C0%AF is the classic overlong-UTF-8 encoding of `/`: a real
-    // historical WAF-bypass vector against path traversal filters.
-    // The bytes must survive the mutation round-trip exactly.
-    let (out, _) = mutate_url("/?path=admin%C0%AF..%C0%AF", &cfg);
-    assert!(
-        out.contains("%C0%AF"),
-        "overlong UTF-8 escape must survive; got: {out}"
-    );
-    assert!(
-        !out.contains("%EF%BF%BD"),
-        "must NOT have been mangled into U+FFFD; got: {out}"
-    );
+    // Each case is (input URL, bytes that must survive, description).
+    // Pre-fix from_utf8_lossy turned invalid-UTF-8 into U+FFFD
+    // (EF BF BD), destroying the original bytes.
+    let cases: &[(&str, &[&str], &str)] = &[
+        // %FF%FE: start of UTF-16 BOM, invalid as UTF-8.
+        ("/?q=%FF%FE", &["%FF", "%FE"], "non-UTF-8 byte pair"),
+        // %C0%AF: overlong-UTF-8 encoding of `/`, a real WAF-bypass vector.
+        (
+            "/?path=admin%C0%AF..%C0%AF",
+            &["%C0%AF"],
+            "overlong UTF-8 escape",
+        ),
+    ];
+    for (url, must_survive, desc) in cases {
+        let (out, _) = mutate_url(url, &cfg);
+        for frag in *must_survive {
+            assert!(out.contains(frag), "{desc} must survive intact; got: {out}");
+        }
+        assert!(
+            !out.contains("%EF%BF%BD"),
+            "{desc} must NOT be mangled into U+FFFD; got: {out}"
+        );
+    }
 }
 
 #[test]
