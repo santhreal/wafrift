@@ -178,3 +178,15 @@ pub async fn start_proxy_piped_on_free_port(
     Err(last_err
         .unwrap_or_else(|| io::Error::other("start_proxy_piped_on_free_port: no attempt made")))
 }
+
+/// Install a rustls crypto provider once per process. Shared across
+/// proxy test binaries that need TLS for MITM cert-chain tests.
+#[allow(dead_code)]
+pub fn ensure_rustls_provider() {
+    use std::sync::Once;
+    static PROVIDER_INSTALL: Once = Once::new();
+    PROVIDER_INSTALL.call_once(|| {
+        let _ = rustls::crypto::ring::default_provider().install_default();
+        let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+    });
+}

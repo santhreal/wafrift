@@ -15,13 +15,10 @@ use tokio_rustls::{TlsAcceptor, TlsConnector};
 
 use wafrift_proxy::mitm::CertificateAuthority;
 
-static PROVIDER_INSTALL: std::sync::OnceLock<()> = std::sync::OnceLock::new();
+mod common;
 
 fn ensure_rustls_provider() {
-    PROVIDER_INSTALL.get_or_init(|| {
-        let _ = rustls::crypto::ring::default_provider().install_default();
-        let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
-    });
+    common::ensure_rustls_provider()
 }
 
 async fn start_leaf_server(
