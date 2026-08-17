@@ -152,6 +152,7 @@ pub(crate) fn oracle_valid(class: &str, original: &str, transformed: &str) -> bo
         "nosql" => is_valid_nosql(original, transformed),
         "xxe" => is_valid_xxe(original, transformed),
         "log4shell" => is_valid_log4shell(original, transformed),
+        "graphql" => grammar::equiv::graphql::still_executes_graphql(original, transformed),
         "cve_pocs" => transformed == original,
         _ => false,
     }

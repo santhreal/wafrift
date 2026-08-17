@@ -38,6 +38,7 @@
 pub mod adaptive;
 pub mod client_channel;
 pub mod cmd;
+pub mod graphql;
 pub mod ldap;
 pub mod log4shell;
 pub mod nosql;
@@ -516,7 +517,7 @@ pub fn equiv_sql(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
 pub fn supports_class(class: &str) -> bool {
     matches!(
         class,
-        "sql" | "xss" | "cmdi" | "path" | "ssti" | "ldap" | "ssrf" | "nosql" | "log4shell" | "xxe"
+        "sql" | "xss" | "cmdi" | "path" | "ssti" | "ldap" | "ssrf" | "nosql" | "log4shell" | "xxe" | "graphql"
     )
 }
 
@@ -535,6 +536,7 @@ pub fn equiv_for(class: &str, payload: &str, cfg: &EquivConfig) -> Vec<EquivPayl
         "nosql" => nosql::generate(payload, cfg),
         "log4shell" => log4shell::generate(payload, cfg),
         "xxe" => xxe::generate(payload, cfg),
+        "graphql" => graphql::generate(payload, cfg),
         _ => Vec::new(),
     }
 }
