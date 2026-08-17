@@ -44,50 +44,42 @@ fn no_args_exits_cleanly() {
 // ── Subcommand help ────────────────────────────────────────────────────
 
 #[test]
-fn evade_help() {
-    let (code, stdout, _) = wafrift(&["evade", "--help"]);
+fn subcommand_help_exits_0_and_documents_flags() {
+    let cases: &[(&[&str], &[&str])] = &[
+        (&["evade", "--help"], &["--payload", "--level"]),
+        (&["detect", "--help"], &["--status", "--headers"]),
+        (&["scan", "--help"], &["--payload", "--target"]),
+        (&["completion", "--help"], &["bash", "zsh", "fish"]),
+    ];
+    for (args, required) in cases {
+        let (code, stdout, _) = wafrift(args);
+        assert_eq!(code, 0, "{args:?} must exit 0");
+        for flag in *required {
+            assert!(
+                stdout.contains(flag),
+                "{args:?}: must document {flag}: {stdout}"
+            );
+        }
+    }
+    // probe --help only checks exit 0 (no specific flags to pin).
+    let (code, _stdout, _) = wafrift(&["probe", "--help"]);
     assert_eq!(code, 0);
-    assert!(stdout.contains("--payload"));
-    assert!(stdout.contains("--level"));
 }
 
 #[test]
-fn bench_waf_help_documents_ml_evasion_and_waf_name() {
-    // §9 WIRING triangle: the `ml-evasion` strategy (decision-based boundary
-    // attack for ML-backed WAFs) and its `--waf-name` router must be surfaced
-    // in `bench-waf --help`, so the capability is reachable from the
-    // autonomous loop, not just `scan`. The routing *decision* is covered by
-    // strategy/tests/mlwaf_routing.rs; this pins the CLI surfacing.
+fn bench_waf_help_documents_all_features() {
     let (code, stdout, _) = wafrift(&["bench-waf", "--help"]);
     assert_eq!(code, 0, "bench-waf --help should exit 0");
-    assert!(
-        stdout.contains("ml-evasion"),
-        "bench-waf --help must list the ml-evasion strategy: {stdout}"
-    );
-    assert!(
-        stdout.contains("--waf-name"),
-        "bench-waf --help must document the --waf-name flag: {stdout}"
-    );
-}
-
-#[test]
-fn bench_waf_help_documents_permission_gate() {
-    // §15 / least-privilege: bench-waf fires attack payloads, so (like
-    // scan/hunt) it gates non-allowlisted explicit targets behind
-    // --i-have-permission. The flag must be surfaced.
-    let (code, stdout, _) = wafrift(&["bench-waf", "--help"]);
-    assert_eq!(code, 0, "bench-waf --help should exit 0");
-    assert!(
-        stdout.contains("--i-have-permission"),
-        "bench-waf --help must document the --i-have-permission gate: {stdout}"
-    );
+    for flag in ["ml-evasion", "--waf-name", "--i-have-permission"] {
+        assert!(
+            stdout.contains(flag),
+            "bench-waf --help must document {flag}: {stdout}"
+        );
+    }
 }
 
 #[test]
 fn hunt_help_documents_waf_name_routing() {
-    // §9 WIRING: `hunt --waf-name` must be surfaced, it auto-adds the
-    // ml-evasion strategy for ML-backed targets, making the autonomous loop
-    // paradigm-aware. The routing decision is covered by mlwaf_routing.rs.
     let (code, stdout, _) = wafrift(&["hunt", "--help"]);
     assert_eq!(code, 0, "hunt --help should exit 0");
     assert!(
@@ -98,43 +90,12 @@ fn hunt_help_documents_waf_name_routing() {
 
 #[test]
 fn scan_help_documents_corpus_bench_mode() {
-    // "scan pointed at bench": `scan --corpus` runs the corpus-wide bench
-    // measurement (delegating to the unchanged engine). The flag must surface.
     let (code, stdout, _) = wafrift(&["scan", "--help"]);
     assert_eq!(code, 0, "scan --help should exit 0");
     assert!(
         stdout.contains("--corpus"),
         "scan --help must document the --corpus bench-measurement mode: {stdout}"
     );
-}
-
-#[test]
-fn detect_help() {
-    let (code, stdout, _) = wafrift(&["detect", "--help"]);
-    assert_eq!(code, 0);
-    assert!(stdout.contains("--status"));
-    assert!(stdout.contains("--headers"));
-}
-
-#[test]
-fn scan_help() {
-    let (code, stdout, _) = wafrift(&["scan", "--help"]);
-    assert_eq!(code, 0);
-    assert!(stdout.contains("--payload"));
-    assert!(stdout.contains("--target"));
-}
-
-#[test]
-fn probe_help() {
-    let (code, _stdout, _) = wafrift(&["probe", "--help"]);
-    assert_eq!(code, 0);
-}
-
-#[test]
-fn completion_help() {
-    let (code, stdout, _) = wafrift(&["completion", "--help"]);
-    assert_eq!(code, 0);
-    assert!(stdout.contains("bash") || stdout.contains("zsh") || stdout.contains("fish"));
 }
 
 // ── Evade subcommand ───────────────────────────────────────────────────
