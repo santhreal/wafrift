@@ -110,13 +110,13 @@ wafrift-grpc-evasion = { path = "crates/grpc-evasion", version = "0.3.1" }
 wafrift-plugin-api = { path = "crates/plugin-api", version = "0.3.1" }
 guise = { path = "../browser/guise", version = "0.1.6", default-features = false, features = ["fingerprint", "http", "rotation"] }
 guise-pacing = { path = "../browser/guise-pacing", version = "0.1.5" }
-scanclient = { version = "0.2.1", default-features = false }
+scanclient = { version = "0.2.4", default-features = false }
 mctrust = "=0.4.0"
 pocgen = { version = "0.2.1" }
 # Canonical SSRF bogon/CIDR classifier shared with gossan + keyhog. wafrift
 # delegates `wafrift_types::ip_addr_is_bogon` to it so one fix (e.g. the NAT64
 # 64:ff9b::/96 IMDS bypass) lands for every tool (see crates/types/src/bogon.rs).
-bogon = { package = "santh-bogon", version = "0.1.0" }
+bogon = { package = "santh-bogon", version = "0.1.3" }
 boundedio = { version = "0.1.0" }
 # Canonical crt.sh / CT-log client. wafrift-recon's bounded, timeout-guarded
 # crt.sh reader was the donor for this crate; recon now consumes it (with the

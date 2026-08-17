@@ -35,6 +35,10 @@ jobs:
         stack: [modsec-pl1, modsec-pl2, modsec-pl3, modsec-pl4, coraza, bunkerweb, naxsi]
     steps:
       - uses: actions/checkout@v4
+      - name: Strip monorepo path deps (CI uses crates.io)
+        run: |
+          sed -i 's/, path = "\.\.\/browser\/guise"//' Cargo.toml
+          sed -i 's/, path = "\.\.\/browser\/guise-pacing"//' Cargo.toml
 
       - uses: dtolnay/rust-toolchain@stable
 
