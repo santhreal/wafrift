@@ -302,24 +302,17 @@ fn all_evasion_payloads_size_threshold() {
 }
 
 #[test]
-fn all_evasion_payloads_covers_introspection_class() {
+fn all_evasion_payloads_covers_all_classes() {
     let v = all_evasion_payloads();
-    let has_schema = v.iter().any(|p| p.contains("__schema"));
-    assert!(has_schema, "battery missing __schema introspection");
-}
-
-#[test]
-fn all_evasion_payloads_covers_alias_flood_class() {
-    let v = all_evasion_payloads();
-    // alias flood always emits `a0:` followed by `__typename`.
-    let has_alias_flood = v.iter().any(|p| p.contains("a0:__typename"));
-    assert!(has_alias_flood, "battery missing alias flood class");
-}
-
-#[test]
-fn all_evasion_payloads_covers_depth_bomb_class() {
-    let v = all_evasion_payloads();
-    // Depth bomb always starts with `{\"query\":\"query DeepTest...`.
-    let has_depth = v.iter().any(|p| p.contains("DeepTest"));
-    assert!(has_depth, "battery missing depth-bomb class");
+    let cases: &[(&str, &str)] = &[
+        ("__schema", "introspection"),
+        ("a0:__typename", "alias flood"),
+        ("DeepTest", "depth bomb"),
+    ];
+    for &(marker, class) in cases {
+        assert!(
+            v.iter().any(|p| p.contains(marker)),
+            "battery missing {class} class (marker: {marker})"
+        );
+    }
 }
