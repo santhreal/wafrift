@@ -13,30 +13,24 @@ use wafrift_grammar::grammar::{ssrf, template};
 // ── ssrf detect_type FP fixes ───────────────────────────────────────
 
 #[test]
-fn ssrf_does_not_fire_on_doxygen_doc_comment() {
-    assert!(!ssrf::detect_type("// TODO: refactor"));
-    assert!(!ssrf::detect_type("// fix me later"));
-}
-
-#[test]
-fn ssrf_does_not_fire_on_chapter_or_section_number() {
-    assert!(!ssrf::detect_type("Chapter 127.5: how to scan"));
-    assert!(!ssrf::detect_type("Section 10.4 and 10.5"));
-}
-
-#[test]
-fn ssrf_does_not_fire_on_version_string() {
-    assert!(!ssrf::detect_type("Java 10.0 release notes"));
-    assert!(!ssrf::detect_type("Build 127.0 of nginx"));
-    assert!(!ssrf::detect_type("Python 192.168.something"));
-}
-
-#[test]
-fn ssrf_does_not_fire_on_localhost_substring_in_hostname() {
-    // Pre-fix `localhost` matched anywhere; benign hosts that include
-    // the word were flagged.
-    assert!(!ssrf::detect_type("localhost-builds.example.com"));
-    assert!(!ssrf::detect_type("my-localhost-mirror.io"));
+fn ssrf_does_not_fire_on_benign_input() {
+    let benign = [
+        "// TODO: refactor",
+        "// fix me later",
+        "Chapter 127.5: how to scan",
+        "Section 10.4 and 10.5",
+        "Java 10.0 release notes",
+        "Build 127.0 of nginx",
+        "Python 192.168.something",
+        "localhost-builds.example.com",
+        "my-localhost-mirror.io",
+    ];
+    for input in benign {
+        assert!(
+            !ssrf::detect_type(input),
+            "benign input {input:?} must not trigger SSRF detection"
+        );
+    }
 }
 
 #[test]
@@ -55,27 +49,23 @@ fn ssrf_still_fires_on_real_ssrf_payloads() {
 // ── template detect_type FP fixes ───────────────────────────────────
 
 #[test]
-fn template_does_not_fire_on_plain_json() {
-    assert!(!template::detect_type(r#"{"name": "alice", "id": 42}"#));
-    assert!(!template::detect_type(r#"{"items":[{"x":1}]}"#));
-}
-
-#[test]
-fn template_does_not_fire_on_css_block() {
-    assert!(!template::detect_type("body { color: red; }"));
-    assert!(!template::detect_type(".btn { background: #fff; }"));
-}
-
-#[test]
-fn template_does_not_fire_on_c_or_python_code() {
-    assert!(!template::detect_type("if (x) { return 1; }"));
-    assert!(!template::detect_type("def foo(): return {'a': 1}"));
-}
-
-#[test]
-fn template_does_not_fire_on_markdown_or_shell_var() {
-    assert!(!template::detect_type("# Heading\nSome text $var"));
-    assert!(!template::detect_type("$ ls /tmp/$user/"));
+fn template_does_not_fire_on_benign_input() {
+    let benign = [
+        r#"{"name": "alice", "id": 42}"#,
+        r#"{"items":[{"x":1}]}"#,
+        "body { color: red; }",
+        ".btn { background: #fff; }",
+        "if (x) { return 1; }",
+        "def foo(): return {'a': 1}",
+        "# Heading\nSome text $var",
+        "$ ls /tmp/$user/",
+    ];
+    for input in benign {
+        assert!(
+            !template::detect_type(input),
+            "benign input {input:?} must not trigger template detection"
+        );
+    }
 }
 
 #[test]
