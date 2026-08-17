@@ -32,9 +32,7 @@ async fn captchaforge_install_must_fail_with_actionable_hint() {
     );
     let output = combined_output(&output);
     assert!(
-        output.contains(
-            "--captchaforge requires the binary to be built with `--features captchaforge`"
-        ),
+        output.contains("--captchaforge is retired"),
         "output must include actionable hint: {output}"
     );
 }

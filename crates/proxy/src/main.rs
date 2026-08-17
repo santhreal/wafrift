@@ -340,15 +340,9 @@ struct Args {
     #[arg(long = "mutate-path-prefix", value_name = "VARIANT", value_parser = clap::builder::PossibleValuesParser::new(["double-slash", "triple-slash", "slash-dot", "slash-dot-slash"]))]
     mutate_path_prefix: Option<String>,
 
-    /// Install the captchaforge headless-browser solver into the
-    /// challenge store so Cloudflare / Turnstile / hCaptcha responses
-    /// are auto-solved instead of waiting for an operator prompt.
-    ///
-    /// Requires the binary to be built with `--features captchaforge`
-    /// (which pulls chromiumoxide). Without that feature the flag is
-    /// accepted but the binary exits with an actionable hint at
-    /// startup so cron jobs fail loudly rather than silently degrading
-    /// to "no solver".
+    /// Retired flag. Live challenge solving moved to lurien
+    /// (software/browser). The flag stays so cron jobs fail loud
+    /// at startup instead of silently degrading to "no solver".
     #[arg(long = "captchaforge", default_value_t = false)]
     captchaforge: bool,
 }
