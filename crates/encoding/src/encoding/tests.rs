@@ -111,15 +111,18 @@ fn null_byte_without_extension() {
 }
 
 #[test]
-fn overlong_utf8_slash() {
-    let result = encode("/", Strategy::OverlongUtf8).unwrap();
-    assert!(result.contains("%C0%AF"));
-}
-
-#[test]
-fn overlong_utf8_more_slash() {
-    let result = encode("/", Strategy::OverlongUtf8More).unwrap();
-    assert!(result.contains("%E0%80%AF"));
+fn overlong_utf8_slash_variants() {
+    let cases: &[(Strategy, &str)] = &[
+        (Strategy::OverlongUtf8, "%C0%AF"),
+        (Strategy::OverlongUtf8More, "%E0%80%AF"),
+    ];
+    for (strategy, expected) in cases {
+        let result = encode("/", *strategy).unwrap();
+        assert!(
+            result.contains(*expected),
+            "{strategy:?} must contain {expected}: {result}"
+        );
+    }
 }
 
 #[test]
@@ -293,39 +296,24 @@ fn deflate_encode_roundtrip() {
 }
 
 #[test]
-fn space_to_comment() {
-    assert_eq!(
-        encode("SELECT * FROM", Strategy::SpaceToComment).unwrap(),
-        "SELECT/**/*/**/FROM"
-    );
-}
-
-#[test]
-fn space_to_dash() {
+fn space_replacement_strategies() {
+    // All space-replacement strategies encode "SELECT * FROM" with
+    // a different delimiter; verify exact output for each.
+    let cases: &[(Strategy, &str)] = &[
+        (Strategy::SpaceToComment, "SELECT/**/*/**/FROM"),
+        (Strategy::SpaceToHash, "SELECT#\n*#\nFROM"),
+        (Strategy::SpaceToPlus, "SELECT+*+FROM"),
+    ];
+    for (strategy, expected) in cases {
+        assert_eq!(
+            encode("SELECT * FROM", *strategy).unwrap(),
+            *expected,
+            "{strategy:?} output mismatch"
+        );
+    }
+    // SpaceToDash uses contains (output includes -- but may have more).
     let result = encode("SELECT * FROM", Strategy::SpaceToDash).unwrap();
     assert!(result.contains("--"));
-}
-
-#[test]
-fn space_to_hash() {
-    // `#` is MySQL's line-comment marker; it MUST be terminated
-    // with a newline or the rest of the payload is silently
-    // consumed as a single comment, leaving only the first token.
-    // Pre-fix the test pinned the broken bare-`#` form. Post-fix
-    // the encoder emits `#\n` per space, mirroring the `--\n`
-    // pattern in SpaceToDash.
-    assert_eq!(
-        encode("SELECT * FROM", Strategy::SpaceToHash).unwrap(),
-        "SELECT#\n*#\nFROM"
-    );
-}
-
-#[test]
-fn space_to_plus() {
-    assert_eq!(
-        encode("SELECT * FROM", Strategy::SpaceToPlus).unwrap(),
-        "SELECT+*+FROM"
-    );
 }
 
 #[test]

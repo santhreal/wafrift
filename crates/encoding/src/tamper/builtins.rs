@@ -994,6 +994,32 @@ fn json_escape_string(s: &str) -> String {
 mod tests {
     use super::*;
 
+    fn all_default_tamper_strategies() -> Vec<Box<dyn TamperStrategy>> {
+        vec![
+            Box::new(UrlEncodeTamper),
+            Box::new(DoubleUrlEncodeTamper),
+            Box::new(UnicodeEscapeTamper),
+            Box::new(HtmlEntityTamper),
+            Box::new(CaseAlternationTamper),
+            Box::new(RandomCaseTamper),
+            Box::new(WhitespaceInsertionTamper),
+            Box::new(SqlCommentTamper),
+            Box::new(NullByteTamper),
+            Box::new(OverlongUtf8Tamper),
+            Box::new(Base64Tamper),
+            Box::new(HexEncodeTamper),
+        ]
+    }
+
+    fn all_new_tamper_strategies() -> Vec<Box<dyn TamperStrategy>> {
+        vec![
+            Box::new(ZeroWidthInjectTamper),
+            Box::new(PostgresDollarQuoteTamper),
+            Box::new(MysqlVersionedCommentWrapTamper),
+            Box::new(BracketConfusableTamper),
+        ]
+    }
+
     #[test]
     fn url_encode_tamper() {
         let strategy = UrlEncodeTamper;
@@ -1404,20 +1430,7 @@ mod tests {
 
     #[test]
     fn all_default_tampers_aggressiveness_in_range() {
-        for strat in [
-            &UrlEncodeTamper as &dyn TamperStrategy,
-            &DoubleUrlEncodeTamper,
-            &UnicodeEscapeTamper,
-            &HtmlEntityTamper,
-            &CaseAlternationTamper,
-            &RandomCaseTamper,
-            &WhitespaceInsertionTamper,
-            &SqlCommentTamper,
-            &NullByteTamper,
-            &OverlongUtf8Tamper,
-            &Base64Tamper,
-            &HexEncodeTamper,
-        ] {
+        for strat in all_default_tamper_strategies() {
             let a = strat.aggressiveness();
             assert!(
                 (0.0..=1.0).contains(&a) && !a.is_nan(),
@@ -1430,19 +1443,7 @@ mod tests {
 
     #[test]
     fn all_default_tampers_handle_empty_input_without_panic() {
-        for strat in [
-            &UrlEncodeTamper as &dyn TamperStrategy,
-            &DoubleUrlEncodeTamper,
-            &UnicodeEscapeTamper,
-            &HtmlEntityTamper,
-            &CaseAlternationTamper,
-            &RandomCaseTamper,
-            &WhitespaceInsertionTamper,
-            &SqlCommentTamper,
-            &OverlongUtf8Tamper,
-            &Base64Tamper,
-            &HexEncodeTamper,
-        ] {
+        for strat in all_default_tamper_strategies() {
             let _ = strat.tamper("", None);
         }
     }
@@ -1450,17 +1451,7 @@ mod tests {
     #[test]
     fn all_default_tampers_handle_huge_input_without_panic() {
         let huge: String = "A".repeat(100_000);
-        for strat in [
-            &UrlEncodeTamper as &dyn TamperStrategy,
-            &CaseAlternationTamper,
-            &RandomCaseTamper,
-            &WhitespaceInsertionTamper,
-            &SqlCommentTamper,
-            &Base64Tamper,
-            &HexEncodeTamper,
-            &UnicodeEscapeTamper,
-            &HtmlEntityTamper,
-        ] {
+        for strat in all_default_tamper_strategies() {
             let _ = strat.tamper(&huge, None);
         }
     }
@@ -2082,12 +2073,7 @@ mod tests {
 
     #[test]
     fn all_new_tampers_have_non_empty_descriptions() {
-        for strat in [
-            &ZeroWidthInjectTamper as &dyn TamperStrategy,
-            &PostgresDollarQuoteTamper,
-            &MysqlVersionedCommentWrapTamper,
-            &BracketConfusableTamper,
-        ] {
+        for strat in all_new_tamper_strategies() {
             assert!(
                 !strat.description().is_empty(),
                 "{} has empty description",
@@ -2103,12 +2089,7 @@ mod tests {
 
     #[test]
     fn all_new_tampers_aggressiveness_in_range() {
-        for strat in [
-            &ZeroWidthInjectTamper as &dyn TamperStrategy,
-            &PostgresDollarQuoteTamper,
-            &MysqlVersionedCommentWrapTamper,
-            &BracketConfusableTamper,
-        ] {
+        for strat in all_new_tamper_strategies() {
             let a = strat.aggressiveness();
             assert!(
                 (0.0..=1.0).contains(&a) && !a.is_nan(),
@@ -2125,12 +2106,7 @@ mod tests {
         // must be panic-safe.
         let huge: String = "A".repeat(1_000_000);
         let weird = "\0\x01\x02\x7f\u{FFFD}\u{200B}";
-        for strat in [
-            &ZeroWidthInjectTamper as &dyn TamperStrategy,
-            &PostgresDollarQuoteTamper,
-            &MysqlVersionedCommentWrapTamper,
-            &BracketConfusableTamper,
-        ] {
+        for strat in all_new_tamper_strategies() {
             let _ = strat.tamper("", None);
             let _ = strat.tamper(&huge, None);
             let _ = strat.tamper(weird, None);
