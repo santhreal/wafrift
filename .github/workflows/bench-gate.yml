@@ -23,8 +23,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Strip monorepo path deps (CI uses crates.io)
         run: |
-          sed -i 's/path = "\\.\\/browser\\/guise", //' Cargo.toml
-          sed -i 's/path = "\.\.\/browser\/guise-pacing", //' Cargo.toml
+          sed -i 's#path = "../browser/guise", ##' Cargo.toml
+          sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
 
       # ── 2. Rust toolchain ─────────────────────────────────────────
       - uses: dtolnay/rust-toolchain@stable
