@@ -16,8 +16,9 @@
 //!
 //! See: <https://doc.rust-lang.org/cargo/reference/cargo-targets.html#integration-tests>
 
+use std::io::Write;
 use std::net::SocketAddr;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 /// Deadline for the `wait_for_server` poll loop. Pre-fix several
@@ -66,6 +67,63 @@ pub fn wafrift(args: &[&str]) -> (i32, String, String) {
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
     (code, stdout, stderr)
+}
+
+/// Like [`wafrift`] but pipes `stdin` to the child process.
+/// Accepts `&str` stdin (common case: text payloads).
+#[allow(dead_code)]
+pub fn wafrift_stdin_str(args: &[&str], stdin: &str) -> (i32, String, String) {
+    wafrift_stdin_bytes(args, stdin.as_bytes())
+}
+
+/// Like [`wafrift`] but pipes `stdin` to the child process.
+/// Accepts `&[u8]` stdin (for binary payloads that are not valid UTF-8).
+#[allow(dead_code)]
+pub fn wafrift_stdin_bytes(args: &[&str], stdin: &[u8]) -> (i32, String, String) {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_wafrift"))
+        .args(args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn wafrift");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(stdin)
+        .expect("write stdin");
+    let out = child.wait_with_output().expect("wait wafrift");
+    let code = out.status.code().unwrap_or(-1);
+    let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+    (code, stdout, stderr)
+}
+
+/// Like [`wafrift_stdin_bytes`] but returns stdout as raw `Vec<u8>`
+/// (for tests that check compressed/binary output bytes).
+#[allow(dead_code)]
+pub fn wafrift_stdin_raw(args: &[&str], stdin: &[u8]) -> (i32, Vec<u8>, String) {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_wafrift"))
+        .args(args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn wafrift");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(stdin)
+        .expect("write stdin");
+    let out = child.wait_with_output().expect("wait wafrift");
+    let code = out.status.code().unwrap_or(-1);
+    (
+        code,
+        out.stdout,
+        String::from_utf8_lossy(&out.stderr).to_string(),
+    )
 }
 
 /// Like [`wafrift`] but retries when the subprocess is **signal-killed before

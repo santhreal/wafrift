@@ -16,29 +16,9 @@
 
 mod common;
 use common::wafrift;
-use std::io::Write;
-use std::process::{Command, Stdio};
-
+#[allow(dead_code)]
 fn wafrift_stdin(args: &[&str], stdin_data: &[u8]) -> (i32, String, String) {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_wafrift"))
-        .args(args)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("spawn wafrift");
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(stdin_data)
-        .expect("write stdin");
-    let out = child.wait_with_output().expect("wait wafrift");
-    (
-        out.status.code().unwrap_or(-1),
-        String::from_utf8_lossy(&out.stdout).into_owned(),
-        String::from_utf8_lossy(&out.stderr).into_owned(),
-    )
+    common::wafrift_stdin_bytes(args, stdin_data)
 }
 
 // ── Help surface ──────────────────────────────────────────────────────────
