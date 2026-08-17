@@ -22,36 +22,23 @@ fn json_string_basic() {
 }
 
 #[test]
-fn json_string_escapes_quotes() {
-    let out = encode_in_context(
-        b"\" OR 1=1",
-        Strategy::CaseAlternation,
-        InjectionContext::JsonString,
-    )
-    .unwrap();
-    assert!(out.contains("\\\""));
-}
-
-#[test]
-fn json_string_escapes_backslash() {
-    let out = encode_in_context(
-        b"a\\b",
-        Strategy::CaseAlternation,
-        InjectionContext::JsonString,
-    )
-    .unwrap();
-    assert!(out.contains("\\\\"));
-}
-
-#[test]
-fn json_string_escapes_control_chars() {
-    let out = encode_in_context(
-        b"a\nb",
-        Strategy::CaseAlternation,
-        InjectionContext::JsonString,
-    )
-    .unwrap();
-    assert!(out.contains("\\n"));
+fn json_string_escapes_special_chars() {
+    let cases: &[(&[u8], &[&str])] = &[
+        (b"\" OR 1=1", &["\\\""]),
+        (b"a\\b", &["\\\\"]),
+        (b"a\nb", &["\\n"]),
+    ];
+    for (input, expected) in cases {
+        let out = encode_in_context(
+            input,
+            Strategy::CaseAlternation,
+            InjectionContext::JsonString,
+        )
+        .unwrap();
+        for frag in *expected {
+            assert!(out.contains(frag), "must escape {frag:?}: got {out:?}");
+        }
+    }
 }
 
 #[test]
@@ -141,37 +128,23 @@ fn json_number_url_encode_rejected() {
 // ── XML Attribute ──────────────────────────────────────────────────────────
 
 #[test]
-fn xml_attribute_escapes_quotes() {
-    let out = encode_in_context(
-        b"\"x\"",
-        Strategy::CaseAlternation,
-        InjectionContext::XmlAttribute,
-    )
-    .unwrap();
-    assert!(out.contains("&quot;"));
-}
-
-#[test]
-fn xml_attribute_escapes_ampersand() {
-    let out = encode_in_context(
-        b"a&b",
-        Strategy::CaseAlternation,
-        InjectionContext::XmlAttribute,
-    )
-    .unwrap();
-    assert!(out.contains("&amp;"));
-}
-
-#[test]
-fn xml_attribute_escapes_lt_gt() {
-    let out = encode_in_context(
-        b"<script>",
-        Strategy::CaseAlternation,
-        InjectionContext::XmlAttribute,
-    )
-    .unwrap();
-    assert!(out.contains("&lt;"));
-    assert!(out.contains("&gt;"));
+fn xml_attribute_escapes_special_chars() {
+    let cases: &[(&[u8], &[&str])] = &[
+        (b"\"x\"", &["&quot;"]),
+        (b"a&b", &["&amp;"]),
+        (b"<script>", &["&lt;", "&gt;"]),
+    ];
+    for (input, expected) in cases {
+        let out = encode_in_context(
+            input,
+            Strategy::CaseAlternation,
+            InjectionContext::XmlAttribute,
+        )
+        .unwrap();
+        for frag in *expected {
+            assert!(out.contains(frag), "must escape {frag:?}: got {out:?}");
+        }
+    }
 }
 
 #[test]
@@ -471,25 +444,24 @@ fn url_fragment_escapes_special_chars() {
 // ── validate_in_context ────────────────────────────────────────────────────
 
 #[test]
-fn validate_detects_invalid_json_string() {
-    let err = validate_in_context("unescaped\"quote", InjectionContext::JsonString).unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
+fn validate_rejects_incompatible_inputs() {
+    let cases: &[(&str, InjectionContext)] = &[
+        ("unescaped\"quote", InjectionContext::JsonString),
+        ("a\"b", InjectionContext::XmlAttribute),
+    ];
+    for (input, ctx) in cases {
+        let err = validate_in_context(input, *ctx).unwrap_err();
+        assert!(
+            err.to_string().contains("incompatible"),
+            "must reject {input:?} for {ctx:?}"
+        );
+    }
 }
 
 #[test]
-fn validate_accepts_valid_json_string() {
+fn validate_accepts_compatible_inputs() {
     assert!(validate_in_context("safe text", InjectionContext::JsonString).is_ok());
     assert!(validate_in_context("escaped\\\"quote", InjectionContext::JsonString).is_ok());
-}
-
-#[test]
-fn validate_detects_invalid_xml_attribute() {
-    let err = validate_in_context("a\"b", InjectionContext::XmlAttribute).unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
-}
-
-#[test]
-fn validate_accepts_valid_xml_attribute() {
     assert!(validate_in_context("safe&amp;text", InjectionContext::XmlAttribute).is_ok());
 }
 
