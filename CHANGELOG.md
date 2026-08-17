@@ -3,6 +3,52 @@
 All notable changes to wafrift are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Fixed: CumulusFire hunt campaign regression (0 bypasses vs 241)
+
+The CumulusFire hunt campaign went from 241 bypasses to 0 after the
+v0.3.0 release. Three recall-killing gates in the equiv engine were
+the root cause, all now fixed:
+
+- **`enforce_transport_legal` pre-filter removed.** A static pre-filter
+  dropped variants whose payload bytes couldn't legally occupy the
+  delivery channel (CTL in headers, `;` in cookies). This traded recall
+  for soundness: it eliminated real bypasses on backends that don't
+  strictly follow the RFC. Replaced with `effective_payload`: the engine
+  now sends ALL variants, strips transport-illegal bytes at render time,
+  and the oracle validates the post-strip effective payload. No tradeoff
+  between false positives and recall.
+- **`header_value_from_payload` CTL handling.** Previously rejected ALL
+  CTL bytes (0x00-0x1F, 0x7F) via `HeaderValue::from_bytes`, causing
+  `send_with_envelope` to error on every VT/FF-bearing payload from
+  `WS_EQUIV`. Now strips CTL before `from_bytes`, keeping SP and HTAB
+  (legal header-value octets). The oracle catches semantic changes via
+  `effective_payload`.
+- **Errored sends no longer consume CEGIS budget.** `sends += 1` moved
+  from before the send attempt into the `Ok` arm. Added per-arm
+  consecutive error tracking: after 3 consecutive errors, the delivery
+  arm is marked dead and skipped for the rest of the run.
+
+### Added: GraphQL equiv class
+
+GraphQL injection is now a supported `equiv-cegis` class, reachable via
+`--class graphql`. Four equivalence rewrites exploit the WAF↔origin gap
+in GraphQL parsing: whitespace equivalence (GraphQL is
+whitespace-insensitive between tokens), alias rename (alias names only
+affect the response key, not resolver semantics), query shorthand
+(`query Q{...}` is equivalent to `{...}`), and string escape
+(`__schema` via `\uXXXX` escapes). The `still_executes_graphql`
+predicate verifies that the same fields, arguments, and operation type
+survive the rewrite.
+
+### Fixed: HTAB stripped from header values despite being legal
+
+`strip_ctl` and `header_value_from_payload` both filtered `b > 0x1F`,
+which stripped HTAB (0x09) despite doc comments claiming to keep it.
+HTAB is a legal header-value octet (RFC 9110 OWS) accepted by
+`HeaderValue::from_bytes`. Fixed both filters to `(b > 0x1F || b ==
+0x09) && b != 0x7F`, keeping HTAB alongside SP end-to-end (send path,
+render path, and oracle).
+
 
 ### Fixed: deterministic proxy e2e tests, browser-launch panic, mutation gaps
 
