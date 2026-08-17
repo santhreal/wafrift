@@ -355,17 +355,12 @@ mod tests {
 
     #[test]
     fn deterministic_and_diverse() {
-        let a: Vec<_> = generate("{{cycler.__init__.__globals__}}", &cfg(7))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        let b: Vec<_> = generate("{{cycler.__init__.__globals__}}", &cfg(7))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        assert_eq!(a, b);
-        let d: std::collections::HashSet<_> = a.iter().collect();
-        assert!(d.len() >= 5, "too few distinct: {}", d.len());
+        crate::grammar::equiv::assert_deterministic_and_diverse(
+            generate,
+            "{{cycler.__init__.__globals__}}",
+            &cfg(7),
+            5,
+        );
     }
 
     #[test]

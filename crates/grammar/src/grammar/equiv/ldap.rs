@@ -530,17 +530,12 @@ mod tests {
 
     #[test]
     fn deterministic_and_diverse() {
-        let a: Vec<_> = generate("*)(uid=*))(|(uid=*", &cfg(9))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        let b: Vec<_> = generate("*)(uid=*))(|(uid=*", &cfg(9))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        assert_eq!(a, b);
-        let d: std::collections::HashSet<_> = a.iter().collect();
-        assert!(d.len() >= 4, "too few distinct: {}", d.len());
+        crate::grammar::equiv::assert_deterministic_and_diverse(
+            generate,
+            "*)(uid=*))(|(uid=*",
+            &cfg(9),
+            4,
+        );
     }
 
     // ───────── OID aliasing (RFC 4512 §2.5) ─────────

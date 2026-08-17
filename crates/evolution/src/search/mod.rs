@@ -119,3 +119,31 @@ pub use map_elites::MapElites;
 pub use novelty::NoveltySearch;
 pub use sim_anneal::SimulatedAnnealing;
 pub use tabu::TabuSearch;
+
+/// Shared invariant: eval-counter IDs returned by
+/// `request_evaluations` must never collide across rounds.
+///
+/// Each search-algorithm test module calls this instead of
+/// copy-pasting the round loop and uniqueness assertion.
+#[cfg(test)]
+pub fn assert_eval_ids_unique(
+    alg: &mut dyn SearchAlgorithm,
+    rng: &mut StdRng,
+    rounds: usize,
+    batch_size: usize,
+) {
+    let mut ids: Vec<u64> = Vec::new();
+    for _ in 0..rounds {
+        let batch = alg.request_evaluations(batch_size, rng);
+        for c in &batch {
+            ids.push(c.id);
+        }
+        let verdicts: Vec<_> = batch
+            .into_iter()
+            .map(|c| (c.id, OracleVerdict::from_bool(false)))
+            .collect();
+        alg.submit_evaluations(verdicts);
+    }
+    let unique: std::collections::HashSet<_> = ids.iter().copied().collect();
+    assert_eq!(unique.len(), ids.len(), "eval IDs must never collide");
+}

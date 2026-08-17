@@ -460,19 +460,6 @@ mod tests {
             &pool,
             &mut rng,
         );
-        let mut ids: Vec<u64> = Vec::new();
-        for _ in 0..8 {
-            let batch = alg.request_evaluations(3, &mut rng);
-            for c in &batch {
-                ids.push(c.id);
-            }
-            let verdicts: Vec<_> = batch
-                .into_iter()
-                .map(|c| (c.id, OracleVerdict::from_bool(false)))
-                .collect();
-            alg.submit_evaluations(verdicts);
-        }
-        let unique: std::collections::HashSet<_> = ids.iter().copied().collect();
-        assert_eq!(unique.len(), ids.len(), "eval IDs must never collide");
+        crate::search::assert_eval_ids_unique(&mut alg, &mut rng, 8, 3);
     }
 }
