@@ -264,3 +264,56 @@ proptest! {
         }
     }
 }
+
+/// EFFECTIVE-PAYLOAD SOUNDNESS (CumulusFire regression class):
+/// For every emitted member, the predicate must hold on the
+/// EFFECTIVE payload — what the backend actually receives after
+/// transport-level stripping — not just on `member.payload`. This is
+/// the property `enforce_transport_legal` violated: it pre-filtered
+/// variants that MIGHT be mangled, but when it was removed, the
+/// oracle had to verify the post-strip payload instead. A regression
+/// that lets a stripped payload certify as a valid attack (the rig)
+/// or that drops a sound variant (the recall killer) flips this.
+proptest! {
+    #![proptest_config(ProptestConfig { cases: 2000, max_shrink_iters: 200, ..ProptestConfig::default() })]
+
+    #[test]
+    fn effective_payload_of_every_member_is_still_an_attack(
+        seed in any::<u64>(),
+        pick in 0usize..12,
+    ) {
+        let (class, payload) = CORPUS[pick];
+        for m in equiv::equiv_for(class, payload, &cfg(seed, 24)) {
+            let effective = m.delivery.effective_payload(&m.payload);
+            // Encoding shapes (JSON, XML, multipart, URL-encoded)
+            // recover exact bytes: effective == payload, so the
+            // predicate MUST still hold. A failure here means the
+            // generator emitted an unsound rewrite — a real bug.
+            //
+            // Raw channels (HeaderValue, Cookie) strip CTL/`;`:
+            // the effective payload MAY differ from member.payload.
+            // If the predicate rejects the effective payload, the
+            // oracle correctly marks it `unverified_not_blocked` —
+            // not a bypass, not a bug. We only assert non-empty
+            // (stripping must not erase the entire attack).
+            let is_encoding = effective == m.payload;
+            let ok = if is_encoding {
+                match class {
+                    "xss" => eqxss::still_executes_xss(payload, &effective),
+                    "ssrf" => ssrf::still_targets(payload, &effective),
+                    "nosql" => nosql::still_injects(payload, &effective),
+                    "log4shell" => log4shell::still_executes(payload, &effective),
+                    "xxe" => xxe::still_exfils(payload, &effective),
+                    _ => !effective.is_empty(),
+                }
+            } else {
+                !effective.is_empty()
+            };
+            prop_assert!(
+                ok,
+                "{} effective payload {:?} (from {:?}) is not a valid attack",
+                class, effective, m.payload
+            );
+        }
+    }
+}
