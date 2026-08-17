@@ -77,18 +77,19 @@ fn current_winner<'a>(state: &'a HostState, req: &Request) -> Option<&'a str> {
 fn apply_named_technique(
     req: &mut Request,
     techniques: &mut Vec<Technique>,
+    warnings: &mut Vec<String>,
     config: &EvasionConfig,
     state: &HostState,
     technique_name: &str,
 ) -> bool {
     if let Some(strategy) = parse_named_encoding(technique_name) {
-        apply_encoding(req, techniques, config, strategy);
+        apply_encoding(req, techniques, warnings, config, strategy);
         return !techniques.is_empty();
     }
 
     if technique_name.starts_with("grammar:") {
         let before = techniques.len();
-        apply_grammar_mutations(req, techniques, config);
+        apply_grammar_mutations(req, techniques, warnings, config);
         return techniques.len() > before;
     }
 
@@ -134,21 +135,40 @@ fn apply_named_technique(
 pub fn evade(request: &Request, state: &HostState, config: &EvasionConfig) -> EvasionResult {
     let mut req = request.clone();
     let mut techniques = Vec::new();
+    let mut warnings = Vec::new();
     let level = state.escalation_level();
 
     // ── Step 0: Re-use proven winners / last success if available ─────
     if let Some(winner_name) = current_winner(state, request)
-        && apply_named_technique(&mut req, &mut techniques, config, state, winner_name)
+        && apply_named_technique(
+            &mut req,
+            &mut techniques,
+            &mut warnings,
+            config,
+            state,
+            winner_name,
+        )
     {
         let description = build_description(&techniques);
-        return EvasionResult::new(req, techniques, description);
+        let mut result = EvasionResult::new(req, techniques, description);
+        result.warnings = warnings;
+        return result;
     }
 
     if let Some(last_name) = state.last_success.as_ref().map(ToString::to_string)
-        && apply_named_technique(&mut req, &mut techniques, config, state, &last_name)
+        && apply_named_technique(
+            &mut req,
+            &mut techniques,
+            &mut warnings,
+            config,
+            state,
+            &last_name,
+        )
     {
         let description = build_description(&techniques);
-        return EvasionResult::new(req, techniques, description);
+        let mut result = EvasionResult::new(req, techniques, description);
+        result.warnings = warnings;
+        return result;
     }
 
     // ── Step 0c: Try profile-suggested techniques (community knowledge) ─
@@ -158,9 +178,18 @@ pub fn evade(request: &Request, state: &HostState, config: &EvasionConfig) -> Ev
     // the should_skip_technique filter is applied. Empirical local
     // success (Step 0 / 0b above) still beats community priors.
     for suggestion in state.suggested_techniques() {
-        if apply_named_technique(&mut req, &mut techniques, config, state, &suggestion) {
+        if apply_named_technique(
+            &mut req,
+            &mut techniques,
+            &mut warnings,
+            config,
+            state,
+            &suggestion,
+        ) {
             let description = build_description(&techniques);
-            return EvasionResult::new(req, techniques, description);
+            let mut result = EvasionResult::new(req, techniques, description);
+            result.warnings = warnings;
+            return result;
         }
     }
 
@@ -183,6 +212,7 @@ pub fn evade(request: &Request, state: &HostState, config: &EvasionConfig) -> Ev
             apply_encoding(
                 &mut req,
                 &mut techniques,
+                &mut warnings,
                 config,
                 encoding::Strategy::CaseAlternation,
             );
@@ -192,11 +222,10 @@ pub fn evade(request: &Request, state: &HostState, config: &EvasionConfig) -> Ev
         }
 
         EscalationLevel::Medium => {
-            // Step 2a: Grammar mutations (semantic-preserving transforms)
-            apply_grammar_mutations(&mut req, &mut techniques, config);
+            apply_grammar_mutations(&mut req, &mut techniques, &mut warnings, config);
 
             // Step 2b: Layered encoding on parameter values
-            apply_layered_encoding(&mut req, &mut techniques, config, state);
+            apply_layered_encoding(&mut req, &mut techniques, &mut warnings, config, state);
 
             // Step 2c: Header obfuscation
             apply_header_obfuscation(&mut req, &mut techniques, config);
@@ -204,11 +233,11 @@ pub fn evade(request: &Request, state: &HostState, config: &EvasionConfig) -> Ev
 
         EscalationLevel::Heavy | _ => {
             // Step 2a: Grammar mutations first (deepest transform)
-            apply_grammar_mutations(&mut req, &mut techniques, config);
+            apply_grammar_mutations(&mut req, &mut techniques, &mut warnings, config);
 
             // Step 2b: Aggressive encoding (only untried strategies; no silent fallback)
             if let Some(strategy) = state.next_encoding() {
-                apply_encoding(&mut req, &mut techniques, config, strategy);
+                apply_encoding(&mut req, &mut techniques, &mut warnings, config, strategy);
             }
 
             // Step 2c: Content-Type switching
@@ -233,7 +262,9 @@ pub fn evade(request: &Request, state: &HostState, config: &EvasionConfig) -> Ev
     apply_body_padding(&mut req, &mut techniques, config);
 
     let description = build_description(&techniques);
-    EvasionResult::new(req, techniques, description)
+    let mut result = EvasionResult::new(req, techniques, description);
+    result.warnings = warnings;
+    result
 }
 
 /// Applies Monte Carlo Tree Search (MCTS) to generate the optimal evasion trajectory.
@@ -430,6 +461,7 @@ pub fn evade_adaptive(
 ) -> EvasionResult {
     let mut req = request.clone();
     let mut techniques = Vec::new();
+    let mut warnings = Vec::new();
 
     // Step 1: Fingerprint rotation (always)
     if config.fingerprint_rotation
@@ -441,7 +473,7 @@ pub fn evade_adaptive(
 
     // Step 2: Grammar mutations (if plan says so)
     if plan.use_grammar {
-        apply_grammar_mutations(&mut req, &mut techniques, config);
+        apply_grammar_mutations(&mut req, &mut techniques, &mut warnings, config);
     }
 
     // Step 3: Apply encoding strategies in order with bounded depth (HIGH FIX #3)
@@ -451,7 +483,7 @@ pub fn evade_adaptive(
 
     for i in 0..encoding_count {
         let strategy = plan.encoding_strategies[i];
-        if let Some(ref body) = req.body
+        if let Some(body) = &req.body
             && is_text_payload(&req)
         {
             // LAW 9 wiring (B-3): when the caller has detected the
@@ -461,14 +493,28 @@ pub fn evade_adaptive(
             // target site. `plan.context = None` falls back to the
             // raw encoder, preserves the pre-wiring behaviour for
             // callers that don't pass a context (LAW 2).
-            let encoded_opt = if let Some(ctx) = plan.context {
-                encoding_contextual::encode_in_context(body.as_slice(), strategy, ctx).ok()
+            let encoded_result: Result<String, String> = if let Some(ctx) = plan.context {
+                encoding_contextual::encode_in_context(body.as_slice(), strategy, ctx)
+                    .map_err(|e| e.to_string())
             } else {
-                encoding::encode(body.as_slice(), strategy).ok()
+                encoding::encode(body.as_slice(), strategy).map_err(|e| e.to_string())
             };
-            if let Some(encoded) = encoded_opt {
-                req.body = Some(encoded.into_bytes());
-                techniques.push(Technique::PayloadEncoding(strategy.as_str().to_string()));
+            match encoded_result {
+                Ok(encoded) => {
+                    req.body = Some(encoded.into_bytes());
+                    techniques.push(Technique::PayloadEncoding(strategy.as_str().to_string()));
+                }
+                Err(e) => {
+                    // Law-10: surface the encoder failure instead of
+                    // silently shipping the raw payload. The operator
+                    // sees that the encoding step was requested but
+                    // could not be applied, so a WAF pass here is not
+                    // miscredited as an encoding bypass.
+                    warnings.push(format!(
+                        "payload encoding {:?} failed: {e}; raw payload sent unencoded",
+                        strategy
+                    ));
+                }
             }
         }
     }
@@ -494,7 +540,9 @@ pub fn evade_adaptive(
     }
 
     let description = build_description(&techniques);
-    EvasionResult::new(req, techniques, description)
+    let mut result = EvasionResult::new(req, techniques, description);
+    result.warnings = warnings;
+    result
 }
 
 /// Borrowed view of a WAF response: `(status, headers, body)`.
@@ -609,17 +657,26 @@ fn apply_body_padding(req: &mut Request, techniques: &mut Vec<Technique>, config
 fn apply_encoding(
     req: &mut Request,
     techniques: &mut Vec<Technique>,
+    warnings: &mut Vec<String>,
     config: &EvasionConfig,
     strategy: encoding::Strategy,
 ) {
     if !config.encoding_enabled || !is_text_payload(req) {
         return;
     }
-    if let Some(ref body) = req.body
-        && let Ok(encoded) = encoding::encode(body.as_slice(), strategy)
-    {
-        req.body = Some(encoded.into_bytes());
-        techniques.push(Technique::PayloadEncoding(strategy.as_str().to_string()));
+    if let Some(body) = &req.body {
+        match encoding::encode(body.as_slice(), strategy) {
+            Ok(encoded) => {
+                req.body = Some(encoded.into_bytes());
+                techniques.push(Technique::PayloadEncoding(strategy.as_str().to_string()));
+            }
+            Err(e) => {
+                warnings.push(format!(
+                    "payload encoding {:?} failed: {e}; raw payload sent unencoded",
+                    strategy
+                ));
+            }
+        }
     }
 }
 
@@ -627,16 +684,25 @@ fn apply_encoding(
 fn apply_layered_encoding(
     req: &mut Request,
     techniques: &mut Vec<Technique>,
+    warnings: &mut Vec<String>,
     config: &EvasionConfig,
     state: &HostState,
 ) {
     if !config.encoding_enabled || !is_text_payload(req) {
         return;
     }
-    let Some(ref body) = req.body else { return };
+    let Some(body) = &req.body else { return };
     let body_str = match std::str::from_utf8(body) {
         Ok(s) => s,
-        Err(_) => return,
+        Err(_) => {
+            warnings.push(
+                "layered encoding skipped: request body is not valid UTF-8 \
+                 (binary uploads, gzipped or protobuf bodies are not parsed \
+                 for parameter-level encoding)"
+                    .to_string(),
+            );
+            return;
+        }
     };
 
     let pairs: Vec<(String, String)> = body_str
@@ -661,16 +727,36 @@ fn apply_layered_encoding(
         return;
     };
     let mut any_value_changed = false;
+    let mut encode_errors = 0usize;
     let encoded_pairs: Vec<(String, String)> = pairs
         .iter()
         .map(|(k, v)| {
-            let encoded = encoding::encode(v, strategy).unwrap_or_else(|_| v.clone());
-            if encoded != *v {
-                any_value_changed = true;
+            match encoding::encode(v, strategy) {
+                Ok(encoded) => {
+                    if encoded != *v {
+                        any_value_changed = true;
+                    }
+                    (k.clone(), encoded)
+                }
+                Err(_) => {
+                    // Law-10: don't silently substitute the raw value.
+                    // Count the error and pass the value through unchanged;
+                    // a single warning is emitted after the loop so the
+                    // operator knows which parameters were not encoded.
+                    encode_errors += 1;
+                    (k.clone(), v.clone())
+                }
             }
-            (k.clone(), encoded)
         })
         .collect();
+
+    if encode_errors > 0 {
+        warnings.push(format!(
+            "parameter encoding {:?} failed for {encode_errors} value(s); \
+             those values sent unencoded",
+            strategy
+        ));
+    }
 
     if any_value_changed {
         techniques.push(Technique::PayloadEncoding(strategy.as_str().to_string()));
@@ -720,18 +806,27 @@ pub const GRAMMAR_MUTATION_BODY_BUDGET: usize = 64 * 1024;
 fn apply_grammar_mutations(
     req: &mut Request,
     techniques: &mut Vec<Technique>,
+    warnings: &mut Vec<String>,
     config: &EvasionConfig,
 ) {
     if !config.grammar_mutations {
         return;
     }
-    let Some(ref body) = req.body else { return };
+    let Some(body) = &req.body else { return };
     if body.len() > GRAMMAR_MUTATION_BODY_BUDGET {
         return;
     }
     let body_str = match std::str::from_utf8(body) {
         Ok(s) => s,
-        Err(_) => return,
+        Err(_) => {
+            warnings.push(
+                "grammar mutations skipped: request body is not valid UTF-8 \
+                 (binary uploads, gzipped or protobuf bodies are not parsed \
+                 for parameter-level grammar mutation)"
+                    .to_string(),
+            );
+            return;
+        }
     };
 
     // Try to detect and mutate each parameter value
@@ -907,7 +1002,7 @@ fn apply_content_type_switch(
     if !config.content_type_switching {
         return;
     }
-    let Some(ref body) = req.body else { return };
+    let Some(body) = &req.body else { return };
 
     // ── gRPC routing arm ────────────────────────────────────────────────
     // When the request targets a gRPC endpoint, pick the first untried
