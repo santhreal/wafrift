@@ -7,11 +7,10 @@
 
 use std::sync::Arc;
 
-use rustls::{ClientConfig, RootCertStore, ServerConfig};
-use rustls_pki_types::{CertificateDer, PrivateKeyDer, ServerName, pem::PemObject};
-use tokio::net::TcpListener;
+use rustls::{ClientConfig, RootCertStore};
+use rustls_pki_types::{CertificateDer, ServerName, pem::PemObject};
 use tokio::time::{Duration, sleep};
-use tokio_rustls::{TlsAcceptor, TlsConnector};
+use tokio_rustls::TlsConnector;
 
 use wafrift_proxy::mitm::CertificateAuthority;
 
@@ -25,26 +24,7 @@ async fn start_leaf_server(
     cert_der: Vec<u8>,
     key_der: Vec<u8>,
 ) -> (u16, tokio::task::JoinHandle<()>) {
-    let cert = vec![CertificateDer::from(cert_der)];
-    let key = PrivateKeyDer::try_from(key_der).expect("private key parse");
-    let config = ServerConfig::builder()
-        .with_no_client_auth()
-        .with_single_cert(cert, key)
-        .expect("server config");
-    let acceptor = TlsAcceptor::from(Arc::new(config));
-    let listener = TcpListener::bind(("127.0.0.1", 0))
-        .await
-        .expect("bind test tls server");
-    let port = listener.local_addr().expect("listener local addr").port();
-
-    let handle = tokio::spawn(async move {
-        let (stream, _) = listener.accept().await.expect("accept tls stream");
-        let _tls = acceptor
-            .accept(stream)
-            .await
-            .expect("complete tls handshake");
-    });
-    (port, handle)
+    common::start_leaf_server(cert_der, key_der).await
 }
 
 #[tokio::test]
