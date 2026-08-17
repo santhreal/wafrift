@@ -17,31 +17,14 @@ fn read_fixture(name: &str) -> (u16, Vec<(String, String)>, Vec<u8>) {
 }
 
 #[test]
-fn plain_nginx_triggers_no_detection() {
-    let (st, h, b) = read_fixture("plain-nginx.txt");
-    let hits = detect(st, &h, &b);
-    assert!(
-        hits.is_empty(),
-        "Fix: generic nginx page must not classify as a WAF; got {hits:?}"
-    );
-}
-
-#[test]
-fn plain_apache_triggers_no_detection() {
-    let (st, h, b) = read_fixture("plain-apache.txt");
-    let hits = detect(st, &h, &b);
-    assert!(
-        hits.is_empty(),
-        "Fix: generic Apache page must not classify as a WAF; got {hits:?}"
-    );
-}
-
-#[test]
-fn plain_s3_error_triggers_no_detection() {
-    let (st, h, b) = read_fixture("plain-s3.txt");
-    let hits = detect(st, &h, &b);
-    assert!(
-        hits.is_empty(),
-        "Fix: bare S3 XML error must not classify as a WAF; got {hits:?}"
-    );
+fn plain_origins_trigger_no_detection() {
+    // Plain origin stacks (nginx, Apache, S3) must not trip WAF detectors.
+    for fixture in ["plain-nginx.txt", "plain-apache.txt", "plain-s3.txt"] {
+        let (st, h, b) = read_fixture(fixture);
+        let hits = detect(st, &h, &b);
+        assert!(
+            hits.is_empty(),
+            "Fix: {fixture} must not classify as a WAF; got {hits:?}"
+        );
+    }
 }
