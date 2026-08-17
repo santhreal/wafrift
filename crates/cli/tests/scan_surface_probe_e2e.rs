@@ -45,12 +45,9 @@ async fn spawn_handler_mock(handler: MockHandler) -> std::net::SocketAddr {
     common::spawn_mock_http_server(handler).await
 }
 
+#[allow(dead_code)]
 fn test_runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .worker_threads(2)
-        .build()
-        .unwrap()
+    common::test_runtime()
 }
 
 #[test]

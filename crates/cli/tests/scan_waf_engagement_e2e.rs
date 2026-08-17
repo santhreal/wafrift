@@ -75,12 +75,9 @@ where
     common::spawn_mock_http_server(Arc::new(handler)).await
 }
 
+#[allow(dead_code)]
 fn test_runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .worker_threads(2)
-        .build()
-        .unwrap()
+    common::test_runtime()
 }
 
 fn parse_scan_json(stdout: &str) -> serde_json::Value {
