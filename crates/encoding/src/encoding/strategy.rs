@@ -596,6 +596,93 @@ mod tests {
         assert_eq!(Strategy::SpaceToComment.contexts(), &["sql"]);
     }
 
+    /// Fail-by-default: every Strategy variant MUST appear in ALL_STRATEGIES.
+    /// Adding a new variant to the enum without registering it here turns the
+    /// suite RED until the variant is added to the ALL_STRATEGIES list.
+    /// This closes the "new member silently swallowed by `_` catch-all" class.
+    #[test]
+    fn all_strategies_contains_every_variant() {
+        let all = all_strategies();
+        let every_variant = [
+            Strategy::UrlEncode,
+            Strategy::UrlEncodeLower,
+            Strategy::DoubleUrlEncode,
+            Strategy::TripleUrlEncode,
+            Strategy::UnicodeEncode,
+            Strategy::IisUnicodeEncode,
+            Strategy::JsonEncode,
+            Strategy::HtmlEntityEncode,
+            Strategy::HtmlEntityDecimalEncode,
+            Strategy::CaseAlternation,
+            Strategy::RandomCase,
+            Strategy::WhitespaceInsertion,
+            Strategy::SqlCommentInsertion,
+            Strategy::MysqlVersionedComment,
+            Strategy::NullByte,
+            Strategy::OverlongUtf8,
+            Strategy::OverlongUtf8More,
+            Strategy::ChunkedSplit,
+            Strategy::ParameterPollution,
+            Strategy::Base64Encode,
+            Strategy::Base64UrlEncode,
+            Strategy::HexEncode,
+            Strategy::Utf7Encode,
+            Strategy::GzipEncode,
+            Strategy::DeflateEncode,
+            Strategy::SpaceToComment,
+            Strategy::SpaceToDash,
+            Strategy::SpaceToHash,
+            Strategy::SpaceToPlus,
+            Strategy::SpaceToRandomBlank,
+            Strategy::PercentagePrefix,
+            Strategy::BetweenObfuscation,
+            Strategy::UnmagicQuotes,
+            Strategy::FullwidthEncode,
+            Strategy::HomoglyphEncode,
+            Strategy::TagCharEncode,
+            Strategy::VariationSelectorPad,
+            Strategy::VariationSelectorSupplementaryPad,
+            Strategy::LigatureEncode,
+            Strategy::CircledLetterEncode,
+            Strategy::ParenthesizedLetterEncode,
+            Strategy::SoftHyphenInject,
+            Strategy::WordJoinerWrap,
+        ];
+        for variant in &every_variant {
+            assert!(
+                all.contains(variant),
+                "Strategy::{variant:?} is not in ALL_STRATEGIES — add it to the list in strategy.rs"
+            );
+        }
+        // Also assert no duplicates (sort by as_str since Strategy
+        // doesn't derive Ord).
+        let mut labels: Vec<&str> = all.iter().map(|s| s.as_str()).collect();
+        labels.sort();
+        let before = labels.len();
+        labels.dedup();
+        assert_eq!(
+            labels.len(),
+            before,
+            "ALL_STRATEGIES contains duplicate entries"
+        );
+    }
+
+    /// Fail-by-default: every Strategy variant MUST have a non-empty `as_str`.
+    /// Adding a new variant without an `as_str` arm turns the suite RED.
+    #[test]
+    fn every_variant_has_distinct_as_str() {
+        let all = all_strategies();
+        let mut labels: Vec<&str> = all.iter().map(|s| s.as_str()).collect();
+        let before = labels.len();
+        labels.sort();
+        labels.dedup();
+        assert_eq!(
+            labels.len(),
+            before,
+            "Strategy::as_str() produces duplicate labels"
+        );
+    }
+
     #[test]
     fn encode_empty_payload() {
         assert_eq!(encode("", Strategy::UrlEncode).unwrap(), "");
