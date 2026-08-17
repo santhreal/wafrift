@@ -23,47 +23,29 @@ fn hdr(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
 // ───────────────────────────────────────────────────────────────
 
 #[test]
-fn truncated_cf_ray_does_not_panic() {
-    // Real CF cf-ray is 16+ hex chars + "-IATA". Some intermediaries
-    // truncate.
-    let h = hdr(&[("cf-ray", "abc")]);
-    let _ = parse_cf_block(&h, b"");
-}
-
-#[test]
-fn cf_ray_with_no_dash_does_not_panic() {
-    let h = hdr(&[("cf-ray", "abcdef0123456789")]);
-    let _ = parse_cf_block(&h, b"");
-}
-
-#[test]
-fn cf_ray_with_lowercase_iata_does_not_panic() {
-    let h = hdr(&[("cf-ray", "abcdef0123456789-sjc")]);
-    let _ = parse_cf_block(&h, b"");
-}
-
-#[test]
-fn cf_ray_with_non_iata_suffix_does_not_panic() {
-    let h = hdr(&[("cf-ray", "abcdef0123456789-XXXXX")]);
-    let _ = parse_cf_block(&h, b"");
-}
-
-#[test]
-fn cf_ray_empty_does_not_panic() {
-    let h = hdr(&[("cf-ray", "")]);
-    let _ = parse_cf_block(&h, b"");
-}
-
-#[test]
-fn cf_mitigated_unknown_value_does_not_panic() {
-    let h = hdr(&[("cf-mitigated", "asdf-not-a-real-value")]);
-    let _ = parse_cf_block(&h, b"");
-}
-
-#[test]
-fn cf_mitigated_empty_value() {
-    let h = hdr(&[("cf-mitigated", "")]);
-    let _ = parse_cf_block(&h, b"");
+fn adversarial_header_values_do_not_panic() {
+    // The parser must never panic on malformed header values.
+    let cases: &[&[(&str, &str)]] = &[
+        // cf-ray adversarial values
+        &[("cf-ray", "abc")],
+        &[("cf-ray", "abcdef0123456789")],
+        &[("cf-ray", "abcdef0123456789-sjc")],
+        &[("cf-ray", "abcdef0123456789-XXXXX")],
+        &[("cf-ray", "")],
+        // duplicate cf-ray headers
+        &[("cf-ray", "first-SJC"), ("cf-ray", "second-LHR")],
+        // cf-mitigated adversarial values
+        &[("cf-mitigated", "asdf-not-a-real-value")],
+        &[("cf-mitigated", "")],
+        // retry-after adversarial values
+        &[("retry-after", "soon, please")],
+        &[("retry-after", "-9999")],
+        &[("retry-after", "18446744073709551615")],
+    ];
+    for headers in cases {
+        let h = hdr(headers);
+        let _ = parse_cf_block(&h, b"");
+    }
 }
 
 #[test]
@@ -81,35 +63,14 @@ fn case_variations_in_header_names() {
     );
 }
 
-#[test]
-fn duplicate_cf_ray_headers_does_not_panic() {
-    let h = hdr(&[("cf-ray", "first-SJC"), ("cf-ray", "second-LHR")]);
-    let _ = parse_cf_block(&h, b"");
-}
+// duplicate cf-ray and retry-after adversarial values are covered in
+// adversarial_header_values_do_not_panic above.
 
 #[test]
 fn retry_after_classifies_as_rate_limited() {
     let h = hdr(&[("retry-after", "60"), ("cf-ray", "x-SJC")]);
     let signal = parse_cf_block(&h, b"");
     assert!(matches!(signal.block_class, BlockClass::RateLimited));
-}
-
-#[test]
-fn retry_after_non_numeric_does_not_panic() {
-    let h = hdr(&[("retry-after", "soon, please")]);
-    let _ = parse_cf_block(&h, b"");
-}
-
-#[test]
-fn retry_after_negative_does_not_panic() {
-    let h = hdr(&[("retry-after", "-9999")]);
-    let _ = parse_cf_block(&h, b"");
-}
-
-#[test]
-fn retry_after_huge_value_does_not_panic() {
-    let h = hdr(&[("retry-after", "18446744073709551615")]); // u64::MAX
-    let _ = parse_cf_block(&h, b"");
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -127,30 +88,29 @@ fn empty_body_with_block_headers() {
 }
 
 #[test]
-fn html_truncated_mid_tag_does_not_panic() {
-    // CF block pages sometimes get truncated by intermediaries.
-    let body = b"<html><body>Sorry, you have been blocked. Cloudflare Ray ID: abc-SJC";
-    let _ = parse_cf_block(&[], body);
-}
-
-#[test]
-fn body_with_only_open_brace_does_not_panic() {
-    let _ = parse_cf_block(&[], b"{");
-}
-
-#[test]
-fn body_with_only_html_comment_open_does_not_panic() {
-    let _ = parse_cf_block(&[], b"<!-- ");
-}
-
-#[test]
-fn body_with_unterminated_comment_does_not_panic() {
-    let _ = parse_cf_block(&[], b"<!-- 951220");
-}
-
-#[test]
-fn body_with_just_double_dashes() {
-    let _ = parse_cf_block(&[], b"--");
+fn adversarial_body_inputs_do_not_panic() {
+    // The parser must never panic on truncated, malformed, or hostile
+    // body content. Falls back to BlockClass::Unknown and keeps going.
+    let static_bodies: &[&[u8]] = &[
+        b"<html><body>Sorry, you have been blocked. Cloudflare Ray ID: abc-SJC",
+        b"{",
+        b"<!-- ",
+        b"<!-- 951220",
+        b"--",
+        "Sorry, vous avez été bloqué. Cloudflare Ray ID: déjà-vu-SJC".as_bytes(),
+        &[0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA],
+        &[b'<', 0, 0, 0, b'>', 0],
+        b"   \r\n\t  ",
+    ];
+    for body in static_bodies {
+        let _ = parse_cf_block(&[], body);
+    }
+    // Dynamic bodies (allocated, can't be static).
+    let _ = parse_cf_block(
+        &[],
+        "Sorry, you have been blocked. ".repeat(2000).as_bytes(),
+    );
+    let _ = parse_cf_block(&[], "<a>".repeat(1000).as_bytes());
 }
 
 #[test]
@@ -161,41 +121,6 @@ fn cve_id_in_body_attributes_correctly() {
         signal.ruleset_hint.as_deref() == Some("log4shell") || signal.ruleset_hint.is_some(),
         "CVE-2021-44228 should map to log4shell or some ruleset hint"
     );
-}
-
-#[test]
-fn body_with_multibyte_utf8_in_attribution() {
-    let body = "Sorry, vous avez été bloqué. Cloudflare Ray ID: déjà-vu-SJC".as_bytes();
-    let _ = parse_cf_block(&[], body);
-}
-
-#[test]
-fn body_with_invalid_utf8_does_not_panic() {
-    let body: &[u8] = &[0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA];
-    let _ = parse_cf_block(&[], body);
-}
-
-#[test]
-fn body_with_null_bytes_does_not_panic() {
-    let body: &[u8] = &[b'<', 0, 0, 0, b'>', 0];
-    let _ = parse_cf_block(&[], body);
-}
-
-#[test]
-fn body_50kb_no_panic() {
-    let body = "Sorry, you have been blocked. ".repeat(2000);
-    let _ = parse_cf_block(&[], body.as_bytes());
-}
-
-#[test]
-fn body_with_only_whitespace_does_not_panic() {
-    let _ = parse_cf_block(&[], b"   \r\n\t  ");
-}
-
-#[test]
-fn body_with_thousand_open_tags_does_not_panic() {
-    let body = "<a>".repeat(1000);
-    let _ = parse_cf_block(&[], body.as_bytes());
 }
 
 #[test]
