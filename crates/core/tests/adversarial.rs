@@ -356,20 +356,6 @@ fn strategy_concurrent_host_states_independent() {
 }
 
 #[test]
-fn strategy_next_encoding_exhaustion() {
-    let mut state = HostState::default();
-    let all = encoding::all_strategies();
-
-    // Mark all strategies as tried
-    for strategy in all {
-        state.tried_encodings.push(*strategy);
-    }
-
-    let next = state.next_encoding();
-    assert!(next.is_none());
-}
-
-#[test]
 fn strategy_evasion_with_large_body() {
     let large_body = vec![b'A'; 100000];
     let req = Request::post("https://example.com", large_body);

@@ -414,34 +414,9 @@ fn handles_only_unicode_long() {
 // Registry / dispatch integration
 // ────────────────────────────────────────────────────────────────
 
-#[test]
-fn registered_in_default_registry() {
-    let reg = TamperRegistry::with_defaults();
-    assert!(reg.get("json_unicode_alnum").is_some());
-}
-
-#[test]
-fn registered_strategy_name_matches() {
-    let reg = TamperRegistry::with_defaults();
-    let strat = reg.get("json_unicode_alnum").unwrap();
-    assert_eq!(strat.name(), "json_unicode_alnum");
-}
-
-#[test]
-fn registered_aggressiveness_in_range() {
-    let reg = TamperRegistry::with_defaults();
-    let strat = reg.get("json_unicode_alnum").unwrap();
-    let a = strat.aggressiveness();
-    assert!((0.0..=1.0).contains(&a));
-    assert!(!a.is_nan());
-}
-
-#[test]
-fn registered_description_non_empty() {
-    let reg = TamperRegistry::with_defaults();
-    let strat = reg.get("json_unicode_alnum").unwrap();
-    assert!(!strat.description().is_empty());
-}
+// Registry invariants (registered, name matches, aggressiveness,
+// description non-empty, appears in all_tamper_names) are covered
+// universally by tamper_universal_invariants.rs.
 
 #[test]
 fn registered_description_mentions_uxxxx() {
@@ -451,12 +426,6 @@ fn registered_description_mentions_uxxxx() {
         strat.description().contains("\\u") || strat.description().contains("uXXXX"),
         "description should hint at the encoding form"
     );
-}
-
-#[test]
-fn appears_in_all_tamper_names() {
-    let names = wafrift_encoding::all_tamper_names();
-    assert!(names.contains(&"json_unicode_alnum"));
 }
 
 #[test]
