@@ -112,49 +112,29 @@ fn mixed_ascii_and_unicode() {
 // ────────────────────────────────────────────────────────────────
 
 #[test]
-fn already_encoded_sequence_skipped() {
-    // Pre-existing \uXXXX must pass through verbatim.
-    assert_eq!(run("\\u0041"), "\\u0041");
+fn skip_pass_preserves_existing_escapes() {
+    // Pre-existing \uXXXX sequences must pass through verbatim,
+    // regardless of hex case.
+    for p in ["\\u0041", "\\u00FF", "\\u00ab", "\\u00aB"] {
+        assert_eq!(run(p), p, "pre-existing escape must pass through: {p}");
+    }
 }
 
 #[test]
-fn skip_pass_with_uppercase_hex() {
-    assert_eq!(run("\\u00FF"), "\\u00FF");
-}
-
-#[test]
-fn skip_pass_with_lowercase_hex() {
-    assert_eq!(run("\\u00ab"), "\\u00ab");
-}
-
-#[test]
-fn skip_pass_with_mixed_case_hex() {
-    assert_eq!(run("\\u00aB"), "\\u00aB");
-}
-
-#[test]
-fn idempotent_on_keyword() {
-    let once = run("UNION SELECT");
-    let twice = run(&once);
-    let thrice = run(&twice);
-    assert_eq!(once, twice);
-    assert_eq!(twice, thrice);
-}
-
-#[test]
-fn idempotent_on_punctuation_heavy() {
-    let p = "' OR 1=1; DROP TABLE users; --";
-    let once = run(p);
-    let twice = run(&once);
-    assert_eq!(once, twice);
-}
-
-#[test]
-fn idempotent_on_xss_payload() {
-    let p = "<svg onload=alert(1)>";
-    let once = run(p);
-    let twice = run(&once);
-    assert_eq!(once, twice);
+fn idempotent_on_various_payloads() {
+    // Running the encoder twice must produce the same output as once.
+    let payloads = [
+        "UNION SELECT",
+        "' OR 1=1; DROP TABLE users; --",
+        "<svg onload=alert(1)>",
+    ];
+    for p in payloads {
+        let once = run(p);
+        let twice = run(&once);
+        let thrice = run(&twice);
+        assert_eq!(once, twice, "idempotent on {p:?}");
+        assert_eq!(twice, thrice, "idempotent across 3 passes on {p:?}");
+    }
 }
 
 #[test]
