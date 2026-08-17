@@ -94,9 +94,14 @@ fn smuggling_payloads_cannot_forge_structure() {
 }
 
 // PROPERTY (4000 cases): for ARBITRARY payloads, every member the
-// XSS generator yields for a raw channel is transport-legal, still
-// executes the original script, and renders with NO control byte on
-// the wire (and the output stays bounded (no amplification DoS)).
+// XSS generator yields for a raw channel renders with NO control
+// byte on the wire (no smuggling), the effective payload (post-strip)
+// still executes the original script, and the output stays bounded
+// (no amplification DoS). Pre-fix this asserted `transport_legal` on
+// `member.payload`, but the engine now sends all variants and
+// verifies the effective (post-strip) payload via `effective_payload`,
+// so the invariant is wire-level soundness + effective-payload
+// validity, not pre-filter legality.
 proptest! {
     #![proptest_config(ProptestConfig { cases: 4000, max_shrink_iters: 256, ..ProptestConfig::default() })]
 
@@ -108,10 +113,6 @@ proptest! {
         let members = xss_delivered(&atk, max);
         prop_assert!(members.len() <= max, "unbounded: {} > {max}", members.len());
         for m in &members {
-            prop_assert!(
-                m.delivery.transport_legal(&m.payload),
-                "{} emitted ILLEGAL pairing {:?}", m.delivery.label(), m.payload
-            );
             if matches!(
                 m.delivery,
                 DeliveryShape::HeaderValue { .. } | DeliveryShape::Cookie { .. }

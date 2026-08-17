@@ -747,9 +747,9 @@ pub(crate) fn delivery_set(param: &str) -> Vec<DeliveryShape> {
             param: param.to_string(),
         },
         // Raw reflected channels: CRS covers REQUEST_HEADERS /
-        // REQUEST_COOKIES weaker than ARGS at PL1. Sound only for
-        // transport-legal payloads; the generator filters per
-        // `DeliveryShape::transport_legal`.
+        // REQUEST_COOKIES weaker than ARGS at PL1. CTL bytes are
+        // stripped by `to_request`; the oracle validates the
+        // effective (post-strip) payload via `effective_payload`.
         DeliveryShape::HeaderValue {
             name: "X-Forwarded-Host".to_string(),
         },
@@ -899,7 +899,7 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    super::enforce_transport_legal(&mut out);
+    
     out.truncate(cfg.max);
     out
 }
