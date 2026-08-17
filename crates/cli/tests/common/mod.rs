@@ -179,3 +179,45 @@ pub fn status_line(code: u16) -> &'static str {
         _ => "HTTP/1.1 500 Internal Server Error",
     }
 }
+
+/// Type alias for a mock HTTP handler closure: takes the raw request
+/// bytes and returns `(status_code, response_body)`.
+pub type MockHttpHandler = std::sync::Arc<dyn Fn(&[u8]) -> (u16, Vec<u8>) + Send + Sync>;
+
+/// Spawn a minimal mock HTTP server on `127.0.0.1:0`. Each accepted
+/// connection reads up to 32 KiB of request bytes, calls `handler`,
+/// and writes back a `text/html` HTTP/1.1 response with
+/// `Connection: close`. Returns the bound address.
+///
+/// Shared by scan e2e tests that need a mock WAF/origin. The caller
+/// is responsible for driving the async runtime.
+#[allow(dead_code)]
+pub async fn spawn_mock_http_server(handler: MockHttpHandler) -> SocketAddr {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        loop {
+            let Ok((mut sock, _)) = listener.accept().await else {
+                return;
+            };
+            let handler = handler.clone();
+            tokio::spawn(async move {
+                let mut buf = vec![0u8; 32 * 1024];
+                let n = sock.read(&mut buf).await.unwrap_or(0);
+                let (status, body) = handler(&buf[..n]);
+                let resp = format!(
+                    "{}\r\nContent-Type: text/html\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                    status_line(status),
+                    body.len()
+                );
+                let _ = sock.write_all(resp.as_bytes()).await;
+                let _ = sock.write_all(&body).await;
+                let _ = sock.shutdown().await;
+            });
+        }
+    });
+    wait_for_server(addr);
+    addr
+}

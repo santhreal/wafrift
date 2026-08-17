@@ -60,44 +60,19 @@ async fn spawn_param_live_mock() -> std::net::SocketAddr {
     .await
 }
 
-type MockHandler = Arc<dyn Fn(&[u8]) -> (u16, Vec<u8>) + Send + Sync>;
+type MockHandler = common::MockHttpHandler;
 
 #[allow(dead_code)]
 fn status_line(code: u16) -> &'static str {
     common::status_line(code)
 }
 
+#[allow(dead_code)]
 async fn spawn_handler_mock<F>(handler: F) -> std::net::SocketAddr
 where
     F: Fn(&[u8]) -> (u16, Vec<u8>) + Send + Sync + 'static,
 {
-    let handler: MockHandler = Arc::new(handler);
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    tokio::spawn(async move {
-        loop {
-            let Ok((mut sock, _)) = listener.accept().await else {
-                return;
-            };
-            let handler = handler.clone();
-            tokio::spawn(async move {
-                let mut buf = vec![0u8; 32 * 1024];
-                let n = sock.read(&mut buf).await.unwrap_or(0);
-                let (status, body) = handler(&buf[..n]);
-                let resp = format!(
-                    "{}\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\
-                     Connection: close\r\n\r\n",
-                    status_line(status),
-                    body.len()
-                );
-                let _ = sock.write_all(resp.as_bytes()).await;
-                let _ = sock.write_all(&body).await;
-                let _ = sock.shutdown().await;
-            });
-        }
-    });
-    common::wait_for_server(addr);
-    addr
+    common::spawn_mock_http_server(Arc::new(handler)).await
 }
 
 fn test_runtime() -> tokio::runtime::Runtime {
