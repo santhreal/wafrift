@@ -190,3 +190,39 @@ pub fn ensure_rustls_provider() {
         let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
     });
 }
+
+/// Start a minimal TLS leaf server that accepts one connection and
+/// completes a handshake. Returns (port, join handle). Shared across
+/// MITM cert-chain and IP-SAN test binaries.
+#[allow(dead_code)]
+pub async fn start_leaf_server(
+    cert_der: Vec<u8>,
+    key_der: Vec<u8>,
+) -> (u16, tokio::task::JoinHandle<()>) {
+    use rustls::ServerConfig;
+    use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+    use std::sync::Arc;
+    use tokio::net::TcpListener;
+    use tokio_rustls::TlsAcceptor;
+
+    let cert = vec![CertificateDer::from(cert_der)];
+    let key = PrivateKeyDer::try_from(key_der).expect("private key parse");
+    let config = ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert, key)
+        .expect("server config");
+    let acceptor = TlsAcceptor::from(Arc::new(config));
+    let listener = TcpListener::bind(("127.0.0.1", 0))
+        .await
+        .expect("bind test tls server");
+    let port = listener.local_addr().expect("listener local addr").port();
+
+    let handle = tokio::spawn(async move {
+        let (stream, _) = listener.accept().await.expect("accept tls stream");
+        let _tls = acceptor
+            .accept(stream)
+            .await
+            .expect("complete tls handshake");
+    });
+    (port, handle)
+}
