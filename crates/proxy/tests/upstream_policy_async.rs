@@ -41,143 +41,58 @@ fn open_policy() -> UpstreamPolicy {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// assert_forward_url_allowed: IPv4 bogons
+// assert_forward_url_allowed: all bogon targets rejected with default policy
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[tokio::test]
-async fn forward_loopback_v4_blocked() {
-    let err = assert_forward_url_allowed("http://127.0.0.1/", &default_policy())
-        .await
-        .expect_err("127.0.0.1 must be rejected");
-    assert!(
-        err.contains("127.0.0.1"),
-        "error must name the disallowed IP, got: {err}"
-    );
-}
-
-#[tokio::test]
-async fn forward_imds_169_254_169_254_blocked() {
-    // AWS / GCP / Azure IMDS (the canonical SSRF target).
-    let err = assert_forward_url_allowed(
-        "http://169.254.169.254/latest/meta-data/",
-        &default_policy(),
-    )
-    .await
-    .expect_err("IMDS must be rejected");
-    assert!(
-        err.contains("169.254.169.254"),
-        "error must name the IMDS address, got: {err}"
-    );
-}
-
-#[tokio::test]
-async fn forward_rfc1918_10_x_blocked() {
-    let err = assert_forward_url_allowed("http://10.0.0.1/", &default_policy())
-        .await
-        .expect_err("RFC1918 10.x must be rejected");
-    assert!(err.contains("10.0.0.1"), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_rfc1918_172_16_x_blocked() {
-    let err = assert_forward_url_allowed("http://172.16.0.1/", &default_policy())
-        .await
-        .expect_err("RFC1918 172.16.x must be rejected");
-    assert!(err.contains("172.16.0.1"), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_rfc1918_192_168_x_blocked() {
-    let err = assert_forward_url_allowed("https://192.168.1.1/", &default_policy())
-        .await
-        .expect_err("RFC1918 192.168.x must be rejected");
-    assert!(err.contains("192.168.1.1"), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_unspecified_0_0_0_0_blocked() {
-    let err = assert_forward_url_allowed("http://0.0.0.0/", &default_policy())
-        .await
-        .expect_err("0.0.0.0 must be rejected");
-    // The error may say "disallowed literal IP" or name the address directly.
-    assert!(!err.is_empty(), "must return a non-empty error, got: {err}");
-}
-
-#[tokio::test]
-async fn forward_multicast_224_x_blocked() {
-    let err = assert_forward_url_allowed("http://224.0.0.1/", &default_policy())
-        .await
-        .expect_err("multicast 224.x must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_broadcast_255_255_255_255_blocked() {
-    let err = assert_forward_url_allowed("http://255.255.255.255/", &default_policy())
-        .await
-        .expect_err("broadcast must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// assert_forward_url_allowed: IPv6 bogons
-// ─────────────────────────────────────────────────────────────────────────────
-
-#[tokio::test]
-async fn forward_v6_loopback_blocked() {
-    let err = assert_forward_url_allowed("http://[::1]/", &default_policy())
-        .await
-        .expect_err("::1 must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_v6_mapped_loopback_blocked() {
-    let err = assert_forward_url_allowed("http://[::ffff:127.0.0.1]/", &default_policy())
-        .await
-        .expect_err("IPv4-mapped loopback must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_v6_mapped_imds_blocked() {
-    let err = assert_forward_url_allowed("http://[::ffff:169.254.169.254]/", &default_policy())
-        .await
-        .expect_err("IPv4-mapped IMDS must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_v6_documentation_2001_db8_blocked() {
-    let err = assert_forward_url_allowed("http://[2001:db8::1]/", &default_policy())
-        .await
-        .expect_err("2001:db8::/32 documentation range must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_v6_6to4_private_blocked() {
-    // 2002:7f00:: = 127.0.0.1 over 6to4 (loopback via 6to4).
-    let err = assert_forward_url_allowed("http://[2002:7f00::]/", &default_policy())
-        .await
-        .expect_err("6to4 with loopback embedded must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_v6_link_local_fe80_blocked() {
-    let err = assert_forward_url_allowed("http://[fe80::1]/", &default_policy())
-        .await
-        .expect_err("link-local fe80:: must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn forward_v6_unique_local_fc00_blocked() {
-    let err = assert_forward_url_allowed("http://[fc00::1]/", &default_policy())
-        .await
-        .expect_err("unique-local fc00:: must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
+async fn forward_bogon_targets_are_blocked() {
+    // (url, description, optional expected error fragment)
+    // When a fragment is given the error must contain it; otherwise just
+    // assert the error is non-empty. Every bogon range is covered.
+    let cases: &[(&str, &str, Option<&str>)] = &[
+        // IPv4
+        ("http://127.0.0.1/", "loopback v4", Some("127.0.0.1")),
+        (
+            "http://169.254.169.254/latest/meta-data/",
+            "IMDS",
+            Some("169.254.169.254"),
+        ),
+        ("http://10.0.0.1/", "RFC1918 10.x", Some("10.0.0.1")),
+        ("http://172.16.0.1/", "RFC1918 172.16.x", Some("172.16.0.1")),
+        (
+            "https://192.168.1.1/",
+            "RFC1918 192.168.x",
+            Some("192.168.1.1"),
+        ),
+        ("http://0.0.0.0/", "unspecified 0.0.0.0", None),
+        ("http://224.0.0.1/", "multicast 224.x", None),
+        ("http://255.255.255.255/", "broadcast", None),
+        // IPv6
+        ("http://[::1]/", "v6 loopback", None),
+        ("http://[::ffff:127.0.0.1]/", "v4-mapped loopback", None),
+        ("http://[::ffff:169.254.169.254]/", "v4-mapped IMDS", None),
+        ("http://[2001:db8::1]/", "documentation 2001:db8", None),
+        ("http://[2002:7f00::]/", "6to4 private", None),
+        ("http://[fe80::1]/", "link-local fe80", None),
+        ("http://[fc00::1]/", "unique-local fc00", None),
+    ];
+    for &(url, desc, frag) in cases {
+        let err = assert_forward_url_allowed(url, &default_policy())
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("{desc} ({url}) must be rejected"));
+        if let Some(expected) = frag {
+            assert!(
+                err.contains(expected),
+                "{desc}: error must name '{expected}', got: {err}"
+            );
+        } else {
+            assert!(
+                !err.is_empty(),
+                "{desc}: must return a non-empty error, got: {err}"
+            );
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -292,58 +207,37 @@ async fn pinned_forward_literal_public_ip_returns_addr() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// assert_connect_target_allowed / resolve_connect_target_allowed
+// assert_connect_target_allowed: all bogon targets rejected with default policy
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[tokio::test]
-async fn connect_loopback_v4_rejected() {
-    let err = assert_connect_target_allowed("127.0.0.1:443", &default_policy())
-        .await
-        .expect_err("loopback must be rejected");
-    assert!(
-        err.contains("127.0.0.1"),
-        "error must name the address, got: {err}"
-    );
-}
-
-#[tokio::test]
-async fn connect_imds_rejected() {
-    let err = assert_connect_target_allowed("169.254.169.254:80", &default_policy())
-        .await
-        .expect_err("IMDS must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn connect_rfc1918_10_x_rejected() {
-    let err = assert_connect_target_allowed("10.0.0.1:80", &default_policy())
-        .await
-        .expect_err("RFC1918 must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn connect_rfc1918_172_16_x_rejected() {
-    let err = assert_connect_target_allowed("172.16.0.1:443", &default_policy())
-        .await
-        .expect_err("RFC1918 172.16.x must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn connect_rfc1918_192_168_x_rejected() {
-    let err = assert_connect_target_allowed("192.168.1.100:8443", &default_policy())
-        .await
-        .expect_err("RFC1918 192.168.x must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
-}
-
-#[tokio::test]
-async fn connect_v6_loopback_rejected() {
-    let err = assert_connect_target_allowed("[::1]:443", &default_policy())
-        .await
-        .expect_err("::1 must be rejected");
-    assert!(!err.is_empty(), "got: {err}");
+async fn connect_bogon_targets_are_rejected() {
+    // (authority, description, optional expected error fragment)
+    let cases: &[(&str, &str, Option<&str>)] = &[
+        ("127.0.0.1:443", "loopback v4", Some("127.0.0.1")),
+        ("169.254.169.254:80", "IMDS", None),
+        ("10.0.0.1:80", "RFC1918 10.x", None),
+        ("172.16.0.1:443", "RFC1918 172.16.x", None),
+        ("192.168.1.100:8443", "RFC1918 192.168.x", None),
+        ("[::1]:443", "v6 loopback", None),
+    ];
+    for &(authority, desc, frag) in cases {
+        let err = assert_connect_target_allowed(authority, &default_policy())
+            .await
+            .err()
+            .unwrap_or_else(|| panic!("{desc} ({authority}) must be rejected"));
+        if let Some(expected) = frag {
+            assert!(
+                err.contains(expected),
+                "{desc}: error must name '{expected}', got: {err}"
+            );
+        } else {
+            assert!(
+                !err.is_empty(),
+                "{desc}: must return a non-empty error, got: {err}"
+            );
+        }
+    }
 }
 
 #[tokio::test]
