@@ -159,15 +159,10 @@ fn html_with_old_style_rule_id_comment() {
 }
 
 #[test]
-fn old_rule_comment_with_alpha_does_not_panic() {
-    let body = b"<!-- abc-not-a-number -->";
-    let _ = parse_cf_block(&[], body);
-}
-
-#[test]
-fn old_rule_comment_with_negative_number_does_not_panic() {
-    let body = b"<!-- -1 -->";
-    let _ = parse_cf_block(&[], body);
+fn old_rule_comment_adversarial_values_do_not_panic() {
+    for body in [b"<!-- abc-not-a-number -->" as &[u8], b"<!-- -1 -->"] {
+        let _ = parse_cf_block(&[], body);
+    }
 }
 
 // ───────────────────────────────────────────────────────────────
