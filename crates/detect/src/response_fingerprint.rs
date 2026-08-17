@@ -361,69 +361,38 @@ mod tests {
     /// re-tunes a weight to improve a single benchmark, the drift
     /// semantics silently change everywhere. Pin them all.
     #[test]
-    fn drift_weight_status_is_30_percent() {
-        assert!(
-            (STATUS_DRIFT_WEIGHT - 0.30).abs() < f64::EPSILON,
-            "STATUS_DRIFT_WEIGHT changed: {STATUS_DRIFT_WEIGHT}"
-        );
-    }
-
-    #[test]
-    fn drift_weight_content_type_is_15_percent() {
-        assert!(
-            (CONTENT_TYPE_DRIFT_WEIGHT - 0.15).abs() < f64::EPSILON,
-            "CONTENT_TYPE_DRIFT_WEIGHT changed: {CONTENT_TYPE_DRIFT_WEIGHT}"
-        );
-    }
-
-    #[test]
-    fn drift_weight_length_is_20_percent() {
-        assert!(
-            (LENGTH_DRIFT_WEIGHT - 0.20).abs() < f64::EPSILON,
-            "LENGTH_DRIFT_WEIGHT changed: {LENGTH_DRIFT_WEIGHT}"
-        );
-    }
-
-    #[test]
-    fn drift_weight_title_is_15_percent() {
-        assert!(
-            (TITLE_DRIFT_WEIGHT - 0.15).abs() < f64::EPSILON,
-            "TITLE_DRIFT_WEIGHT changed: {TITLE_DRIFT_WEIGHT}"
-        );
-    }
-
-    #[test]
-    fn drift_weight_body_hash_is_10_percent() {
-        assert!(
-            (BODY_HASH_DRIFT_WEIGHT - 0.10).abs() < f64::EPSILON,
-            "BODY_HASH_DRIFT_WEIGHT changed: {BODY_HASH_DRIFT_WEIGHT}"
-        );
-    }
-
-    #[test]
-    fn drift_weight_block_markers_is_30_percent() {
-        assert!(
-            (BLOCK_MARKERS_DRIFT_WEIGHT - 0.30).abs() < f64::EPSILON,
-            "BLOCK_MARKERS_DRIFT_WEIGHT changed: {BLOCK_MARKERS_DRIFT_WEIGHT}"
-        );
-    }
-
-    /// Anti-rig: the likely-blocked threshold for 4xx + drift.
-    /// If someone raises it, subtle WAF blocks stop being detected.
-    #[test]
-    fn likely_blocked_4xx_threshold_is_0_40() {
-        assert!(
-            (LIKELY_BLOCKED_SCORE_4XX_THRESHOLD - 0.40).abs() < f64::EPSILON,
-            "4xx block threshold changed: {LIKELY_BLOCKED_SCORE_4XX_THRESHOLD}"
-        );
-    }
-
-    #[test]
-    fn likely_blocked_threshold_is_0_60() {
-        assert!(
-            (LIKELY_BLOCKED_SCORE_THRESHOLD - 0.60).abs() < f64::EPSILON,
-            "block-alone threshold changed: {LIKELY_BLOCKED_SCORE_THRESHOLD}"
-        );
+    fn drift_weights_and_thresholds_are_pinned() {
+        // Anti-rig: these constants define the drift scoring model.
+        // If someone changes them, subtle WAF blocks stop being detected
+        // or the scoring becomes meaningless. Each value is pinned.
+        let cases: &[(&str, f64, f64)] = &[
+            ("STATUS_DRIFT_WEIGHT", STATUS_DRIFT_WEIGHT, 0.30),
+            ("CONTENT_TYPE_DRIFT_WEIGHT", CONTENT_TYPE_DRIFT_WEIGHT, 0.15),
+            ("LENGTH_DRIFT_WEIGHT", LENGTH_DRIFT_WEIGHT, 0.20),
+            ("TITLE_DRIFT_WEIGHT", TITLE_DRIFT_WEIGHT, 0.15),
+            ("BODY_HASH_DRIFT_WEIGHT", BODY_HASH_DRIFT_WEIGHT, 0.10),
+            (
+                "BLOCK_MARKERS_DRIFT_WEIGHT",
+                BLOCK_MARKERS_DRIFT_WEIGHT,
+                0.30,
+            ),
+            (
+                "LIKELY_BLOCKED_SCORE_4XX_THRESHOLD",
+                LIKELY_BLOCKED_SCORE_4XX_THRESHOLD,
+                0.40,
+            ),
+            (
+                "LIKELY_BLOCKED_SCORE_THRESHOLD",
+                LIKELY_BLOCKED_SCORE_THRESHOLD,
+                0.60,
+            ),
+        ];
+        for &(name, actual, expected) in cases {
+            assert!(
+                (actual - expected).abs() < f64::EPSILON,
+                "{name} changed: expected {expected}, got {actual}"
+            );
+        }
     }
 
     // ── LengthBucket boundary values ────────────────────────────────────
