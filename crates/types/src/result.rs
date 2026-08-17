@@ -35,6 +35,13 @@ pub struct EvasionResult {
     /// Higher values indicate more aggressive or historically successful
     /// techniques. Updated by the evolution engine after feedback.
     pub confidence: f64,
+    /// Operator-visible warnings for silent-fallback events.
+    ///
+    /// Each entry names an evasion step that was skipped or degraded
+    /// (e.g. an encoder that errored, leaving the raw payload in place;
+    /// a non-UTF-8 body that could not be parsed for parameter-level
+    /// mutation). Empty when every requested technique applied cleanly.
+    pub warnings: Vec<String>,
 }
 
 impl EvasionResult {
@@ -47,6 +54,7 @@ impl EvasionResult {
             techniques,
             description,
             confidence,
+            warnings: Vec::new(),
         }
     }
 
@@ -63,6 +71,7 @@ impl EvasionResult {
             techniques,
             description,
             confidence: confidence.clamp(0.0, 1.0),
+            warnings: Vec::new(),
         }
     }
 
@@ -100,6 +109,19 @@ impl EvasionResult {
     /// Update the confidence score (used by evolution feedback loop).
     pub fn set_confidence(&mut self, confidence: f64) {
         self.confidence = confidence.clamp(0.0, 1.0);
+    }
+
+    /// Returns the warnings collected during evasion (silent-fallback events).
+    #[must_use]
+    pub fn warnings(&self) -> &[String] {
+        &self.warnings
+    }
+
+    /// Record a warning for a silent-fallback event (encoder error, non-UTF-8
+    /// body skip, etc.). Called by the strategy layer when an evasion step
+    /// was requested but could not be applied.
+    pub fn add_warning(&mut self, warning: impl Into<String>) {
+        self.warnings.push(warning.into());
     }
 
     // ── Internals ────────────────────────────────────────────────
@@ -180,7 +202,11 @@ impl fmt::Display for EvasionResult {
             self.confidence * 100.0,
             self.techniques.len(),
             self.description
-        )
+        )?;
+        if !self.warnings.is_empty() {
+            write!(f, " | {} warning(s)", self.warnings.len())?;
+        }
+        Ok(())
     }
 }
 
