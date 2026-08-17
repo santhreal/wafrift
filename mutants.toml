@@ -3,7 +3,7 @@
 # Mutation testing is the ground truth that the suite is not
 # decoration: a test that would still pass if a function returned
 # `Ok(())` / `Vec::new()` / `true` is *caught* here as a survived
-# mutant. The legendary bar is a caught-mutant ratio that only ratchets
+# mutant. The quality bar is a caught-mutant ratio that only ratchets
 # up, with every anti-rig / soundness mutant CAUGHT (item 38) and any
 # residual survivor justified as a provably-equivalent mutant (item 40).
 #

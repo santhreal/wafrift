@@ -13,7 +13,7 @@ Reproducible WAF benchmark: measure raw block rate AND wafrift bypass rate. Pass
 Base URL of the WAF target (e.g. http://127.0.0.1:18081). If omitted, uses `WAFRIFT_BENCH_URL` or `http://127.0.0.1:18081`
 .TP
 \fB\-\-corpus\fR \fI<CORPUS>\fR [default: wafrift\-bench/corpus]
-Single TOML corpus file OR directory of TOML files (recursive). Defaults to the in\-tree bench corpus path; if you installed wafrift via `cargo install` (no checkout), pass `\-\-corpus` to a directory you cloned from https://github.com/santhsecurity/wafrift/tree/main/wafrift\-bench/corpus
+Single TOML corpus file OR directory of TOML files (recursive). Defaults to the in\-tree bench corpus path; if you installed wafrift via `cargo install` (no checkout), pass `\-\-corpus` to a directory you cloned from https://github.com/santhreal/wafrift/tree/main/wafrift\-bench/corpus
 .TP
 \fB\-\-class\fR \fI<CLASS>\fR
 Restrict to one or more attack classes (sql, xss, cmdi, ssti, path, ldap, xxe, ssrf, nosql, log4shell, cve_pocs). Comma\-separated. Default: all classes found

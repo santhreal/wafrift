@@ -27,7 +27,7 @@ mutants_run.log
 
 # ── Santh-internal artifacts (BEGIN, managed; do not edit between markers) ──
 # Operator-private working notes, plans, audits, scoreboards, status
-# trackers, and "legendary" markers leak workflow context and must never
+# trackers, and "depth" markers leak workflow context and must never
 # ship publicly. The only governance artifacts that DO ship publicly are
 # CODE_OF_CONDUCT.md, SECURITY.md, CONTRIBUTING.md, and LICENSE-*, those
 # are explicitly allow-listed. Everything else internal is denied here.
@@ -51,8 +51,8 @@ GEMINI.md
 .windsurfrules
 .aider*
 
-# Plans, TODOs, audits, backlogs, scoreboards, "legendary" markers
-*LEGENDARY*
+# Plans, TODOs, audits, backlogs, scoreboards, "depth" markers
+*DEPTH*
 *_PLAN.md
 *_PLAN_*.md
 *_AUDIT.md
@@ -74,9 +74,9 @@ SCOREBOARD*.md
 # later `!` re-includes win over earlier `*` excludes.
 !CODE_OF_CONDUCT.md
 !SECURITY.md
-# The `wafrift legendary` one-shot command, real Rust source, not a
-# "LEGENDARY_PLAN.md" planning doc.
-!crates/cli/src/legendary.rs
+# The `wafrift oneshot` one-shot command, real Rust source, not a
+# "DEPTH_PLAN.md" planning doc.
+!crates/cli/src/depth.rs
 # Public bypass-rate scoreboard, refreshed by CI from wafrift-bench
 # results: the `SCOREBOARD*.md` pattern above blocks stray local
 # scoreboards but this one is the canonical published artefact.
@@ -87,9 +87,10 @@ SCOREBOARD*.md
 !LICENSE-MIT
 # ── Santh-internal artifacts (END) ──
 
-# Lowercase 'legendary-*.md' planning/audit docs, the managed block above
-# only matches uppercase *LEGENDARY*, so these slip through. They stay in the
+# Lowercase 'depth-*.md' planning/audit docs, the managed block above
+# only matches uppercase *DEPTH*, so these slip through. They stay in the
 # outer Santh backup but must never ship in the public wafrift repo.
+depth-*.md
 legendary-*.md
 
 # Per-session dogfood scratch + Python __pycache__ (never commit).
@@ -119,3 +120,12 @@ wafrift-bench/results/*-live-*
 _build*.log
 _build*.sh
 *-feedback-*.md
+
+# Unified backlog (STANDARD.md)
+IMPROVEMENT_PLAN.md
+# Unified backlog (STANDARD.md)
+/BACKLOG.md
+/PLAN.md
+/IMPROVEMENT_PLAN.md
+/MASTER_PLAN.md
+/*_PLAN.md

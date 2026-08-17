@@ -37,6 +37,33 @@ use wafrift_wafmodel::{
     attack_grammar, l_star_budgeted, mine_bypasses,
 };
 
+use crate::equiv_engine::verified_bypass;
+
+/// Map the user-facing `--class` names (`sqli`, `xss`, `all`) to the
+/// canonical attack-class keys consumed by `equiv_engine::verified_bypass`.
+/// `all` has no single oracle class; per-candidate verification is disabled
+/// rather than silently guessing.
+fn oracle_class_for_model_class(model_class: &str) -> Option<&'static str> {
+    match model_class {
+        "sqli" => Some("sql"),
+        "xss" => Some("xss"),
+        "all" => None,
+        _ => None,
+    }
+}
+
+/// Testable gate for a single mined candidate: the WAF must pass it AND the
+/// per-class oracle must confirm the payload is still structurally valid.
+fn candidate_is_verified_bypass(
+    outcome: &Result<Outcome, WafModelError>,
+    model_class: &str,
+    payload: &str,
+) -> bool {
+    matches!(outcome, Ok(Outcome::Pass))
+        && oracle_class_for_model_class(model_class)
+            .is_some_and(|class| verified_bypass(class, payload, payload, false, 200))
+}
+
 /// Arguments for `wafrift model-evade`.
 #[derive(Args, Debug)]
 pub(crate) struct ModelEvadeArgs {
@@ -807,7 +834,7 @@ pub(crate) fn run_model_evade(mut args: ModelEvadeArgs) -> ExitCode {
         );
         let probe_req = Request::get(&probe_url);
         let outcome = oracle.classify(&probe_req);
-        let is_bypass = matches!(outcome, Ok(Outcome::Pass));
+        let is_bypass = candidate_is_verified_bypass(&outcome, &args.class, &payload_str);
 
         if is_bypass && !json_mode {
             println!(
@@ -1092,7 +1119,31 @@ mod tests {
         emit_output(None, r#"{"ok":true}"#);
     }
 
+    // ── verified-bypass gate (anti-rig) ───────────────────────────
+
+    #[test]
+    fn mangled_sqli_payload_passing_waf_is_not_verified_bypass() {
+        // Simulate a candidate that the WAF passes (Outcome::Pass) but whose
+        // OR keyword has been destroyed by an intra-token space mutation.
+        // This is the anti-rig regression: old code counted any Pass as a
+        // bypass; the structural oracle must reject it.
+        let broken = "1 O R 1=1 --";
+        let pass: Result<Outcome, WafModelError> = Ok(Outcome::Pass);
+        assert!(
+            !candidate_is_verified_bypass(&pass, "sqli", broken),
+            "token-split mutation must not verify as a bypass: {broken}"
+        );
+
+        // Sanity: an intact equivalent payload that the WAF passes should verify.
+        let intact = "1 OR 1=1 --";
+        assert!(
+            candidate_is_verified_bypass(&pass, "sqli", intact),
+            "intact payload should verify: {intact}"
+        );
+    }
+
     // ── bypass_entry schema ─────────────────────────────────────────
+
 
     #[test]
     fn bypass_entry_serializes_payload_hex() {

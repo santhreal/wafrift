@@ -24,15 +24,32 @@ struct Patterns {
 }
 
 #[derive(Deserialize)]
+struct WafHeaderEntry {
+    name: String,
+    value_pattern: String,
+    description: String,
+}
+
+#[derive(Deserialize)]
 struct WafHeaders {
     #[serde(default)]
     entry: Vec<WafHeaderEntry>,
 }
 
 #[derive(Deserialize)]
-struct WafHeaderEntry {
+struct BlockHeaders {
+    #[serde(default)]
+    entry: Vec<BlockHeaderEntry2>,
+}
+
+#[derive(Deserialize)]
+struct BlockHeaderEntry2 {
     name: String,
-    value_pattern: String,
+    #[serde(default)]
+    block_value_pattern: String,
+    #[serde(default)]
+    challenge_value_pattern: String,
+    #[serde(default)]
     description: String,
 }
 
@@ -66,7 +83,10 @@ fn main() {
     let rule_id_prefixes = read_strings(&rules_dir.join("rule_id_prefixes.toml"), |p| p.prefixes);
     let rule_categories = read_strings(&rules_dir.join("rule_categories.toml"), |p| p.categories);
     let vendors = read_strings(&rules_dir.join("vendors.toml"), |p| p.vendors);
-    let block_header_names = read_strings(&rules_dir.join("block_headers.toml"), |p| p.names);
+    let block_headers_raw = fs::read_to_string(rules_dir.join("block_headers.toml"))
+        .expect("read block_headers.toml");
+    let block_headers: BlockHeaders = toml::from_str(&block_headers_raw)
+        .expect("parse block_headers.toml");
 
     emit_str_array(&mut out, "BLOCK_MARKERS", &block);
     emit_str_array(&mut out, "CHALLENGE_MARKERS", &challenge);
@@ -75,8 +95,15 @@ fn main() {
     emit_str_array(&mut out, "RULE_ID_PREFIXES", &rule_id_prefixes);
     emit_str_array(&mut out, "RULE_CATEGORIES", &rule_categories);
     emit_str_array(&mut out, "VENDOR_NAMES", &vendors);
-    emit_str_array(&mut out, "BLOCK_HEADER_NAMES", &block_header_names);
 
+    out.push_str("pub const BLOCK_HEADERS: &[(&str, &str, &str, &str)] = &[\n");
+    for e in &block_headers.entry {
+        out.push_str(&format!(
+            "    ({:?}, {:?}, {:?}, {:?}),\n",
+            e.name, e.block_value_pattern, e.challenge_value_pattern, e.description
+        ));
+    }
+    out.push_str("];\n");
     // ── waf_headers.toml: structured 3-tuples ──
     let raw =
         fs::read_to_string(rules_dir.join("waf_headers.toml")).expect("read waf_headers.toml");

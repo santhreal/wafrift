@@ -314,7 +314,7 @@ pub(crate) fn run_sarif(args: SarifArgs) -> ExitCode {
                 driver: SarifDriver {
                     name: "wafrift",
                     version: crate_version,
-                    information_uri: "https://github.com/santhsecurity/wafrift",
+                    information_uri: "https://github.com/santhreal/wafrift",
                     rules,
                 },
             },
@@ -435,7 +435,7 @@ fn build_rules_table(results: &[SarifResult]) -> Vec<SarifReportingDescriptor> {
                          this is a real bypass not a false positive."
                     ),
                 },
-                help_uri: "https://github.com/santhsecurity/wafrift",
+                help_uri: "https://github.com/santhreal/wafrift",
                 default_configuration: SarifReportingConfiguration { level: "error" },
             }
         })

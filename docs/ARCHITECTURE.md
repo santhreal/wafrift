@@ -145,7 +145,7 @@ Adding a new evasion primitive: one file + one line in `mod.rs`.
 | | `wafrift-plugin-api` | External tamper SDK: TOML regex-substitution rules + wasmtime-sandboxed `wasm32-wasip1` modules. No syscalls, no network, no filesystem, 1 M fuel + 512 KiB stack cap |
 | **Frontend** | `wafrift-core` | Façade crate, re-exports all crates under one namespace for `wafrift-core = "0.2"` consumers |
 | | `wafrift-proxy` | Forward HTTP proxy with per-host adaptive evasion, MITM/TLS interception, ratatui TUI |
-| | `wafrift-cli` | Binary entry point, all subcommands, `Commands` enum, scan / bench / parser-diff / smuggle / legendary |
+| | `wafrift-cli` | Binary entry point, all subcommands, `Commands` enum, scan / bench / parser-diff / smuggle / depth |
 
 ---
 
@@ -238,7 +238,7 @@ Adding a new evasion primitive: one file + one line in `mod.rs`.
 | `bank` | Gene-bank management: list / export / import / sign / trust / pull / submit |
 | `seed` | Pre-load a gene-bank with known-working techniques |
 | `report` | Generate a markdown pentest writeup from the proxy gene-bank |
-| `legendary` | One-shot: detect → fingerprint → bypass-probe → polished markdown report |
+| `oneshot` | One-shot: detect → fingerprint → bypass-probe → polished markdown report |
 
 ### Meta
 | Subcommand | Role |
@@ -314,7 +314,7 @@ crates/cli/src/
 │                   h2_diff_cmd, method_diff_cmd, gql_diff_cmd,
 │                   jwt_diff_cmd, cors_diff_cmd, trailer_diff_cmd,
 │                   ja3_diff_cmd
-├── operator/       bank, bank_registry, seed, report, legendary,
+├── operator/       bank, bank_registry, seed, report, depth,
 │                   listener_cmd, compress_cmd, distill_cmd, tmin_cmd,
 │                   smuggle_cmd, model_evade_cmd, wafmodel_cmd,
 │                   cluster_cmd, sarif_cmd, corpus_cmd, hunt_cmd,

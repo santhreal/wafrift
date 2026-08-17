@@ -83,7 +83,7 @@ pub(crate) fn delta_signal(
 /// within `n - 1` bytes, so the output is always valid UTF-8 and the
 /// ellipsis never blows past the byte budget.
 ///
-/// Pre-consolidation, `legendary.rs` used a *char-count* variant and
+/// Pre-consolidation, `depth.rs` used a *char-count* variant and
 /// `bench_waf.rs` used this *byte-cap* variant. Both appeared correct
 /// for ASCII-heavy WAF payloads, but the char-count form can produce
 /// outputs longer than `n` bytes for multi-byte code points (e.g. CJK

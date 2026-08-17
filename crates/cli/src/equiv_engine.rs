@@ -492,12 +492,12 @@ pub(crate) struct EquivBypass {
     pub(crate) envelope: ProbeEnvelope,
 }
 
-// AUDIT (legendary pass): anti-rig chain verified sound end-to-end 
+// AUDIT (depth pass): anti-rig chain verified sound end-to-end 
 // send → is_waf_block (canonical FP-cheap classifier) → verified_bypass
 // (3 gates) → oracle_valid (parser-grounded). EquivOutcome counts ONLY
 // verified bypasses; `unverified_not_blocked` surfaces WAF-slips that
 // failed an independent gate WITHOUT inflating the bypass count. No
-// fabrication or count-inflation path exists. See docs/legendary-audit.md.
+// fabrication or count-inflation path exists. see internal audit notes.
 /// Aggregate outcome of one moat run for one (class, payload).
 #[derive(Debug, Clone, Default)]
 pub(crate) struct EquivOutcome {

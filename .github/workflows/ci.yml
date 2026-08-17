@@ -66,7 +66,7 @@ jobs:
       # Fast per-push gate: the wafrift-wafmodel property + scale suites
       # run with a *reduced* case/config count so the push gate stays
       # quick. The IDENTICAL properties run at full 10k/1000 in the
-      # parallel `legendary` job below, which also gates, coverage is
+      # parallel `oneshot` job below, which also gates, coverage is
       # not reduced, only split into a fast lane + a thorough lane.
       - name: test (fast gate, scaled property/scale suites)
         run: cargo test --workspace
@@ -192,8 +192,8 @@ jobs:
       - run: cargo build -p wafrift-proxy --features tls-impersonate
       - run: cargo test  -p wafrift-proxy   --features tls-impersonate
 
-  legendary:
-    name: legendary (full wafmodel matrix: 10k props / 1000 configs)
+  depth:
+    name: depth (full wafmodel matrix: 10k props / 1000 configs)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

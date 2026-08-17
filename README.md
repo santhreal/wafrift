@@ -1,8 +1,10 @@
 # WafRift
 
-[![CI](https://github.com/santhsecurity/wafrift/actions/workflows/ci.yml/badge.svg)](https://github.com/santhsecurity/wafrift/actions/workflows/ci.yml)
+[![CI](https://github.com/santhreal/wafrift/actions/workflows/ci.yml/badge.svg)](https://github.com/santhreal/wafrift/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Crates.io](https://img.shields.io/crates/v/wafrift-cli)](https://crates.io/crates/wafrift-cli)
+
+Part of [Santh](https://santh.dev) - open source Rust security and infrastructure tooling.
 
 ![WafRift Demo](wafrift-demo.gif)
 
@@ -10,7 +12,7 @@
 
 **A programmable WAF-evasion engine.** Encoding × grammar-aware mutation × HTTP smuggling × content-type confusion × TLS fingerprint rotation, every layer addressable, every winning combination cached. Point it at a WAF and an evolutionary loop (hill-climb / SA / tabu / novelty / MAP-Elites) discovers what bypasses that exact stack, then persists the winners to a per-WAF gene bank so the next scan starts with zero discovery.
 
-> **Status: BETA.** Local stacks under [`wafrift-bench/`](./wafrift-bench/) (ModSec PL1–4, Coraza, BunkerWeb, naxsi) are exercised in CI. Cloud-WAF coverage (Cloudflare, AWS WAF, Akamai, Imperva, F5) is still sparse; treat those results as preliminary. PRs welcome, open against [github.com/santhsecurity/wafrift](https://github.com/santhsecurity/wafrift). Full version history in [CHANGELOG.md](CHANGELOG.md).
+> **Status: BETA.** Local stacks under [`wafrift-bench/`](./wafrift-bench/) (ModSec PL1–4, Coraza, BunkerWeb, naxsi) are exercised in CI. Cloud-WAF coverage (Cloudflare, AWS WAF, Akamai, Imperva, F5) is still sparse; treat those results as preliminary. PRs welcome, open against [github.com/santhreal/wafrift](https://github.com/santhreal/wafrift). Full version history in [CHANGELOG.md](CHANGELOG.md).
 
 ## What's in the box
 
@@ -23,7 +25,7 @@
 - **`wafrift distill`**, adversarial distillation via Zeller's ddmin. Take a KNOWN-working bypass payload, find the minimum-edit-distance subset that STILL bypasses **and is still a working attack**, every reduction is gated by the matching semantic oracle (`--class`, auto-detected), so the minimal form can't collapse into a benign byte that merely passes the filter. The local attack check runs before each HTTP fire, so dead candidates cost zero requests. Shorter, still-firing payloads ship cleaner reports.
 - **`wafrift compress`**, wrap a request body in `Content-Encoding: gzip` / `deflate` / `br` (or chain them). Compression-confusion attack: most WAFs inspect raw bytes; brotli especially is widely unsupported in WAF decompressors while every modern origin handles it. Operator pipes a body in, gets compressed bytes + the matching header out.
 - **`wafrift listener`**: OOB callback receiver. Pre-mints 128-bit base32 tokens; any inbound HTTP request containing a token is logged. The oracle for blind SQLi (time-based), stored XSS, blind SSRF, OOB cmdi (vuln classes that never echo a verdict on the same response).
-- **`wafrift legendary`**, one-shot demo command. Runs detect → fingerprint → bypass-probe (and optionally scan with **auto-escalate** + `waf_bypass` verdict) against a single target, stitches the results into one polished markdown writeup. The executive summary leads with the scan headline (`WAF BYPASS CONFIRMED` / `NO WAF ON THIS PARAM` / `WAF IN PLAY (no bypass`). The fastest way to show what wafrift does).
+- **`wafrift oneshot`**, one-shot demo command. Runs detect → fingerprint → bypass-probe (and optionally scan with **auto-escalate** + `waf_bypass` verdict) against a single target, stitches the results into one polished markdown writeup. The executive summary leads with the scan headline (`WAF BYPASS CONFIRMED` / `NO WAF ON THIS PARAM` / `WAF IN PLAY (no bypass`). The fastest way to show what wafrift does).
 - **`wafrift-proxy`**, forward HTTP proxy. Chain Burp / Caido / mitmproxy → wafrift-proxy → target; wafrift applies evasion at the upstream forward and records bypasses to its gene bank. MITM mode + TLS impersonation (Chrome / Firefox / Safari ClientHellos, with **header-order coherence** so the wire matches the chosen browser end-to-end) + per-host adaptive rotation + live TUI dashboard.
 - **`wafrift replay`** (deterministic re-fire of a known-good bypass against any target. Exits 0 on bypass, 2 on block).
 
@@ -64,7 +66,7 @@ Built so each crate is usable standalone: [`wafrift-encoding`](https://docs.rs/w
 | `bank` | Utility | Gene-bank management: list / export / import / sign / trust / pull / submit |
 | `seed` | Utility | Pre-load a gene-bank with known-working techniques |
 | `report` | Utility | Generate a markdown pentest writeup from the proxy gene-bank |
-| `legendary` | Demo | One-shot: detect + fingerprint + bypass-probe + polished markdown report |
+| `oneshot` | Demo | One-shot: detect + fingerprint + bypass-probe + polished markdown report |
 | `listener` | OOB | Callback receiver for blind SQLi / stored XSS / SSRF / OOB cmdi |
 | `sarif` | Output | Emit SARIF 2.1.0 from a `bench-waf` or `scan` JSON output (GitHub Code Scanning, Azure DevOps) |
 | `corpus` | Output | Inspect a `bench-waf --corpus-out` artifact: stats, coverage, rule breakdown |
@@ -83,7 +85,7 @@ Built so each crate is usable standalone: [`wafrift-encoding`](https://docs.rs/w
 
 ```bash
 # Prebuilt binaries (recommended)
-curl -sSfL https://github.com/santhsecurity/wafrift/releases/latest/download/wafrift-$(uname -m)-unknown-linux-gnu.tar.gz | tar xz
+curl -sSfL https://github.com/santhreal/wafrift/releases/latest/download/wafrift-$(uname -m)-unknown-linux-gnu.tar.gz | tar xz
 sudo mv wafrift wafrift-proxy /usr/local/bin/
 
 # From crates.io  (the wafrift-cli crate installs the `wafrift` binary)
@@ -100,7 +102,7 @@ those build prerequisites. Every other wafrift surface (scan, detect,
 attack, parser-diff family, bench-waf, smuggle, listener, ...) works
 on Windows out of the box.
 
-macOS: `wafrift-aarch64-apple-darwin.tar.gz`. Windows: `.zip` of the same name. Full asset list under [Releases](https://github.com/santhsecurity/wafrift/releases). From source: `cargo install --path crates/cli`.
+macOS: `wafrift-aarch64-apple-darwin.tar.gz`. Windows: `.zip` of the same name. Full asset list under [Releases](https://github.com/santhreal/wafrift/releases). From source: `cargo install --path crates/cli`.
 
 ## Quickstart
 
@@ -338,9 +340,9 @@ side; `diff path` covers the URL-shape side. They compose.
 
 ```bash
 # detect -> fingerprint -> bypass-probe -> (scan) -> polished markdown.
-wafrift legendary https://target.com --output report.md
+wafrift oneshot https://target.com --output report.md
 # For the deeper sweep: pass --payload to enable the live-scan phase.
-wafrift legendary https://target.com --payload "' OR 1=1--" --param id \
+wafrift oneshot https://target.com --payload "' OR 1=1--" --param id \
     --output report.md
 ```
 
@@ -592,7 +594,7 @@ Live scoreboard: [`docs/SCOREBOARD.md`](./docs/SCOREBOARD.md), refreshed nightly
 
 ```bash
 # Reproduce
-git clone https://github.com/santhsecurity/wafrift && cd wafrift
+git clone https://github.com/santhreal/wafrift && cd wafrift
 wafrift-bench/scripts/up.sh modsec-pl4
 cargo run --release -p wafrift-cli -- bench-waf \
     --base-url http://127.0.0.1:18084 \
@@ -642,7 +644,7 @@ wafrift
 │   ├── http3-evasion       # HTTP/3 + QUIC protocol evasion (QPACK desync, 0-RTT, CID rotation, Capsule Protocol RFC 9297 smuggling, QUIC DATAGRAM RFC 9221 streamless smuggle)
 │   ├── grpc-evasion        # gRPC/protobuf opaque-payload bypass
 │   ├── plugin-api          # TOML + WASM external tamper plugin system
-│   ├── captchaforge-bridge # Headless Chromium adapter for managed challenge solving
+│   ├── captchaforge-bridge # lurien cookie wait for managed challenges. captchaforge is retired
 │   ├── core                # Façade re-exporting all crates under one namespace
 │   └── cli                 # CLI + TUI (scan / evade / detect / attack / bypass-probe / …)
 ```

@@ -108,7 +108,7 @@ candidate is fired at the live target and only verified bypasses are credited.
 A non-ML-backed `--waf-name` (or none) makes it a clean no-op. The full
 *adaptive* decision-boundary descent (`wafmodel::evade_ml`, contract-tested),
 which chooses each next mutation from live block/allow feedback, is a tracked
-frontier upgrade (`docs/legendary-todo.md`).
+frontier upgrade (`docs/depth-todo.md`).
 
 ### Changed: `scan --corpus`: "scan pointed at bench" (one CLI, two modes)
 
@@ -2664,7 +2664,7 @@ Now plateau at `u32::MAX` for honest dashboards.
     operator-bears-liability transfer, and the project's policy of
     refusing support for unauthorised testing.
   - **`Dockerfile` + `.dockerignore`** for one-step `docker run
-    santhsecurity/wafrift`. Multi-stage build, non-root runtime user,
+    santhreal/wafrift`. Multi-stage build, non-root runtime user,
     tini PID 1, OCI image-spec labels.
   - **`.github/workflows/release.yml`**, on tag push, builds Linux
     x86_64 + aarch64, macOS x86_64 + arm64, Windows x86_64 binaries;

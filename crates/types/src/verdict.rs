@@ -229,6 +229,12 @@ impl Verdict {
         matches!(self, Self::Ambiguous { .. })
     }
 
+    /// Returns true if this verdict is rate-limited.
+    #[must_use]
+    pub fn is_rate_limited(&self) -> bool {
+        matches!(self, Self::RateLimited { .. })
+    }
+
     /// Returns true if the request was allowed (or at least not blocked).
     #[must_use]
     pub fn is_allowed(&self) -> bool {

@@ -73,10 +73,15 @@ pub(crate) fn contains_word_bounded(haystack: &str, needle: &str) -> bool {
 /// A vector of signals for every matched marker.
 #[must_use]
 pub fn extract_body_signals(body: &[u8], is_gzipped: bool) -> Vec<Signal> {
-    let text = if is_gzipped {
-        decompress_gzip(body).unwrap_or_else(|| String::from_utf8_lossy(body).to_string())
-    } else {
-        String::from_utf8_lossy(body).to_string()
+    let text = match decode_body(body, is_gzipped) {
+        Ok(t) => t,
+        // Genuine gzip we could not decompress. Running marker matching on the
+        // raw COMPRESSED bytes is meaningless and would silently drop every
+        // block marker -> a real block reads as Allowed (Law 10 silent,
+        // recall-destroying fallback; inflates the anti-rig bypass rate). Fail
+        // CLOSED: emit a single block marker so an undecodable gzip body on a
+        // 200 becomes Ambiguous (re-probe) instead of a fabricated bypass.
+        Err(()) => return vec![Signal::BodyMarker(UNDECODABLE_GZIP_MARKER.to_string())],
     };
     let lower = text.to_ascii_lowercase();
     let mut signals = Vec::new();
@@ -108,10 +113,12 @@ pub fn extract_body_signals(body: &[u8], is_gzipped: bool) -> Vec<Signal> {
 /// Attempt to extract a block reason from the response body.
 #[must_use]
 pub fn extract_block_reason(body: &[u8], is_gzipped: bool) -> Option<BlockReason> {
-    let text = if is_gzipped {
-        decompress_gzip(body).unwrap_or_else(|| String::from_utf8_lossy(body).to_string())
-    } else {
-        String::from_utf8_lossy(body).to_string()
+    // Undecodable genuine gzip: no readable reason text (scanning the compressed
+    // bytes would be meaningless). Return None; the caller treats an absent
+    // reason as BlockReason::Unknown.
+    let text = match decode_body(body, is_gzipped) {
+        Ok(t) => t,
+        Err(()) => return None,
     };
     let lower = text.to_ascii_lowercase();
 
@@ -168,6 +175,33 @@ const DECOMPRESS_MAX_BYTES: u64 = 4 * 1024 * 1024;
 /// size exceeds [`DECOMPRESS_MAX_BYTES`], or if the result is not
 /// valid UTF-8. In any of these cases the callers fall back to
 /// treating the raw bytes as lossy UTF-8.
+/// Emitted when a body DECLARED gzip (and carrying the gzip magic `1f 8b`)
+/// cannot be decompressed (bomb over the cap / truncated / non-UTF8). See
+/// [`extract_body_signals`] for why this fails closed instead of scanning the
+/// raw compressed bytes.
+const UNDECODABLE_GZIP_MARKER: &str = "undecodable-gzip-body";
+
+/// Decode a response body to text for marker matching.
+///
+/// `Err(())` is returned ONLY when the body is a genuine gzip stream (starts
+/// with the `1f 8b` magic) that failed to decompress: the caller must NOT treat
+/// the raw compressed bytes as text (that silently drops every marker). A body
+/// DECLARED gzip but lacking the magic is a mislabeled `Content-Encoding` whose
+/// raw bytes ARE the plaintext, so it is read normally (a correct, not silent,
+/// fallback).
+fn decode_body(body: &[u8], is_gzipped: bool) -> std::result::Result<String, ()> {
+    if is_gzipped {
+        if let Some(s) = decompress_gzip(body) {
+            return Ok(s);
+        }
+        if body.starts_with(&[0x1f, 0x8b]) {
+            return Err(());
+        }
+        // Declared gzip but no magic: a mislabeled plaintext body.
+    }
+    Ok(String::from_utf8_lossy(body).to_string())
+}
+
 fn decompress_gzip(data: &[u8]) -> Option<String> {
     let decoder = flate2::read::GzDecoder::new(data);
     // `take(n+1)` lets us read up to the cap; if we get n+1 bytes we
@@ -325,15 +359,41 @@ mod tests {
     }
 
     #[test]
-    fn invalid_gzip_body_falls_back_gracefully() {
-        // Corrupt gzip data: the first byte of gzip magic is 0x1f; the rest
-        // is garbage. decompress_gzip returns None, caller uses lossy UTF-8.
+    fn undecodable_gzip_body_fails_closed_not_silently_allowed() {
+        // Law 10 regression: a body DECLARED gzip that carries the gzip magic
+        // (1f 8b) but fails to decompress must NOT be scanned as raw compressed
+        // bytes (which contain no readable markers -> silently reads Allowed and
+        // inflates the bypass rate). It must fail CLOSED with a single block
+        // marker so the verdict layer can route it to Ambiguous / re-probe.
         let junk: Vec<u8> = vec![0x1f, 0x8b, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
-        // Must not panic.
         let signals = extract_body_signals(&junk, true);
-        let _ = signals;
-        let reason = extract_block_reason(&junk, true);
-        let _ = reason;
+        assert_eq!(
+            signals.len(),
+            1,
+            "undecodable gzip must yield exactly the fail-closed marker: {signals:?}"
+        );
+        assert!(
+            matches!(&signals[0], Signal::BodyMarker(m) if m == UNDECODABLE_GZIP_MARKER),
+            "must emit the undecodable-gzip block marker, got: {signals:?}"
+        );
+        // No reason text is recoverable from undecodable bytes.
+        assert!(extract_block_reason(&junk, true).is_none());
+    }
+
+    #[test]
+    fn mislabeled_gzip_plaintext_still_detects_markers() {
+        // A body flagged is_gzipped=true but WITHOUT the gzip magic is a
+        // mislabeled Content-Encoding: the raw bytes are the plaintext and must
+        // be read normally (a correct fallback, not the silent one). The block
+        // marker in the plaintext must still be detected.
+        let plaintext = b"Access Denied - request blocked by WAF";
+        let signals = extract_body_signals(plaintext, true);
+        assert!(
+            signals
+                .iter()
+                .any(|s| matches!(s, Signal::BodyMarker(m) if m == "access denied")),
+            "mislabeled-gzip plaintext must still surface its block marker: {signals:?}"
+        );
     }
 
     #[test]

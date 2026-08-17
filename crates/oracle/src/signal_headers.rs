@@ -7,17 +7,16 @@
 //! 2. **Block signal**: some headers only appear on blocked requests,
 //!    providing a strong classification signal even with 200 status.
 //!
-//! `WAF_HEADERS` and `BLOCK_HEADER_NAMES` come from
+//! `WAF_HEADERS` and `BLOCK_HEADERS` come from
 //! `crates/oracle/rules/markers/{waf_headers,block_headers}.toml` via
 //! `build.rs`: adding a header is a one-line PR with no Rust knowledge.
 
 use wafrift_types::Signal;
 
-// `WAF_HEADERS` and `BLOCK_HEADER_NAMES` are emitted by build.rs into
+// `WAF_HEADERS` and `BLOCK_HEADERS` are emitted by build.rs into
 // markers_data.rs, which is included by signal_body_marker.rs. Re-import
 // here via the parent crate path.
-use crate::signal_body_marker::{BLOCK_HEADER_NAMES, WAF_HEADERS};
-
+use crate::signal_body_marker::{BLOCK_HEADERS, WAF_HEADERS};
 /// Classify response headers for WAF signals.
 ///
 /// Returns a list of signals indicating WAF presence and block indicators.
@@ -37,13 +36,19 @@ pub fn classify_headers(headers: &[(String, String)]) -> Vec<Signal> {
             }
         }
 
-        // Check for explicit block headers
-        if BLOCK_HEADER_NAMES.contains(&name_lower.as_str()) {
-            signals.push(Signal::BodyMarker(format!(
-                "waf_block_header:{}={}",
-                name_lower,
-                header_value.chars().take(64).collect::<String>()
-            )));
+        // Check for explicit block/challenge headers with value-gated semantics.
+        for &(block_name, block_pattern, challenge_pattern, description) in BLOCK_HEADERS {
+            if name_lower == block_name {
+                if !challenge_pattern.is_empty() && value_lower.contains(challenge_pattern) {
+                    signals.push(Signal::ChallengePlatform(description.to_string()));
+                } else if block_pattern.is_empty() || value_lower.contains(block_pattern) {
+                    signals.push(Signal::BodyMarker(format!(
+                        "waf_block_header:{}={}",
+                        name_lower,
+                        header_value.chars().take(64).collect::<String>()
+                    )));
+                }
+            }
         }
     }
 
@@ -115,6 +120,51 @@ mod tests {
             }
         });
         assert!(has_allow, "should detect AWS WAF allow action");
+        assert!(
+            !signals.iter().any(|s| matches!(s, Signal::ChallengePlatform(_))),
+            "allow is not a challenge"
+        );
+        assert!(
+            !signals
+                .iter()
+                .any(|s| matches!(s, Signal::BodyMarker(m) if m.starts_with("waf_block_header"))),
+            "allow is not a block"
+        );
+    }
+
+    #[test]
+    fn challenge_header_emits_challenge_platform_not_block() {
+        // cf-mitigated: challenge must be classified as a challenge platform,
+        // not a block, and should still produce the generic WAF identification
+        // signal from waf_headers.toml.
+        let headers = vec![("cf-mitigated".to_string(), "challenge".to_string())];
+        let signals = classify_headers(&headers);
+        assert!(
+            signals.iter().any(|s| matches!(s, Signal::ChallengePlatform(_))),
+            "challenge header must emit ChallengePlatform, got {signals:?}"
+        );
+        assert!(
+            !signals
+                .iter()
+                .any(|s| matches!(s, Signal::BodyMarker(m) if m.starts_with("waf_block_header"))),
+            "challenge header must NOT emit a block signal, got {signals:?}"
+        );
+    }
+
+    #[test]
+    fn aws_waf_challenge_action_emits_challenge_platform() {
+        let headers = vec![("x-amzn-waf-action".to_string(), "challenge".to_string())];
+        let signals = classify_headers(&headers);
+        assert!(
+            signals.iter().any(|s| matches!(s, Signal::ChallengePlatform(_))),
+            "x-amzn-waf-action:challenge must emit ChallengePlatform, got {signals:?}"
+        );
+        assert!(
+            !signals
+                .iter()
+                .any(|s| matches!(s, Signal::BodyMarker(m) if m.starts_with("waf_block_header"))),
+            "x-amzn-waf-action:challenge must NOT emit a block signal, got {signals:?}"
+        );
     }
 
     // -- §12 boundary tests -------------------------------------------------

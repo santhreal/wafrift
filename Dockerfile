@@ -4,15 +4,15 @@
 # `wafrift-proxy` binary on the PATH so a practitioner with Docker
 # (and no Rust toolchain) can run either with a single command:
 #
-#   docker run --rm santhsecurity/wafrift wafrift evade --payload "' OR 1=1--"
-#   docker run --rm -p 8080:8080 santhsecurity/wafrift \
+#   docker run --rm santhreal/wafrift wafrift evade --payload "' OR 1=1--"
+#   docker run --rm -p 8080:8080 santhreal/wafrift \
 #       wafrift-proxy --listen 0.0.0.0:8080
 #
 # The image is multi-arch (linux/amd64, linux/arm64) so the same tag
 # works on Apple-silicon laptops and x86 CTF VMs. Build via:
 #
 #   docker buildx build --platform linux/amd64,linux/arm64 \
-#       -t santhsecurity/wafrift:0.2.1 -t santhsecurity/wafrift:latest --push .
+#       -t santhreal/wafrift:0.2.1 -t santhreal/wafrift:latest --push .
 
 ARG RUST_VERSION=1.89
 
@@ -73,14 +73,14 @@ WORKDIR /home/wafrift
 # triggers wafrift-proxy's graceful-shutdown path (gene-bank flush).
 ENTRYPOINT ["/usr/bin/tini", "--"]
 # Default to the CLI's interactive TUI. Practitioners override:
-#   docker run santhsecurity/wafrift wafrift scan --target ...
-#   docker run santhsecurity/wafrift wafrift-proxy --listen 0.0.0.0:8080
+#   docker run santhreal/wafrift wafrift scan --target ...
+#   docker run santhreal/wafrift wafrift-proxy --listen 0.0.0.0:8080
 CMD ["wafrift"]
 
 # Documentation labels (OCI image spec). Set by the release workflow.
 LABEL org.opencontainers.image.title="wafrift" \
       org.opencontainers.image.description="Programmable WAF-evasion engine. CLI + transparent forward proxy. Lawful use only." \
-      org.opencontainers.image.url="https://github.com/santhsecurity/wafrift" \
-      org.opencontainers.image.source="https://github.com/santhsecurity/wafrift" \
+      org.opencontainers.image.url="https://github.com/santhreal/wafrift" \
+      org.opencontainers.image.source="https://github.com/santhreal/wafrift" \
       org.opencontainers.image.licenses="MIT OR Apache-2.0" \
       org.opencontainers.image.vendor="Santh Security"

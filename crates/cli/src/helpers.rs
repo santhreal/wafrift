@@ -211,7 +211,7 @@ pub fn parse_form_pairs(s: &str) -> Vec<(String, String)> {
 /// never as the security boundary.
 ///
 /// Single source of truth for transient tmp paths in production code 
-/// before this, `legendary` and the multi-job `scan` driver each
+/// before this, `oneshot` and the multi-job `scan` driver each
 /// hand-rolled `temp_dir().join("…-{pid}-{nanos}")` (and one used only
 /// `{pid}-{job_index}`, fully guessable). `tempfile` would add O_EXCL +
 /// auto-cleanup, but it is a dev-dependency; the random basename is the
@@ -543,12 +543,12 @@ pub(crate) fn url_query_repro_curl(target: &str, param: &str, payload: &str) -> 
 ///
 /// # Arguments
 /// *: HTTP method override.  or  omits the
-///    flag (curl defaults to GET). Any other value emits .
+///   flag (curl defaults to GET). Any other value emits .
 /// * (the request URL, shell-escaped via []).
 /// *, extra request headers. Each  pair becomes
 ///   .
 /// *, optional body data.  prepends
-///    and appends  (lossy-UTF-8
+///   and appends  (lossy-UTF-8
 ///   for the body bytes).  omits both.
 ///
 /// When  is  and  is ,  is implied

@@ -2,7 +2,7 @@
 //!
 //! Run with:
 //! ```bash
-//! ssh work-linux 'cd /media/mukund-thiru/SanthData/Santh/software/wafrift && \
+//! ssh work-linux 'cd . && \
 //!   cargo bench -p wafrift-encoding -- encoding_hot_paths'
 //! ```
 //!

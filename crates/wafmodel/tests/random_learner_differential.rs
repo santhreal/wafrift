@@ -1,4 +1,4 @@
-//! E3/20–21, the legendary learner contract: on **10k random regular
+//! E3/20–21, the full learner contract: on **10k random regular
 //! oracles**, the three independent inference strategies must all
 //! recover the *exact* language and agree with each other, and the
 //! differential must be *non-vacuous* (it can tell a mutated language

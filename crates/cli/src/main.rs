@@ -44,7 +44,7 @@ mod interactive;
 #[cfg(feature = "tls-impersonate")]
 mod ja3_diff_cmd;
 mod jwt_diff_cmd;
-mod legendary;
+mod oneshot;
 mod listener_cmd;
 mod man_cmd;
 mod method_diff_cmd;
@@ -289,7 +289,7 @@ enum Commands {
     /// One-shot demo command, runs detect + fingerprint + bypass-probe
     /// (and optionally scan) against a single target, and stitches the
     /// results into one polished markdown writeup.
-    Legendary(legendary::LegendaryArgs),
+    Oneshot(oneshot::OneshotArgs),
     /// Out-of-band callback receiver, pre-mints unique tokens to
     /// embed in payloads (blind SQLi / stored XSS / blind SSRF / OOB
     /// command injection); logs any inbound HTTP request matching a
@@ -1094,7 +1094,7 @@ fn main() -> ExitCode {
     // Issue-9/10 fix (dogfood R43 cohort): tracing output now
     // disables ANSI escapes when (a) NO_COLOR=1 is set (per the
     // NO_COLOR.org convention) OR (b) stderr is not a terminal
-    // (piped output, log file, CI). Pre-fix `wafrift legendary 2>&1
+    // (piped output, log file, CI). Pre-fix `wafrift oneshot 2>&1
     // | grep WARN` carried raw `[2m...[33m WARN[0m` escape codes
     // through the pipe and broke downstream consumers; the colored
     // tracing decoration is operator-UX, not part of the log
@@ -1597,7 +1597,7 @@ fn main() -> ExitCode {
         Some(Commands::Audit(args)) => wafmodel_cmd::run_audit(args),
         Some(Commands::Harden(args)) => wafmodel_cmd::run_harden(args),
         Some(Commands::Fingerprint(args)) => wafmodel_cmd::run_fingerprint(args),
-        Some(Commands::Legendary(args)) => legendary::run_legendary(args),
+        Some(Commands::Oneshot(args)) => oneshot::run_oneshot(args),
         Some(Commands::Listener(args)) => listener_cmd::run_listener(args),
         Some(Commands::ParserDiff(args)) => match parser_diff_cmd::run_parser_diff(args) {
             Ok(()) => ExitCode::SUCCESS,
@@ -1738,7 +1738,7 @@ fn main() -> ExitCode {
 
 // `DetectFetch`, `fetch_for_detect`, `infra_markers` live in
 // `crate::detect_cmd` and are re-exported pub(crate) for use by
-// `crate::legendary`.
+// `crate::depth`.
 
 /// Expand a `wafrift discover` JSON report into one `run_scan` per
 /// (endpoint URL × injection-point name) and run them in sequence with

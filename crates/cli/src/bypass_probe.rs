@@ -84,7 +84,7 @@ pub(crate) struct BypassProbeArgs {
     /// Write JSON output to a file instead of stdout. Requires
     /// `--format json`; an error is returned if `--format text` is
     /// active (silently ignoring the flag would be a LAW 9 wiring
-    /// violation). Used by `wafrift legendary` to capture probe findings
+    /// violation). Used by `wafrift oneshot` to capture probe findings
     /// for the markdown report, the same pattern `wafrift scan --output`
     /// follows.
     #[arg(long, short)]

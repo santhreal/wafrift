@@ -17,8 +17,15 @@
 //! success, it is a discarded sample.
 
 use crate::error::Result;
+use regex::Regex;
+use std::sync::LazyLock;
 use wafrift_types::Request;
-
+use wafrift_grammar::grammar::{classify, PayloadType, equiv};
+use wafrift_oracle::{
+    cmdi::CmdiOracle, ldap::LdapOracle, ssi::SsiOracle, ssrf::SsrfOracle,
+    ssti::SstiOracle, traits::PayloadOracle, xss::XssOracle,
+};
+use wafrift_oracle::sql::{is_valid_expression_injection, DatabaseDialect as SqlDialect};
 /// An ML-WAF: a decision, and optionally a continuous score that lets
 /// the boundary attack descend instead of blind-search.
 pub trait MlWaf {
@@ -124,6 +131,54 @@ fn insert_fragment(v: &mut Vec<u8>, rng: &mut Rng, frag: &[u8]) {
     }
 }
 
+/// Insert a `/**/` SQL inline comment at a TOKEN BOUNDARY (immediately after an
+/// existing space).
+///
+/// Anti-rig: inserting `/**/` at a *random* byte offset (the previous arm-0
+/// behaviour) could land INSIDE a keyword -- `UNI/**/ON` is not `UNION` -- which
+/// silently breaks the attack. The substring manifold ([`is_attack_payload`])
+/// nonetheless accepted such a payload because a DIFFERENT surviving signal (the
+/// `SELECT` further along) still matched, so a broken, inert payload was scored
+/// as on-manifold: a false sample that can be miscounted as a bypass. A comment
+/// placed BETWEEN tokens is always semantics-preserving in SQL. Falls back to a
+/// keyword-safe case flip when the payload has no space to anchor to.
+fn insert_sql_comment_at_boundary(v: &mut Vec<u8>, rng: &mut Rng) {
+    let spaces: Vec<usize> = v
+        .iter()
+        .enumerate()
+        .filter(|&(_, &b)| b == b' ')
+        .map(|(i, _)| i)
+        .collect();
+    if spaces.is_empty() {
+        flip_one_ascii_letter(v, rng);
+        return;
+    }
+    // Insert immediately AFTER a chosen space: guaranteed between-token position.
+    let at = spaces[rng.below(spaces.len())] + 1;
+    for (k, b) in b"/**/".iter().enumerate() {
+        v.insert(at + k, *b);
+    }
+}
+
+/// Insert `""` (empty quotes, which the shell elides) at a position that does
+/// NOT immediately follow a `$`.
+///
+/// Anti-rig: empty quotes are semantics-preserving ANYWHERE except split across
+/// a `$`-sigil -- `$""(` is not `$(` command substitution and `$""{` is not
+/// `${` expansion, so the command breaks while the substring manifold (still
+/// seeing e.g. `/etc/passwd`) wrongly accepts it. This is the same false-on-
+/// manifold leak fixed for SQL comments in [`insert_sql_comment_at_boundary`].
+/// Only "immediately after a `$`" is unsafe, so those offsets are excluded.
+fn insert_empty_quotes_safe(v: &mut Vec<u8>, rng: &mut Rng) {
+    let n = v.len();
+    let choices: Vec<usize> = (0..=n).filter(|&i| i == 0 || v[i - 1] != b'$').collect();
+    if choices.is_empty() {
+        return; // pathological (payload is all `$`): re-proposed by the caller.
+    }
+    let at = choices[rng.below(choices.len())];
+    v.splice(at..at, [b'"', b'"']);
+}
+
 /// Replace one existing ASCII space in `v` with `frag`. No-op (leaves `v`
 /// unchanged) when there is no space (the caller's loop simply re-proposes).
 fn replace_one_space(v: &mut Vec<u8>, rng: &mut Rng, frag: &[u8]) {
@@ -162,7 +217,7 @@ fn propose(input: &[u8], rng: &mut Rng) -> Vec<u8> {
     let mut v = input.to_vec();
     match mut_class(input) {
         MutClass::Sql => match rng.below(3) {
-            0 => insert_fragment(&mut v, rng, b"/**/"),
+            0 => insert_sql_comment_at_boundary(&mut v, rng),
             1 => {
                 // SQL treats `/**/`, tab, newline, and form-feed all as
                 // whitespace, so swapping a space for any of them preserves
@@ -173,11 +228,20 @@ fn propose(input: &[u8], rng: &mut Rng) -> Vec<u8> {
             }
             _ => flip_one_ascii_letter(&mut v, rng),
         },
-        MutClass::Xss => match rng.below(3) {
-            0 => flip_one_ascii_letter(&mut v, rng),
-            1 => insert_fragment(&mut v, rng, b" "),
-            _ => insert_fragment(&mut v, rng, b"<!---->"),
-        },
+        MutClass::Xss => {
+            match rng.below(3) {
+                0 => flip_one_ascii_letter(&mut v, rng),
+                1 => insert_fragment(&mut v, rng, b" "),
+                _ => insert_fragment(&mut v, rng, b"<!---->"),
+            }
+            // If the insertion broke the HTML tag/handler context, fall back to
+            // a keyword-safe case flip so the manifold never credits an inert
+            // mutation as a bypass.
+            if !is_xss_payload(&v) {
+                v = input.to_vec();
+                flip_one_ascii_letter(&mut v, rng);
+            }
+        }
         MutClass::Path => match rng.below(2) {
             0 => {
                 // Percent-encode one `/` or `.` (path normalisers decode it).
@@ -193,7 +257,8 @@ fn propose(input: &[u8], rng: &mut Rng) -> Vec<u8> {
         MutClass::Cmd => match rng.below(2) {
             // NO case-flip: Linux commands are case-sensitive.
             0 => replace_one_space(&mut v, rng, b"${IFS}"),
-            _ => insert_fragment(&mut v, rng, b"\"\""),
+            // `""` insertion, but never split a `$(` / `${` sigil (anti-rig).
+            _ => insert_empty_quotes_safe(&mut v, rng),
         },
         MutClass::Template | MutClass::Generic => match rng.below(2) {
             0 => flip_one_ascii_letter(&mut v, rng),
@@ -216,46 +281,74 @@ pub fn propose_mutation(input: &[u8], seed: u64) -> Vec<u8> {
     propose(input, &mut rng)
 }
 
-/// The canonical executable-attack manifold check: does `bytes` still carry
-/// at least one live attack signal (SQLi / XSS / path / RCE)? This is the
-/// projection-onto-feasible operator, a candidate that fails it is inert
-/// (not a bypass, a discarded sample). Single source of truth shared by the
-/// strategy router and the bench/scan live boundary attack (§7 DEDUP), so the
-/// manifold definition can never drift between the mutation and verification
-/// sides.
+/// The canonical executable-attack manifold check: is `bytes` still a structurally
+/// valid instance of the attack class it claims to be? This is the projection-onto-
+/// feasible operator; a candidate that fails it is inert (not a bypass, a discarded
+/// sample). The check delegates to the same `wafrift-oracle` / `wafrift-grammar`
+/// structural validators used by `evolution`/`bench` verification, so the manifold
+/// definition cannot drift between the mutation and verification sides (§7 DEDUP).
 #[must_use]
 pub fn is_attack_payload(bytes: &[u8]) -> bool {
+    let s = String::from_utf8_lossy(bytes);
+    let s = s.trim();
+    if s.is_empty() {
+        return false;
+    }
+    match classify(s) {
+        PayloadType::Sql => {
+            is_valid_expression_injection(s, SqlDialect::Generic)
+                || is_valid_expression_injection(s, SqlDialect::MySql)
+                || is_valid_expression_injection(s, SqlDialect::PostgreSql)
+        }
+        PayloadType::Xss => XssOracle.is_semantically_valid(s, s),
+        PayloadType::CommandInjection => CmdiOracle.is_semantically_valid(s, s),
+        PayloadType::TemplateInjection => SstiOracle.is_semantically_valid(s, s),
+        PayloadType::Ldap => LdapOracle.is_semantically_valid(s, s),
+        PayloadType::Ssrf => SsrfOracle.is_semantically_valid(s, s),
+        PayloadType::Ssi => SsiOracle.is_semantically_valid(s, s),
+        PayloadType::PathTraversal => equiv::path::still_resolves(s, s),
+        PayloadType::NoSql => equiv::nosql::still_injects(s, s),
+        PayloadType::Jndi => equiv::log4shell::still_executes(s, s),
+        PayloadType::Unknown => {
+            // The classifier misses some path shapes (UNC \server\share\file,
+            // bare Windows absolute paths without a traversal sequence). Re-use
+            // the same `mut_class` heuristic the proposer uses and verify the
+            // path with the grammar resolver, so those payloads still reach the
+            // correct operator set.
+            if mut_class(bytes) == MutClass::Path {
+                equiv::path::still_resolves(s, s)
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+/// Structural XSS manifold: the payload must still contain an executable
+/// script context (a `<script>` block or an event-handler / JS-URL attribute)
+/// in addition to the generic attack signal checked by [`is_attack_payload`].
+/// This prevents the XSS proposer from being credited for a payload that
+/// split a tag or handler name while a secondary substring (`alert(`) still
+/// survived elsewhere.
+#[must_use]
+fn is_xss_payload(bytes: &[u8]) -> bool {
+    if !is_attack_payload(bytes) {
+        return false;
+    }
     let s = String::from_utf8_lossy(bytes).to_ascii_lowercase();
-    const SIGNALS: &[&str] = &[
-        "select",
-        "union",
-        "or 1",
-        "and 1",
-        "sleep(",
-        "<script",
-        "onerror",
-        "alert(",
-        "javascript:",
-        "../",
-        "/etc/passwd",
-        "eval(",
-        "exec(",
-        "system(",
-        "$(",
-        // Path traversal (Windows / UNC / percent-encoded). Dogfooding the
-        // live cumulus bench showed ml-evasion skipped these classes because
-        // the manifold didn't recognise them as attacks.
-        "..\\",
-        "c:\\",
-        "\\\\",
-        "%2e%2e",
-        "..%2f",
-        "..%5c",
-        // Template / expression-language / log4shell injection + SVG-vector XSS.
-        "${",
-        "<svg",
-    ];
-    SIGNALS.iter().any(|sig| s.contains(sig))
+    static XSS_RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            // (?isx): case-insensitive, dotall, ignore-pattern-whitespace.
+            r"(?isx)
+            <script\b[^>]*>.*?</script>         # <script> block
+            |<[^>]*\s(?:on[a-z]+|href|src|action)\s*=\s* # event handler / JS URL attr
+             [^>]*(?:alert|prompt|eval|confirm)\s*\(   # with an immediate JS call
+            ",
+        )
+        .expect("xss regex compiles")
+    });
+    XSS_RE.is_match(&s)
 }
 
 /// Outcome of an ML-WAF evasion search.
@@ -430,6 +523,45 @@ mod attack_manifold_tests {
     }
 
     #[test]
+    fn sql_comment_insert_never_splits_a_keyword() {
+        // Anti-rig regression: the SQL comment operator inserted `/**/` at a
+        // RANDOM byte offset, which could land inside a keyword (`UNI/**/ON` !=
+        // `UNION`), breaking the attack while the substring manifold still
+        // accepted the payload via the surviving `select`. The boundary-anchored
+        // operator must keep every keyword intact, so BOTH `union` and `select`
+        // survive as substrings for every proposal across seeds. Pre-fix this
+        // tripped (a fraction of arm-0 proposals split `union`); post-fix it holds.
+        let p = b"1 UNION SELECT password FROM users";
+        for seed in 0..300u64 {
+            let c = propose_mutation(p, seed);
+            let s = String::from_utf8_lossy(&c).to_ascii_lowercase();
+            assert!(
+                s.contains("union") && s.contains("select"),
+                "mutation split a SQL keyword (union+select must stay intact): {:?}",
+                String::from_utf8_lossy(&c)
+            );
+        }
+    }
+
+    #[test]
+    fn cmd_empty_quote_insert_never_splits_command_substitution() {
+        // Anti-rig regression: `""` inserted immediately after `$` yields `$""(`,
+        // which is NOT `$(` command substitution -- the command breaks, yet the
+        // substring manifold still accepted it via the surviving `/etc/passwd`.
+        // The safe operator must keep the `$(` sigil intact across every seed.
+        let p = b"$(cat /etc/passwd)";
+        for seed in 0..300u64 {
+            let c = propose_mutation(p, seed);
+            let s = String::from_utf8_lossy(&c);
+            assert!(
+                s.contains("$("),
+                "cmd mutation split the $( command-substitution sigil: {:?}",
+                s
+            );
+        }
+    }
+
+    #[test]
     fn mut_class_routes_representative_payloads() {
         use super::{MutClass, mut_class};
         assert_eq!(mut_class(b"1 UNION SELECT 1"), MutClass::Sql);
@@ -458,5 +590,68 @@ mod attack_manifold_tests {
                 String::from_utf8_lossy(&c)
             );
         }
+    }
+
+    #[test]
+    fn xss_insert_never_splits_a_tag_or_handler() {
+        // Anti-rig regression: inserting ` ` or `<!---->` at a random byte offset
+        // could land inside `<script` or `onerror`, breaking the tag/handler
+        // while `alert(` survived and fooled the substring manifold. Every
+        // proposal must keep a valid executable XSS context.
+        use super::is_xss_payload;
+        let payloads: &[&[u8]] = &[
+            b"<script>alert(1)</script>",
+            b"<svg onload=alert(1)>",
+            b"<img src=x onerror=alert(1)>",
+        ];
+        for payload in payloads {
+            for seed in 0..300u64 {
+                let c = propose_mutation(payload, seed);
+                assert!(
+                    is_xss_payload(&c),
+                    "XSS mutation destroyed the executable context for {:?}: {:?}",
+                    String::from_utf8_lossy(payload),
+                    String::from_utf8_lossy(&c)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn xss_proposals_stay_on_attack_manifold() {
+        // The structural XSS check must not be so strict that it rejects every
+        // legitimate mutation; across 300 seeds a strong majority must still be
+        // recognised as attacks.
+        let payloads: &[&[u8]] = &[
+            b"<script>alert(1)</script>",
+            b"<svg onload=alert(1)>",
+        ];
+        for payload in payloads {
+            let on = (0..300u64)
+                .filter(|&seed| is_attack_payload(&propose_mutation(payload, seed)))
+                .count();
+            assert!(
+                on >= 150,
+                "only {on}/300 XSS proposals stayed on the attack manifold for {:?}",
+                String::from_utf8_lossy(payload)
+            );
+        }
+    }
+
+    #[test]
+    fn keyword_split_payload_rejected_by_unified_manifold() {
+        // Anti-rig regression: the old substring manifold accepted a SQL
+        // payload whose PRIMARY keyword was split by `/**/` (e.g. `UNI/**/ON`)
+        // because a secondary signal (`SELECT`) survived. The unified oracle
+        // parses with a real SQL dialect, so the broken payload is off-manifold.
+        assert!(
+            !is_attack_payload(b"UNI/**/ON SELECT password FROM users"),
+            "keyword-split SQL must be off-manifold"
+        );
+        // Sanity: the intact form is still on-manifold.
+        assert!(
+            is_attack_payload(b"1 UNION SELECT password FROM users"),
+            "intact UNION-SELECT must remain on-manifold"
+        );
     }
 }

@@ -6,7 +6,7 @@ Operating principle: every entry below ships **measurable** value. We don't add 
 
 ---
 
-## Tier 1: legendary lift
+## Tier 1: high-impact lift
 
 These three are what take wafrift from "best-in-class evader" to "the research instrument cited every time someone writes a WAF paper."
 
@@ -38,7 +38,7 @@ These three are what take wafrift from "best-in-class evader" to "the research i
 
 ## Tier 2: cheap, ship now
 
-### 4. `wafrift legendary --target X`: one-shot demo
+### 4. `wafrift oneshot --target X`: one-shot demo
 
 Runs `detect → fingerprint → discover → scan → bypass-probe → report` in a single command, emits a polished HTML + markdown writeup. Today every step is a separate invocation; the demo magnet is one command that produces the artifact you'd actually show a stakeholder.
 
@@ -56,7 +56,7 @@ The `retry_after_responses` / `max_retry_after_obeyed_ms` aggregates added in 0.
 
 ---
 
-## Tier 3: open, not blocking legendary
+## Tier 3: open, not blocking release
 
 | Item | Why open | Why not blocking |
 |---|---|---|
@@ -67,7 +67,7 @@ The `retry_after_responses` / `max_retry_after_obeyed_ms` aggregates added in 0.
 | Auto-generated SBOM (CycloneDX) | Supply-chain compliance | `cargo-cyclonedx` works out-of-tree if needed |
 | Code-signed release artefacts (sigstore / cosign) | Trust chain for binary distribution | Crates.io distribution path is already authenticated |
 
-These show up here so they're not forgotten (but none of them moves the scoreboard, so none of them blocks legendary).
+These show up here so they're not forgotten (but none of them moves the scoreboard, so none of them blocks depth).
 
 ---
 

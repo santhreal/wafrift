@@ -16,7 +16,7 @@
 //!
 //! `fetch_for_detect`, `infra_markers`, and `DetectFetch` are
 //! intentionally `pub(crate)` so the higher-level demo command
-//! (`crate::legendary::run_legendary`) composes the same primitives
+//! (`crate::oneshot::run_oneshot`) composes the same primitives
 //! that ship under `wafrift detect`: no risk of the demo drifting
 //! from the real command's behaviour.
 
@@ -427,7 +427,7 @@ pub(crate) fn infra_markers(headers: &[(String, String)]) -> Vec<(String, String
     // proxy sandwich (Python's BaseHTTPServer adding its own
     // `Server: BaseHTTP/...` on top of a backend's `Server:
     // cloudflare`) used to surface BOTH as separate rows in the
-    // legendary markdown table, which read as a rendering bug.
+    // depth markdown table, which read as a rendering bug.
     // Last-wins because the OUTERMOST proxy is the one the operator
     // is interacting with, its identity is more informative for
     // the report than the buried backend's.
@@ -502,7 +502,7 @@ pub(crate) fn next_step_hint(waf_name: &str) -> Option<&'static str> {
 
 /// Generic hint for any confidently-detected WAF that is NOT in
 /// `SUGGESTED_NEXT_STEP` (e.g. a new or niche WAF family).
-const GENERIC_NEXT_STEP: &str = "try `wafrift legendary <url>` for a one-shot demo run";
+const GENERIC_NEXT_STEP: &str = "try `wafrift oneshot <url>` for a one-shot demo run";
 
 #[allow(clippy::needless_pass_by_value)]
 pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
@@ -609,7 +609,7 @@ pub(crate) fn run_detect(args: DetectArgs, quiet: bool) -> ExitCode {
         // Cache the CnameRuleEngine across detect calls, the embedded
         // TOML parse + regex compile costs ~150ms on cold load. Without
         // the cache, every `wafrift detect` invocation pays that cost,
-        // and `legendary` (which calls detect repeatedly) ends up
+        // and `oneshot` (which calls detect repeatedly) ends up
         // visibly sluggish. OnceLock is `Send + Sync` and zero-overhead
         // after init. Per perf-hunt finding F01 (2026-05-23).
         static CNAME_ENGINE: std::sync::OnceLock<CnameRuleEngine> = std::sync::OnceLock::new();

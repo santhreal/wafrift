@@ -100,7 +100,7 @@ pub struct BenchWafArgs {
     /// Defaults to the in-tree bench corpus path; if you installed
     /// wafrift via `cargo install` (no checkout), pass `--corpus` to a
     /// directory you cloned from
-    /// <https://github.com/santhsecurity/wafrift/tree/main/wafrift-bench/corpus>
+    /// <https://github.com/santhreal/wafrift/tree/main/wafrift-bench/corpus>
     #[arg(long, default_value = "wafrift-bench/corpus")]
     pub corpus: PathBuf,
 
@@ -859,7 +859,7 @@ fn load_corpus(path: &Path) -> Result<Vec<BenchCase>, String> {
         return Err(format!(
             "no cases found at {} (expected *.toml files).\n  \
              Hint: clone the bundled corpus from \
-             https://github.com/santhsecurity/wafrift/tree/main/wafrift-bench/corpus \
+             https://github.com/santhreal/wafrift/tree/main/wafrift-bench/corpus \
              or pass --corpus PATH to a directory of TOML files matching the schema in \
              wafrift-bench/corpus/sql/blind.toml.",
             path.display()
@@ -2735,7 +2735,7 @@ async fn run_content_type_strategy(
 /// the forward-paradigm tool for the next-gen ML-WAF threat, reachable from the
 /// autonomous loop (`bench-waf` / `hunt`), not just `scan`. (The full
 /// *adaptive* decision-boundary descent: `wafmodel::evade_ml` driven by live
-/// feedback, is a tracked frontier upgrade in docs/legendary-todo.md.)
+/// feedback, is a tracked frontier upgrade in docs/depth-todo.md.)
 async fn run_ml_evasion_strategy(
     client: &Client,
     case: &BenchCase,
@@ -3380,7 +3380,7 @@ fn emit_report(base_url: &str, args: &BenchWafArgs, results: &[CaseResult]) -> R
 
 /// Delegates to the workspace-canonical [`crate::probe_classify::truncate`].
 /// The implementation (byte-cap + char-boundary walk) originated here and
-/// was lifted to `probe_classify` so `legendary.rs` could share it without
+/// was lifted to `probe_classify` so `depth.rs` could share it without
 /// duplicating the char-boundary fix.
 fn truncate(s: &str, n: usize) -> String {
     crate::probe_classify::truncate(s, n)

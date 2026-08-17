@@ -86,29 +86,34 @@ impl ResponseOracle {
         // TimingOracle (mean + 3*sigma) for precise confirmation of blind
         // attacks (pg_sleep / WAITFOR DELAY / ; ping -c 10). Fall back to the
         // crude 3x ratio heuristic when fewer samples are available.
-        let timing_signal = self
-            .calibration
-            .as_ref()
-            .and_then(|cal| {
+        // When calibration exists, ITS verdict is final. A previous
+        // `.and_then(cal -> Option).or_else(default 200ms)` could not tell
+        // "no calibration" apart from "calibrated statistical oracle said NOT
+        // anomalous" (both are None), so a response the precise mean+3*sigma
+        // oracle deemed normal fell through to the crude 3x-of-200ms default and
+        // could be FALSELY flagged a timing anomaly, corrupting blind-injection
+        // timing confirmation. The default 200ms baseline runs ONLY when there is
+        // no calibration at all.
+        let timing_signal = match self.calibration.as_ref() {
+            Some(cal) => {
                 if let Some(oracle) = cal.build_timing_oracle() {
-                    if oracle.is_anomalous(ctx.response_time_ms as f64) {
-                        Some(wafrift_types::Signal::ResponseTimeAnomaly {
+                    // >= 3 latency samples: the statistical oracle is authoritative,
+                    // including its "not anomalous" verdict (no fallback override).
+                    oracle.is_anomalous(ctx.response_time_ms as f64).then(|| {
+                        wafrift_types::Signal::ResponseTimeAnomaly {
                             baseline_ms: oracle.baseline_ms as u64,
                             actual_ms: ctx.response_time_ms,
-                        })
-                    } else {
-                        None
-                    }
+                        }
+                    })
                 } else {
-                    // Fewer than 3 samples -- fall back to heuristic ratio.
+                    // Fewer than 3 samples: crude ratio against the benign latency.
                     let baseline_ms = cal.benign_latency_ms.unwrap_or(200);
                     classify_response_time(baseline_ms, ctx.response_time_ms)
                 }
-            })
-            .or_else(|| {
-                // No calibration at all -- use default 200ms baseline.
-                classify_response_time(200, ctx.response_time_ms)
-            });
+            }
+            // No calibration at all: default 200ms baseline heuristic.
+            None => classify_response_time(200, ctx.response_time_ms),
+        };
         if let Some(s) = timing_signal {
             signals.push(s);
         }
@@ -126,6 +131,14 @@ impl ResponseOracle {
         }
 
         // ── Calibration drift ──
+        // `drift_toward_blocked` / `drift_toward_benign` capture the DIRECTION so
+        // the verdict resolution below can treat a status/fingerprint mismatch as
+        // a conflict. DriftScore is status_delta-dominated (body_length_delta only
+        // tie-breaks equal status), so "200 closer to blocked" can only arise when
+        // the blocked baseline itself sits in the 200 band -- i.e. a genuine
+        // 200-status soft-block page -- never on a normal 200-vs-403 target.
+        let mut drift_toward_blocked = false;
+        let mut drift_toward_benign = false;
         if let Some(ref cal) = self.calibration
             && cal.is_complete()
         {
@@ -135,8 +148,10 @@ impl ResponseOracle {
             match (benign_drift, blocked_drift) {
                 (Some(b), Some(bl)) => {
                     if b.is_closer_than(&bl) {
+                        drift_toward_benign = true;
                         signals.push(Signal::FingerprintDrift("closer to benign baseline".into()));
                     } else if bl.is_closer_than(&b) {
+                        drift_toward_blocked = true;
                         signals.push(Signal::FingerprintDrift(
                             "closer to blocked baseline".into(),
                         ));
@@ -147,9 +162,11 @@ impl ResponseOracle {
                     }
                 }
                 (Some(_), None) => {
+                    drift_toward_benign = true;
                     signals.push(Signal::FingerprintDrift("closer to benign baseline".into()));
                 }
                 (None, Some(_)) => {
+                    drift_toward_blocked = true;
                     signals.push(Signal::FingerprintDrift(
                         "closer to blocked baseline".into(),
                     ));
@@ -168,10 +185,13 @@ impl ResponseOracle {
             .any(|s| matches!(s, Signal::BodyMarker(m) if m.contains("rate-limit")));
         // A block can be signalled by the body OR by an explicit waf_block_header
         // (the latter holds even on a 200 status (see has_header_block above)).
+        // Rate-limit body markers must NOT count as block markers; they have their
+        // own early-return verdict and including them here would suppress drift
+        // conflicts and create latent Ambiguous-on-reorder bugs.
         let has_block_marker = has_header_block
             || body_signals
                 .iter()
-                .any(|s| matches!(s, Signal::BodyMarker(_)));
+                .any(|s| matches!(s, Signal::BodyMarker(m) if !m.starts_with("rate-limit:")));
         let has_success_marker = body_signals
             .iter()
             .any(|s| matches!(s, Signal::SuccessMarker(_)));
@@ -219,6 +239,54 @@ impl ResponseOracle {
                     .filter(|s| matches!(s, Signal::SuccessMarker(_)))
                     .cloned()
                     .collect(),
+            ));
+        }
+
+        // Per-target calibration drift is the strongest target-specific evidence
+        // the oracle has (it compares against the ACTUAL learned benign/blocked
+        // baselines, not a hardcoded marker list). If the status says one thing
+        // but the response fingerprint is closer to the OPPOSITE learned baseline,
+        // that is a genuine conflict -> Ambiguous, so the caller re-probes rather
+        // than trusting the status. This wires in evidence that was previously
+        // COMPUTED and attached as a FingerprintDrift signal but never consulted
+        // by the verdict, which let a 200-status soft-block page (fingerprint ==
+        // blocked baseline, no hardcoded marker) be counted as a real bypass --
+        // inflating the bypass rate the oracle exists to keep honest. The
+        // `!has_block_marker` / `!has_success_marker` guards avoid duplicating a
+        // conflict the marker path already raised; the status_delta dominance of
+        // DriftScore keeps this from firing on normal 200-vs-403 targets.
+        if status_verdict.is_allowed() && drift_toward_blocked && !has_block_marker {
+            competing.push((
+                status_verdict.clone(),
+                signals
+                    .iter()
+                    .filter(|s| matches!(s, Signal::StatusCode { .. }))
+                    .cloned()
+                    .collect(),
+            ));
+            let reason = extract_block_reason(&ctx.body, ctx.is_gzipped);
+            competing.push((
+                Verdict::blocked_with_reason(
+                    reason.unwrap_or(BlockReason::Unknown),
+                    vec![Signal::FingerprintDrift("closer to blocked baseline".into())],
+                ),
+                vec![Signal::FingerprintDrift("closer to blocked baseline".into())],
+            ));
+        }
+        if status_verdict.is_blocked() && drift_toward_benign && !has_success_marker {
+            competing.push((
+                status_verdict.clone(),
+                signals
+                    .iter()
+                    .filter(|s| matches!(s, Signal::StatusCode { .. }))
+                    .cloned()
+                    .collect(),
+            ));
+            competing.push((
+                Verdict::allowed(vec![Signal::FingerprintDrift(
+                    "closer to benign baseline".into(),
+                )]),
+                vec![Signal::FingerprintDrift("closer to benign baseline".into())],
             ));
         }
 
@@ -397,6 +465,21 @@ mod tests {
         };
         let v = oracle.classify(&ctx);
         assert!(v.is_ambiguous());
+    }
+
+    /// Rate-limit body markers must be routed to RateLimited, not treated as
+    /// block markers that would create an allowed-vs-block conflict.
+    #[test]
+    fn rate_limit_body_marker_returns_rate_limited_not_ambiguous() {
+        let oracle = ResponseOracle::new();
+        let ctx = ResponseContext {
+            status: 200,
+            body: b"You have exceeded the rate limit.".to_vec(),
+            ..Default::default()
+        };
+        let v = oracle.classify(&ctx);
+        assert!(v.is_rate_limited(), "must be RateLimited, got {v:?}");
+        assert!(!v.is_ambiguous(), "must NOT be Ambiguous, got {v:?}");
     }
 
     /// §5/§6 regression: a clean 403 WAF block whose page contains the word
@@ -653,6 +736,142 @@ mod tests {
                 .any(|s| matches!(s, Signal::ResponseTimeAnomaly { .. })),
             "below min samples, 200ms should not be flagged (3x=300ms): {:?}",
             signals
+        );
+    }
+
+    /// REGRESSION: with >= 3 calibration samples whose statistical oracle deems
+    /// the response NOT anomalous, the crude default-200ms fallback must NOT
+    /// re-fire and invent a timing anomaly.
+    ///
+    /// Pre-fix the timing signal was `calibration.and_then(cal -> Option<Signal>)
+    /// .or_else(|| classify_response_time(200, t))`. That construction cannot
+    /// distinguish "no calibration" from "calibrated statistical oracle returned
+    /// None because the response was NOT anomalous" -- both are `None` -- so the
+    /// default 200ms heuristic (threshold 3x = 600ms) fired anyway. A 700ms
+    /// response against a wide ~650ms calibrated baseline (statistical threshold
+    /// ~1560ms, i.e. clearly normal) was thus FALSELY flagged a timing anomaly,
+    /// which would mis-credit a blind-injection bypass.
+    #[test]
+    fn calibrated_non_anomalous_timing_does_not_trigger_default_fallback() {
+        let mut cal = CalibrationSession::default();
+        // Wide spread: mean 650, sample stdev ~304 => stat threshold ~1562ms.
+        for ms in [300u64, 1000, 650, 400, 900] {
+            cal.record_benign_with_latency(200, &[], b"ok", ms);
+        }
+        cal.record_blocked(403, &[], b"blocked");
+        let oracle = ResponseOracle::new().with_calibration(cal);
+        let ctx = ResponseContext {
+            status: 200,
+            // 700ms is > 600ms (3x the default-200 fallback) but far below the
+            // ~1562ms statistical threshold, so it is NOT anomalous.
+            response_time_ms: 700,
+            ..Default::default()
+        };
+        let v = oracle.classify(&ctx);
+        let signals = v.signals();
+        assert!(
+            !signals
+                .iter()
+                .any(|s| matches!(s, Signal::ResponseTimeAnomaly { .. })),
+            "calibrated-normal 700ms (vs ~650 baseline, ~1562ms threshold) must NOT \
+             be flagged anomalous by the 200ms default fallback: {:?}",
+            signals
+        );
+    }
+
+    /// WIRING/anti-rig: a 200-status soft-block page whose fingerprint matches
+    /// the target's learned BLOCKED baseline (and carries no hardcoded block
+    /// marker) must be Ambiguous, not a silently-counted bypass.
+    ///
+    /// Pre-fix the FingerprintDrift "closer to blocked baseline" signal was
+    /// computed and attached but never consulted by the verdict, so this
+    /// returned Allowed -- inflating the bypass rate the oracle exists to keep
+    /// honest.
+    #[test]
+    fn soft_block_200_matching_blocked_baseline_is_ambiguous() {
+        let mut cal = CalibrationSession::default();
+        // Benign 200 with a large real-content body; blocked baseline is ALSO a
+        // 200 (soft block) with a short "Access Denied" page.
+        cal.record_benign(200, &[], &b"A".repeat(5000));
+        cal.record_blocked(200, &[], &b"B".repeat(800));
+        let oracle = ResponseOracle::new().with_calibration(cal);
+        let ctx = ResponseContext {
+            status: 200,
+            body: b"C".repeat(820).to_vec(), // ~= blocked baseline length, no marker
+            ..Default::default()
+        };
+        let v = oracle.classify(&ctx);
+        assert!(
+            matches!(v, Verdict::Ambiguous { .. }),
+            "200 body matching the learned blocked baseline must be Ambiguous, got {:?}",
+            v
+        );
+    }
+
+    /// No-regression guard: on a NORMAL target (benign 200, blocked 403) a plain
+    /// 200 response is closer to the benign baseline (status_delta 0 vs 203), so
+    /// the drift-conflict wiring must NOT spuriously produce Ambiguous.
+    #[test]
+    fn normal_200_target_stays_allowed_not_ambiguous() {
+        let mut cal = CalibrationSession::default();
+        cal.record_benign(200, &[], &b"A".repeat(5000));
+        cal.record_blocked(403, &[], &b"B".repeat(800));
+        let oracle = ResponseOracle::new().with_calibration(cal);
+        let ctx = ResponseContext {
+            status: 200,
+            body: b"C".repeat(820).to_vec(),
+            ..Default::default()
+        };
+        let v = oracle.classify(&ctx);
+        assert!(
+            v.is_allowed(),
+            "a plain 200 on a 200-vs-403 target must stay Allowed, got {:?}",
+            v
+        );
+    }
+
+    /// Symmetric anti-rig: a 403 that is actually serving real content (its
+    /// fingerprint matches the learned BENIGN baseline) is a genuine bypass
+    /// signal and must be Ambiguous rather than silently Blocked.
+    #[test]
+    fn blocked_status_matching_benign_baseline_is_ambiguous() {
+        let mut cal = CalibrationSession::default();
+        // A target that answers 403 for everything: benign baseline is a long
+        // real page at 403, blocked baseline is a short 403 denial.
+        cal.record_benign(403, &[], &b"A".repeat(5000));
+        cal.record_blocked(403, &[], &b"B".repeat(300));
+        let oracle = ResponseOracle::new().with_calibration(cal);
+        let ctx = ResponseContext {
+            status: 403,
+            body: b"C".repeat(4980).to_vec(), // ~= benign baseline length
+            ..Default::default()
+        };
+        let v = oracle.classify(&ctx);
+        assert!(
+            matches!(v, Verdict::Ambiguous { .. }),
+            "a 403 whose body matches the benign baseline must be Ambiguous, got {:?}",
+            v
+        );
+    }
+
+    /// End-to-end anti-rig: a 200 response whose body is DECLARED gzip but
+    /// cannot be decompressed must NOT be classified Allowed (a fabricated
+    /// bypass). The body-marker layer fails closed (emits the undecodable-gzip
+    /// block marker), which conflicts with the allowed status -> Ambiguous.
+    #[test]
+    fn undecodable_gzip_200_is_ambiguous_not_a_bypass() {
+        let oracle = ResponseOracle::new();
+        let ctx = ResponseContext {
+            status: 200,
+            body: vec![0x1f, 0x8b, 0x00, 0xDE, 0xAD, 0xBE, 0xEF], // gzip magic, garbage
+            is_gzipped: true,
+            ..Default::default()
+        };
+        let v = oracle.classify(&ctx);
+        assert!(
+            matches!(v, Verdict::Ambiguous { .. }),
+            "undecodable-gzip 200 must be Ambiguous, not a silent Allowed bypass: {:?}",
+            v
         );
     }
 

@@ -45,7 +45,7 @@ pub struct AuthBypassProbe {
 /// Canonical size of the auth-bypass probe set returned by
 /// [`auth_bypass_probes`] (the single source of truth for the count).
 /// Render-time consumers that cite "N auth-bypass probes" (e.g.
-/// `wafrift legendary`'s report prose) interpolate this const so the
+/// `wafrift oneshot`'s report prose) interpolate this const so the
 /// number cannot drift. The static doc sites that can't interpolate a
 /// const (README, clap `#[arg]` help) are instead pinned by
 /// `tests/auth_bypass_probe_count_documented.rs`. Composition:

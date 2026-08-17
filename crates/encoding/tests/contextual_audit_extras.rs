@@ -41,8 +41,7 @@ fn xml_attribute_still_escapes_other_metas() {
 #[test]
 fn json_string_escapes_line_separator_u2028() {
     // U+2028 must round-trip through any JS parser as the escape
-    // sequence 
-, NOT the literal character.
+    // sequence  , NOT the literal character.
     let payload = "a\u{2028}b";
     let escaped = escape_for_context(payload, InjectionContext::JsonString).unwrap();
     assert!(

@@ -49,6 +49,7 @@ use wafrift_strategy::pipeline::EvasionPipeline;
 use wafrift_transport::is_waf_block;
 
 pub(crate) use crate::ScanArgs;
+use crate::equiv_engine::{class_for_payload_type, verified_bypass};
 use crate::helpers::{
     build_variants, confidence_badge, max_mutations_for_level, payload_type_label,
     strategies_for_level, variant_confidence,
@@ -1697,7 +1698,7 @@ pub(crate) async fn run_scan(
             let target_url = target.to_string();
             let param = scan_param.clone();
             tasks.spawn(async move {
-                let (verdict, retry_after) = injection_delivery::fire_variant_classified(
+                let (verdict, retry_after, status) = injection_delivery::fire_variant_classified(
                     &client,
                     delivery,
                     &target_url,
@@ -1706,7 +1707,7 @@ pub(crate) async fn run_scan(
                     &oracle,
                 )
                 .await;
-                (index, payload, techniques, confidence, verdict, retry_after)
+                (index, payload, techniques, confidence, verdict, retry_after, status)
             });
         }
 
@@ -1717,7 +1718,7 @@ pub(crate) async fn run_scan(
         // back to the existing exponential-backoff curve.
         let mut batch_retry_after: Option<Duration> = None;
         while let Some(result) = tasks.join_next().await {
-            let Ok((index, payload, techniques, confidence, verdict_opt, retry_after_opt)) = result
+            let Ok((index, payload, techniques, confidence, verdict_opt, retry_after_opt, status)) = result
             else {
                 errors += 1;
                 continue;
@@ -1754,36 +1755,48 @@ pub(crate) async fn run_scan(
                     print!("{}", ".".bright_black());
                 }
             } else {
-                bypassed += 1;
-                meaningful_bypassed += 1;
-                bypass_variants.push((
-                    total_fired,
-                    payload.clone(),
-                    techniques.clone(),
-                    confidence,
-                ));
-                // Record winning encoding strategies for exploitation.
-                for tech in &techniques {
-                    if tech.starts_with("encoding::") {
-                        winning_strategies.insert(tech.clone());
+                let class = class_for_payload_type(payload_type);
+                let counts = class.is_some_and(|c| {
+                    verified_bypass(c, &args.payload, &payload, false, status)
+                });
+                if counts {
+                    bypassed += 1;
+                    meaningful_bypassed += 1;
+                    bypass_variants.push((
+                        total_fired,
+                        payload.clone(),
+                        techniques.clone(),
+                        confidence,
+                    ));
+                    // Record winning encoding strategies for exploitation.
+                    for tech in &techniques {
+                        if tech.starts_with("encoding::") {
+                            winning_strategies.insert(tech.clone());
+                        }
                     }
-                }
-                // TRACING: bypass found, visible at RUST_LOG=wafrift=info so CI
-                // consumers see each bypass without needing the full JSON blob.
-                // Payload is shown truncated to 120 chars; never log session tokens
-                // (techniques list identifies what changed, payload is the mutated
-                // public string, not any credential).
-                let payload_preview: String = payload.chars().take(120).collect();
-                info!(
-                    target: "wafrift::scan",
-                    techniques = %techniques.join("+"),
-                    confidence,
-                    probe = total_fired,
-                    payload = %payload_preview,
-                    "bypass found"
-                );
-                if args.format == "text" {
-                    eprint!("{}", "!".bright_green().bold());
+                    // TRACING: bypass found, visible at RUST_LOG=wafrift=info so CI
+                    // consumers see each bypass without needing the full JSON blob.
+                    // Payload is shown truncated to 120 chars; never log session tokens
+                    // (techniques list identifies what changed, payload is the mutated
+                    // public string, not any credential).
+                    let payload_preview: String = payload.chars().take(120).collect();
+                    info!(
+                        target: "wafrift::scan",
+                        techniques = %techniques.join("+"),
+                        confidence,
+                        probe = total_fired,
+                        payload = %payload_preview,
+                        "bypass found"
+                    );
+                    if args.format == "text" {
+                        eprint!("{}", "!".bright_green().bold());
+                    }
+                } else {
+                    // WAF passed but the structural oracle says the payload is
+                    // no longer a valid attack; do not fabricate a bypass.
+                    if args.format == "text" {
+                        print!("{}", "?".bright_black());
+                    }
                 }
             }
 
@@ -1947,7 +1960,7 @@ pub(crate) async fn run_scan(
 
                 let url = scan_url_with_param(target, &scan_param, &urlencoding::encode(&tampered));
 
-                let verdict = match http.get(&url).send().await {
+                let (verdict, status) = match http.get(&url).send().await {
                     Ok(resp) => {
                         let status = resp.status().as_u16();
                         let body = crate::safe_body::read_bounded(
@@ -1956,11 +1969,14 @@ pub(crate) async fn run_scan(
                         )
                         .await
                         .unwrap_or_default();
-                        oracle.classify(&ResponseContext {
+                        (
+                            oracle.classify(&ResponseContext {
+                                status,
+                                body: body.to_vec(),
+                                ..Default::default()
+                            }),
                             status,
-                            body: body.to_vec(),
-                            ..Default::default()
-                        })
+                        )
                     }
                     Err(_) => {
                         errors += 1;
@@ -1998,18 +2014,29 @@ pub(crate) async fn run_scan(
                         () = cancel.cancelled() => { break; }
                     }
                 } else {
-                    bypassed += 1;
-                    tamper_bypassed += 1;
-                    bypass_variants.push((
-                        total_fired,
-                        tampered,
-                        techniques.clone(),
-                        0.75, // Tamper bypasses get moderate-high confidence
-                    ));
-                    // Record winning tamper strategies for exploitation.
-                    winning_strategies.insert(format!("tamper::{tamper_name}"));
-                    if args.format == "text" {
-                        print!("{}", "!".bright_green().bold());
+                    let class = class_for_payload_type(payload_type);
+                    let counts = class.is_some_and(|c| {
+                        verified_bypass(c, &mutation.payload, &tampered, false, status)
+                    });
+                    if counts {
+                        bypassed += 1;
+                        tamper_bypassed += 1;
+                        bypass_variants.push((
+                            total_fired,
+                            tampered,
+                            techniques.clone(),
+                            0.75, // Tamper bypasses get moderate-high confidence
+                        ));
+                        // Record winning tamper strategies for exploitation.
+                        winning_strategies.insert(format!("tamper::{tamper_name}"));
+                        if args.format == "text" {
+                            print!("{}", "!".bright_green().bold());
+                        }
+                    } else {
+                        // WAF passed but tamper destroyed the attack semantics.
+                        if args.format == "text" {
+                            print!("{}", "?".bright_black());
+                        }
                     }
                 }
 
@@ -3536,6 +3563,29 @@ mod tests {
         );
     }
 
+    // ── anti-rig: structural bypass gate ────────────────────────────
+    //
+    // A payload that the WAF passes but that has been mangled into
+    // harmless junk must NOT be counted as a bypass. The direct-fire and
+    // tamper loops both gate on verified_bypass; this test pins the
+    // predicate on a known-broken SQLi mutation.
+
+    #[test]
+    fn scan_verified_bypass_rejects_mangled_sqli() {
+        let original = "1 OR 1=1 --";
+        let mangled = "1 O R 1=1 --";
+        let class = class_for_payload_type(PayloadType::Sql);
+        assert_eq!(class, Some("sql"));
+        assert!(
+            !verified_bypass(class.unwrap(), original, mangled, false, 200),
+            "mangled SQLi must not count as a bypass: {mangled}"
+        );
+        assert!(
+            verified_bypass(class.unwrap(), original, original, false, 200),
+            "intact payload should verify: {original}"
+        );
+    }
+
     #[test]
     fn build_bypass_variants_json_single_encodes_payload_in_repro_url() {
         // build_bypass_variants_json passes the raw payload to
@@ -3568,7 +3618,7 @@ mod tests {
     // ── --variants-cap honesty ───────────────────────────────
     //
     // The full firing path is end-to-end-tested via dogfood + the
-    // legendary subprocess integration test. Here we pin the
+    // depth subprocess integration test. Here we pin the
     // truncation semantics on a synthetic variant Vec so a future
     // refactor (e.g. moving the cap check earlier or later in the
     // pipeline) keeps the contract: ordered truncation, no panic

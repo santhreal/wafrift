@@ -1,13 +1,47 @@
-# Header names that ONLY appear when a WAF actively blocks a request.
+# Response headers that ONLY appear when a WAF actively blocks or challenges
+# a request. Presence of any of these is a strong signal even when the status
+# is 200.
 #
-# Presence of any of these is a strong block signal even when the response
-# status is 200 (some WAFs return 200 with a block header rather than 403).
+# Each entry is matched case-insensitively against the response header name.
+# `block_value_pattern` is a case-insensitive substring; empty means "any value
+# is treated as a block unless it matches a challenge pattern".
+# `challenge_value_pattern` is a case-insensitive substring; when it matches the
+# value, a `Signal::ChallengePlatform` is emitted instead of a block signal.
+# `description` is used as the challenge-platform identifier and in block signal
+# text; keep it stable.
 
-names = [
-    "x-amzn-waf-action",
-    "cf-mitigated",
-    "x-blocked-by",
-    "x-waf-event-info",
-    "x-mod-security",
-    "x-waf-status",
-]
+[[entry]]
+name = "x-amzn-waf-action"
+block_value_pattern = "block"
+challenge_value_pattern = "challenge"
+description = "aws_waf"
+
+[[entry]]
+name = "cf-mitigated"
+block_value_pattern = ""
+challenge_value_pattern = "challenge"
+description = "cloudflare"
+
+[[entry]]
+name = "x-blocked-by"
+block_value_pattern = ""
+challenge_value_pattern = ""
+description = "generic_blocked_by"
+
+[[entry]]
+name = "x-waf-event-info"
+block_value_pattern = ""
+challenge_value_pattern = ""
+description = "generic_waf_event"
+
+[[entry]]
+name = "x-mod-security"
+block_value_pattern = ""
+challenge_value_pattern = ""
+description = "modsecurity"
+
+[[entry]]
+name = "x-waf-status"
+block_value_pattern = "block"
+challenge_value_pattern = ""
+description = "f5_bigip_waf"
