@@ -168,3 +168,14 @@ pub fn wait_for_server(addr: SocketAddr) {
         }
     }
 }
+
+/// Map an HTTP status code to a status-line string for mock server
+/// responses. Shared by scan e2e tests that build raw HTTP responses.
+#[allow(dead_code)]
+pub fn status_line(code: u16) -> &'static str {
+    match code {
+        200 => "HTTP/1.1 200 OK",
+        403 => "HTTP/1.1 403 Forbidden",
+        _ => "HTTP/1.1 500 Internal Server Error",
+    }
+}

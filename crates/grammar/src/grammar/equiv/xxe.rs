@@ -346,20 +346,13 @@ mod tests {
 
     #[test]
     fn deterministic_diverse_and_all_sound() {
-        let a: Vec<_> = generate(ATK, &cfg(8))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        let b: Vec<_> = generate(ATK, &cfg(8))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        assert_eq!(a, b);
-        assert!(a.iter().collect::<std::collections::HashSet<_>>().len() >= 5);
-        for seed in 0..30u64 {
-            for m in generate(ATK, &cfg(seed)) {
-                assert!(still_exfils(ATK, &m.payload), "UNSOUND {:?}", m.payload);
-            }
-        }
+        crate::grammar::equiv::assert_deterministic_diverse_and_sound(
+            generate,
+            ATK,
+            &cfg(8),
+            5,
+            still_exfils,
+            30,
+        );
     }
 }

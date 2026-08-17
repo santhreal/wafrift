@@ -1005,6 +1005,31 @@ pub fn assert_deterministic_and_diverse(
     );
 }
 
+/// Extended invariant check: determinism + diversity + soundness.
+///
+/// In addition to [`assert_deterministic_and_diverse`], this iterates
+/// `soundness_seeds` random configs and asserts every generated member
+/// passes `is_sound(original, payload)`. Used by equiv modules that
+/// have a `still_executes` / `still_injects` / `still_exfils` checker.
+#[cfg(test)]
+pub fn assert_deterministic_diverse_and_sound(
+    generate: fn(&str, &EquivConfig) -> Vec<EquivPayload>,
+    payload: &str,
+    cfg: &EquivConfig,
+    min_distinct: usize,
+    is_sound: fn(&str, &str) -> bool,
+    soundness_seeds: u64,
+) {
+    assert_deterministic_and_diverse(generate, payload, cfg, min_distinct);
+    for seed in 0..soundness_seeds {
+        let mut c = cfg.clone();
+        c.seed = seed;
+        for m in generate(payload, &c) {
+            assert!(is_sound(payload, &m.payload), "UNSOUND {:?}", m.payload);
+        }
+    }
+}
+
 #[cfg(test)]
 mod contains_token_tests {
     use super::contains_token;

@@ -62,12 +62,9 @@ async fn spawn_param_live_mock() -> std::net::SocketAddr {
 
 type MockHandler = Arc<dyn Fn(&[u8]) -> (u16, Vec<u8>) + Send + Sync>;
 
+#[allow(dead_code)]
 fn status_line(code: u16) -> &'static str {
-    match code {
-        200 => "HTTP/1.1 200 OK",
-        403 => "HTTP/1.1 403 Forbidden",
-        _ => "HTTP/1.1 500 Internal Server Error",
-    }
+    common::status_line(code)
 }
 
 async fn spawn_handler_mock<F>(handler: F) -> std::net::SocketAddr
