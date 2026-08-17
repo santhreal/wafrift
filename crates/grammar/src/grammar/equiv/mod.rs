@@ -357,17 +357,25 @@ impl DeliveryShape {
     pub fn transport_legal(&self, payload: &str) -> bool {
         match self {
             Self::HeaderValue { .. } => {
-                // RFC 9110 §5.5: CR/LF/NUL terminate or split the header.
+                // RFC 9110 §5.5: field-value excludes CTL (0x00-0x1F,
+                // 0x7F). `HeaderValue::from_bytes` enforces this, so
+                // `transport_legal` must match it exactly: pre-fix only
+                // CR/LF/NUL were rejected, but \x0B (VT) and \x0C (FF)
+                // from `WS_EQUIV` also fail `from_bytes`, causing
+                // `send_with_envelope` to error and waste the fire budget.
                 // ALSO, recipients strip leading/trailing OWS (SP/HTAB)
                 // from a field value before processing, so a payload
                 // that begins or ends with SP/HTAB would reach the app
                 // *trimmed* (≠ member.payload), that is unsound, reject
                 // it. Interior SP and `<` `>` `"` are legal field-value
-                // octets and arrive verbatim.
                 let bytes = payload.as_bytes();
                 let edge_ows = matches!(bytes.first(), Some(b' ' | b'\t'))
                     || matches!(bytes.last(), Some(b' ' | b'\t'));
-                !edge_ows && !payload.bytes().any(|b| b == b'\r' || b == b'\n' || b == 0)
+                // Interior SP (0x20) and HTAB (0x09) are legal field-value
+                // octets (RFC 9110 §5.5 field-content = 1*VCHAR / obs-text,
+                // plus OWS which is SP/HTAB). All other CTL (0x00-0x08,
+                // 0x0A-0x1F, 0x7F) are rejected by HeaderValue::from_bytes.
+                !edge_ows && bytes.iter().all(|&b| b == b' ' || b == b'\t' || (b > 0x20 && b != 0x7F))
             }
             Self::Cookie { .. } => {
                 // RFC 6265 cookie-octet: %x21 / %x23-2B / %x2D-3A /
@@ -1338,6 +1346,14 @@ mod delivery_api_tests {
             !hv.transport_legal("<svg>\t"),
             "trailing HTAB would be trimmed"
         );
+        // RFC 9110 §5.5: ALL CTL bytes (0x00-0x1F, 0x7F) are illegal in
+        // a header value, not just CR/LF/NUL. \x0B (VT) and \x0C (FF)
+        // appear in WS_EQUIV and fail HeaderValue::from_bytes, causing
+        // send_with_envelope to error and waste the fire budget.
+        assert!(!hv.transport_legal("a\x0Bb"), "VT is illegal in header value");
+        assert!(!hv.transport_legal("a\x0Cb"), "FF is illegal in header value");
+        assert!(!hv.transport_legal("a\x01b"), "SOH is illegal in header value");
+        assert!(!hv.transport_legal("a\x7Fb"), "DEL is illegal in header value");
         // Cookie-octet: space, `;`, `,`, `"`, `\`, CTL all illegal.
         assert!(ck.transport_legal("<svg/onload=alert(1)>"));
         assert!(!ck.transport_legal("<svg onload=alert(1)>")); // space
