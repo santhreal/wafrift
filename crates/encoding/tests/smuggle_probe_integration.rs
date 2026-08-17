@@ -287,31 +287,101 @@ fn compose_duplicate_header_probes_preserves_all_header_lines() {
 }
 
 #[test]
-fn path_family_implements_trait_object_safely() {
-    // Same canary test as `trait_is_object_safe_across_all_three_families`
-    // but for the path-normalization family. If PathSmuggleProbe stops
-    // being object-safe (e.g. someone adds a generic method to the
-    // trait without making it Self: Sized) the compiler rejects this
-    // expression and the test fails at build time, not test time.
-    let probes: Vec<Box<dyn SmuggleProbe>> = vec![
-        Box::new(PathSmuggleProbe::new(
-            PathNormalizeTechnique::DotSegmentEncoded,
-            "/admin",
-        )),
-        Box::new(PathSmuggleProbe::new(
-            PathNormalizeTechnique::DoubleEncodedDotSegment,
-            "/admin",
-        )),
-        Box::new(PathSmuggleProbe::new(
-            PathNormalizeTechnique::OverlongUtf8Slash,
-            "/admin",
-        )),
+fn family_implements_trait_object_safely() {
+    // Each probe family (path, json, host, jwt) must remain object-safe:
+    // constructing `Vec<Box<dyn SmuggleProbe>>` is the compile-time
+    // canary. At runtime every member must carry the family prefix,
+    // a non-empty description, and a 16-byte canary token.
+    let cases: &[(&str, Vec<Box<dyn SmuggleProbe>>)] = &[
+        (
+            "path.",
+            vec![
+                Box::new(PathSmuggleProbe::new(
+                    PathNormalizeTechnique::DotSegmentEncoded,
+                    "/admin",
+                )),
+                Box::new(PathSmuggleProbe::new(
+                    PathNormalizeTechnique::DoubleEncodedDotSegment,
+                    "/admin",
+                )),
+                Box::new(PathSmuggleProbe::new(
+                    PathNormalizeTechnique::OverlongUtf8Slash,
+                    "/admin",
+                )),
+            ],
+        ),
+        (
+            "json.",
+            vec![
+                Box::new(JsonSmuggleProbe::new(
+                    JsonSmuggleTechnique::DuplicateKeyLastWins,
+                    &[("role".to_string(), "admin".to_string())],
+                )),
+                Box::new(JsonSmuggleProbe::new(
+                    JsonSmuggleTechnique::BomPrefix,
+                    &[("role".to_string(), "admin".to_string())],
+                )),
+                Box::new(JsonSmuggleProbe::new(
+                    JsonSmuggleTechnique::JsonInString,
+                    &[("role".to_string(), "admin".to_string())],
+                )),
+            ],
+        ),
+        (
+            "host.",
+            vec![
+                Box::new(HostSmuggleProbe::new(
+                    HostSmuggleTechnique::DuplicateHostHeaderLastWins,
+                    "admin.example.com",
+                )),
+                Box::new(HostSmuggleProbe::new(
+                    HostSmuggleTechnique::HostWithFullwidthDot,
+                    "admin.example.com",
+                )),
+                Box::new(HostSmuggleProbe::new(
+                    HostSmuggleTechnique::HostWithEmbeddedTab,
+                    "admin.example.com",
+                )),
+            ],
+        ),
+        (
+            "jwt.",
+            vec![
+                Box::new(JwtSmuggleProbe::new(
+                    JwtSmuggleTechnique::AlgNone,
+                    "wafrift-test-token",
+                )),
+                Box::new(JwtSmuggleProbe::new(
+                    JwtSmuggleTechnique::KidSqlInjection,
+                    "wafrift-test-token",
+                )),
+                Box::new(JwtSmuggleProbe::new(
+                    JwtSmuggleTechnique::PayloadDuplicateKey,
+                    "wafrift-test-token",
+                )),
+            ],
+        ),
     ];
-    assert_eq!(probes.len(), 3);
-    for p in &probes {
-        assert!(p.technique().starts_with("path."));
-        assert!(!p.description().is_empty());
-        assert_eq!(p.canary().token.len(), 16);
+    for (prefix, probes) in cases {
+        assert_eq!(probes.len(), 3, "{prefix} family must have 3 probes");
+        for p in probes {
+            assert!(
+                p.technique().starts_with(prefix),
+                "technique {} must start with {prefix}",
+                p.technique()
+            );
+            assert!(
+                !p.description().is_empty(),
+                "description empty for {}",
+                p.technique()
+            );
+            assert_eq!(
+                p.canary().token.len(),
+                16,
+                "canary not 16 bytes for {}",
+                p.technique()
+            );
+        }
     }
 }
 
@@ -372,30 +442,6 @@ fn path_family_canaries_are_unique_per_variant() {
         variants.len(),
         "every path variant must carry a distinct canary"
     );
-}
-
-#[test]
-fn json_family_implements_trait_object_safely() {
-    let probes: Vec<Box<dyn SmuggleProbe>> = vec![
-        Box::new(JsonSmuggleProbe::new(
-            JsonSmuggleTechnique::DuplicateKeyLastWins,
-            &[("role".to_string(), "admin".to_string())],
-        )),
-        Box::new(JsonSmuggleProbe::new(
-            JsonSmuggleTechnique::BomPrefix,
-            &[("role".to_string(), "admin".to_string())],
-        )),
-        Box::new(JsonSmuggleProbe::new(
-            JsonSmuggleTechnique::JsonInString,
-            &[("role".to_string(), "admin".to_string())],
-        )),
-    ];
-    assert_eq!(probes.len(), 3);
-    for p in &probes {
-        assert!(p.technique().starts_with("json."));
-        assert!(!p.description().is_empty());
-        assert_eq!(p.canary().token.len(), 16);
-    }
 }
 
 #[test]
@@ -474,30 +520,6 @@ fn json_duplicate_key_body_contains_both_role_pairs() {
 }
 
 #[test]
-fn host_family_implements_trait_object_safely() {
-    let probes: Vec<Box<dyn SmuggleProbe>> = vec![
-        Box::new(HostSmuggleProbe::new(
-            HostSmuggleTechnique::DuplicateHostHeaderLastWins,
-            "admin.example.com",
-        )),
-        Box::new(HostSmuggleProbe::new(
-            HostSmuggleTechnique::HostWithFullwidthDot,
-            "admin.example.com",
-        )),
-        Box::new(HostSmuggleProbe::new(
-            HostSmuggleTechnique::HostWithEmbeddedTab,
-            "admin.example.com",
-        )),
-    ];
-    assert_eq!(probes.len(), 3);
-    for p in &probes {
-        assert!(p.technique().starts_with("host."));
-        assert!(!p.description().is_empty());
-        assert_eq!(p.canary().token.len(), 16);
-    }
-}
-
-#[test]
 fn host_family_artifact_is_headers_with_host_name() {
     let p = HostSmuggleProbe::new(
         HostSmuggleTechnique::HostWithTrailingDot,
@@ -558,30 +580,6 @@ fn host_duplicate_header_emits_two_host_pairs() {
         assert_eq!(host_count, 2, "expected two Host headers");
     } else {
         panic!("host probe must emit Headers");
-    }
-}
-
-#[test]
-fn jwt_family_implements_trait_object_safely() {
-    let probes: Vec<Box<dyn SmuggleProbe>> = vec![
-        Box::new(JwtSmuggleProbe::new(
-            JwtSmuggleTechnique::AlgNone,
-            "wafrift-test-token",
-        )),
-        Box::new(JwtSmuggleProbe::new(
-            JwtSmuggleTechnique::KidSqlInjection,
-            "wafrift-test-token",
-        )),
-        Box::new(JwtSmuggleProbe::new(
-            JwtSmuggleTechnique::PayloadDuplicateKey,
-            "wafrift-test-token",
-        )),
-    ];
-    assert_eq!(probes.len(), 3);
-    for p in &probes {
-        assert!(p.technique().starts_with("jwt."));
-        assert!(!p.description().is_empty());
-        assert_eq!(p.canary().token.len(), 16);
     }
 }
 
