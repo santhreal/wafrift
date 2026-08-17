@@ -2121,9 +2121,7 @@ dependencies = [
 
 [[package]]
 name = "guise-choice"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f29ec53cc6b96abe0ddff8b66ca3bda1ab7eafcf7abd659ef5a344fa2d266c63"
+version = "0.1.4"
 dependencies = [
  "rand 0.8.5",
 ]
@@ -2131,6 +2129,8 @@ dependencies = [
 [[package]]
 name = "guise-choice"
 version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c6d1363b2e9b2e00b017051bf96a9323e1ecb89289941c6d4b26e26d582abc4"
 dependencies = [
  "rand 0.8.5",
 ]
@@ -2145,9 +2145,7 @@ dependencies = [
 
 [[package]]
 name = "guise-pacing"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e667227f29f572f67f60693f4a502e201f7aa018239552c36ef2b4be6bb973d4"
+version = "0.1.5"
 dependencies = [
  "httpdate",
  "rand 0.8.5",
@@ -2157,6 +2155,8 @@ dependencies = [
 [[package]]
 name = "guise-pacing"
 version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5dcb1ab16631fbfa0a0138c996e8266c21606ebd7f24e6a84294b062b3a45bc2"
 dependencies = [
  "httpdate",
  "rand 0.8.5",
@@ -2165,13 +2165,13 @@ dependencies = [
 
 [[package]]
 name = "guise-profiles"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08ad41711ad712cfd9f1c22f45f9db102c013838a902fa5bbe5a9d3504a45f64"
+version = "0.1.6"
 
 [[package]]
 name = "guise-profiles"
 version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "310ce88c8fbf4617596bdcc8fbe92d09e09ebf6f132e41e8dfe20c4dff2fdbf0"
 
 [[package]]
 name = "h2"
@@ -2692,8 +2692,8 @@ dependencies = [
  "base64 0.22.1",
  "ctr",
  "futures-util",
- "guise-choice 0.1.0",
- "guise-pacing 0.1.0",
+ "guise-choice 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "guise-pacing 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.8.5",
  "reqwest",
  "rsa",
@@ -4738,13 +4738,13 @@ dependencies = [
 
 [[package]]
 name = "santh-bogon"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb621b8c3fd7aa2df21405ccf14eb43dc1ff53f01ac4e7fc2e5b09395c951181"
+version = "0.1.3"
 
 [[package]]
 name = "santh-bogon"
 version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "314153b8a08c71cb4d04d890fdb3df961482009de56bd10f35b80bb1cd9fe4cb"
 
 [[package]]
 name = "santh-ctlog"
@@ -4759,45 +4759,6 @@ dependencies = [
  "tokio",
  "tracing",
  "urlencoding",
-]
-
-[[package]]
-name = "scanclient"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f814a2c9525fcc60798b513b1f51bc2e7706efbc6fc1e1ca36cf273ee6d7d8e"
-dependencies = [
- "async-trait",
- "base64 0.22.1",
- "bytes",
- "dashmap",
- "futures",
- "guise-pacing 0.1.0",
- "guise-profiles 0.1.0",
- "hex",
- "hickory-resolver",
- "http",
- "parking_lot",
- "proxywire 0.2.0",
- "regex",
- "reqwest",
- "rustc-hash",
- "rustls",
- "santh-bogon 0.1.0",
- "secir 0.3.0",
- "serde",
- "serde_json",
- "smallvec",
- "thiserror 2.0.18",
- "tokio",
- "tokio-rustls",
- "toml",
- "tower",
- "tracing",
- "url",
- "webpki-roots",
- "wreq",
- "wreq-util",
 ]
 
 [[package]]
@@ -4833,6 +4794,45 @@ dependencies = [
  "tracing",
  "url",
  "webpki-roots",
+]
+
+[[package]]
+name = "scanclient"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8ae9eaed7c20142f7b10e908d74fefee5a343a04d1ac691f0385b22d1cd11c9"
+dependencies = [
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "dashmap",
+ "futures",
+ "guise-pacing 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "guise-profiles 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hex",
+ "hickory-resolver",
+ "http",
+ "parking_lot",
+ "proxywire 0.2.0",
+ "regex",
+ "reqwest",
+ "rustc-hash",
+ "rustls",
+ "santh-bogon 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "secir 0.3.0",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-rustls",
+ "toml",
+ "tower",
+ "tracing",
+ "url",
+ "webpki-roots",
+ "wreq",
+ "wreq-util",
 ]
 
 [[package]]
@@ -6109,7 +6109,7 @@ dependencies = [
  "regex",
  "reqwest",
  "respdiff",
- "scanclient 0.2.1",
+ "scanclient 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
  "serial_test",
@@ -6405,7 +6405,7 @@ dependencies = [
  "reqwest",
  "rustls",
  "rustls-pki-types",
- "scanclient 0.2.1",
+ "scanclient 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -6527,7 +6527,7 @@ dependencies = [
  "rand 0.8.5",
  "regex",
  "reqwest",
- "scanclient 0.2.1",
+ "scanclient 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
  "sha2",
@@ -6548,7 +6548,7 @@ version = "0.3.1"
 dependencies = [
  "base64 0.22.1",
  "rand 0.8.5",
- "santh-bogon 0.1.0",
+ "santh-bogon 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
