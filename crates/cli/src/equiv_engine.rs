@@ -394,7 +394,7 @@ fn header_value_from_payload(v: &str) -> Result<reqwest::header::HeaderValue, St
         .chars()
         .filter(|c| {
             let b = *c as u32;
-            b > 0x1F && b != 0x7F
+            (b > 0x1F || b == 0x09) && b != 0x7F
         })
         .collect();
     reqwest::header::HeaderValue::from_bytes(stripped.as_bytes())
@@ -1482,5 +1482,67 @@ mod tests {
                 );
             }
         }
+    }
+    /// Regression: the CumulusFire hunt campaign went from 241 bypasses
+    /// to 0 because `enforce_transport_legal` dropped variants whose
+    /// payload bytes couldn't legally occupy the delivery channel, and
+    /// `header_value_from_payload` errored on CTL bytes (VT/FF from
+    /// WS_EQUIV). The fix replaces pre-filtering with empirical
+    /// post-strip verification via `effective_payload`. This test
+    /// pins the three invariants:
+    ///   1. CTL-bearing payloads are sendable (not rejected).
+    ///   2. `effective_payload` strips CTL from header/cookie deliveries.
+    ///   3. Encoding deliveries (JSON, multipart) preserve the payload.
+    #[test]
+    fn effective_payload_strips_ctl_from_raw_channels_preserves_encoding() {
+        use grammar::equiv::DeliveryShape as D;
+
+        // HeaderValue: CTL bytes (VT, FF, CR, LF, NUL) are stripped.
+        let hv = D::HeaderValue { name: "X".into() };
+        assert_eq!(hv.effective_payload("UNION\x0BSELECT"), "UNIONSELECT");
+        assert_eq!(hv.effective_payload("UNION\x0CSELECT"), "UNIONSELECT");
+        assert_eq!(hv.effective_payload("a\r\nb"), "ab");
+        assert_eq!(hv.effective_payload("a\u{0}b"), "ab");
+        // SP and HTAB are legal header-value octets, preserved.
+        assert_eq!(hv.effective_payload("a b"), "a b");
+        assert_eq!(hv.effective_payload("a\tb"), "a\tb");
+
+        // Cookie: CTL + ';' are stripped.
+        let ck = D::Cookie { name: "q".into() };
+        assert_eq!(ck.effective_payload("a;bc"), "abc");
+        assert_eq!(ck.effective_payload("a\r\nb"), "ab");
+
+        // Encoding shapes: payload preserved exactly (backend recovers it).
+        let json = D::JsonBody { param: "q".into(), content_type: None };
+        assert_eq!(json.effective_payload("UNION\x0BSELECT"), "UNION\x0BSELECT");
+        let mp = D::MultipartField { name: "q".into() };
+        assert_eq!(mp.effective_payload("UNION\x0BSELECT"), "UNION\x0BSELECT");
+        let xml = D::XmlBody { root: "r".into(), field: "f".into() };
+        assert_eq!(xml.effective_payload("UNION\x0BSELECT"), "UNION\x0BSELECT");
+    }
+
+    /// Regression: `header_value_from_payload` must NOT reject CTL-bearing
+    /// payloads. Pre-fix it returned `Err` for any CTL byte (0x00-0x1F,
+    /// 0x7F), causing `send_with_envelope` to error and waste the fire
+    /// budget on every VT/FF-bearing payload from `WS_EQUIV`. Now CTL
+    /// is stripped before `from_bytes`, so the send succeeds.
+    #[test]
+    fn header_value_strips_ctl_does_not_error() {
+        // VT and FF (from WS_EQUIV) are stripped, not rejected.
+        assert!(header_value_from_payload("UNION\x0BSELECT").is_ok());
+        assert!(header_value_from_payload("UNION\x0CSELECT").is_ok());
+        // The stripped result has CTL removed.
+        assert_eq!(
+            header_value_from_payload("UNION\x0BSELECT").unwrap().to_str().unwrap(),
+            "UNIONSELECT"
+        );
+        // Multiple CTL bytes all stripped.
+        assert_eq!(
+            header_value_from_payload("\x01\x02\x03OR\x0B1=1").unwrap().to_str().unwrap(),
+            "OR1=1"
+        );
+        // DEL (0x7F) is also stripped.
+        assert!(header_value_from_payload("a\x7Fb").is_ok());
+        assert_eq!(header_value_from_payload("a\x7Fb").unwrap().to_str().unwrap(), "ab");
     }
 }
