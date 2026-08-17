@@ -183,38 +183,17 @@ fn classify_with_status_skips_body_scan_on_200_ok() {
 }
 
 #[test]
-fn classify_with_status_classifies_on_403() {
+fn classify_with_status_classifies_on_block_statuses() {
+    // 403, 500, 502, 503, 599 with a turnstile body must all classify
+    // as a challenge. The body-scan only runs on 4xx/5xx.
     let body = b"<html>turnstile</html>";
-    let kind = classify_with_status(body, &[], 403);
-    assert_eq!(
-        kind,
-        ChallengeKind::Turnstile,
-        "403 with turnstile body must classify as a challenge"
-    );
-}
-
-#[test]
-fn classify_with_status_classifies_on_503() {
-    let body = b"<html>turnstile</html>";
-    let kind = classify_with_status(body, &[], 503);
-    assert_eq!(kind, ChallengeKind::Turnstile);
-}
-
-#[test]
-fn classify_with_status_classifies_on_500_5xx_range() {
-    let body = b"<html>turnstile</html>";
-    assert_eq!(
-        classify_with_status(body, &[], 500),
-        ChallengeKind::Turnstile
-    );
-    assert_eq!(
-        classify_with_status(body, &[], 502),
-        ChallengeKind::Turnstile
-    );
-    assert_eq!(
-        classify_with_status(body, &[], 599),
-        ChallengeKind::Turnstile
-    );
+    for status in [403, 500, 502, 503, 599] {
+        assert_eq!(
+            classify_with_status(body, &[], status),
+            ChallengeKind::Turnstile,
+            "{status} with turnstile body must classify as challenge"
+        );
+    }
 }
 
 #[test]
