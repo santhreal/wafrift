@@ -111,93 +111,49 @@ description = "Manifest-only identity tamper"
 // ── 3. Manifest validation, every required field ───────────
 
 #[test]
-fn empty_name_rejected() {
-    let mf = manifest_with("", "1.0.0", "A", "desc");
-    assert!(matches!(
-        mf.validate(),
-        Err(PluginError::InvalidManifest(_))
-    ));
+fn manifest_invalid_fields_rejected() {
+    // Every required field must be non-empty, name must be ASCII
+    // alphanumeric + underscore, and description must be ≤ 512 chars.
+    // Each case must be rejected with InvalidManifest.
+    let reject_cases: &[(&str, &str, &str, &str, &str)] = &[
+        // (name, version, author, description, reason)
+        ("", "1.0.0", "A", "desc", "empty name"),
+        ("name", "", "A", "desc", "empty version"),
+        ("name", "1.0.0", "", "desc", "empty author"),
+        ("n", "1.0.0", "A", &"x".repeat(513), "description 513 chars"),
+        ("naïve_name", "1.0.0", "A", "desc", "unicode in name"),
+        ("dash-name", "1.0.0", "A", "desc", "dash in name"),
+        ("dotted.name", "1.0.0", "A", "desc", "dot in name"),
+        (
+            "../etc/passwd",
+            "1.0.0",
+            "A",
+            "desc",
+            "slash in name (traversal)",
+        ),
+    ];
+    for &(name, version, author, desc, reason) in reject_cases {
+        let mf = manifest_with(name, version, author, desc);
+        assert!(
+            matches!(mf.validate(), Err(PluginError::InvalidManifest(_))),
+            "must reject: {reason}"
+        );
+    }
 }
 
 #[test]
-fn empty_version_rejected() {
-    let mf = manifest_with("name", "", "A", "desc");
-    assert!(matches!(
-        mf.validate(),
-        Err(PluginError::InvalidManifest(_))
-    ));
-}
-
-#[test]
-fn empty_author_rejected() {
-    let mf = manifest_with("name", "1.0.0", "", "desc");
-    assert!(matches!(
-        mf.validate(),
-        Err(PluginError::InvalidManifest(_))
-    ));
-}
-
-#[test]
-fn description_exactly_512_chars_accepted() {
-    // Boundary: 512 chars is OK, 513 is not.
+fn manifest_valid_boundary_cases_accepted() {
+    // Boundary: 512-char description is OK, alphanumeric+underscore name is OK.
     let mf = manifest_with("n", "1.0.0", "A", &"x".repeat(512));
-    assert!(mf.validate().is_ok());
-}
-
-#[test]
-fn description_513_chars_rejected() {
-    let mf = manifest_with("n", "1.0.0", "A", &"x".repeat(513));
-    assert!(matches!(
-        mf.validate(),
-        Err(PluginError::InvalidManifest(_))
-    ));
-}
-
-#[test]
-fn name_with_unicode_rejected() {
-    // Names are ASCII-alphanumeric + underscore only, a unicode name
-    // would break the plugin URL / dispatch table contract.
-    let mf = manifest_with("naïve_name", "1.0.0", "A", "desc");
-    assert!(matches!(
-        mf.validate(),
-        Err(PluginError::InvalidManifest(_))
-    ));
-}
-
-#[test]
-fn name_with_dash_rejected() {
-    // Underscore is allowed, dash is not, this is a deliberate
-    // ergonomic choice (snake_case in Rust dispatch).
-    let mf = manifest_with("dash-name", "1.0.0", "A", "desc");
-    assert!(matches!(
-        mf.validate(),
-        Err(PluginError::InvalidManifest(_))
-    ));
-}
-
-#[test]
-fn name_with_dot_rejected() {
-    let mf = manifest_with("dotted.name", "1.0.0", "A", "desc");
-    assert!(matches!(
-        mf.validate(),
-        Err(PluginError::InvalidManifest(_))
-    ));
-}
-
-#[test]
-fn name_with_slash_rejected() {
-    // Slash in name is a path-traversal hazard.
-    let mf = manifest_with("../etc/passwd", "1.0.0", "A", "desc");
-    assert!(matches!(
-        mf.validate(),
-        Err(PluginError::InvalidManifest(_))
-    ));
-}
-
-#[test]
-fn name_alphanumeric_underscore_accepted() {
+    assert!(
+        mf.validate().is_ok(),
+        "512-char description must be accepted"
+    );
     let mf = manifest_with("snake_case_123", "1.0.0", "A", "desc");
-    assert!(mf.validate().is_ok());
+    assert!(
+        mf.validate().is_ok(),
+        "alphanumeric+underscore name must be accepted"
+    );
 }
 
 // ── 4. WASM file rejection (wrong magic, oversized) ─────────
