@@ -84,38 +84,15 @@ fn no_duplicate_labels_per_header_value() {
 // ────────────────────────────────────────────────────────────────
 
 #[test]
-fn every_probe_has_non_empty_header_name() {
-    for p in &probes() {
-        assert!(!p.header.is_empty(), "probe with empty header: {:?}", p);
-    }
-}
-
-#[test]
-fn every_probe_has_non_empty_value() {
-    for p in &probes() {
-        assert!(!p.value.is_empty(), "probe with empty value: {:?}", p);
-    }
-}
-
-#[test]
-fn every_probe_has_non_empty_label() {
-    for p in &probes() {
-        assert!(!p.label.is_empty(), "probe with empty label: {:?}", p);
-    }
-}
-
-#[test]
-fn every_probe_has_non_empty_description() {
-    for p in &probes() {
+fn every_probe_has_non_empty_fields() {
+    let ps = probes();
+    for p in &ps {
+        assert!(!p.header.is_empty(), "probe with empty header: {p:?}");
+        assert!(!p.value.is_empty(), "probe with empty value: {p:?}");
+        assert!(!p.label.is_empty(), "probe with empty label: {p:?}");
         assert!(
-            !p.description.is_empty(),
-            "probe with empty description: {:?}",
-            p
-        );
-        assert!(
-            p.description.len() >= 10,
-            "probe description too short: {:?}",
-            p
+            !p.description.is_empty() && p.description.len() >= 10,
+            "probe with empty or too-short description: {p:?}"
         );
     }
 }
@@ -300,46 +277,26 @@ fn path_with_special_chars_does_not_break_probe_gen() {
 // ────────────────────────────────────────────────────────────────
 
 #[test]
-fn x_forwarded_for_localhost_present() {
+fn key_bypass_headers_present() {
     let ps = probes();
-    assert!(
-        ps.iter()
-            .any(|p| p.header.eq_ignore_ascii_case("X-Forwarded-For")
-                && p.value.contains("127.0.0.1")),
-        "X-Forwarded-For 127.0.0.1 probe missing"
-    );
-}
-
-#[test]
-fn x_real_ip_present() {
-    let ps = probes();
-    assert!(
-        ps.iter()
-            .any(|p| p.header.eq_ignore_ascii_case("X-Real-IP")),
-        "X-Real-IP probe missing"
-    );
-}
-
-#[test]
-fn x_original_url_present() {
-    let ps = probes();
-    assert!(
-        ps.iter()
-            .any(|p| p.header.eq_ignore_ascii_case("X-Original-URL")),
-        "X-Original-URL probe missing"
-    );
-}
-
-#[test]
-fn x_http_method_override_present() {
-    let ps = probes();
-    assert!(
-        ps.iter().any(|p| {
-            let h = p.header.to_lowercase();
-            h.contains("method-override") || h == "x-http-method-override"
-        }),
-        "X-HTTP-Method-Override family missing"
-    );
+    // Each entry: (header substring to match case-insensitively, optional
+    // value substring that must also appear).
+    let cases: &[(&str, Option<&str>)] = &[
+        ("X-Forwarded-For", Some("127.0.0.1")),
+        ("X-Real-IP", None),
+        ("X-Original-URL", None),
+        ("method-override", None),
+    ];
+    for (header_frag, value_frag) in cases {
+        assert!(
+            ps.iter().any(|p| {
+                let h = p.header.to_lowercase();
+                h.contains(&header_frag.to_lowercase())
+                    && value_frag.map_or(true, |v| p.value.contains(v))
+            }),
+            "probe with header containing {header_frag:?} missing"
+        );
+    }
 }
 
 // ────────────────────────────────────────────────────────────────
