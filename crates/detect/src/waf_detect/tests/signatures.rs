@@ -255,62 +255,49 @@ fn ambiguity_returns_multiple() {
 }
 
 #[test]
-fn detect_all_whitespace_body_no_panic() {
-    let result = detect(200, &[], b"     \n\t   ");
-    assert!(result.is_empty());
-}
-
-#[test]
-fn detect_gzip_bytes_raw_no_panic() {
-    // Gzip magic bytes passed as raw body, should not panic or false-match
-    let gzip_prefix = &[0x1f, 0x8b, 0x08, 0x00];
-    let result = detect(200, &[], gzip_prefix);
-    assert!(result.is_empty());
-}
-
-#[test]
-fn detect_http2_pseudo_headers_no_panic() {
-    // HTTP/2 pseudo-headers mixed with regular headers
-    let headers = vec![
-        (":authority".into(), "example.com".into()),
-        (":status".into(), "200".into()),
-        ("server".into(), "nginx".into()),
+fn detect_adversarial_input_does_not_panic_or_false_match() {
+    // Consolidated from: whitespace body, gzip bytes, HTTP/2 pseudo-headers,
+    // non-ASCII header names, body-length boundaries, and empty headers.
+    // Each must not panic; benign inputs must also not false-match.
+    let no_match_cases: &[(&str, &[(&str, &str)], &[u8])] = &[
+        ("whitespace body", &[], b"     \n\t   " as &[u8]),
+        ("gzip magic bytes", &[], &[0x1f, 0x8b, 0x08, 0x00]),
+        (
+            "HTTP/2 pseudo-headers",
+            &[
+                (":authority", "example.com"),
+                (":status", "200"),
+                ("server", "nginx"),
+            ],
+            b"OK",
+        ),
     ];
-    let result = detect(200, &headers, b"OK");
-    assert!(result.is_empty());
-}
-
-#[test]
-fn detect_non_ascii_header_name_no_panic() {
-    let headers = vec![
-        ("x-café".into(), "value".into()),
-        ("server".into(), "nginx".into()),
-    ];
-    let result = detect(200, &headers, b"OK");
-    // Should not panic; result may be empty or not depending on rules
-    let _ = result;
-}
-
-#[test]
-fn detect_body_length_boundary_100_no_panic() {
-    let body = "x".repeat(100);
-    let _ = detect(200, &[], body.as_bytes());
-}
-
-#[test]
-fn detect_body_length_boundary_1000_no_panic() {
-    let body = "x".repeat(1000);
-    let _ = detect(200, &[], body.as_bytes());
-}
-
-#[test]
-fn detect_body_length_boundary_5000_no_panic() {
-    let body = "x".repeat(5000);
-    let _ = detect(200, &[], body.as_bytes());
-}
-
-#[test]
-fn detect_empty_headers_no_panic() {
+    for (label, headers, body) in no_match_cases {
+        let owned: Vec<(String, String)> = headers
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+        let result = detect(200, &owned, body);
+        assert!(
+            result.is_empty(),
+            "{label}: must not false-match, got {result:?}"
+        );
+    }
+    // Non-ASCII header name: must not panic (result may vary).
+    let _ = detect(
+        200,
+        &[
+            ("x-café".into(), "value".into()),
+            ("server".into(), "nginx".into()),
+        ],
+        b"OK",
+    );
+    // Body-length boundaries: must not panic at any size.
+    for &size in &[100usize, 1000, 5000] {
+        let body = "x".repeat(size);
+        let _ = detect(200, &[], body.as_bytes());
+    }
+    // Empty headers with various status/body combos: must not panic.
     let _ = detect(200, &[], b"normal body");
     let _ = detect(403, &[], b"blocked body");
 }
