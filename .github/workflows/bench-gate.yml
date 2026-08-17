@@ -25,6 +25,7 @@ jobs:
         run: |
           sed -i 's#path = "../browser/guise", ##' Cargo.toml
           sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+          sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
 
       # ── 2. Rust toolchain ─────────────────────────────────────────
       - uses: dtolnay/rust-toolchain@stable

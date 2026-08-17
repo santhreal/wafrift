@@ -19,6 +19,7 @@ jobs:
         run: |
           sed -i 's#path = "../browser/guise", ##' Cargo.toml
           sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+          sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
       - uses: dtolnay/rust-toolchain@1.88
       - uses: Swatinem/rust-cache@v2
       # `--all-features` pulls `tls-impersonate` → rquest → boring-sys,
@@ -49,6 +50,7 @@ jobs:
           # the crates.io versions declared alongside them.
           sed -i 's#path = "../browser/guise", ##' Cargo.toml
           sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+          sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -139,6 +141,7 @@ jobs:
         run: |
           sed -i 's#path = "../browser/guise", ##' Cargo.toml
           sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+          sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -157,6 +160,7 @@ jobs:
         run: |
           sed -i 's#path = "../browser/guise", ##' Cargo.toml
           sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+          sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
       - uses: docker/setup-buildx-action@v3
       - name: Build container image
         uses: docker/build-push-action@v6
@@ -196,6 +200,7 @@ jobs:
         run: |
           sed -i 's#path = "../browser/guise", ##' Cargo.toml
           sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+          sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -227,6 +232,7 @@ jobs:
         run: |
           sed -i 's#path = "../browser/guise", ##' Cargo.toml
           sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+          sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       # The IDENTICAL property + scale suites the fast `ci` lane runs
@@ -251,6 +257,7 @@ jobs:
         run: |
           sed -i 's#path = "../browser/guise", ##' Cargo.toml
           sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+          sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2

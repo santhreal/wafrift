@@ -44,7 +44,8 @@ COPY . .
 # Only `strip` (cosmetic) is best-effort.
 # Strip monorepo path deps (Docker build uses crates.io, not the monorepo).
 RUN sed -i 's#path = "../browser/guise", ##' Cargo.toml \
-    && sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml
+    && sed -i 's#path = "../browser/guise-pacing", ##' Cargo.toml \
+    && sed -i 's#path = "../../../browser/foxdriver", ##' crates/captchaforge-bridge/Cargo.toml
 RUN cargo build --release -p wafrift-cli -p wafrift-proxy
 RUN strip /src/target/release/wafrift /src/target/release/wafrift-proxy || true
 
