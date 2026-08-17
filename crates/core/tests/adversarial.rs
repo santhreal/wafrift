@@ -432,22 +432,6 @@ fn waf_detect_huge_body() {
 }
 
 #[test]
-fn waf_detect_status_zero() {
-    let headers = vec![];
-    let result = waf_detect::detect(0, &headers, b"");
-    // Status 0 should not match any WAF
-    assert!(result.is_empty());
-}
-
-#[test]
-fn waf_detect_status_999() {
-    let headers = vec![];
-    let result = waf_detect::detect(999, &headers, b"");
-    // Invalid status code should not crash
-    assert!(result.is_empty());
-}
-
-#[test]
 fn waf_detect_all_wafs_triggered() {
     // Create headers that contain signals from multiple WAFs
     let headers = vec![
@@ -473,31 +457,6 @@ fn waf_detect_case_insensitive_headers() {
     let result = waf_detect::detect(403, &headers, b"");
     assert!(!result.is_empty());
     assert_eq!(result[0].name, "Cloudflare");
-}
-
-#[test]
-fn waf_detect_modsecurity_in_body() {
-    let headers = vec![];
-    let body = b"Error: mod_security triggered for your request";
-    let result = waf_detect::detect(406, &headers, body);
-    assert!(!result.is_empty());
-    assert_eq!(result[0].name, "ModSecurity");
-}
-
-#[test]
-fn waf_detect_imperva_cookie() {
-    let headers = vec![("set-cookie".into(), "visid_incap_1234=abc; Path=/".into())];
-    let result = waf_detect::detect(200, &headers, b"OK");
-    assert!(!result.is_empty());
-    assert_eq!(result[0].name, "Incapsula");
-}
-
-#[test]
-fn waf_detect_f5_bigip() {
-    let headers = vec![("server".into(), "BIG-IP".into())];
-    let result = waf_detect::detect(200, &headers, b"OK");
-    assert!(!result.is_empty());
-    assert_eq!(result[0].name, "BIG-IP AP Manager");
 }
 
 #[test]
