@@ -40,94 +40,43 @@ fn status_451_is_not_a_waf_block() {
 }
 
 #[test]
-fn benign_blog_about_cloudflare_not_blocked() {
-    let body = b"<h1>How Cloudflare Works</h1><p>Cloudflare is a CDN.</p>";
-    assert!(
-        !is_waf_block(200, body),
-        "benign 200 blog post mentioning Cloudflare must NOT be blocked"
-    );
-}
-
-#[test]
-fn benign_blog_about_akamai_not_blocked() {
-    let body = b"<h1>Akamai Edge Platform Overview</h1><p>Akamai delivers content.</p>";
-    assert!(
-        !is_waf_block(200, body),
-        "benign 200 blog post mentioning Akamai must NOT be blocked"
-    );
-}
-
-#[test]
-fn benign_blog_about_imperva_not_blocked() {
-    let body = b"<h1>Imperva WAF Review</h1><p>Imperva protects applications.</p>";
-    assert!(
-        !is_waf_block(200, body),
-        "benign 200 blog post mentioning Imperva must NOT be blocked"
-    );
-}
-
-#[test]
-fn benign_tutorial_with_firewall_not_blocked() {
-    let body = b"<h1>Network Firewalls 101</h1><p>A firewall inspects packets.</p>";
-    assert!(
-        !is_waf_block(200, body),
-        "benign 200 tutorial mentioning firewall must NOT be blocked"
-    );
-}
-
-#[test]
-fn benign_tutorial_with_forbidden_not_blocked() {
-    let body = b"<h1>HTTP Status Codes</h1><p>403 Forbidden means refusal.</p>";
-    assert!(
-        !is_waf_block(200, body),
-        "benign 200 tutorial mentioning Forbidden must NOT be blocked"
-    );
-}
-
-#[test]
-fn benign_security_check_not_blocked() {
-    let body = b"<h1>Security Checklist</h1><p>Run a security check monthly.</p>";
-    assert!(
-        !is_waf_block(200, body),
-        "benign 200 security checklist must NOT be blocked"
-    );
+fn benign_pages_mentioning_waf_keywords_are_not_blocked() {
+    // Benign 200 pages that merely mention WAF vendor names or security
+    // terms must NOT be classified as WAF blocks (false-positive guard).
+    let cases: &[&[u8]] = &[
+        b"<h1>How Cloudflare Works</h1><p>Cloudflare is a CDN.</p>",
+        b"<h1>Akamai Edge Platform Overview</h1><p>Akamai delivers content.</p>",
+        b"<h1>Imperva WAF Review</h1><p>Imperva protects applications.</p>",
+        b"<h1>Network Firewalls 101</h1><p>A firewall inspects packets.</p>",
+        b"<h1>HTTP Status Codes</h1><p>403 Forbidden means refusal.</p>",
+        b"<h1>Security Checklist</h1><p>Run a security check monthly.</p>",
+    ];
+    for body in cases {
+        assert!(
+            !is_waf_block(200, body),
+            "benign 200 page must NOT be blocked: {body:?}"
+        );
+    }
 }
 
 // Positive twins: real block pages must still be detected
 
 #[test]
-fn real_access_denied_still_blocked() {
-    assert!(
-        is_waf_block(
-            200,
-            b"<h1>Access Denied</h1><p>Your request was blocked.</p>"
-        ),
-        "real block page with 'Access Denied' must still be detected"
-    );
-}
-
-#[test]
-fn real_attention_required_still_blocked() {
-    assert!(
-        is_waf_block(200, b"Attention Required! | Cloudflare"),
-        "real block page with 'Attention Required' must still be detected"
-    );
-}
-
-#[test]
-fn real_captcha_still_blocked() {
-    assert!(
-        is_waf_block(200, b"Please complete the captcha to continue"),
-        "real captcha page must still be detected"
-    );
-}
-
-#[test]
-fn real_automated_request_still_blocked() {
-    assert!(
-        is_waf_block(200, b"Automated request detected and blocked"),
-        "real automated-request block page must still be detected"
-    );
+fn real_block_pages_are_still_detected() {
+    // Positive twins: genuine block pages must still be detected as WAF
+    // blocks despite the benign-page false-positive guard above.
+    let cases: &[&[u8]] = &[
+        b"<h1>Access Denied</h1><p>Your request was blocked.</p>",
+        b"Attention Required! | Cloudflare",
+        b"Please complete the captcha to continue",
+        b"Automated request detected and blocked",
+    ];
+    for body in cases {
+        assert!(
+            is_waf_block(200, body),
+            "real block page must be detected: {body:?}"
+        );
+    }
 }
 
 // ── signal.rs adversarial twins ─────────────────────────────────────
@@ -140,19 +89,20 @@ fn signal_451_is_pass_not_hard_block() {
 }
 
 #[test]
-fn signal_benign_tutorial_not_soft_blocked() {
+fn signal_benign_tutorials_not_soft_blocked() {
     let db = ResponseProfileDb::compiled_in();
-    let body = b"<h1>HTTP Status Codes</h1><p>403 Forbidden means refusal.</p>";
-    let sig = db.classify(200, &[], body);
-    assert_eq!(sig.classification, BlockClass::Pass);
-}
-
-#[test]
-fn signal_benign_firewall_tutorial_not_soft_blocked() {
-    let db = ResponseProfileDb::compiled_in();
-    let body = b"<h1>Network Firewalls</h1><p>A firewall inspects traffic.</p>";
-    let sig = db.classify(200, &[], body);
-    assert_eq!(sig.classification, BlockClass::Pass);
+    let cases: &[&[u8]] = &[
+        b"<h1>HTTP Status Codes</h1><p>403 Forbidden means refusal.</p>",
+        b"<h1>Network Firewalls</h1><p>A firewall inspects traffic.</p>",
+    ];
+    for body in cases {
+        let sig = db.classify(200, &[], body);
+        assert_eq!(
+            sig.classification,
+            BlockClass::Pass,
+            "benign tutorial must not be soft-blocked: {body:?}"
+        );
+    }
 }
 
 #[test]
