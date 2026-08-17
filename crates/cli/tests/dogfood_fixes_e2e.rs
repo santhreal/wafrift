@@ -608,29 +608,20 @@ fn scan_rejects_neither_target_nor_discovery_adversarial() {
 }
 
 #[test]
-fn origin_hints_accepts_positional_host() {
-    // `wafrift origin-hints discourse.org`: the exact form todos.md
-    // flagged as broken. Using `localhost` so DNS resolves locally and
-    // we exercise the full happy path.
-    let (code, out, err) = wafrift(&["origin-hints", "localhost", "--format", "json"]);
-    assert_eq!(
-        code, 0,
-        "positional host must produce a successful resolution: {err}"
-    );
-    assert!(
-        out.contains("localhost") || out.contains("127.0.0.1") || out.contains("::1"),
-        "json output must name the resolved host: {out}"
-    );
-}
-
-#[test]
-fn origin_hints_still_accepts_legacy_host_flag() {
-    let (code, out, err) = wafrift(&["origin-hints", "--host", "localhost", "--format", "json"]);
-    assert_eq!(code, 0, "--host flag must still work: {err}");
-    assert!(
-        out.contains("localhost") || out.contains("127.0.0.1") || out.contains("::1"),
-        "json output must name the resolved host: {out}"
-    );
+fn origin_hints_accepts_both_positional_and_flag_forms() {
+    // `wafrift origin-hints <host>` and `--host <host>` must both
+    // resolve successfully and name the host in JSON output.
+    for args in [
+        &["origin-hints", "localhost", "--format", "json"][..],
+        &["origin-hints", "--host", "localhost", "--format", "json"][..],
+    ] {
+        let (code, out, err) = wafrift(args);
+        assert_eq!(code, 0, "origin-hints must succeed: {err}");
+        assert!(
+            out.contains("localhost") || out.contains("127.0.0.1") || out.contains("::1"),
+            "json output must name the resolved host: {out}"
+        );
+    }
 }
 
 #[test]

@@ -335,36 +335,24 @@ fn header_value_passes_through_clean() {
 }
 
 #[test]
-fn header_value_cr_rejected() {
-    let err = encode_in_context(
-        b"a\rb",
-        Strategy::CaseAlternation,
-        InjectionContext::HeaderValue,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
-}
-
-#[test]
-fn header_value_lf_rejected() {
-    let err = encode_in_context(
-        b"a\nb",
-        Strategy::CaseAlternation,
-        InjectionContext::HeaderValue,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
-}
-
-#[test]
-fn header_value_null_rejected() {
-    let err = encode_in_context(
-        b"a\x00b",
-        Strategy::CaseAlternation,
-        InjectionContext::HeaderValue,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
+fn control_bytes_rejected_in_structural_contexts() {
+    // CR, LF, and NUL are structurally significant in HTTP headers
+    // and multipart field names. Each must be rejected with an
+    // "incompatible" error, not silently encoded through.
+    let cases: &[(&[u8], InjectionContext)] = &[
+        (b"a\rb", InjectionContext::HeaderValue),
+        (b"a\nb", InjectionContext::HeaderValue),
+        (b"a\x00b", InjectionContext::HeaderValue),
+        (b"a\rb", InjectionContext::MultipartField),
+        (b"a\nb", InjectionContext::MultipartField),
+    ];
+    for (payload, ctx) in cases {
+        let err = encode_in_context(payload, Strategy::CaseAlternation, *ctx).unwrap_err();
+        assert!(
+            err.to_string().contains("incompatible"),
+            "{ctx:?}: payload {payload:?} must be rejected as incompatible, got {err}"
+        );
+    }
 }
 
 // ── Cookie Value ───────────────────────────────────────────────────────────
@@ -414,28 +402,6 @@ fn multipart_field_passes_through() {
     .unwrap();
     // CaseAlternation produces "HeLlO"
     assert!(out.contains("HeLlO"));
-}
-
-#[test]
-fn multipart_field_cr_rejected() {
-    let err = encode_in_context(
-        b"a\rb",
-        Strategy::CaseAlternation,
-        InjectionContext::MultipartField,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
-}
-
-#[test]
-fn multipart_field_lf_rejected() {
-    let err = encode_in_context(
-        b"a\nb",
-        Strategy::CaseAlternation,
-        InjectionContext::MultipartField,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("incompatible"));
 }
 
 // ── Multipart Filename ─────────────────────────────────────────────────────
@@ -545,39 +511,22 @@ fn escape_for_context_cookie_value() {
 // ── Size limits ────────────────────────────────────────────────────────────
 
 #[test]
-fn json_string_max_size_enforced() {
-    let big = vec![b'a'; 4 * 1024 * 1024 + 1];
-    let err = encode_in_context(
-        &big,
-        Strategy::CaseAlternation,
-        InjectionContext::JsonString,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("too large"));
-}
-
-#[test]
-fn cookie_value_max_size_enforced() {
-    let big = vec![b'a'; 4 * 1024 + 1];
-    let err = encode_in_context(
-        &big,
-        Strategy::CaseAlternation,
-        InjectionContext::CookieValue,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("too large"));
-}
-
-#[test]
-fn multipart_filename_max_size_enforced() {
-    let big = vec![b'a'; 257];
-    let err = encode_in_context(
-        &big,
-        Strategy::CaseAlternation,
-        InjectionContext::MultipartFileName,
-    )
-    .unwrap_err();
-    assert!(err.to_string().contains("too large"));
+fn max_size_enforced_per_context() {
+    // Each injection context has its own size ceiling. Oversized
+    // input must be rejected with a "too large" error.
+    let cases: &[(usize, InjectionContext)] = &[
+        (4 * 1024 * 1024 + 1, InjectionContext::JsonString),
+        (4 * 1024 + 1, InjectionContext::CookieValue),
+        (257, InjectionContext::MultipartFileName),
+    ];
+    for (size, ctx) in cases {
+        let big = vec![b'a'; *size];
+        let err = encode_in_context(&big, Strategy::CaseAlternation, *ctx).unwrap_err();
+        assert!(
+            err.to_string().contains("too large"),
+            "{ctx:?}: {size} bytes must be rejected as too large, got {err}"
+        );
+    }
 }
 
 #[test]
