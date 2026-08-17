@@ -290,6 +290,36 @@ impl Strategy {
             }
         }
     }
+
+    /// Whether this strategy requires valid UTF-8 input.
+    ///
+    /// Text-oriented strategies (case alternation, unicode escape, comment
+    /// insertion, etc.) operate on `&str` and reject invalid UTF-8.
+    /// Byte-oriented strategies (URL encode, base64, gzip, null-byte, etc.)
+    /// operate on raw bytes and accept any input.
+    #[must_use]
+    pub const fn requires_utf8(&self) -> bool {
+        match self {
+            // Byte-oriented: accept any byte sequence.
+            Self::UrlEncode
+            | Self::UrlEncodeLower
+            | Self::DoubleUrlEncode
+            | Self::TripleUrlEncode
+            | Self::NullByte
+            | Self::OverlongUtf8
+            | Self::OverlongUtf8More
+            | Self::ChunkedSplit
+            | Self::ParameterPollution
+            | Self::Base64Encode
+            | Self::Base64UrlEncode
+            | Self::HexEncode
+            | Self::GzipEncode
+            | Self::DeflateEncode
+            | Self::UnmagicQuotes => false,
+            // Text-oriented: require valid UTF-8.
+            _ => true,
+        }
+    }
 }
 
 fn check_size(payload: &[u8]) -> Result<(), EncodeError> {
@@ -318,54 +348,20 @@ pub fn encode(payload: impl AsRef<[u8]>, strategy: Strategy) -> Result<String, E
     let payload = payload.as_ref();
     check_size(payload)?;
 
+    // Text-oriented strategies: validate UTF-8 once, then dispatch to
+    // the inner byte-level encoder. This eliminates 25 copies of the
+    // `from_utf8 → call fn → Ok` boilerplate.
+    if strategy.requires_utf8() {
+        let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
+        return Ok(encode_text(text, strategy));
+    }
+
+    // Byte-oriented strategies: no UTF-8 validation needed.
     match strategy {
         Strategy::UrlEncode => Ok(url_encode(payload)),
         Strategy::UrlEncodeLower => Ok(url_encode_lower(payload)),
         Strategy::DoubleUrlEncode => Ok(double_url_encode(payload)),
         Strategy::TripleUrlEncode => Ok(triple_url_encode(payload)),
-        Strategy::UnicodeEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(unicode_encode(text))
-        }
-        Strategy::IisUnicodeEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(iis_unicode_encode(text))
-        }
-        Strategy::JsonEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(json_string_encode(text))
-        }
-        Strategy::HtmlEntityEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(html_entity_encode(text))
-        }
-        Strategy::HtmlEntityDecimalEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(html_entity_decimal_encode(text))
-        }
-        Strategy::CaseAlternation => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(case_alternate(text))
-        }
-        Strategy::RandomCase => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(random_case_alternate(text))
-        }
-        Strategy::WhitespaceInsertion => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(whitespace_insert(text))
-        }
-        Strategy::SqlCommentInsertion => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(sql_comment_insert(text))
-        }
-        Strategy::MysqlVersionedComment => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(mysql_versioned_comment(
-                text,
-                MYSQL_VERSIONED_COMMENT_VERSION,
-            ))
-        }
         Strategy::NullByte => Ok(null_byte_inject(payload)?),
         Strategy::OverlongUtf8 => Ok(overlong_utf8(payload)?),
         Strategy::OverlongUtf8More => Ok(overlong_utf8_more(payload)?),
@@ -377,81 +373,53 @@ pub fn encode(payload: impl AsRef<[u8]>, strategy: Strategy) -> Result<String, E
         Strategy::Base64Encode => Ok(base64_encode(payload)),
         Strategy::Base64UrlEncode => Ok(base64_url_encode(payload)),
         Strategy::HexEncode => Ok(hex_encode(payload)),
-        Strategy::Utf7Encode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(utf7_encode(text))
-        }
         Strategy::GzipEncode => Ok(gzip_encode(payload)?),
         Strategy::DeflateEncode => Ok(deflate_encode(payload)?),
-        Strategy::SpaceToComment => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(space_to_comment(text))
-        }
-        Strategy::SpaceToDash => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(space_to_dash(text))
-        }
-        Strategy::SpaceToHash => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(space_to_hash(text))
-        }
-        Strategy::SpaceToPlus => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(space_to_plus(text))
-        }
-        Strategy::SpaceToRandomBlank => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(space_to_random_blank(text))
-        }
-        Strategy::PercentagePrefix => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(percentage_prefix(text))
-        }
-        Strategy::BetweenObfuscation => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(between_obfuscate(text))
-        }
         Strategy::UnmagicQuotes => Ok(unmagic_quotes(payload)?),
-        Strategy::FullwidthEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(fullwidth_encode(text))
+        // Unreachable: all text-oriented strategies are handled above.
+        // This arm exists so the match is exhaustive without `#[non_exhaustive]`
+        // forcing a catch-all that could silently drop a new byte variant.
+        _ => unreachable!("requires_utf8() said false for {strategy:?}"),
+    }
+}
+
+/// Text-level dispatcher for strategies that require valid UTF-8 input.
+/// Called by [`encode`] after UTF-8 validation succeeds.
+#[must_use]
+fn encode_text(text: &str, strategy: Strategy) -> String {
+    match strategy {
+        Strategy::UnicodeEncode => unicode_encode(text),
+        Strategy::IisUnicodeEncode => iis_unicode_encode(text),
+        Strategy::JsonEncode => json_string_encode(text),
+        Strategy::HtmlEntityEncode => html_entity_encode(text),
+        Strategy::HtmlEntityDecimalEncode => html_entity_decimal_encode(text),
+        Strategy::CaseAlternation => case_alternate(text),
+        Strategy::RandomCase => random_case_alternate(text),
+        Strategy::WhitespaceInsertion => whitespace_insert(text),
+        Strategy::SqlCommentInsertion => sql_comment_insert(text),
+        Strategy::MysqlVersionedComment => {
+            mysql_versioned_comment(text, MYSQL_VERSIONED_COMMENT_VERSION)
         }
-        Strategy::HomoglyphEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(homoglyph_encode(text))
-        }
-        Strategy::TagCharEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(tag_char_encode(text))
-        }
-        Strategy::VariationSelectorPad => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(variation_selector_pad(text, '\u{FE0F}'))
-        }
-        Strategy::VariationSelectorSupplementaryPad => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(variation_selector_supplementary_pad(text))
-        }
-        Strategy::LigatureEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(ligature_encode(text))
-        }
-        Strategy::CircledLetterEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(circled_letter_encode(text))
-        }
-        Strategy::ParenthesizedLetterEncode => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(parenthesized_letter_encode(text))
-        }
-        Strategy::SoftHyphenInject => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(soft_hyphen_inject(text))
-        }
-        Strategy::WordJoinerWrap => {
-            let text = std::str::from_utf8(payload).map_err(|_| EncodeError::InvalidUtf8)?;
-            Ok(word_joiner_wrap(text))
-        }
+        Strategy::Utf7Encode => utf7_encode(text),
+        Strategy::SpaceToComment => space_to_comment(text),
+        Strategy::SpaceToDash => space_to_dash(text),
+        Strategy::SpaceToHash => space_to_hash(text),
+        Strategy::SpaceToPlus => space_to_plus(text),
+        Strategy::SpaceToRandomBlank => space_to_random_blank(text),
+        Strategy::PercentagePrefix => percentage_prefix(text),
+        Strategy::BetweenObfuscation => between_obfuscate(text),
+        Strategy::FullwidthEncode => fullwidth_encode(text),
+        Strategy::HomoglyphEncode => homoglyph_encode(text),
+        Strategy::TagCharEncode => tag_char_encode(text),
+        Strategy::VariationSelectorPad => variation_selector_pad(text, '\u{FE0F}'),
+        Strategy::VariationSelectorSupplementaryPad => variation_selector_supplementary_pad(text),
+        Strategy::LigatureEncode => ligature_encode(text),
+        Strategy::CircledLetterEncode => circled_letter_encode(text),
+        Strategy::ParenthesizedLetterEncode => parenthesized_letter_encode(text),
+        Strategy::SoftHyphenInject => soft_hyphen_inject(text),
+        Strategy::WordJoinerWrap => word_joiner_wrap(text),
+        // Unreachable: all byte-oriented strategies are handled by encode().
+        _ => unreachable!("encode_text called for byte strategy {strategy:?}"),
     }
 }
 
