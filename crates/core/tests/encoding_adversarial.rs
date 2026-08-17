@@ -6,71 +6,37 @@
 use wafrift_core::encoding::{self, EncodeError, Strategy};
 
 // ============================================================================
-// Empty Input Tests (12 tests)
+// Empty Input Tests
 // ============================================================================
 
+/// Most strategies return "" for empty input. Two are special-cased
+/// below (NullByte adds %00, ParameterPollution adds =1&).
 #[test]
-fn url_encode_empty() {
-    assert_eq!(encoding::encode("", Strategy::UrlEncode).unwrap(), "");
-}
-
-#[test]
-fn double_url_encode_empty() {
-    assert_eq!(encoding::encode("", Strategy::DoubleUrlEncode).unwrap(), "");
-}
-
-#[test]
-fn triple_url_encode_empty() {
-    assert_eq!(encoding::encode("", Strategy::TripleUrlEncode).unwrap(), "");
-}
-
-#[test]
-fn unicode_encode_empty() {
-    assert_eq!(encoding::encode("", Strategy::UnicodeEncode).unwrap(), "");
-}
-
-#[test]
-fn html_entity_encode_empty() {
-    assert_eq!(
-        encoding::encode("", Strategy::HtmlEntityEncode).unwrap(),
-        ""
-    );
-}
-
-#[test]
-fn case_alternation_empty() {
-    assert_eq!(encoding::encode("", Strategy::CaseAlternation).unwrap(), "");
-}
-
-#[test]
-fn whitespace_insert_empty() {
-    assert_eq!(
-        encoding::encode("", Strategy::WhitespaceInsertion).unwrap(),
-        ""
-    );
-}
-
-#[test]
-fn sql_comment_insert_empty() {
-    assert_eq!(
-        encoding::encode("", Strategy::SqlCommentInsertion).unwrap(),
-        ""
-    );
+fn empty_input_returns_empty_for_passthrough_strategies() {
+    let passthrough = [
+        Strategy::UrlEncode,
+        Strategy::DoubleUrlEncode,
+        Strategy::TripleUrlEncode,
+        Strategy::UnicodeEncode,
+        Strategy::HtmlEntityEncode,
+        Strategy::CaseAlternation,
+        Strategy::WhitespaceInsertion,
+        Strategy::SqlCommentInsertion,
+        Strategy::OverlongUtf8,
+        Strategy::ChunkedSplit,
+    ];
+    for &s in &passthrough {
+        assert_eq!(
+            encoding::encode("", s).unwrap(),
+            "",
+            "Strategy {s:?} should return empty for empty input"
+        );
+    }
 }
 
 #[test]
 fn null_byte_empty() {
     assert_eq!(encoding::encode("", Strategy::NullByte).unwrap(), "%00");
-}
-
-#[test]
-fn overlong_utf8_empty() {
-    assert_eq!(encoding::encode("", Strategy::OverlongUtf8).unwrap(), "");
-}
-
-#[test]
-fn chunked_split_empty() {
-    assert_eq!(encoding::encode("", Strategy::ChunkedSplit).unwrap(), "");
 }
 
 #[test]
