@@ -353,16 +353,11 @@ mod tests {
 
     #[test]
     fn deterministic_and_diverse() {
-        let a: Vec<_> = generate("../../../etc/passwd", &cfg(6))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        let b: Vec<_> = generate("../../../etc/passwd", &cfg(6))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        assert_eq!(a, b);
-        let d: std::collections::HashSet<_> = a.iter().collect();
-        assert!(d.len() >= 6, "too few distinct: {}", d.len());
+        crate::grammar::equiv::assert_deterministic_and_diverse(
+            generate,
+            "../../../etc/passwd",
+            &cfg(6),
+            6,
+        );
     }
 }

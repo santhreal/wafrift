@@ -975,6 +975,36 @@ pub fn test_cfg(seed: u64, max: usize, param: &str) -> EquivConfig {
     }
 }
 
+/// Shared invariant check for equiv-class generators: two calls with
+/// the same input produce identical payloads (determinism) and the
+/// output contains at least `min_distinct` unique payloads (diversity).
+///
+/// Each equiv sub-module calls this instead of copy-pasting the test
+/// body with its own representative payload, config, and threshold.
+#[cfg(test)]
+pub fn assert_deterministic_and_diverse(
+    generate: fn(&str, &EquivConfig) -> Vec<EquivPayload>,
+    payload: &str,
+    cfg: &EquivConfig,
+    min_distinct: usize,
+) {
+    let a: Vec<_> = generate(payload, cfg)
+        .into_iter()
+        .map(|m| m.payload)
+        .collect();
+    let b: Vec<_> = generate(payload, cfg)
+        .into_iter()
+        .map(|m| m.payload)
+        .collect();
+    assert_eq!(a, b, "generate must be deterministic for same input");
+    let d: std::collections::HashSet<_> = a.iter().collect();
+    assert!(
+        d.len() >= min_distinct,
+        "too few distinct payloads: {}",
+        d.len()
+    );
+}
+
 #[cfg(test)]
 mod contains_token_tests {
     use super::contains_token;

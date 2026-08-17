@@ -455,16 +455,12 @@ mod tests {
 
     #[test]
     fn deterministic_and_diverse() {
-        let a: Vec<_> = generate("http://127.0.0.1/admin", &cfg(9))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        let b: Vec<_> = generate("http://127.0.0.1/admin", &cfg(9))
-            .into_iter()
-            .map(|m| m.payload)
-            .collect();
-        assert_eq!(a, b);
-        assert!(a.iter().collect::<std::collections::HashSet<_>>().len() >= 6);
+        crate::grammar::equiv::assert_deterministic_and_diverse(
+            generate,
+            "http://127.0.0.1/admin",
+            &cfg(9),
+            6,
+        );
     }
 
     #[test]
