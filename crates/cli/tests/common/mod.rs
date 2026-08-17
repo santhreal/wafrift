@@ -221,3 +221,14 @@ pub async fn spawn_mock_http_server(handler: MockHttpHandler) -> SocketAddr {
     wait_for_server(addr);
     addr
 }
+
+/// Build a multi-threaded tokio runtime with 2 worker threads for
+/// e2e tests that need async I/O. Shared to avoid per-file boilerplate.
+#[allow(dead_code)]
+pub fn test_runtime() -> tokio::runtime::Runtime {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .worker_threads(2)
+        .build()
+        .unwrap()
+}
