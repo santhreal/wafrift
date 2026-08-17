@@ -31,44 +31,22 @@ fn jwt_manipulate_strip_alg_valid_token() {
 }
 
 #[test]
-fn jwt_manipulate_rejects_missing_dots() {
-    let result = wafrift_transport::jwt::manipulate(
-        "not.a.jwt.token",
-        &wafrift_types::session::JwtManipulation::StripAlg,
-        None,
-    );
-    assert!(result.is_err());
-}
-
-#[test]
-fn jwt_manipulate_rejects_empty_string() {
-    let result = wafrift_transport::jwt::manipulate(
-        "",
-        &wafrift_types::session::JwtManipulation::StripAlg,
-        None,
-    );
-    assert!(result.is_err());
-}
-
-#[test]
-fn jwt_manipulate_rejects_invalid_base64() {
-    let result = wafrift_transport::jwt::manipulate(
-        "!!!.payload.signature",
-        &wafrift_types::session::JwtManipulation::StripAlg,
-        None,
-    );
-    assert!(result.is_err());
-}
-
-#[test]
-fn jwt_manipulate_rejects_non_json_header() {
+fn jwt_manipulate_rejects_malformed_tokens() {
     let b64 = b64url_encode(b"not json");
-    let result = wafrift_transport::jwt::manipulate(
-        &format!("{b64}.payload.signature"),
-        &wafrift_types::session::JwtManipulation::StripAlg,
-        None,
-    );
-    assert!(result.is_err());
+    let cases: &[String] = &[
+        "not.a.jwt.token".to_string(),
+        String::new(),
+        "!!!.payload.signature".to_string(),
+        format!("{b64}.payload.signature"),
+    ];
+    for token in cases {
+        let result = wafrift_transport::jwt::manipulate(
+            token,
+            &wafrift_types::session::JwtManipulation::StripAlg,
+            None,
+        );
+        assert!(result.is_err(), "must reject {token:?}");
+    }
 }
 
 #[test]
