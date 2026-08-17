@@ -90,10 +90,15 @@ webpki-roots = { workspace = true }
 # `respdiff::classify_severity`, so a fix to the classification logic
 # reaches every subcommand in one edit AND propagates across the rest
 # of Santh's scanner family.
-# v0.3.0 added DiffSeverity + classify_severity + body_size_delta_pct
-# + saturating timing arithmetic + RFC 9110 §5.2 header folding.
-# crates.io 0.3.0 (santhsecurity org).
-respdiff = "=0.3.0"
+# v0.5.2: timing_delta_ms is now Option<i64> (None when either
+# snapshot lacks elapsed-time data), NaN-safe severity grading,
+# shingle-based body similarity, and DifferentialLearner signature
+# cap. v0.3.0 added DiffSeverity + classify_severity +
+# body_size_delta_pct; v0.4.0 added shingle similarity +
+# waf_differential_reasons; v0.5.x added policy-driven comparison +
+# NaN fail-closed + learner memory bounds.
+# crates.io 0.5.2 (santhreal org).
+respdiff = "=0.5.2"
 
 # Santh-owned HTTP error classification + target-error modelling.
 # Used for app-error / SQL-syntax / JSON-parse / missing-property insight
@@ -105,7 +110,7 @@ respdiff = "=0.3.0"
 # because they answer different questions with opposite cost asymmetries
 # (FN-cheap retry-loop vs. FN-expensive calibration). See each file's
 # doc-comment for the audit.
-# crates.io 0.2.1 (santhsecurity org).
+# crates.io 0.2.1 (santhreal org).
 erroracle = "0.2.1"
 
 # SIGPIPE handler reset on Unix so `wafrift ... | head` exits silently
