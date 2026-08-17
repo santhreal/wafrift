@@ -285,37 +285,27 @@ fn evade_empty_body() {
 }
 
 #[test]
-fn evade_get_request_no_body() {
-    let req = Request::get("https://example.com");
-    let mut state = HostState::default();
-    state.record_block();
-    let config = EvasionConfig::default();
-    let result = strategy::evade(&req, &state, &config);
-
-    // GET request with no body should still apply headers
-    assert!(
-        result
-            .techniques
-            .iter()
-            .any(|t| matches!(t, Technique::UserAgentRotation))
-    );
-}
-
-#[test]
-fn evade_delete_request_no_body() {
-    let req = Request::delete("https://example.com/api/1");
-    let mut state = HostState::default();
-    state.record_block();
-    let config = EvasionConfig::default();
-    let result = strategy::evade(&req, &state, &config);
-
-    // DELETE request should still get fingerprint rotation
-    assert!(
-        result
-            .techniques
-            .iter()
-            .any(|t| matches!(t, Technique::UserAgentRotation))
-    );
+fn evade_no_body_methods_still_get_fingerprint_rotation() {
+    // Requests without a body (GET, DELETE, custom methods) must still
+    // receive UserAgentRotation — evasion is not body-dependent.
+    let reqs = [
+        Request::get("https://example.com"),
+        Request::delete("https://example.com/api/1"),
+        Request::with_method("CUSTOM", "https://example.com"),
+    ];
+    for req in &reqs {
+        let mut state = HostState::default();
+        state.record_block();
+        let config = EvasionConfig::default();
+        let result = strategy::evade(req, &state, &config);
+        assert!(
+            result
+                .techniques
+                .iter()
+                .any(|t| matches!(t, Technique::UserAgentRotation)),
+            "no-body request must still get UserAgentRotation"
+        );
+    }
 }
 
 #[test]
@@ -371,23 +361,6 @@ fn evade_put_empty_body() {
             .body
             .as_ref()
             .is_none_or(std::vec::Vec::is_empty)
-    );
-}
-
-#[test]
-fn evade_custom_method_no_body() {
-    let req = Request::with_method("CUSTOM", "https://example.com");
-    let mut state = HostState::default();
-    state.record_block();
-    let config = EvasionConfig::default();
-    let result = strategy::evade(&req, &state, &config);
-
-    // Custom method should still get techniques
-    assert!(
-        result
-            .techniques
-            .iter()
-            .any(|t| matches!(t, Technique::UserAgentRotation))
     );
 }
 
