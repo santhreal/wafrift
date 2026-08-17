@@ -326,55 +326,33 @@ proptest! {
     // ── Mathematical alphabet encoders ────────────────────────
 
     #[test]
-    fn unicode_math_italic_no_panic(s in ".*") {
-        let a = unicode::math_italic_encode(&s);
-        let b = unicode::math_italic_encode(&s);
-        prop_assert_eq!(a, b);
+    fn unicode_single_arg_encoders_deterministic(s in ".*") {
+        // All encoders with signature fn(&str) -> String must be
+        // deterministic: same input → same output. Tested in one
+        // parameterized proptest instead of 13 near-identical copies.
+        let encoders: &[(&str, fn(&str) -> String)] = &[
+            ("math_italic", unicode::math_italic_encode),
+            ("math_script", unicode::math_script_encode),
+            ("math_fraktur", unicode::math_fraktur_encode),
+            ("math_double_struck", unicode::math_double_struck_encode),
+            ("letterlike", unicode::letterlike_encode),
+            ("json_unicode_full", unicode::json_unicode_full),
+            ("json_unicode_mixed_case", unicode::json_unicode_mixed_case),
+            ("script_homoglyph", unicode::script_homoglyph_encode),
+            ("sql_concat_split", unicode::sql_concat_split),
+            ("sql_char_decompose", unicode::sql_char_decompose),
+            ("pg_chr_decompose", unicode::pg_chr_decompose),
+            ("html_entity_variants", unicode::html_entity_variants),
+            ("sql_adjacent_string_concat", unicode::sql_adjacent_string_concat),
+        ];
+        for (name, encoder) in encoders {
+            let a = encoder(&s);
+            let b = encoder(&s);
+            prop_assert_eq!(a, b);
+        }
     }
 
-    #[test]
-    fn unicode_math_script_no_panic(s in ".*") {
-        let a = unicode::math_script_encode(&s);
-        let b = unicode::math_script_encode(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    #[test]
-    fn unicode_math_fraktur_no_panic(s in ".*") {
-        let a = unicode::math_fraktur_encode(&s);
-        let b = unicode::math_fraktur_encode(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    #[test]
-    fn unicode_math_double_struck_no_panic(s in ".*") {
-        let a = unicode::math_double_struck_encode(&s);
-        let b = unicode::math_double_struck_encode(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    #[test]
-    fn unicode_letterlike_no_panic(s in ".*") {
-        let a = unicode::letterlike_encode(&s);
-        let b = unicode::letterlike_encode(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    // ── JSON escape variants ────────────────────────────────────
-
-    #[test]
-    fn unicode_json_unicode_full_no_panic(s in ".*") {
-        let a = unicode::json_unicode_full(&s);
-        let b = unicode::json_unicode_full(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    #[test]
-    fn unicode_json_unicode_mixed_case_no_panic(s in ".*") {
-        let a = unicode::json_unicode_mixed_case(&s);
-        let b = unicode::json_unicode_mixed_case(&s);
-        prop_assert_eq!(a, b);
-    }
+    // ── JSON escape variants (multi-arg, kept separate) ────────
 
     #[test]
     fn unicode_json_key_unicode_escape_no_panic(key in ".*", value in ".*") {
@@ -419,14 +397,7 @@ proptest! {
         prop_assert_eq!(a, b);
     }
 
-    // ── Script-homoglyph / locale-case encoders ────────────────
-
-    #[test]
-    fn unicode_script_homoglyph_no_panic(s in ".*") {
-        let a = unicode::script_homoglyph_encode(&s);
-        let b = unicode::script_homoglyph_encode(&s);
-        prop_assert_eq!(a, b);
-    }
+    // ── Script-homoglyph / locale-case encoders (extra assertions) ──
 
     #[test]
     fn unicode_turkish_i_no_panic(s in ".*") {
@@ -453,43 +424,6 @@ proptest! {
                 prop_assert_eq!(enc, '\u{00DF}');
             }
         }
-        prop_assert_eq!(a, b);
-    }
-
-    // ── SQL evasion helpers ─────────────────────────────────────
-
-    #[test]
-    fn unicode_sql_concat_split_no_panic(s in ".*") {
-        let a = unicode::sql_concat_split(&s);
-        let b = unicode::sql_concat_split(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    #[test]
-    fn unicode_sql_char_decompose_no_panic(s in ".*") {
-        let a = unicode::sql_char_decompose(&s);
-        let b = unicode::sql_char_decompose(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    #[test]
-    fn unicode_pg_chr_decompose_no_panic(s in ".*") {
-        let a = unicode::pg_chr_decompose(&s);
-        let b = unicode::pg_chr_decompose(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    #[test]
-    fn unicode_html_entity_variants_no_panic(s in ".*") {
-        let a = unicode::html_entity_variants(&s);
-        let b = unicode::html_entity_variants(&s);
-        prop_assert_eq!(a, b);
-    }
-
-    #[test]
-    fn unicode_sql_adjacent_string_concat_no_panic(s in ".*") {
-        let a = unicode::sql_adjacent_string_concat(&s);
-        let b = unicode::sql_adjacent_string_concat(&s);
         prop_assert_eq!(a, b);
     }
 }
