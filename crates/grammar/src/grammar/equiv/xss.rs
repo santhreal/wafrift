@@ -563,11 +563,6 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
         if !cfg.vary_delivery && !single_forced && !matches!(d, DeliveryShape::Query { .. }) {
             continue;
         }
-        // Delivery-axis anti-rig: never pair a payload with a raw
-        // channel it cannot occupy without forging transport structure.
-        if !d.transport_legal(payload) {
-            continue;
-        }
         let key = format!("{}\u{1}{}", payload, d.label());
         if seen.insert(key) {
             out.push(EquivPayload {
@@ -635,12 +630,6 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
                 param: cfg.param.clone(),
             }
         };
-        // Skip (don't silently re-route, that would bias the delivery
-        // distribution) when this rewrite cannot legally occupy the
-        // sampled raw channel. The attempts budget absorbs the misses.
-        if !d.transport_legal(&s) {
-            continue;
-        }
         let key = format!("{s}\u{1}{}", d.label());
         if !seen.insert(key) {
             continue;
@@ -652,10 +641,6 @@ pub fn generate(payload: &str, cfg: &EquivConfig) -> Vec<EquivPayload> {
             rules,
         });
     }
-    // Inline `transport_legal` guards above already prevent illegal
-    // pairings (re-sampling preserves recall); this is the uniform
-    // belt-and-suspenders shared by every class.
-    super::enforce_transport_legal(&mut out);
     out.truncate(cfg.max);
     out
 }

@@ -216,17 +216,16 @@ pub enum DeliveryShape {
     /// XSS from them; CRS's `REQUEST_HEADERS` XSS coverage at PL1 is
     /// weaker than its ARGS coverage. Transparent to the backend *iff
     /// the app reflects that header* (the same conditional transparency
-    /// as `PathSegment`). Only sound for payloads with no CR/LF/NUL 
-    /// see [`DeliveryShape::transport_legal`].
+    /// as `PathSegment`). CTL bytes (0x00-0x1F, 0x7F) are stripped by
+    /// `to_request` and `effective_payload` before the oracle validates,
+    /// see [`DeliveryShape::effective_payload`].
     HeaderValue { name: String },
     /// Payload as a **cookie** value (`Cookie: <name>=<payload>`).
     /// Reflected-cookie XSS is a real class and `REQUEST_COOKIES` is a
     /// distinct WAF inspection surface from ARGS. Transparent to the
-    /// backend *iff the app reflects that cookie*. Only sound for
-    /// payloads that are valid RFC 6265 cookie-octets (no CR/LF/NUL,
-    /// `;`, `,`, whitespace, DQUOTE, backslash), see
-    /// [`DeliveryShape::transport_legal`]; the generator never pairs an
-    /// illegal payload with this shape.
+    /// backend *iff the app reflects that cookie*. CR/LF/NUL and `;`
+    /// are stripped by `to_request` and `effective_payload` before the
+    /// oracle validates, see [`DeliveryShape::effective_payload`].
     Cookie { name: String },
     /// XML POST body: `<root><field>PAYLOAD</field></root>` with the
     /// payload XML-entity-escaped inside the text node. CRS body
@@ -397,6 +396,34 @@ impl DeliveryShape {
             // escapes, urlencoding, multipart boundary selection).
             // XmlBody / JsonNestedDeep / GraphQLQuery all fall here.
             _ => true,
+        }
+    }
+    /// Compute the payload bytes the backend actually receives after
+    /// transport-level stripping/encoding. For encoding shapes (JSON,
+    /// XML, multipart, URL-encoded) the backend recovers the exact
+    /// payload, so `effective_payload == payload`. For raw channels
+    /// (HeaderValue, Cookie) the renderer strips bytes that the HTTP
+    /// transport rejects: ALL CTL (0x00-0x1F, 0x7F) for headers (matching
+    /// `HeaderValue::from_bytes`), plus `;` for cookies (the pair
+    /// separator). The oracle MUST validate this effective payload, not
+    /// the pre-strip `member.payload`, or it would be proving a
+    /// proposition the backend never saw (a rig). This replaces the
+    /// pre-filter `enforce_transport_legal` with empirical post-strip
+    /// verification: instead of dropping variants that MIGHT be mangled,
+    /// we send them and verify what the backend actually received.
+    #[must_use]
+    pub fn effective_payload(&self, payload: &str) -> String {
+        match self {
+            // `HeaderValue::from_bytes` rejects ALL CTL (0x00-0x1F, 0x7F).
+            // The send path strips them before `from_bytes`, so the backend
+            // never sees them. `effective_payload` must match exactly.
+            Self::HeaderValue { .. } => strip_ctl(payload),
+            // Cookie: strip CTL (CR/LF/NUL from `strip_unsafe`) plus `;`
+            // (the Cookie pair separator, stripped by `to_request`).
+            Self::Cookie { .. } => strip_unsafe(payload, &[';']),
+            // Encoding shapes recover exact bytes at the backend (the
+            // renderer escapes whatever the transport would mis-frame).
+            _ => payload.to_string(),
         }
     }
 }
@@ -587,20 +614,6 @@ fn effective_boundary(parts: &[&str]) -> String {
     bnd
 }
 
-/// SOUNDNESS GATE for the joint `(payload × delivery)` algebra. A
-/// member whose payload cannot legally occupy its delivery channel 
-/// a raw `HeaderValue`/`Cookie` payload carrying bytes (`CR`/`LF`/
-/// `NUL`/`;`/space/…) that [`DeliveryShape::to_request`] would have to
-/// strip, is NOT an equivalent rewrite: what reaches the backend
-/// would differ from `member.payload`, so verifying against
-/// `member.payload` would be a rig. Drop it. This runs at the tail of
-/// EVERY per-class generator, so the invariant holds for all classes
-/// uniformly (XSS additionally guards inline to preserve recall by
-/// re-sampling rather than dropping). Encoding shapes are always
-/// legal, so non-raw deliveries are untouched.
-pub(crate) fn enforce_transport_legal(out: &mut Vec<EquivPayload>) {
-    out.retain(|m| m.delivery.transport_legal(&m.payload));
-}
 
 fn url_with_pair(target: &str, param: &str, raw_value: &str) -> String {
     let base = target.trim_end_matches('/');
@@ -639,6 +652,19 @@ fn url_with_path_segment(target: &str, raw_seg: &str) -> String {
 fn strip_unsafe(s: &str, extra: &[char]) -> String {
     s.chars()
         .filter(|c| !matches!(c, '\r' | '\n' | '\0') && !extra.contains(c))
+        .collect()
+}
+/// Strip ALL HTTP CTL bytes (0x00-0x1F, 0x7F) from `s`, matching
+/// `HeaderValue::from_bytes` rejection. Used by `effective_payload`
+/// for `HeaderValue` so the oracle validates exactly what the backend
+/// receives after the send path strips CTL. Keeps SP (0x20) and
+/// HTAB (0x09) which `from_bytes` accepts as legal field-value octets.
+fn strip_ctl(s: &str) -> String {
+    s.chars()
+        .filter(|c| {
+            let b = *c as u32;
+            b > 0x1F && b != 0x7F
+        })
         .collect()
 }
 
@@ -761,11 +787,12 @@ impl DeliveryShape {
                 Request::get(url_with_pair(&u, param, payload))
             }
             Self::HeaderValue { name } => {
-                // Defense-in-depth smuggling guard: CR/LF/NUL can never
-                // reach the wire even if a careless direct caller skips
-                // `transport_legal`. On generator-produced members this
-                // strip is provably a no-op (they are pre-filtered).
-                let safe = strip_unsafe(payload, &[]);
+                // Defense-in-depth: strip ALL CTL (0x00-0x1F, 0x7F) so
+                // nothing that `HeaderValue::from_bytes` would reject
+                // can reach the wire. `effective_payload` strips the
+                // same bytes, so the oracle validates what the backend
+                // actually receives.
+                let safe = strip_ctl(payload);
                 let mut r = Request::get(target.to_string());
                 r.add_header(name, safe);
                 r
@@ -1376,10 +1403,13 @@ mod delivery_api_tests {
     }
 
     #[test]
-    fn generator_never_pairs_illegal_payload_with_raw_channel() {
-        // Every Cookie/Header member the XSS generator yields must be
-        // transport-legal for its channel AND still execute the script 
-        // the delivery-axis anti-rig at the generator boundary.
+    fn generator_raw_channel_members_are_wire_sound() {
+        // Every Cookie/Header member the XSS generator yields must
+        // still execute the script AND render with no smuggle byte on
+        // the wire. The generator no longer pre-filters via
+        // `transport_legal` (that traded recall for soundness); instead
+        // the engine sends all variants and the oracle validates the
+        // effective (post-strip) payload via `effective_payload`.
         for atk in [
             "<svg onload=alert(1)>",
             "<img src=x onerror=alert(1)>",
@@ -1390,12 +1420,6 @@ mod delivery_api_tests {
                 assert!(
                     xss::still_executes_xss(atk, &m.payload),
                     "unsound member {:?}",
-                    m.payload
-                );
-                assert!(
-                    m.delivery.transport_legal(&m.payload),
-                    "{} member {:?} is NOT legal for that channel",
-                    m.delivery.label(),
                     m.payload
                 );
                 // The rendered request can never carry a smuggle byte.

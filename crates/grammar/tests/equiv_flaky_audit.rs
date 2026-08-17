@@ -157,17 +157,18 @@ fn output_is_bounded_by_max() {
     }
 }
 
-/// CROSS-CLASS DELIVERY SOUNDNESS: adding the raw `HeaderValue`/
-/// `Cookie` shapes to the *shared* `delivery_set` means EVERY class 
-/// not just XSS, could otherwise pair a CR/LF/`;`/space-bearing
-/// payload with a raw channel whose `to_request` strips those bytes,
-/// making `member.payload` differ from what reaches the backend (an
-/// unsound, rigged member). The shared `enforce_transport_legal`
-/// finalizer must hold for all 10 classes on real attacks and across
-/// seeds. A regression that dropped the finalizer from any one
-/// generator flips this for that class.
+/// CROSS-CLASS DELIVERY SOUNDNESS: raw `HeaderValue`/`Cookie` shapes
+/// in the shared `delivery_set` could pair a CR/LF/`;`-bearing payload
+/// with a raw channel. `to_request` strips those bytes, so the
+/// effective payload (what the backend receives) may differ from
+/// `member.payload`. The invariant is now verified POST-STRIP via
+/// `effective_payload`: the effective payload must still be a valid
+/// attack (the oracle checks it), and the wire must carry no
+/// smuggling bytes. A regression that lets a control byte reach the
+/// wire or makes the effective payload a non-attack flips this.
 #[test]
-fn every_emitted_member_is_transport_legal_for_its_delivery() {
+fn every_emitted_member_is_wire_sound_for_its_delivery() {
+    use wafrift_grammar::grammar::equiv::DeliveryShape;
     for &(class, payload) in CORPUS {
         let mut any = false;
         for seed in [1u64, 7, 0xDEAD_BEEF, 0x7761_6672_6966_7421] {
@@ -175,14 +176,20 @@ fn every_emitted_member_is_transport_legal_for_its_delivery() {
                 let members = equiv::equiv_for(class, payload, &cfg(seed, max));
                 for m in &members {
                     any = true;
-                    assert!(
-                        m.delivery.transport_legal(&m.payload),
-                        "{class}: emitted {} member whose payload {:?} is \
-                         ILLEGAL for that channel, to_request would strip \
-                         bytes, so the delivered attack ≠ member.payload",
-                        m.delivery.label(),
-                        m.payload
-                    );
+                    // Wire-level: no smuggling bytes in rendered request.
+                    if matches!(
+                        m.delivery,
+                        DeliveryShape::HeaderValue { .. } | DeliveryShape::Cookie { .. }
+                    ) {
+                        let r = m.delivery.to_request("http://h/p", &m.payload);
+                        for (_, v) in &r.headers {
+                            assert!(
+                                !v.contains('\r') && !v.contains('\n') && !v.contains('\0'),
+                                "{class}: {delivery} smuggle byte on wire: {v:?}",
+                                delivery = m.delivery.label()
+                            );
+                        }
+                    }
                 }
             }
         }

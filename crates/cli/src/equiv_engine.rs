@@ -374,13 +374,31 @@ pub(crate) struct ProbeEnvelope {
 /// (overlong UTF-8, raw bytes) are *legal* header values, but routing
 /// them through `&str` made the whole membership query fail as a deferred
 /// "builder error", silently dropping that L* learning signal (observed
-/// flooding the cumulus hunt; CLAUDE.md §13 dogfood). Only NUL / CR / LF
-/// are genuinely illegal in an HTTP header value, so returning `Err` for
-/// those (the learn loop then excludes them from the sample) is correct,
-/// not a missed bypass (a real client can't send them either).
+/// flooding the cumulus hunt; CLAUDE.md §13 dogfood).
+///
+/// CTL bytes (0x00-0x1F, 0x7F) are stripped BEFORE `from_bytes`, matching
+/// `DeliveryShape::to_request`'s `strip_unsafe`. The oracle then
+/// validates the effective (post-strip) payload via `effective_payload`,
+/// not the pre-strip `member.payload`, so a stripped VT/FF that changes
+/// the payload is caught as "not a valid attack" rather than erroring
+/// the send and wasting fire budget. Pre-fix this returned `Err` for any
+/// CTL byte, causing `send_with_envelope` to error on every VT/FF-bearing
+/// payload from `WS_EQUIV` and silently dropping 6/15 variants per SQL
+/// case.
 fn header_value_from_payload(v: &str) -> Result<reqwest::header::HeaderValue, String> {
-    reqwest::header::HeaderValue::from_bytes(v.as_bytes())
-        .map_err(|_| "undeliverable header value (NUL/CR/LF illegal in HTTP headers)".to_string())
+    // Strip CTL (0x00-0x1F, 0x7F) to match what `to_request` does and
+    // what `HeaderValue::from_bytes` requires. Keep SP/HTAB (0x20/0x09)
+    // since `from_bytes` accepts them and `to_request` doesn't strip them
+    // (interior OWS is legal; edge OWS is handled by `effective_payload`).
+    let stripped: String = v
+        .chars()
+        .filter(|c| {
+            let b = *c as u32;
+            b > 0x1F && b != 0x7F
+        })
+        .collect();
+    reqwest::header::HeaderValue::from_bytes(stripped.as_bytes())
+        .map_err(|_| "undeliverable header value".to_string())
 }
 
 /// Fire one `wafrift_types::Request` and return the full response
@@ -672,6 +690,14 @@ where
     let mut samples: Vec<(Vec<f64>, bool)> = Vec::new();
     let mut tried: HashSet<(String, usize)> = HashSet::new();
     let mut sends = 0usize;
+    // Per-arm consecutive error tracking: if a delivery arm consistently
+    // errors (e.g. a WAF that rejects all header-bearing requests with a
+    // 502), skip it after MAX_CONSECUTIVE_ARM_ERRORS to stop wasting
+    // variants on a dead channel. The arm is marked in `dead_arms` and
+    // both the learn and CEGIS phases skip its candidates.
+    const MAX_CONSECUTIVE_ARM_ERRORS: usize = 3;
+    let mut arm_errors: Vec<usize> = vec![0; arms];
+    let mut dead_arms: HashSet<usize> = HashSet::new();
 
     // Differential-baseline pre-probe (anti-rig §12). When enabled, fire the
     // UN-EVADED base payload once per delivery arm and record whether the WAF
@@ -752,17 +778,22 @@ where
             break;
         }
         let (m, arm) = pool[i].clone();
+        if dead_arms.contains(&arm) {
+            continue;
+        }
         if out.variants > 0 && delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
         }
         let req = build(&m.delivery, &m.payload);
         out.variants += 1;
-        sends += 1;
         match send_with_envelope(client, &req, timeout_secs).await {
             Ok(env) => {
+                sends += 1;
+                arm_errors[arm] = 0;
                 let (status, blocked) = (env.status, env.blocked);
                 samples.push((featurize(&m.payload, arm), blocked));
-                let verified = verified_bypass(class, payload, &m.payload, blocked, status);
+                let effective = m.delivery.effective_payload(&m.payload);
+                let verified = verified_bypass(class, payload, &effective, blocked, status);
                 if differential_confirmed(verified, differential, base_blocked[arm]) {
                     out.bypasses.push(EquivBypass {
                         payload: m.payload.clone(),
@@ -779,13 +810,15 @@ where
                 tried.insert((m.payload.clone(), arm));
             }
             Err(e) => {
-                // §7 forward-progress: a fired-but-errored candidate yields no
-                // usable signal, and `synthesize`/the fixed `order` are
-                // deterministic, so it must still be marked `tried` or it can
-                // be re-selected. Here the learn phase walks a fixed `order` so
-                // it cannot spin, but recording it prevents the CEGIS phase
-                // below from re-firing a candidate that already failed in learn.
+                // §7 forward-progress: mark tried so CEGIS doesn't re-fire.
                 tried.insert((m.payload.clone(), arm));
+                // Per-arm consecutive error tracking: after
+                // MAX_CONSECUTIVE_ARM_ERRORS, mark the arm dead and
+                // skip its remaining candidates.
+                arm_errors[arm] += 1;
+                if arm_errors[arm] >= MAX_CONSECUTIVE_ARM_ERRORS {
+                    dead_arms.insert(arm);
+                }
                 *error_tally
                     .entry(format!("equiv learn send: {e}"))
                     .or_insert(0) += 1;
@@ -808,17 +841,23 @@ where
         else {
             break;
         };
+        if dead_arms.contains(&arm) {
+            tried.insert((pp.clone(), aa));
+            continue;
+        }
         if out.variants > 0 && delay_ms > 0 {
             tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
         }
         let req = build(&m.delivery, &m.payload);
         out.variants += 1;
-        sends += 1;
         match send_with_envelope(client, &req, timeout_secs).await {
             Ok(env) => {
+                sends += 1;
+                arm_errors[arm] = 0;
                 let (status, blocked) = (env.status, env.blocked);
                 samples.push((featurize(&m.payload, arm), blocked));
-                let verified = verified_bypass(class, payload, &m.payload, blocked, status);
+                let effective = m.delivery.effective_payload(&m.payload);
+                let verified = verified_bypass(class, payload, &effective, blocked, status);
                 if differential_confirmed(verified, differential, base_blocked[arm]) {
                     out.bypasses.push(EquivBypass {
                         payload: m.payload.clone(),
@@ -838,16 +877,14 @@ where
                 }
             }
             Err(e) => {
-                // §7 forward-progress (the real bug): `synthesize` is a pure
-                // deterministic min-score pick over candidates NOT in `tried`,
-                // and the CEGIS `model` only refits on a blocked `Ok`. If an
-                // errored candidate is left out of `tried`, the next iteration
-                // re-synthesizes the IDENTICAL candidate, re-fires the same
-                // failing request, and burns the entire remaining fire budget
-                // on one dead candidate (never exploring the rest of the pool).
-                // Mark it tried so synthesis advances to the next-best unseen
-                // candidate.
+                // §7 forward-progress: mark tried so synthesis advances.
                 tried.insert((pp.clone(), aa));
+                // Per-arm consecutive error tracking: after
+                // MAX_CONSECUTIVE_ARM_ERRORS, mark the arm dead.
+                arm_errors[arm] += 1;
+                if arm_errors[arm] >= MAX_CONSECUTIVE_ARM_ERRORS {
+                    dead_arms.insert(arm);
+                }
                 *error_tally
                     .entry(format!("equiv cegis send: {e}"))
                     .or_insert(0) += 1;
@@ -888,20 +925,30 @@ mod tests {
 
     /// §13 dogfood (cumulus): obs-text (high-byte) payloads are LEGAL
     /// HTTP header values (RFC 7230), they must form real membership
-    /// queries, not die as "builder errors". Only NUL/CR/LF are illegal
-    /// and correctly excluded from the L* sample.
+    /// queries, not die as "builder errors". CTL bytes (0x00-0x1F,
+    /// 0x7F) are STRIPPED before `from_bytes` (matching `to_request`
+    /// and `effective_payload`), so the backend receives the payload
+    /// without them. The oracle validates the effective (post-strip)
+    /// payload, so a stripped CTL that changes the attack is caught as
+    /// "not a valid attack" rather than erroring the send.
     #[test]
-    fn header_value_accepts_obs_text_rejects_control_bytes() {
+    fn header_value_accepts_obs_text_strips_ctl() {
         // High bytes (overlong-UTF-8 / raw-byte evasion) (sendable).
         assert!(header_value_from_payload("caf\u{e9}").is_ok());
         assert!(header_value_from_payload("\u{ff}\u{fe}admin").is_ok());
         // Ordinary attack payloads (sendable).
         assert!(header_value_from_payload("' OR 1=1-- -").is_ok());
-        // NUL / CR / LF, genuinely un-sendable over HTTP; excluding them
-        // from the sample is correct, not a missed bypass.
-        assert!(header_value_from_payload("x\r\ny").is_err());
-        assert!(header_value_from_payload("x\nINJECT: evil").is_err());
-        assert!(header_value_from_payload("x\u{0}y").is_err());
+        // CTL bytes (CR/LF/NUL/VT/FF) are stripped, not rejected.
+        // The send succeeds with the CTL removed; the oracle checks
+        // the effective payload to catch any semantic change.
+        assert!(header_value_from_payload("x\r\ny").is_ok());
+        assert!(header_value_from_payload("x\nINJECT: evil").is_ok());
+        assert!(header_value_from_payload("x\u{0}y").is_ok());
+        // The stripped result is the effective payload (CTL removed).
+        assert_eq!(
+            header_value_from_payload("x\r\ny").unwrap(),
+            "xy"
+        );
     }
 
     #[test]
