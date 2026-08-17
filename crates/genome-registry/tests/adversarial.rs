@@ -210,42 +210,29 @@ fn canonical_bytes_stable_under_duplicate_genome_names() {
 // ── Strict schema: unknown fields rejected (HIGH #4) ────────────────
 
 #[test]
-fn from_json_rejects_unknown_field_in_bundle() {
+fn from_json_rejects_unknown_fields_at_any_level() {
     let (_, signed) = fixture_signed();
-    let mut wire: serde_json::Value = serde_json::from_str(&signed.to_json().unwrap()).unwrap();
-    wire["bundle"]["evil_extra"] = serde_json::json!("payload");
-    let mutated = wire.to_string();
-    let err = SignedBundle::from_json(&mutated).unwrap_err();
-    assert!(
-        matches!(err, RegistryError::DeserializationFailed(_)),
-        "expected DeserializationFailed for unknown field, got {err:?}"
-    );
-}
-
-#[test]
-fn from_json_rejects_unknown_field_in_genome() {
-    let (_, signed) = fixture_signed();
-    let mut wire: serde_json::Value = serde_json::from_str(&signed.to_json().unwrap()).unwrap();
-    wire["bundle"]["genomes"][0]["evil_extra"] = serde_json::json!("payload");
-    let mutated = wire.to_string();
-    let err = SignedBundle::from_json(&mutated).unwrap_err();
-    assert!(
-        matches!(err, RegistryError::DeserializationFailed(_)),
-        "expected DeserializationFailed for unknown field on Genome, got {err:?}"
-    );
-}
-
-#[test]
-fn from_json_rejects_unknown_field_at_top_level() {
-    let (_, signed) = fixture_signed();
-    let mut wire: serde_json::Value = serde_json::from_str(&signed.to_json().unwrap()).unwrap();
-    wire["evil_top_level"] = serde_json::json!("payload");
-    let mutated = wire.to_string();
-    let err = SignedBundle::from_json(&mutated).unwrap_err();
-    assert!(
-        matches!(err, RegistryError::DeserializationFailed(_)),
-        "expected DeserializationFailed for unknown top-level field, got {err:?}"
-    );
+    let mutations: &[fn(&mut serde_json::Value)] = &[
+        |w| {
+            w["bundle"]["evil_extra"] = serde_json::json!("payload");
+        },
+        |w| {
+            w["bundle"]["genomes"][0]["evil_extra"] = serde_json::json!("payload");
+        },
+        |w| {
+            w["evil_top_level"] = serde_json::json!("payload");
+        },
+    ];
+    for (i, mutate) in mutations.iter().enumerate() {
+        let mut wire: serde_json::Value = serde_json::from_str(&signed.to_json().unwrap()).unwrap();
+        mutate(&mut wire);
+        let mutated = wire.to_string();
+        let err = SignedBundle::from_json(&mutated).unwrap_err();
+        assert!(
+            matches!(err, RegistryError::DeserializationFailed(_)),
+            "case {i}: expected DeserializationFailed for unknown field, got {err:?}"
+        );
+    }
 }
 
 // ── Tamper detection: byte-level integrity ──────────────────────────
