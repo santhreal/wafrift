@@ -197,26 +197,32 @@ fn embedded_ruleset_loads_and_has_rules() {
 }
 
 #[test]
-fn embedded_ruleset_fires_on_canonical_fastly_chain() {
+fn embedded_ruleset_fires_on_canonical_cname_chains() {
+    // Each CDN vendor has a distinctive CNAME pattern. The embedded
+    // ruleset must fire on all of them.
     let eng = CnameRuleEngine::load_embedded().expect("embedded");
-    let probe = probe_from_hosts("www.example.com", &["example.map.fastly.net"]);
-    let r = eng.detect(&probe);
-    assert!(
-        r.iter().any(|d| d.name.contains("Fastly")),
-        "embedded ruleset must catch canonical Fastly CNAME: {r:?}"
-    );
-}
-
-#[test]
-fn embedded_ruleset_fires_on_canonical_akamai_chain() {
-    let eng = CnameRuleEngine::load_embedded().expect("embedded");
-    let probe = probe_from_hosts("www.example.com", &["e88167.a.akamaiedge.net"]);
-    let r = eng.detect(&probe);
-    assert!(
-        r.iter()
-            .any(|d| d.name.contains("Akamai") || d.name.contains("Kona")),
-        "embedded ruleset must catch canonical Akamai CNAME: {r:?}"
-    );
+    let cases: &[(&str, &[&str], &[&str])] = &[
+        ("www.example.com", &["example.map.fastly.net"], &["Fastly"]),
+        (
+            "www.example.com",
+            &["e88167.a.akamaiedge.net"],
+            &["Akamai", "Kona"],
+        ),
+        (
+            "aws.example.com",
+            &["dr49lng3n1n2s.cloudfront.net"],
+            &["Cloudfront"],
+        ),
+    ];
+    for &(host, chain, expected_any) in cases {
+        let probe = probe_from_hosts(host, chain);
+        let r = eng.detect(&probe);
+        assert!(
+            r.iter()
+                .any(|d| expected_any.iter().any(|e| d.name.contains(e))),
+            "CNAME chain {chain:?} must fire for one of {expected_any:?}: {r:?}"
+        );
+    }
 }
 
 #[test]
@@ -245,73 +251,50 @@ confidence_threshold = 0.5
 }
 
 #[test]
-fn embedded_ruleset_fires_on_stripe_ptr_signature() {
+fn embedded_ruleset_fires_on_canonical_ptr_signatures() {
+    // Each vendor has a distinctive PTR pattern. The embedded ruleset
+    // must fire on all of them — a single miss means a rule was broken.
     let eng = CnameRuleEngine::load_embedded().expect("embedded");
-    let probe = DnsProbe {
-        chain: vec![],
-        first_a: Some("198.137.150.111".parse().unwrap()),
-        final_ptr: Some("198-137-150-111.s.stripe.com".to_string()),
-        asn: None,
-    };
-    let r = eng.detect(&probe);
-    assert!(
-        r.iter().any(|d| d.name.contains("Stripe")),
-        "Embedded Stripe PTR rule must fire: {r:?}"
-    );
-}
-
-#[test]
-fn embedded_ruleset_fires_on_aws_compute_ptr() {
-    // Slack's PTR (live capture, 2026-05-21):
-    // `ec2-35-81-85-251.us-west-2.compute.amazonaws.com`.
-    let eng = CnameRuleEngine::load_embedded().expect("embedded");
-    let probe = DnsProbe {
-        chain: vec![],
-        first_a: Some("35.81.85.251".parse().unwrap()),
-        final_ptr: Some("ec2-35-81-85-251.us-west-2.compute.amazonaws.com".to_string()),
-        asn: None,
-    };
-    let r = eng.detect(&probe);
-    let names: Vec<&str> = r.iter().map(|d| d.name.as_str()).collect();
-    assert!(
-        names
-            .iter()
-            .any(|n| n.contains("AWS") || n.contains("Amazon")),
-        "AWS EC2 PTR must fire on canonical compute.amazonaws.com PTR: {r:?}"
-    );
-}
-
-#[test]
-fn embedded_ruleset_fires_on_github_lb_ptr() {
-    let eng = CnameRuleEngine::load_embedded().expect("embedded");
-    let probe = DnsProbe {
-        chain: vec![],
-        first_a: Some("140.82.114.3".parse().unwrap()),
-        final_ptr: Some("lb-140-82-114-3-iad.github.com".to_string()),
-        asn: None,
-    };
-    let r = eng.detect(&probe);
-    assert!(
-        r.iter().any(|d| d.name.contains("GitHub")),
-        "GitHub edge LB PTR must fire: {r:?}"
-    );
-}
-
-#[test]
-fn embedded_ruleset_fires_on_akamai_ptr() {
-    // Real-world PTR from ebay.com leaf IP, 2026-05-21.
-    let eng = CnameRuleEngine::load_embedded().expect("embedded");
-    let probe = DnsProbe {
-        chain: vec![],
-        first_a: Some("23.209.84.185".parse().unwrap()),
-        final_ptr: Some("a23-209-84-185.deploy.static.akamaitechnologies.com".to_string()),
-        asn: None,
-    };
-    let r = eng.detect(&probe);
-    assert!(
-        r.iter().any(|d| d.name.contains("Akamai")),
-        "Embedded Akamai PTR rule must fire on a real-world PTR: {r:?}"
-    );
+    let cases: &[(&str, &str, &[&str])] = &[
+        // Stripe PTR
+        (
+            "198.137.150.111",
+            "198-137-150-111.s.stripe.com",
+            &["Stripe"],
+        ),
+        // AWS EC2 PTR (Slack live capture, 2026-05-21)
+        (
+            "35.81.85.251",
+            "ec2-35-81-85-251.us-west-2.compute.amazonaws.com",
+            &["AWS", "Amazon"],
+        ),
+        // GitHub edge LB PTR
+        (
+            "140.82.114.3",
+            "lb-140-82-114-3-iad.github.com",
+            &["GitHub"],
+        ),
+        // Akamai PTR (ebay.com leaf IP, 2026-05-21)
+        (
+            "23.209.84.185",
+            "a23-209-84-185.deploy.static.akamaitechnologies.com",
+            &["Akamai"],
+        ),
+    ];
+    for &(ip, ptr, expected_any) in cases {
+        let probe = DnsProbe {
+            chain: vec![],
+            first_a: Some(ip.parse().expect("parse IP")),
+            final_ptr: Some(ptr.to_string()),
+            asn: None,
+        };
+        let r = eng.detect(&probe);
+        assert!(
+            r.iter()
+                .any(|d| expected_any.iter().any(|e| d.name.contains(e))),
+            "PTR {ptr} must fire for one of {expected_any:?}: {r:?}"
+        );
+    }
 }
 
 #[test]
@@ -378,17 +361,6 @@ fn ptr_missing_does_not_break_chain_only_detection() {
     };
     let r = eng.detect(&probe);
     assert!(r.iter().any(|d| d.name.contains("Fastly")));
-}
-
-#[test]
-fn embedded_ruleset_fires_on_canonical_cloudfront_chain() {
-    let eng = CnameRuleEngine::load_embedded().expect("embedded");
-    let probe = probe_from_hosts("aws.example.com", &["dr49lng3n1n2s.cloudfront.net"]);
-    let r = eng.detect(&probe);
-    assert!(
-        r.iter().any(|d| d.name.contains("Cloudfront")),
-        "embedded ruleset must catch canonical Cloudfront CNAME: {r:?}"
-    );
 }
 
 // ── New tests added for the modularized layout ───────────
