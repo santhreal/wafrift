@@ -206,68 +206,25 @@ fn labels() -> Vec<&'static str> {
 }
 
 #[test]
-fn family_url_rewrite_present() {
+fn all_family_labels_present() {
+    // Each of the seven auth-bypass family labels must appear in the
+    // probe set. Consolidated from per-family tests; the comprehensive
+    // `all_seven_family_labels_present` below pins the exact set.
     let ls = labels();
-    assert!(
-        ls.iter().any(|l| l.contains("url-rewrite")),
-        "url-rewrite family label missing"
-    );
-}
-
-#[test]
-fn family_ip_trust_present() {
-    let ls = labels();
-    assert!(
-        ls.iter().any(|l| l.contains("ip-trust")),
-        "ip-trust family label missing"
-    );
-}
-
-#[test]
-fn family_host_trust_present() {
-    let ls = labels();
-    assert!(
-        ls.iter().any(|l| l.contains("host-trust")),
-        "host-trust family label missing"
-    );
-}
-
-#[test]
-fn family_method_override_present() {
-    let ls = labels();
-    assert!(
-        ls.iter().any(|l| l.contains("method-override")),
-        "method-override family label missing"
-    );
-}
-
-#[test]
-fn family_scheme_trust_present() {
-    let ls = labels();
-    assert!(
-        ls.iter().any(|l| l.contains("scheme-trust")),
-        "scheme-trust family label missing"
-    );
-}
-
-#[test]
-fn family_gateway_identity_present() {
-    let ls = labels();
-    // Family added 2026-05-23: Cloudflare Access, GCP IAP, AWS ALB OIDC,
-    // Azure Easy Auth, Authentik, oauth2-proxy, Traefik, Grafana.
-    assert!(
-        ls.iter().any(|l| l.contains("gateway-identity")),
-        "gateway-identity-spoof family label missing"
-    );
-}
-
-#[test]
-fn family_lws_smuggle_present() {
-    let ls = labels();
-    assert!(
-        ls.iter().any(|l| l.contains("header-smuggle-lws")),
-        "header-smuggle-lws family label missing"
-    );
+    for family in [
+        "url-rewrite",
+        "ip-trust",
+        "host-trust",
+        "method-override",
+        "scheme-trust",
+        "gateway-identity",
+        "header-smuggle-lws",
+    ] {
+        assert!(
+            ls.iter().any(|l| l.contains(family)),
+            "{family} family label missing"
+        );
+    }
 }
 
 #[test]
