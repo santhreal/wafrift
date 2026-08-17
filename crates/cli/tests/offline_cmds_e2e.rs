@@ -22,19 +22,17 @@ use common::wafrift;
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
-fn egress_example_appears_in_main_help() {
-    let (code, stdout, _) = wafrift(&["--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("egress-example"),
-        "egress-example must appear in top-level help: {stdout}"
-    );
-}
-
-#[test]
-fn egress_example_help_exits_0() {
-    let (code, _stdout, _) = wafrift(&["egress-example", "--help"]);
-    assert_eq!(code, 0, "egress-example --help must exit 0");
+fn offline_subcommands_appear_in_main_help_and_have_valid_help() {
+    for sub in ["egress-example", "completion", "report", "seed"] {
+        let (code, stdout, _) = wafrift(&["--help"]);
+        assert_eq!(code, 0);
+        assert!(
+            stdout.contains(sub),
+            "{sub} must appear in top-level help: {stdout}"
+        );
+        let (code, _stdout, _) = wafrift(&[sub, "--help"]);
+        assert_eq!(code, 0, "{sub} --help must exit 0");
+    }
 }
 
 #[test]
@@ -86,22 +84,6 @@ fn egress_example_unknown_preset_exits_nonzero() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
-fn completion_appears_in_main_help() {
-    let (code, stdout, _) = wafrift(&["--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("completion"),
-        "completion must appear in top-level help: {stdout}"
-    );
-}
-
-#[test]
-fn completion_help_exits_0() {
-    let (code, _stdout, _) = wafrift(&["completion", "--help"]);
-    assert_eq!(code, 0, "completion --help must exit 0");
-}
-
-#[test]
 fn completion_each_shell_emits_non_empty_script() {
     // Each supported shell must exit 0 and produce non-empty stdout.
     // Bash and PowerShell completions must additionally reference "wafrift".
@@ -136,22 +118,6 @@ fn completion_unknown_shell_exits_nonzero() {
 // ─────────────────────────────────────────────────────────────────────────────
 // report
 // ─────────────────────────────────────────────────────────────────────────────
-
-#[test]
-fn report_appears_in_main_help() {
-    let (code, stdout, _) = wafrift(&["--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("report"),
-        "report must appear in top-level help: {stdout}"
-    );
-}
-
-#[test]
-fn report_help_exits_0() {
-    let (code, _stdout, _) = wafrift(&["report", "--help"]);
-    assert_eq!(code, 0, "report --help must exit 0");
-}
 
 #[test]
 fn report_empty_bank_exits_0_and_emits_markdown() {
@@ -245,22 +211,6 @@ fn report_nonexistent_explicit_proxy_bank_exits_nonzero() {
 // ─────────────────────────────────────────────────────────────────────────────
 // seed
 // ─────────────────────────────────────────────────────────────────────────────
-
-#[test]
-fn seed_appears_in_main_help() {
-    let (code, stdout, _) = wafrift(&["--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("seed"),
-        "seed must appear in top-level help: {stdout}"
-    );
-}
-
-#[test]
-fn seed_help_exits_0() {
-    let (code, _stdout, _) = wafrift(&["seed", "--help"]);
-    assert_eq!(code, 0, "seed --help must exit 0");
-}
 
 #[test]
 fn seed_dry_run_waf_exits_0_and_reports_technique() {

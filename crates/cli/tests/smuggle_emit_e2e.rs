@@ -134,50 +134,26 @@ fn smuggle_emit_pretty_flag_produces_multi_line_json_objects() {
 }
 
 #[test]
-fn smuggle_emit_kind_filter_headers_keeps_only_header_artifacts() {
-    let (code, stdout, _stderr) = wafrift(&["smuggle-emit", "--kind", "headers"]);
-    assert_eq!(code, 0);
-    let lines: Vec<&str> = stdout.lines().filter(|l| !l.is_empty()).collect();
-    assert!(!lines.is_empty(), "headers kind filter must keep >=1 probe");
-    for line in &lines {
-        let v: serde_json::Value = serde_json::from_str(line).expect("JSON");
-        assert_eq!(
-            v["artifact"]["kind"].as_str().unwrap(),
-            "headers",
-            "non-headers artifact slipped past --kind filter: {line}"
-        );
-    }
-}
-
-#[test]
-fn smuggle_emit_kind_filter_body_keeps_only_body_artifacts() {
-    let (code, stdout, _stderr) = wafrift(&["smuggle-emit", "--kind", "body"]);
-    assert_eq!(code, 0);
-    let lines: Vec<&str> = stdout.lines().filter(|l| !l.is_empty()).collect();
-    assert!(!lines.is_empty(), "body kind filter must keep >=1 probe");
-    for line in &lines {
-        let v: serde_json::Value = serde_json::from_str(line).expect("JSON");
-        assert_eq!(
-            v["artifact"]["kind"].as_str().unwrap(),
-            "body_with_content_type",
-            "non-body artifact slipped past --kind filter: {line}"
-        );
-    }
-}
-
-#[test]
-fn smuggle_emit_kind_filter_frames_keeps_only_frame_artifacts() {
-    let (code, stdout, _stderr) = wafrift(&["smuggle-emit", "--kind", "frames"]);
-    assert_eq!(code, 0);
-    let lines: Vec<&str> = stdout.lines().filter(|l| !l.is_empty()).collect();
-    assert!(!lines.is_empty(), "frames kind filter must keep >=1 probe");
-    for line in &lines {
-        let v: serde_json::Value = serde_json::from_str(line).expect("JSON");
-        assert_eq!(
-            v["artifact"]["kind"].as_str().unwrap(),
-            "frames",
-            "non-frames artifact slipped past --kind filter: {line}"
-        );
+fn smuggle_emit_kind_filter_keeps_only_matching_artifacts() {
+    // (flag value, expected artifact kind)
+    let cases: &[(&str, &str)] = &[
+        ("headers", "headers"),
+        ("body", "body_with_content_type"),
+        ("frames", "frames"),
+    ];
+    for (kind, expected) in cases {
+        let (code, stdout, _stderr) = wafrift(&["smuggle-emit", "--kind", kind]);
+        assert_eq!(code, 0, "--kind {kind} must exit 0");
+        let lines: Vec<&str> = stdout.lines().filter(|l| !l.is_empty()).collect();
+        assert!(!lines.is_empty(), "{kind} kind filter must keep >=1 probe");
+        for line in &lines {
+            let v: serde_json::Value = serde_json::from_str(line).expect("JSON");
+            assert_eq!(
+                v["artifact"]["kind"].as_str().unwrap(),
+                *expected,
+                "non-{kind} artifact slipped past --kind filter: {line}"
+            );
+        }
     }
 }
 
