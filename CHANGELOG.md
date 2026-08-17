@@ -49,6 +49,37 @@ HTAB is a legal header-value octet (RFC 9110 OWS) accepted by
 0x09) && b != 0x7F`, keeping HTAB alongside SP end-to-end (send path,
 render path, and oracle).
 
+### Fixed: Law-10 silent fallbacks in strategy encoding/mutation (rows 21-23)
+
+Three silent-degrade defects in `crates/strategy/src/strategy.rs` caused
+evasion steps to silently fail, leaving the raw payload in place with no
+operator-visible signal:
+
+- **Row 21: payload-encoding mutator.** `evade_adaptive` used `.ok()` and
+  skipped the encoding block on error. Now match-es on the `Result` and
+  emits a warning naming the strategy + error.
+- **Row 22: parameter-encoding loop.** `apply_layered_encoding` used
+  `unwrap_or_else(|_| v.clone())`, silently substituting the raw value.
+  Now counts per-value encode errors and emits a warning.
+- **Row 23: non-UTF-8 body skip.** `apply_layered_encoding` and
+  `apply_grammar_mutations` silently returned on non-UTF-8 bodies. Now
+  emit a "skipped: not valid UTF-8" warning.
+
+Added `warnings: Vec<String>` field to `EvasionResult` with accessor and
+`add_warning` method. `Display` shows a warning count when present.
+Regression tests in `law10_silent_fallback.rs` (5 tests).
+
+### Fixed: CI path-dep stripping for standalone checkout
+
+The workspace `Cargo.toml` declares `guise` and `guise-pacing` as path
+deps pointing to monorepo siblings (`../browser/guise`,
+`../browser/guise-pacing`) for local dev. In CI (standalone checkout)
+those paths don't exist, so `cargo metadata` failed before any command
+ran. Every CI job was broken. Fixed by adding a post-checkout `sed` step
+to every CI job that strips the `path=` attribute so cargo falls back to
+the crates.io versions. Also bumped `scanclient` 0.2.1→0.2.4 and
+`santh-bogon` 0.1.0→0.1.3 to match the published guise 0.1.6 API.
+
 
 ### Fixed: deterministic proxy e2e tests, browser-launch panic, mutation gaps
 
