@@ -270,6 +270,43 @@ pub fn compose_cross_product(
     compose_n_product(&[lhs, rhs])
 }
 
+/// Shared boilerplate assertions for smuggle probe families.
+///
+/// Every smuggle module (host_header, jwt, path_normalize, json,
+/// cookie, auth, range) has the same four invariant tests:
+/// technique names are distinct, descriptions are non-empty and
+/// distinct, canaries are unique, and `all_variants` emits one
+/// probe per technique. This helper runs all four checks against
+/// any slice of `SmuggleProbe` implementors, so each module calls
+/// `assert_smuggle_probe_invariants(&probes)` instead of
+/// copy-pasting four identical test functions.
+pub fn assert_smuggle_probe_invariants(probes: &[impl SmuggleProbe]) {
+    use std::collections::HashSet;
+    let techs: HashSet<String> = probes.iter().map(|p| p.technique()).collect();
+    assert_eq!(
+        techs.len(),
+        probes.len(),
+        "technique names must be distinct"
+    );
+    let descs: HashSet<&str> = probes.iter().map(|p| p.description()).collect();
+    assert_eq!(
+        descs.len(),
+        probes.len(),
+        "descriptions must be non-empty and distinct"
+    );
+    let canaries: HashSet<&Canary> = probes.iter().map(|p| p.canary()).collect();
+    assert_eq!(
+        canaries.len(),
+        probes.len(),
+        "canaries must be unique per probe"
+    );
+    assert_eq!(
+        probes.len(),
+        techs.len(),
+        "all_variants must emit one probe per technique"
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

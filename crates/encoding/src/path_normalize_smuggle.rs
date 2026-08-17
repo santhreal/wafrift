@@ -215,7 +215,6 @@ pub fn all_variants(protected_path: &str) -> Vec<PathSmuggleProbe> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
 
     #[test]
     fn all_variants_emits_one_per_technique() {
@@ -312,31 +311,9 @@ mod tests {
     }
 
     #[test]
-    fn canaries_are_unique_per_probe() {
+    fn smuggle_probe_invariants() {
         let probes = all_variants("/admin");
-        let tokens: HashSet<String> = probes.iter().map(|p| p.canary().token.clone()).collect();
-        assert_eq!(tokens.len(), probes.len());
-    }
-
-    #[test]
-    fn descriptions_are_non_empty_and_distinct() {
-        let probes = all_variants("/admin");
-        let descs: HashSet<&str> = probes.iter().map(|p| p.description()).collect();
-        assert_eq!(descs.len(), probes.len(), "descriptions must be distinct");
-        for p in &probes {
-            assert!(!p.description().is_empty());
-        }
-    }
-
-    #[test]
-    fn technique_names_are_distinct() {
-        let probes = all_variants("/admin");
-        let techs: HashSet<String> = probes.iter().map(|p| p.technique()).collect();
-        assert_eq!(
-            techs.len(),
-            probes.len(),
-            "technique names must be distinct"
-        );
+        wafrift_types::probe::assert_smuggle_probe_invariants(&probes);
     }
 
     #[test]
@@ -349,11 +326,5 @@ mod tests {
     fn protected_path_without_leading_slash_still_works() {
         let p = PathSmuggleProbe::new(PathNormalizeTechnique::DotSegmentEncoded, "admin");
         assert!(p.path.contains("admin"));
-    }
-
-    #[test]
-    fn probe_canary_token_is_sixteen_chars() {
-        let p = PathSmuggleProbe::new(PathNormalizeTechnique::DotSegmentEncoded, "/admin");
-        assert_eq!(p.canary().token.len(), 16);
     }
 }

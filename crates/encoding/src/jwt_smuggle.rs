@@ -357,7 +357,6 @@ pub fn all_variants(credential: &str) -> Vec<JwtSmuggleProbe> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
 
     #[test]
     fn all_variants_emits_one_per_technique() {
@@ -467,24 +466,9 @@ mod tests {
     }
 
     #[test]
-    fn canaries_are_unique_per_probe() {
+    fn smuggle_probe_invariants() {
         let probes = all_variants("wafrift-test");
-        let tokens: HashSet<String> = probes.iter().map(|p| p.canary().token.clone()).collect();
-        assert_eq!(tokens.len(), probes.len());
-    }
-
-    #[test]
-    fn technique_names_are_distinct() {
-        let probes = all_variants("wafrift-test");
-        let techs: HashSet<String> = probes.iter().map(|p| p.technique()).collect();
-        assert_eq!(techs.len(), probes.len());
-    }
-
-    #[test]
-    fn descriptions_are_non_empty_and_distinct() {
-        let probes = all_variants("wafrift-test");
-        let descs: HashSet<&str> = probes.iter().map(|p| p.description()).collect();
-        assert_eq!(descs.len(), probes.len());
+        wafrift_types::probe::assert_smuggle_probe_invariants(&probes);
     }
 
     #[test]
