@@ -184,29 +184,19 @@ fn unterminated_after_closed_literal() {
 // ────────────────────────────────────────────────────────────────
 
 #[test]
-fn literal_with_latin_supplement_char() {
-    // 'café': 4 chars: c, a, f, é. All shatter into 4 single-char literals.
-    let out = run("'café'");
-    assert_eq!(out, "'c' 'a' 'f' 'é'");
-}
-
-#[test]
-fn literal_with_cjk_char() {
-    let out = run("'日本'");
-    assert_eq!(out, "'日' '本'");
-}
-
-#[test]
-fn literal_with_emoji() {
-    // Emoji are single chars, len 4 in UTF-8.
-    let out = run("'🔥🔥🔥'");
-    assert_eq!(out, "'🔥' '🔥' '🔥'");
-}
-
-#[test]
-fn literal_purely_unicode() {
-    let out = run("'привет'");
-    assert_eq!(out, "'п' 'р' 'и' 'в' 'е' 'т'");
+fn unicode_literals_shatter_char_by_char() {
+    // Every char inside a quoted literal — including multibyte UTF-8 —
+    // must shatter into its own single-char literal.
+    let cases: &[(&str, &str)] = &[
+        ("'café'", "'c' 'a' 'f' 'é'"),
+        ("'日本'", "'日' '本'"),
+        ("'🔥🔥🔥'", "'🔥' '🔥' '🔥'"),
+        ("'привет'", "'п' 'р' 'и' 'в' 'е' 'т'"),
+    ];
+    for (input, expected) in cases {
+        let out = run(input);
+        assert_eq!(out, *expected, "shatter of {input:?}");
+    }
 }
 
 #[test]
@@ -221,27 +211,19 @@ fn output_remains_valid_utf8() {
 // ────────────────────────────────────────────────────────────────
 
 #[test]
-fn idempotent_on_credential_payload() {
-    let p = "WHERE x='admin' OR y='root'";
-    let once = run(p);
-    let twice = run(&once);
-    assert_eq!(once, twice);
-}
-
-#[test]
-fn idempotent_on_path_payload() {
-    let p = "LOAD_FILE('/etc/passwd')";
-    let once = run(p);
-    let twice = run(&once);
-    assert_eq!(once, twice);
-}
-
-#[test]
-fn idempotent_on_unicode_literal() {
-    let p = "'café'";
-    let once = run(p);
-    let twice = run(&once);
-    assert_eq!(once, twice);
+fn idempotent_on_various_payloads() {
+    // Running the tamper twice must produce the same output as running
+    // it once (shattering is a one-pass transformation).
+    let cases = [
+        "WHERE x='admin' OR y='root'",
+        "LOAD_FILE('/etc/passwd')",
+        "'café'",
+    ];
+    for p in cases {
+        let once = run(p);
+        let twice = run(&once);
+        assert_eq!(once, twice, "must be idempotent on {p:?}");
+    }
 }
 
 #[test]
@@ -512,42 +494,19 @@ fn rejoin_adjacent_literals(s: &str) -> String {
 }
 
 #[test]
-fn rejoin_undoes_shatter_for_admin() {
-    let p = "'admin'";
-    let shattered = run(p);
-    let rejoined = rejoin_adjacent_literals(&shattered);
-    assert_eq!(rejoined, p);
-}
-
-#[test]
-fn rejoin_undoes_shatter_for_full_sqli() {
-    let p = "WHERE name='admin' AND password='root'";
-    let shattered = run(p);
-    let rejoined = rejoin_adjacent_literals(&shattered);
-    assert_eq!(rejoined, p);
-}
-
-#[test]
-fn rejoin_undoes_shatter_for_path() {
-    let p = "'/etc/passwd'";
-    let shattered = run(p);
-    let rejoined = rejoin_adjacent_literals(&shattered);
-    assert_eq!(rejoined, p);
-}
-
-#[test]
-fn rejoin_undoes_shatter_for_unicode() {
-    let p = "'café'";
-    let shattered = run(p);
-    let rejoined = rejoin_adjacent_literals(&shattered);
-    assert_eq!(rejoined, p);
-}
-
-#[test]
-fn rejoin_preserves_short_literals() {
-    let p = "WHERE x='a' AND y='b'";
-    let shattered = run(p);
-    // 'a' and 'b' both pass through.
-    let rejoined = rejoin_adjacent_literals(&shattered);
-    assert_eq!(rejoined, p);
+fn rejoin_undoes_shatter_for_all_payloads() {
+    // Shattering SQL string literals and then rejoining adjacent
+    // fragments must reconstruct the original payload for every shape.
+    let cases = [
+        "'admin'",
+        "WHERE name='admin' AND password='root'",
+        "'/etc/passwd'",
+        "'café'",
+        "WHERE x='a' AND y='b'",
+    ];
+    for p in cases {
+        let shattered = run(p);
+        let rejoined = rejoin_adjacent_literals(&shattered);
+        assert_eq!(rejoined, p, "rejoin must reconstruct {p:?}");
+    }
 }
