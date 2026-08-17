@@ -288,7 +288,7 @@ mod tests {
         // multi-prereq layers (Smuggling needs BOTH Header AND
         // ContentType) may not land in a fully-valid position from
         // pairwise swaps alone.  The non-termination case is the
-        // legendary-bar concern; that's what this test guards.
+        // depth-bar concern; that's what this test guards.
         let mut seq = vec![
             EvasionLayer::Smuggling,
             EvasionLayer::Header,

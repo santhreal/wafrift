@@ -4,7 +4,7 @@
 //! These commands perform HTTP/DNS/TCP in their core logic, so we only
 //! test the offline portions:
 //!   - `import-curl`: flag parsing and mutual-exclusion validation
-//!   - `legendary`: help and argument validation
+//!   - `oneshot`: help and argument validation
 //!   - `origin-hints`: help and missing-host error
 //!
 //! No mocks, no external connections (all tests exit before any I/O).
@@ -103,27 +103,27 @@ fn import_curl_invalid_level_exits_nonzero() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// legendary
+// oneshot
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
-fn legendary_appears_in_main_help() {
+fn oneshot_appears_in_main_help() {
     let (code, stdout, _) = wafrift(&["--help"]);
     assert_eq!(code, 0);
     assert!(
-        stdout.contains("legendary"),
-        "legendary must appear in top-level help: {stdout}"
+        stdout.contains("oneshot"),
+        "oneshot must appear in top-level help: {stdout}"
     );
 }
 
 #[test]
-fn legendary_help_exits_0_and_documents_target() {
-    let (code, stdout, _) = wafrift(&["legendary", "--help"]);
-    assert_eq!(code, 0, "legendary --help must exit 0");
+fn oneshot_help_exits_0_and_documents_target() {
+    let (code, stdout, _) = wafrift(&["oneshot", "--help"]);
+    assert_eq!(code, 0, "oneshot --help must exit 0");
     // The TARGET positional argument must be documented.
     assert!(
         stdout.to_lowercase().contains("target"),
-        "legendary --help must document the target argument: {stdout}"
+        "oneshot --help must document the target argument: {stdout}"
     );
 }
 

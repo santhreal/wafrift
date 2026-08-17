@@ -19,7 +19,7 @@ use wafrift_wafmodel::{
     mine_bypasses, synthesize_closure,
 };
 
-/// Deterministic-config count: full 1000 by default (legendary lane);
+/// Deterministic-config count: full 1000 by default (full lane);
 /// `WAFMODEL_SCALE_CONFIGS` scales it down for the fast CI gate. The
 /// anti-rig invariant is identical at any count.
 fn scn() -> u64 {

@@ -1069,7 +1069,7 @@ fn detect_url_probe_failure_shows_richer_error_than_bare_top_level() {
     );
 }
 
-// ── Bug 11: legendary report contradiction ───────────────────────────────
+// ── Bug 11: depth report contradiction ───────────────────────────────
 //
 // PRE-FIX BUG: In `render_markdown`, when `r.detect.detected` is empty
 // (no static-rule WAF match) BUT `r.detect.differential` is Some (the
@@ -1087,7 +1087,7 @@ fn detect_url_probe_failure_shows_richer_error_than_bare_top_level() {
 // None (both sources came back empty).
 //
 // We test this through the CLI by reading the markdown output from
-// `wafrift legendary` run against a dead target with --format markdown.
+// `wafrift oneshot` run against a dead target with --format markdown.
 // The test asserts that if a differential verdict appears, the "none
 // confidently identified" string does NOT appear on an earlier line.
 // (A dead target won't produce a real differential verdict, but it WILL
@@ -1095,13 +1095,13 @@ fn detect_url_probe_failure_shows_richer_error_than_bare_top_level() {
 // so we verify the non-contradictory "none" message is all that appears.)
 
 #[test]
-fn legendary_no_waf_report_does_not_contradict_itself_on_dead_target() {
+fn oneshot_no_waf_report_does_not_contradict_itself_on_dead_target() {
     // Against a dead target, both detect.detected and detect.differential
     // will be empty (no server, no response, error state). The report
     // must surface the error, NOT emit "none confidently identified"
     // followed by "WAF inferred via differential probe".
     let (_, out, _) = wafrift(&[
-        "legendary",
+        "oneshot",
         "http://127.0.0.1:1/",
         "--skip-bypass-probe",
         "--skip-scan",
@@ -1124,7 +1124,7 @@ fn legendary_no_waf_report_does_not_contradict_itself_on_dead_target() {
         let diff_pos = out.find("WAF inferred via differential probe").unwrap();
         assert!(
             diff_pos < none_pos,
-            "legendary report contradiction: 'none confidently identified' (pos {none_pos}) \
+            "oneshot report contradiction: 'none confidently identified' (pos {none_pos}) \
              appears BEFORE 'WAF inferred via differential probe' (pos {diff_pos}). \
              The differential verdict must lead, not contradict. \
              Full output:\n{out}"
@@ -1136,12 +1136,12 @@ fn legendary_no_waf_report_does_not_contradict_itself_on_dead_target() {
 }
 
 #[test]
-fn legendary_accepts_skip_bypass_probe_and_skip_scan_flags() {
+fn oneshot_accepts_skip_bypass_probe_and_skip_scan_flags() {
     // Adversarial twin: confirm the --skip-bypass-probe and --skip-scan flags
     // are real clap args (not "unexpected argument") and that the command
     // at least reaches past arg-parsing against a dead target.
     let (code, _out, e) = wafrift(&[
-        "legendary",
+        "oneshot",
         "http://127.0.0.1:1/",
         "--skip-bypass-probe",
         "--skip-scan",
@@ -1151,19 +1151,19 @@ fn legendary_accepts_skip_bypass_probe_and_skip_scan_flags() {
     // Non-zero because the target is dead, but NOT an arg-parse error.
     assert!(
         !e.contains("unexpected argument") && !e.contains("required"),
-        "legendary --skip-bypass-probe --skip-scan must parse cleanly: {e} (code {code})"
+        "oneshot --skip-bypass-probe --skip-scan must parse cleanly: {e} (code {code})"
     );
 }
 
-// ── legendary full-pipeline: subprocess scan → markdown embed ──
+// ── depth full-pipeline: subprocess scan → markdown embed ──
 //
 // Stands up a permissive mock server (returns 200 for every request)
-// then runs `wafrift legendary --payload ...` against it. The mock
-// lets every variant through, so legendary should:
+// then runs `wafrift oneshot --payload ...` against it. The mock
+// lets every variant through, so depth should:
 //   1. Fire the scan-phase subprocess
 //   2. Capture its JSON output
 //   3. Render the bypass_variants table into the markdown
-// Pre-fix legendary only emitted a copy-paste re-run command, the
+// Pre-fix depth only emitted a copy-paste re-run command, the
 // rendered markdown had ZERO actual bypasses, which made the
 // deliverable useless. This test pins the fix end-to-end via the
 // real subprocess pipeline (run_inline_scan → apply_scan_json →
@@ -1192,7 +1192,7 @@ fn spawn_permissive_mock() -> (std::net::SocketAddr, std::sync::mpsc::Sender<()>
                     let _ = sock.read(&mut buf);
                     let body = "ok";
                     let resp = format!(
-                        "HTTP/1.1 200 OK\r\nServer: legendary-test-mock\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                        "HTTP/1.1 200 OK\r\nServer: depth-test-mock\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
                         body.len(),
                         body,
                     );
@@ -1213,7 +1213,7 @@ fn spawn_permissive_mock() -> (std::net::SocketAddr, std::sync::mpsc::Sender<()>
 fn scan_variants_cap_truncates_to_operator_supplied_limit() {
     // The `--variants-cap N` flag must produce a JSON envelope where
     // `total_variants <= N`. Pre-fix the flag didn't exist and the
-    // legendary --scan-variants knob was advisory, operators passing
+    // depth --scan-variants knob was advisory, operators passing
     // small caps got hundreds of variants and 5-minute scans. This
     // integration test runs the binary against a permissive mock so
     // every variant lands a 200, exercising the cap-trimming code
@@ -1282,15 +1282,15 @@ fn scan_variants_cap_truncates_to_operator_supplied_limit() {
 
 #[test]
 #[serial_test::serial]
-fn legendary_bypass_probe_phase_embeds_structured_divergences_into_markdown() {
+fn oneshot_bypass_probe_phase_embeds_structured_divergences_into_markdown() {
     // Same anti-pattern fix as the scan phase: pre-fix the
-    // bypass-probe section of the legendary markdown only embedded
+    // bypass-probe section of the full markdown only embedded
     // a copy-paste re-run command. The probe ran live (its findings
     // scrolled past in the terminal) but never landed in the saved
     // markdown report, operator handing off the .md file to a
     // client had no concrete divergences.
     //
-    // Now legendary runs bypass-probe with `--format json
+    // Now depth runs bypass-probe with `--format json
     // --output <tmp>`, parses the result, and embeds the divergence
     // list into section 3 of the markdown.
     //
@@ -1305,7 +1305,7 @@ fn legendary_bypass_probe_phase_embeds_structured_divergences_into_markdown() {
     let target = format!("http://{addr}/probe");
 
     let (code, stdout, stderr) = wafrift(&[
-        "legendary",
+        "oneshot",
         &target,
         "--skip-scan",
         // No --payload; just the bypass-probe sweep.
@@ -1322,7 +1322,7 @@ fn legendary_bypass_probe_phase_embeds_structured_divergences_into_markdown() {
 
     assert_eq!(
         code, 0,
-        "legendary --skip-scan against permissive mock must exit 0; stderr:\n{stderr}"
+        "oneshot --skip-scan against permissive mock must exit 0; stderr:\n{stderr}"
     );
     assert!(
         stdout.contains("## 3. Bypass probe"),
@@ -1346,7 +1346,7 @@ fn legendary_bypass_probe_phase_embeds_structured_divergences_into_markdown() {
 
 #[test]
 #[serial_test::serial]
-fn legendary_payload_subprocess_pipeline_embeds_bypasses_into_markdown() {
+fn oneshot_payload_subprocess_pipeline_embeds_bypasses_into_markdown() {
     let (addr, shutdown) = spawn_permissive_mock();
     let target = format!("http://{addr}/search");
 
@@ -1355,7 +1355,7 @@ fn legendary_payload_subprocess_pipeline_embeds_bypasses_into_markdown() {
     // --delay-ms 0 fires variants back-to-back; the mock answers
     // every request 200, so the scan should record bypasses.
     let (code, stdout, stderr) = wafrift(&[
-        "legendary",
+        "oneshot",
         &target,
         "--payload",
         "' OR 1=1--",
@@ -1375,7 +1375,7 @@ fn legendary_payload_subprocess_pipeline_embeds_bypasses_into_markdown() {
 
     assert_eq!(
         code, 0,
-        "legendary --payload against permissive mock must exit 0; stderr:\n{stderr}"
+        "oneshot --payload against permissive mock must exit 0; stderr:\n{stderr}"
     );
 
     // The rendered markdown must contain Section 4 with concrete

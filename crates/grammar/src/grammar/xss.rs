@@ -229,7 +229,7 @@ fn has_xss_signals(payload: &str) -> bool {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Systematic equivalence engine (the legendary core scald consumes).
+// Systematic equivalence engine (the core scald consumes).
 //
 // Instead of a fixed catalogue of canned payloads every WAF already
 // signatures, this rewrites the OPERATOR'S OWN payload through an

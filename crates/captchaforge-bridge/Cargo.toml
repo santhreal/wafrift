@@ -5,17 +5,16 @@ authors.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Glue crate that connects wafrift's managed-challenge flow to the captchaforge headless-browser solver."
+description = "Optional wafrift adapter: lurien cookie wait for managed challenges. captchaforge is retired."
 readme = "README.md"
 keywords = ["wafrift", "captcha", "captchaforge", "cloudflare", "challenge"]
 categories = ["network-programming", "web-programming"]
 
 [dependencies]
 wafrift-transport = { workspace = true }
-captchaforge = { version = "0.2", features = ["vision"] }
 # Firefox + BiDi driving via rustenium. Replaces the old
 # `runtime_headless` + `chromiumoxide` CDP stack.
-runtime-foxdriver = { version = "0.1.0" }
+runtime-foxdriver = { path = "../../../browser/foxdriver", version = "0.1.5" }
 guise = { workspace = true, features = ["browser"] }
 tokio = { workspace = true }
 anyhow = { workspace = true }

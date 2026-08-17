@@ -8,7 +8,7 @@
 //! ## Why this exists
 //!
 //! The corpus was bumped 136 → 230 in code. Every hand-typed doc site
-//! was updated EXCEPT `wafrift legendary`'s report prose, which kept
+//! was updated EXCEPT `wafrift oneshot`'s report prose, which kept
 //! claiming a "136-probe" set (and a "150-probe sweep") in a
 //! client-facing deliverable across releases. The sibling
 //! `auth_bypass_probe_count_documented` test (in the encoding crate)
@@ -18,8 +18,8 @@
 //! file) the moment it stops citing the canonical number, turning a
 //! silent doc lie into a red build.
 //!
-//! `legendary`'s report is intentionally NOT scanned here: it now
-//! interpolates the const directly (see `crates/cli/src/legendary.rs`),
+//! `oneshot`'s report is intentionally NOT scanned here: it now
+//! interpolates the const directly (see `crates/cli/src/depth.rs`),
 //! so it cannot drift and needs no prose pin.
 
 use wafrift_encoding::auth_bypass::AUTH_BYPASS_PROBE_COUNT;
@@ -32,7 +32,7 @@ fn prose_docs_cite_canonical_auth_bypass_count() {
         .and_then(|p| p.parent())
         .expect("workspace root is two levels above crates/cli");
 
-    // Hand-typed doc sites that cite the count in prose. `legendary.rs`
+    // Hand-typed doc sites that cite the count in prose. `depth.rs`
     // is deliberately absent (it derives the number from the const).
     let sites: [(std::path::PathBuf, &str); 4] = [
         (workspace_root.join("README.md"), "README.md"),

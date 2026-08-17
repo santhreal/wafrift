@@ -920,31 +920,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    // Captchaforge bridge, installs the headless-browser solver into
-    // ChallengeStore. The bridge crate is feature-gated behind
-    // `captchaforge` because it pulls chromiumoxide. Builds without
-    // the feature accept the flag but exit with a clear hint so cron
-    // jobs fail loudly rather than silently degrading to "no solver".
+    // captchaforge is retired. The flag stays so cron jobs fail loud.
     if args.captchaforge {
-        #[cfg(feature = "captchaforge")]
-        {
-            if let Err(e) = wafrift_captchaforge_bridge::install_global_solver().await {
-                error!("--captchaforge: solver install failed: {e}");
-                return Err(format!("captchaforge install failed: {e}").into());
-            }
-            info!(
-                "--captchaforge: headless-browser solver installed into ChallengeStore. \
-                 Cloudflare/Turnstile/hCaptcha responses will be auto-solved via captchaforge."
-            );
-        }
-        #[cfg(not(feature = "captchaforge"))]
-        {
-            error!(
-                "--captchaforge requires the binary to be built with `--features captchaforge`. \
-                 Rebuild with `cargo build --release --features captchaforge` and retry."
-            );
-            return Err("--captchaforge requires the captchaforge feature".into());
-        }
+        error!(
+            "--captchaforge is retired. Live challenges belong to lurien \
+             (software/browser). Rebuild without this flag."
+        );
+        return Err("--captchaforge is retired; use lurien".into());
     }
 
     // Body padding, applied per request, controlled by an atomic so

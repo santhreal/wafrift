@@ -1,4 +1,4 @@
-//! E10/75 (doc-claim audit (the legendary differentiator)).
+//! E10/75 (doc-claim audit (the doc-claim differentiator)).
 //!
 //! Every load-bearing claim the public docs make is registered in
 //! `doc_claims.toml` and bound to a REAL test. This auditor enforces,
@@ -82,7 +82,7 @@ fn every_doc_claim_is_real_and_bound_to_a_living_test() {
         led.claim.len()
     );
 
-    // Legendary state: zero open claims. This number may only decrease.
+    // Oneshot state: zero open claims. This number may only decrease.
     const OPEN_BASELINE: usize = 0;
     let open = led.claim.iter().filter(|c| c.status != "proven").count();
     assert_eq!(

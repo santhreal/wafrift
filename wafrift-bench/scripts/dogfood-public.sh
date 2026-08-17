@@ -44,7 +44,7 @@ while true; do
 
     # WAF detection / fingerprinting.
     run_probe detect --url https://httpbin.org/get --format json
-    run_probe legendary    https://httpbin.org/get --quiet --max-bypass-payloads 3 || true
+    run_probe depth    https://httpbin.org/get --quiet --max-bypass-payloads 3 || true
 
     echo "════════════════════════ pause 60s ════════════════════════"
     sleep 60

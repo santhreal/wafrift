@@ -108,7 +108,7 @@ pub(crate) async fn fire_variant_classified(
     param: &str,
     payload: &str,
     oracle: &ResponseOracle,
-) -> (Option<Verdict>, Option<std::time::Duration>) {
+) -> (Option<Verdict>, Option<std::time::Duration>, u16) {
     let fr = match delivery {
         InjectionDelivery::GetQuery => {
             let u = scan_url_with_param(url, param, &urlencoding::encode(payload));
@@ -125,14 +125,14 @@ pub(crate) async fn fire_variant_classified(
         }
     };
     let Some(fr) = fr else {
-        return (None, None);
+        return (None, None, 0);
     };
     let ctx = ResponseContext {
         status: fr.status,
         body: fr.body,
         ..Default::default()
     };
-    (Some(oracle.classify(&ctx)), fr.retry_after)
+    (Some(oracle.classify(&ctx)), fr.retry_after, fr.status)
 }
 
 #[must_use]

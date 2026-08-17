@@ -1,4 +1,4 @@
-//! `wafrift legendary`: the one-shot demo command.
+//! `wafrift oneshot`: the one-shot demo command.
 //!
 //! Runs `detect` -> `fingerprint` -> `bypass-probe` against a single
 //! target, with an optional `scan` phase when `--payload` is given,
@@ -35,14 +35,14 @@ use crate::bypass_probe::{BypassProbeArgs, run_bypass_probe};
 use crate::detect_cmd::{fetch_differential, fetch_for_detect, infra_markers};
 use crate::helpers::shell_single_quote;
 
-/// Max divergences / variants rendered per section in the legendary
+/// Max divergences / variants rendered per section in the full
 /// markdown writeup. Pre-R49 (CLAUDE.md §7 DEDUPLICATION) two
 /// per-block `const RENDER_CAP` declarations drifted; one canonical
 /// source now.
 const RENDER_CAP: usize = 25;
 
 #[derive(Args, Debug)]
-pub(crate) struct LegendaryArgs {
+pub(crate) struct OneshotArgs {
     /// Target URL (the surface to probe end-to-end).
     pub target: String,
 
@@ -63,7 +63,7 @@ pub(crate) struct LegendaryArgs {
     pub paths_file: Option<String>,
 
     /// Write the rendered markdown report to this file in addition to
-    /// stdout. Conventional name: `legendary-<host>-<date>.md`.
+    /// stdout. Conventional name: `depth-<host>-<date>.md`.
     #[arg(long, short)]
     pub output: Option<PathBuf>,
 
@@ -117,7 +117,7 @@ pub(crate) struct LegendaryArgs {
 
 /// Aggregated per-phase results (the input to the renderer).
 #[derive(Debug, Default, serde::Serialize)]
-struct LegendaryReport {
+struct OneshotReport {
     target: String,
     started_at: String,
     /// Total wall-clock elapsed for the whole run, in milliseconds.
@@ -214,7 +214,7 @@ struct PhaseScan {
     /// Operator-pasteable re-run command, emitted into the markdown so
     /// the reader can reproduce the inline scan independently. Distinct
     /// from `bypass_variants` below, which carries the actual findings
-    /// produced by the inline scan that ran during this `legendary`.
+    /// produced by the inline scan that ran during this `oneshot`.
     raw_text: Option<String>,
     /// Structured fields populated by the inline scan subprocess. All
     /// `Option`s because the scan may have errored, been skipped, or
@@ -266,8 +266,8 @@ struct BypassVariantSummary {
     techniques: Vec<String>,
     confidence: f64,
     /// Populated only when the inline scan ran with `--auto-distill`
-    /// (which legendary does NOT do today, but downstream tooling that
-    /// constructs a `LegendaryReport` directly may set).
+    /// (which depth does NOT do today, but downstream tooling that
+    /// constructs a `OneshotReport` directly may set).
     #[serde(default)]
     minimal_payload: Option<String>,
     /// Operator-pasteable curl reproducer emitted by scan itself.
@@ -292,7 +292,7 @@ struct BypassVariantSummary {
 /// surfaced in the report itself, not propagated as an exit code,
 /// because the demo's value is showing **what wafrift saw**, including
 /// "we tried this and the target threw a 503."
-pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
+pub(crate) fn run_oneshot(mut args: OneshotArgs) -> ExitCode {
     args.target = crate::helpers::normalize_target_url(&args.target);
     // R45 6-I1 fix (dogfood pass 6): validate --output's parent
     // directory BEFORE running the 4-phase pipeline. Pre-fix the
@@ -315,7 +315,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
     }
     let start = Instant::now();
     let started_at = unix_now_iso8601();
-    let mut report = LegendaryReport {
+    let mut report = OneshotReport {
         target: args.target.clone(),
         started_at,
         ..Default::default()
@@ -359,7 +359,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
             body.len()
         );
         // Static-signature corpus came back empty. Auto-run the
-        // differential probe, legendary is the one-shot demo
+        // differential probe, depth is the one-shot demo
         // command, the operator expects it to do the right thing
         // without flags. The differential probe sends an attack-
         // shaped string (per Authorisation note at the bottom of
@@ -434,12 +434,12 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
             "[3/4] bypass-probe:".bright_black(),
             args.target
         );
-        // Capture the JSON output to a tmpfile so the legendary
+        // Capture the JSON output to a tmpfile so the full
         // markdown can embed structured divergences (pre-fix the
         // probe streamed text to the terminal and ONLY the re-run
         // command landed in the markdown, section 3 was unusable
         // as a client deliverable). Same pattern as the scan phase.
-        let bp_tmp = crate::helpers::secure_tmp_path("wafrift-legendary-bp", "json");
+        let bp_tmp = crate::helpers::secure_tmp_path("wafrift-oneshot-bp", "json");
         let bp_args = BypassProbeArgs {
             url: args.target.clone(),
             paths_file: args.paths_file.clone(),
@@ -538,16 +538,16 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
             // directly) for three reasons:
             //   1. scan owns a tokio runtime, gene-bank file locks,
             //      and a learning-cache background task; embedding
-            //      it would couple legendary to scan's internal
+            //      it would couple depth to scan's internal
             //      state machine.
             //   2. The CLI surface IS our contract (LAW 2), so
             //      shelling out can't break out from under us
             //      without breaking every other downstream caller.
-            //   3. Process isolation: if scan crashes the legendary
+            //   3. Process isolation: if scan crashes the full
             //      command still produces a partial markdown.
             report.scan.ran = true;
             report.scan.raw_text = Some(format!(
-                "wafrift scan --target {target} \\\n    --param {param} \\\n    --payload {payload:?} \\\n    --level {level} \\\n    --delay-ms {delay} \\\n    --format json --output legendary-scan.json",
+                "wafrift scan --target {target} \\\n    --param {param} \\\n    --payload {payload:?} \\\n    --level {level} \\\n    --delay-ms {delay} \\\n    --format json --output oneshot-scan.json",
                 target = args.target,
                 param = args.param,
                 payload = payload,
@@ -576,7 +576,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
             }) {
                 Ok(scan_json) => {
                     report.scan.scan_exit_code = scan_json
-                        .get("_legendary_scan_exit")
+                        .get("_oneshot_scan_exit")
                         .and_then(|x| x.as_i64())
                         .map(|c| c as i32);
                     apply_scan_json(&mut report.scan, &scan_json);
@@ -596,7 +596,7 @@ pub(crate) fn run_legendary(mut args: LegendaryArgs) -> ExitCode {
 /// Arguments to `run_inline_scan`: kept narrow on purpose. Every
 /// field maps 1:1 onto a `wafrift scan` CLI flag so the subprocess
 /// invocation is auditable: if the operator can't tell which scan
-/// invocation legendary fired, the report stops being reproducible.
+/// invocation depth fired, the report stops being reproducible.
 struct InlineScanArgs<'a> {
     target: &'a str,
     payload: &'a str,
@@ -607,7 +607,7 @@ struct InlineScanArgs<'a> {
     insecure: bool,
     /// Hard cap on the initial variant set, passed through to
     /// `wafrift scan --variants-cap N`. Mirrors
-    /// `LegendaryArgs::scan_variants` so the operator-facing flag
+    /// `OneshotArgs::scan_variants` so the operator-facing flag
     /// actually bounds the scan now (it was historically advisory).
     variants_cap: usize,
     /// Cap on the exploit-chain phase fires. Scaled to
@@ -624,14 +624,14 @@ struct InlineScanArgs<'a> {
 /// raw `serde_json::Value` so `apply_scan_json` can pluck the fields
 /// it needs without forcing every caller to re-define the scan output
 /// schema. The tmp file is removed on success AND failure paths so
-/// repeated legendary runs don't leak files into `$TMPDIR`.
+/// repeated depth runs don't leak files into `$TMPDIR`.
 fn run_inline_scan(a: InlineScanArgs<'_>) -> Result<serde_json::Value, String> {
     let exe = std::env::current_exe().map_err(|e| format!("locate own binary: {e}"))?;
     // Unique-per-process tmp path; collisions across concurrent
-    // `legendary` runs on the same host would otherwise corrupt the
+    // `oneshot` runs on the same host would otherwise corrupt the
     // JSON capture. Nanos guard against the edge case of two PID-1
     // hosts (containers) racing.
-    let tmp = crate::helpers::secure_tmp_path("wafrift-legendary-scan", "json");
+    let tmp = crate::helpers::secure_tmp_path("wafrift-oneshot-scan", "json");
 
     let mut cmd = std::process::Command::new(&exe);
     cmd.arg("scan")
@@ -684,15 +684,15 @@ fn run_inline_scan(a: InlineScanArgs<'_>) -> Result<serde_json::Value, String> {
     let mut v: serde_json::Value =
         serde_json::from_str(&body).map_err(|e| format!("parse scan JSON: {e}"))?;
     if let Some(obj) = v.as_object_mut() {
-        obj.insert("_legendary_scan_exit".into(), serde_json::json!(exit_code));
+        obj.insert("_oneshot_scan_exit".into(), serde_json::json!(exit_code));
     }
     Ok(v)
 }
 
 /// Drain a scan JSON envelope (the shape emitted by `scan/mod.rs`
-/// when `--format json` is set) into the legendary report's
+/// when `--format json` is set) into the full report's
 /// `PhaseScan`. Tolerant of missing fields, the operator may run
-/// legendary against a future scan binary that adds fields, or a past
+/// depth against a future scan binary that adds fields, or a past
 /// one that doesn't yet emit them; either way the report renders.
 ///
 /// Handles both shapes scan emits:
@@ -746,7 +746,7 @@ fn apply_scan_json(phase: &mut PhaseScan, root: &serde_json::Value) {
 }
 
 /// Drain a bypass-probe JSON envelope (the shape emitted by
-/// `bypass_probe.rs` under `--format json`) into the legendary
+/// `bypass_probe.rs` under `--format json`) into the full
 /// report's `PhaseBypassProbe`. The JSON has shape
 /// `{"results": [{"target":..., "divergences":[...], ...}]}` 
 /// we flatten across URL results so the renderer sees a single
@@ -793,7 +793,7 @@ fn scan_level_for_variants(n: usize) -> &'static str {
 /// Pick a renderer based on `--format` and write to stdout + optional
 /// `--output`. Returns the process exit code: 0 on success, 1 if the
 /// output file could not be written.
-fn emit(report: LegendaryReport, args: LegendaryArgs) -> Result<ExitCode, ExitCode> {
+fn emit(report: OneshotReport, args: OneshotArgs) -> Result<ExitCode, ExitCode> {
     let rendered = match args.format.as_str() {
         "json" => serde_json::to_string_pretty(&report).unwrap_or_else(|_| "{}".to_string()),
         "text" => render_text(&report),
@@ -811,11 +811,11 @@ fn emit(report: LegendaryReport, args: LegendaryArgs) -> Result<ExitCode, ExitCo
 }
 
 /// One-paragraph executive verdict embedded near the top of the
-/// legendary markdown. Reads off the per-phase counters and renders
+/// depth markdown. Reads off the per-phase counters and renders
 /// a single skimmable sentence per axis (detection / bypass-probe /
 /// scan). Pure, no side effects, no I/O, so the renderer stays
 /// deterministic across runs and the rendering is easy to unit-test.
-fn render_verdict_paragraph(r: &LegendaryReport) -> String {
+fn render_verdict_paragraph(r: &OneshotReport) -> String {
     use std::fmt::Write as _;
     let mut out = String::new();
 
@@ -914,9 +914,9 @@ fn render_verdict_paragraph(r: &LegendaryReport) -> String {
     out.trim_end().to_string()
 }
 
-fn render_markdown(r: &LegendaryReport) -> String {
+fn render_markdown(r: &OneshotReport) -> String {
     let mut out = String::new();
-    out.push_str(&format!("# wafrift legendary: {}\n\n", r.target));
+    out.push_str(&format!("# wafrift oneshot: {}\n\n", r.target));
     out.push_str(&format!(
         "Generated {} ({} ms wall-clock).\n\n",
         r.started_at, r.elapsed_ms
@@ -1237,7 +1237,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
                 }
                 // Prefer the scan-supplied repro_curl when present
                 // (it's wire-accurate for the raw-runner shape that
-                // legendary can't reconstruct from target+param);
+                // depth can't reconstruct from target+param);
                 // fall back to URL-query synthesis otherwise. Both
                 // paths route through `shell_single_quote` so the
                 // escape is consistent.
@@ -1270,7 +1270,7 @@ fn render_markdown(r: &LegendaryReport) -> String {
     out.push_str("## Reproduce this whole report\n\n");
     out.push_str("```bash\n");
     out.push_str(&format!(
-        "wafrift legendary {target}{payload}{paths_file} --output legendary-report.md\n",
+        "wafrift oneshot {target}{payload}{paths_file} --output depth-report.md\n",
         target = r.target,
         payload = r
             .scan
@@ -1294,9 +1294,9 @@ fn render_markdown(r: &LegendaryReport) -> String {
     out
 }
 
-fn render_text(r: &LegendaryReport) -> String {
+fn render_text(r: &OneshotReport) -> String {
     let mut out = String::new();
-    out.push_str(&format!("=== wafrift legendary: {} ===\n", r.target));
+    out.push_str(&format!("=== wafrift oneshot: {} ===\n", r.target));
     out.push_str(&format!(
         "elapsed: {} ms · started: {}\n\n",
         r.elapsed_ms, r.started_at
@@ -1438,14 +1438,14 @@ mod tests {
 
     #[test]
     fn render_markdown_contains_all_section_headers() {
-        let r = LegendaryReport {
+        let r = OneshotReport {
             target: "https://example.com".into(),
             started_at: "2026-05-20T00:00:00Z".into(),
             elapsed_ms: 42,
             ..Default::default()
         };
         let md = render_markdown(&r);
-        assert!(md.contains("# wafrift legendary: https://example.com"));
+        assert!(md.contains("# wafrift oneshot: https://example.com"));
         assert!(md.contains("## 1. WAF detection"));
         assert!(md.contains("## 2. Infrastructure fingerprint"));
         assert!(md.contains("## 3. Bypass probe"));
@@ -1455,14 +1455,14 @@ mod tests {
 
     #[test]
     fn markdown_bypass_probe_scope_cites_canonical_probe_count() {
-        // §10 COHERENCE: the legendary markdown is a client deliverable.
+        // §10 COHERENCE: the full markdown is a client deliverable.
         // Its bypass-probe scope sentence must cite the real auth-bypass
         // corpus size (AUTH_BYPASS_PROBE_COUNT), never a stale literal 
         // pre-fix it claimed a "136-probe" set and a "150-probe sweep"
         // long after the corpus grew to 230. This pins the 4th doc site
         // the count integrity test (auth_bypass_probe_count_documented)
         // does not reach.
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.test/".into(),
             ..Default::default()
         };
@@ -1481,7 +1481,7 @@ mod tests {
 
     #[test]
     fn render_text_compact_summary() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.com".into(),
             started_at: "2026-05-20T00:00:00Z".into(),
             elapsed_ms: 100,
@@ -1495,14 +1495,14 @@ mod tests {
             indicators: vec!["cf-ray header".into()],
         });
         let txt = render_text(&r);
-        assert!(txt.contains("=== wafrift legendary: https://example.com ==="));
+        assert!(txt.contains("=== wafrift oneshot: https://example.com ==="));
         assert!(txt.contains("HTTP 403"));
         assert!(txt.contains("Cloudflare (92%)"));
     }
 
     #[test]
     fn render_markdown_marks_scan_skipped_when_no_payload() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.com".into(),
             ..Default::default()
         };
@@ -1521,7 +1521,7 @@ mod tests {
         // Failure-mode soak: every phase errored. Markdown must
         // still contain all four sections, we never want a half-
         // rendered report just because one phase failed.
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.com".into(),
             ..Default::default()
         };
@@ -1544,10 +1544,10 @@ mod tests {
 
     #[test]
     fn render_json_round_trips_via_serde() {
-        // serde-derived: any LegendaryReport must round-trip
+        // serde-derived: any OneshotReport must round-trip
         // through serde_json without information loss. A regression
         // that adds a non-Serialize field breaks this.
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x.com".into(),
             started_at: "2026-05-20T00:00:00Z".into(),
             elapsed_ms: 7,
@@ -1580,7 +1580,7 @@ mod tests {
         // The fingerprint table uses pipe-separated columns. A header
         // value containing `|` would break the table rendering, the
         // renderer must escape pipes in marker values.
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -1646,7 +1646,7 @@ mod tests {
 
     #[test]
     fn scan_level_for_variants_thresholds_match_help_text() {
-        // The LegendaryArgs help text promises a specific mapping.
+        // the fullArgs help text promises a specific mapping.
         // Pinning the boundaries so future tweaks don't silently
         // change operator-visible behaviour.
         assert_eq!(scan_level_for_variants(0), "light");
@@ -1677,7 +1677,7 @@ mod tests {
     #[test]
     fn apply_scan_json_populates_phase_fields_and_variants() {
         // Verifies that the JSON-shape contract between scan and
-        // legendary doesn't drift: every documented field flows
+        // depth doesn't drift: every documented field flows
         // through into PhaseScan, and bypass_variants deserialise
         // into the BypassVariantSummary rows the renderer expects.
         let json = serde_json::json!({
@@ -1764,7 +1764,7 @@ mod tests {
 
     #[test]
     fn apply_scan_json_preserves_repro_curl_and_minimal_repro_curl() {
-        // The scan JSON now emits per-variant repro_curl; legendary
+        // The scan JSON now emits per-variant repro_curl; depth
         // must round-trip both fields so the markdown renderer can
         // prefer the scan-supplied reproducer (raw-runner-accurate)
         // over a re-synthesised one.
@@ -1795,7 +1795,7 @@ mod tests {
 
     #[test]
     fn render_markdown_prefers_scan_supplied_repro_curl_when_present() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.com".into(),
             ..Default::default()
         };
@@ -1830,7 +1830,7 @@ mod tests {
 
     #[test]
     fn render_markdown_falls_back_to_synthesized_repro_when_scan_omitted_it() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.com".into(),
             ..Default::default()
         };
@@ -1857,7 +1857,7 @@ mod tests {
         // Permissive targets (or operators passing a huge cap) can
         // surface hundreds of bypasses. The markdown must render
         // only the top 25 + note the overflow.
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -1899,7 +1899,7 @@ mod tests {
     fn render_markdown_omits_summary_table_when_no_counters_present() {
         // Partial scan output (binary mid-crash, future fields-only
         // emit) must not produce a header-only table.
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -1921,7 +1921,7 @@ mod tests {
 
     #[test]
     fn verdict_lists_detected_waf_with_confidence() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -1940,7 +1940,7 @@ mod tests {
 
     #[test]
     fn verdict_uses_differential_verdict_when_static_corpus_was_empty() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -1956,7 +1956,7 @@ mod tests {
 
     #[test]
     fn verdict_surfaces_high_severity_count_for_bypass_probe() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2012,7 +2012,7 @@ mod tests {
 
     #[test]
     fn verdict_calls_out_zero_bypass_when_scan_held() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2028,7 +2028,7 @@ mod tests {
 
     #[test]
     fn verdict_surfaces_bypass_rate_when_scan_succeeded() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2046,7 +2046,7 @@ mod tests {
 
     #[test]
     fn verdict_renders_skipped_phases_explicitly() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2065,7 +2065,7 @@ mod tests {
 
     #[test]
     fn render_markdown_embeds_verdict_section_near_top() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             started_at: "2026-05-21T00:00:00Z".into(),
             elapsed_ms: 1,
@@ -2090,7 +2090,7 @@ mod tests {
     #[test]
     fn apply_bypass_probe_json_flattens_results_and_drains_divergences() {
         // The bypass-probe JSON is `{"results": [...]}` keyed by
-        // URL; legendary flattens across URLs into one divergence
+        // URL; depth flattens across URLs into one divergence
         // list so the renderer doesn't have to know about per-URL
         // grouping. Also sums probes_fired for the summary.
         let json = serde_json::json!({
@@ -2168,7 +2168,7 @@ mod tests {
 
     #[test]
     fn render_markdown_bypass_probe_section_lists_high_severity_first() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2220,7 +2220,7 @@ mod tests {
 
     #[test]
     fn render_markdown_bypass_probe_section_calls_out_zero_divergences() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2237,7 +2237,7 @@ mod tests {
 
     #[test]
     fn render_markdown_bypass_probe_section_caps_at_25_with_footer() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2284,7 +2284,7 @@ mod tests {
 
     #[test]
     fn render_markdown_emits_bypass_variants_table_when_scan_ran() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.com/search".into(),
             ..Default::default()
         };
@@ -2337,7 +2337,7 @@ mod tests {
         // emitted "No CDN / server / cache markers surfaced…",
         // which falsely implied a connection succeeded. The guard
         // on fingerprint.ran must surface "Not reached" instead.
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2367,7 +2367,7 @@ mod tests {
         // must show BOTH numbers with unambiguous row labels so
         // pasting --scan-variants 5 doesn't produce a confusing
         // "Variants fired | 615" row.
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2393,7 +2393,7 @@ mod tests {
 
     #[test]
     fn render_markdown_calls_out_zero_bypasses_when_scan_ran_but_found_none() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.com".into(),
             ..Default::default()
         };
@@ -2413,7 +2413,7 @@ mod tests {
 
     #[test]
     fn render_markdown_with_scan_error_includes_rerun_command() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://example.com".into(),
             ..Default::default()
         };
@@ -2430,7 +2430,7 @@ mod tests {
 
     #[test]
     fn render_markdown_escapes_triple_backtick_in_payload() {
-        let mut r = LegendaryReport {
+        let mut r = OneshotReport {
             target: "https://x".into(),
             ..Default::default()
         };
@@ -2466,15 +2466,15 @@ mod tests {
         // emit() is a private fn that writes to args.output when
         // set. We exercise it via render_markdown + manual write
         // (mirrors emit's behaviour without the side effects of
-        // run_legendary).
-        let r = LegendaryReport {
+        // run_oneshot).
+        let r = OneshotReport {
             target: "https://example.com".into(),
             started_at: "2026-05-20T00:00:00Z".into(),
             elapsed_ms: 1,
             ..Default::default()
         };
         let rendered = render_markdown(&r);
-        let path = temp_dir().join(format!("wafrift-legendary-out-{}.md", std::process::id()));
+        let path = temp_dir().join(format!("wafrift-oneshot-out-{}.md", std::process::id()));
         std::fs::write(&path, &rendered).expect("write");
         let read_back = std::fs::read_to_string(&path).expect("read");
         assert_eq!(read_back, rendered);

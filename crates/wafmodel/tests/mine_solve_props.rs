@@ -53,7 +53,7 @@ fn waf_lit(token: &[u8], tf: &[Transform]) -> SimRegexWaf {
 // needles: the mining-soundness invariant is identical at any size, so
 // we keep every one of the 10k cases ~1ms (a 4-char needle over a
 // 6-symbol alphabet at depth 6 makes passive_learn rows ~56k entries 
-// 10k of those is ~1.8 h, an unacceptable legendary-lane cost, with no
+// 10k of those is ~1.8 h, an unacceptable depth-lane cost, with no
 // extra assurance).
 const NEEDLES: [&[u8]; 6] = [b"a", b"b", b"ab", b"bc", b"ca", b"ac"];
 

@@ -49,6 +49,7 @@
 //! primitive.
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -616,7 +617,8 @@ pub fn default_corpus_path(target_fingerprint: &str) -> PathBuf {
 /// `..` from producing a `..`-bearing filename component, eliminating
 /// even the theoretical path-traversal surface.
 fn sanitize_fingerprint_for_filename(fp: &str) -> String {
-    fp.chars()
+    let sanitized: String = fp
+        .chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
                 c
@@ -624,7 +626,12 @@ fn sanitize_fingerprint_for_filename(fp: &str) -> String {
                 '_'
             }
         })
-        .collect()
+        .collect();
+    // Short hash of the FULL fingerprint so fingerprints that differ
+    // only in separator characters map to distinct filenames.
+    let digest = Sha256::digest(fp.as_bytes());
+    let short = u32::from_be_bytes([digest[0], digest[1], digest[2], digest[3]]);
+    format!("{sanitized}_{short:08x}")
 }
 
 fn current_epoch_secs() -> u64 {
@@ -717,6 +724,23 @@ mod tests {
 
     fn cls(s: &str) -> PayloadClass {
         PayloadClass::new(s)
+    }
+    /// Expected sanitized filename for a fingerprint, matching the
+    /// implementation in `sanitize_fingerprint_for_filename`.
+    fn expected_sanitized(fp: &str) -> String {
+        let sanitized: String = fp
+            .chars()
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+        let digest = Sha256::digest(fp.as_bytes());
+        let short = u32::from_be_bytes([digest[0], digest[1], digest[2], digest[3]]);
+        format!("{sanitized}_{short:08x}")
     }
 
     #[test]
@@ -1352,13 +1376,13 @@ mod tests {
     fn sanitize_fingerprint_strips_path_separators() {
         assert_eq!(
             sanitize_fingerprint_for_filename("cf:managed-ruleset:host/foo"),
-            "cf_managed-ruleset_host_foo"
+            expected_sanitized("cf:managed-ruleset:host/foo")
         );
         // Backslashes AND dots become `_`; a `..` fingerprint can never produce
         // a `..`-bearing filename component (path-traversal hygiene).
         assert_eq!(
-            sanitize_fingerprint_for_filename("..\\..\\evil"),
-            "______evil"
+            sanitize_fingerprint_for_filename("..\\\\..\\\\evil"),
+            expected_sanitized("..\\\\..\\\\evil")
         );
     }
 
@@ -1367,13 +1391,20 @@ mod tests {
         // Only [A-Za-z0-9_-] pass through unchanged; dots map to `_`.
         assert_eq!(
             sanitize_fingerprint_for_filename("cf-managed_ruleset_v1"),
-            "cf-managed_ruleset_v1"
+            expected_sanitized("cf-managed_ruleset_v1")
         );
         // A dot-containing fingerprint segment gets its dots replaced.
         assert_eq!(
             sanitize_fingerprint_for_filename("cf-managed.ruleset_v1"),
-            "cf-managed_ruleset_v1"
+            expected_sanitized("cf-managed.ruleset_v1")
         );
+    }
+
+    #[test]
+    fn sanitize_fingerprint_distinguishes_separator_variants() {
+        let a = sanitize_fingerprint_for_filename("waf:v1:a.b.com");
+        let b = sanitize_fingerprint_for_filename("waf:v1.a:b.com");
+        assert_ne!(a, b, "fingerprints differing only in separators must not collide");
     }
 
     #[test]

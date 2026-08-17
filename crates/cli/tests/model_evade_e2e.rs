@@ -236,11 +236,14 @@ async fn model_evade_all_pass_target_exits_zero_with_candidates() {
     // within max_len=24 for the sqli needles. Just assert schema is correct.
     assert_eq!(j["schema_version"], 1);
     assert_eq!(j["class"], "sqli");
-    // If mined > 0, bypasses must equal mined (all-pass WAF).
+    // If mined > 0, every bypass must be a verified bypass, but the
+    // structural oracle may reject candidates that the abstract grammar
+    // produced as WAF-passing yet no longer parse as a real attack. So the
+    // post-fix invariant is bypasses <= mined, not bypasses == mined.
     if mined > 0 {
-        assert_eq!(
-            bypasses, mined,
-            "all-pass WAF: every mined candidate must verify as bypass"
+        assert!(
+            bypasses <= mined,
+            "all-pass WAF: verified bypasses cannot exceed mined candidates: {bypasses} > {mined}"
         );
     }
 }

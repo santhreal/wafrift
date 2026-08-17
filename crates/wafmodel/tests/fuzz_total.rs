@@ -12,7 +12,7 @@ use wafrift_wafmodel::{
     LearnedModel, SimRegexWaf, Stage, canonicalize, json_unescape, url_decode_once,
 };
 
-/// Per-push-scaled proptest count (full 10k by default; the legendary
+/// Per-push-scaled proptest count (full 10k by default; the full
 /// nightly lane runs the full count, the fast CI gate scales down).
 fn pc() -> u32 {
     std::env::var("WAFMODEL_PROPTEST_CASES")

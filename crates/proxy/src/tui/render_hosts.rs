@@ -41,7 +41,7 @@ pub fn draw(f: &mut Frame, area: Rect, state: &State) {
                 p if p >= 25.0 => Color::Yellow,
                 _ => Color::DarkGray,
             };
-            let waf_label = hs.waf_name.as_deref().unwrap_or(". ").to_string();
+            let waf_label = hs.waf_name.as_deref().unwrap_or("\u{2014}").to_string();
             Row::new(vec![
                 Cell::from(host.clone()).style(Style::default().fg(Color::White)),
                 Cell::from(waf_label).style(Style::default().fg(Color::LightMagenta)),
@@ -247,8 +247,8 @@ mod tests {
         let mut s = State::new();
         s.record(&req("unknown.example", true));
         let buf = render(200, 12, &s);
-        // The ": " U+2014 fallback should be present in the WAF column.
-        assert!(buf.contains(': ') || buf.contains("-"));
+        // The em-dash (U+2014) fallback should be present in the WAF column.
+        assert!(buf.contains('\u{2014}') || buf.contains("-"));
     }
 
     #[test]

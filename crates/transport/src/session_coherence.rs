@@ -307,7 +307,7 @@ mod tests {
         );
     }
 
-    // ── Deep proxy-realistic inputs (added in LEGENDARY part 7)
+    // ── Deep proxy-realistic inputs (added in depth part 7)
 
     #[test]
     fn reorder_handles_mixed_case_host_header_canonically() {

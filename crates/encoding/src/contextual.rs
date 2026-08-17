@@ -924,9 +924,7 @@ mod tests {
 
     #[test]
     fn json_string_escape_u2028_and_u2029() {
-        // U+2028 and U+2029 must be escaped to 
-/
- to prevent
+        // U+2028 and U+2029 must be escaped to  /  to prevent
         // line-terminator injection in JSONP/eval contexts.
         let payload = "\u{2028}hello\u{2029}world";
         let escaped = escape_for_context(payload, InjectionContext::JsonString).unwrap();

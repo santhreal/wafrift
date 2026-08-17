@@ -1,11 +1,8 @@
-//! wafrift ↔ captchaforge adapter.
+//! wafrift lurien cookie-wait adapter.
 //!
-//! Subscribes a `BrowserChallengeSolver` into wafrift's challenge
-//! flow. When wafrift's `ChallengeStore::dispatch` would otherwise
-//! escalate to the operator (cookie-solvable kinds with no cached
-//! cookie), the bridge spins up a Firefox page via BiDi, runs the
-//! captchaforge solver chain, and seeds the resulting clearance cookie
-//! back into wafrift's store.
+//! captchaforge is retired. When wafrift would escalate a cookie-solvable
+//! challenge, this crate launches Firefox via BiDi and waits for the vendor
+//! cookie write. There is no `auto_solve` and no CapSolver.
 //!
 //! # Examples
 //!
@@ -104,11 +101,9 @@ fn bridge_launch_options(cfg: &BridgeConfig) -> FoxBrowserConfig {
 }
 
 /// Try to clear a managed challenge by loading the supplied HTML in
-/// a headless Firefox page and running the captchaforge solver
-/// chain. Returns `Ok(Some(_))` on success, `Ok(None)` when no
-/// captcha was detected (likely a JS-only CF managed challenge that
-/// the cookie just needs time to land for), and `Err` on Firefox /
-/// solver / network failures.
+/// a Firefox page and waiting for a vendor cookie write. Returns
+/// `Ok(Some(_))` on a clearance cookie, `Ok(None)` when none lands
+/// inside the budget, and `Err` on Firefox / network failures.
 ///
 /// If the `FIREFOX_PATH` environment variable is set, the binary at
 /// that path is used instead of auto-detection. Setting it to a
@@ -172,7 +167,6 @@ pub async fn solve_in_browser(
         Ok(Ok(Ok(page))) => page,
     };
 
-    let _ = captchaforge::apply_default_stealth_profile(&page).await;
 
     let solve_fut = async {
         // Phase 1: Behavioral warm-up before the challenge evaluates us.
@@ -263,18 +257,7 @@ pub async fn solve_in_browser(
         // challenge widgets; the polling loop later gives more time.
         tokio::time::sleep(std::time::Duration::from_millis(300)).await;
 
-        let info = captchaforge::detect::detect(&page)
-            .await
-            .context("captchaforge detect")?;
-        let chain = captchaforge::solver::CaptchaSolverChain::default_chain();
-        // Phase 1 fix: run the solver chain even when no visible
-        // captcha is detected. Cloudflare Turnstile invisible mode
-        // and managed challenges often have no detectable widget
-        //: the token/cookie populates via JS in the background.
-        // WaitForTokenSolver (first in chain) handles this passive
-        // case. Previously the bridge returned None here, never
-        // giving the chain a chance to harvest the cookie.
-        let _result = chain.solve(&page, &info).await;
+        // lurien v1: wait for the vendor cookie write. No captchaforge chain.
 
         // Whether the solver returns success or not, poll for
         // clearance cookies, challenge JS often sets them after a
@@ -583,24 +566,6 @@ mod tests {
         assert_eq!(c.solve_timeout_ms, 120_000);
     }
 
-    // ── Vision solver wiring ─────────────────────────────────────────────
-
-    /// The bridge enables the `vision` feature on captchaforge, so the
-    /// YoloGridSolver and CrnnTextSolver must be present in the default
-    /// chain. If this test fails, the Cargo.toml feature flag is missing.
-    #[test]
-    fn default_chain_includes_vision_solvers() {
-        let chain = captchaforge::solver::CaptchaSolverChain::default_chain();
-        let names = chain.solver_names();
-        assert!(
-            names.contains(&"YoloGridSolver"),
-            "YoloGridSolver must be in default chain (vision feature enabled?)"
-        );
-        assert!(
-            names.contains(&"CrnnTextSolver"),
-            "CrnnTextSolver must be in default chain (vision feature enabled?)"
-        );
-    }
 
     // ── serde_json_escape edge cases ─────────────────────────────────────
 

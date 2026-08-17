@@ -22,7 +22,7 @@
 //!
 //! The *adaptive* descent (choosing each next mutation from live block/allow
 //! feedback, the true HopSkipJump walk) is a frontier upgrade tracked in
-//! `docs/legendary-todo.md`; this module is the sound, I/O-free mutation
+//! `docs/depth-todo.md`; this module is the sound, I/O-free mutation
 //! generator it builds on.
 //!
 //! # Anti-rig
