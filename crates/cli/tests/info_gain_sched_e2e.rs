@@ -14,25 +14,22 @@ use common::wafrift;
 // ── --help surface ────────────────────────────────────────────────────────
 
 #[test]
-fn bench_waf_help_documents_budget_flag() {
+fn bench_waf_help_documents_all_scheduler_flags() {
+    // Every scheduler-related flag must appear in `bench-waf --help`.
     let (code, stdout, _) = wafrift(&["bench-waf", "--help"]);
     assert_eq!(code, 0, "bench-waf --help must exit 0");
-    assert!(
-        stdout.contains("--budget"),
-        "bench-waf --help must document --budget, info-gain \
-         scheduling is fictional without it: {stdout}"
-    );
-}
-
-#[test]
-fn bench_waf_help_documents_history_file_flag() {
-    let (code, stdout, _) = wafrift(&["bench-waf", "--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("--history-file"),
-        "bench-waf --help must document --history-file, scheduler \
-         warm-start is fictional without it: {stdout}"
-    );
+    for flag in [
+        "--budget",
+        "--history-file",
+        "--fair-class",
+        "--list-schedule",
+        "--history-merge",
+    ] {
+        assert!(
+            stdout.contains(flag),
+            "bench-waf --help must document {flag}: {stdout}"
+        );
+    }
 }
 
 #[test]
@@ -45,37 +42,6 @@ fn bench_waf_help_explains_info_gain_concept() {
     assert!(
         stdout.contains("information gain") || stdout.contains("informative"),
         "bench-waf --help must explain the info-gain selection: {stdout}"
-    );
-}
-
-#[test]
-fn bench_waf_help_documents_fair_class_flag() {
-    let (code, stdout, _) = wafrift(&["bench-waf", "--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("--fair-class"),
-        "bench-waf --help must document --fair-class, per-class \
-         fairness is fictional without it: {stdout}"
-    );
-}
-
-#[test]
-fn bench_waf_help_documents_list_schedule_flag() {
-    let (code, stdout, _) = wafrift(&["bench-waf", "--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("--list-schedule"),
-        "bench-waf --help must document --list-schedule: {stdout}"
-    );
-}
-
-#[test]
-fn bench_waf_help_documents_history_merge_flag() {
-    let (code, stdout, _) = wafrift(&["bench-waf", "--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("--history-merge"),
-        "bench-waf --help must document --history-merge: {stdout}"
     );
 }
 
