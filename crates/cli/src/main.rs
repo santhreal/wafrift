@@ -9,10 +9,9 @@ mod attack_cmd;
 mod bank;
 mod bank_registry;
 mod bench_diff;
+mod diff;
 mod bench_waf;
-mod body_diff_cmd;
 mod bypass_probe;
-mod cache_diff_cmd;
 mod callback_token;
 mod client_deliver_cmd;
 mod cluster_cmd;
@@ -20,9 +19,7 @@ mod compress_cmd;
 mod config;
 mod corpus_cmd;
 mod corpus_recorder;
-mod cors_diff_cmd;
 mod detect_cmd;
-mod diff_cmd;
 mod discover_cmd;
 mod distill_cmd;
 mod egress_example;
@@ -31,27 +28,19 @@ mod evade_cmd;
 mod exec_proof;
 mod explain;
 mod exploit_cmd;
-mod gql_diff_cmd;
-mod h2_diff_cmd;
 mod harvest_cmd;
-mod header_diff_cmd;
 mod helpers;
 mod hunt_cmd;
 mod import_curl;
 mod info_gain_sched;
 mod init_cmd;
 mod interactive;
-#[cfg(feature = "tls-impersonate")]
-mod ja3_diff_cmd;
-mod jwt_diff_cmd;
+// ja3_diff_cmd is gated behind tls-impersonate in diff/mod.rs
 mod listener_cmd;
 mod man_cmd;
-mod method_diff_cmd;
 mod model_evade_cmd;
 mod oneshot;
 mod origin_hints;
-mod parser_diff_cmd;
-mod parser_diff_common;
 /// Target-permission gate. Refuse-by-default for non-bounty,
 /// non-allowlist hosts; `--i-have-permission &lt;reason&gt;` overrides.
 /// Local Docker bench targets (loopback / RFC1918) always pass.
@@ -59,7 +48,6 @@ mod permission;
 mod poc_emit;
 mod probe_classify;
 mod probe_cmd;
-mod query_diff_cmd;
 mod raw_request;
 mod recon_cmd;
 mod replay;
@@ -71,19 +59,12 @@ mod sarif_cmd;
 mod scan;
 mod seed;
 mod session_init;
-mod smuggle_chain_cmd;
-mod smuggle_cmd;
-mod smuggle_cross_cmd;
-mod smuggle_emit_cmd;
-mod smuggle_fire_cmd;
-mod smuggle_stats_cmd;
-mod smuggle_transport;
+mod smuggle;
 mod split_param;
 mod target_context;
 mod tcp_overlap_cmd;
 mod technique_filter;
 mod tmin_cmd;
-mod trailer_diff_cmd;
 mod transform_encode;
 mod wafmodel_cmd;
 
@@ -305,7 +286,7 @@ enum Commands {
     /// on what the URL means, exploit the seam without any
     /// payload mutation.
     #[command(name = "parser-diff", hide = true)]
-    ParserDiff(parser_diff_cmd::ParserDiffArgs),
+    ParserDiff(diff::parser_diff_cmd::ParserDiffArgs),
     /// Differential analysis, surface WAF↔origin (and WAF↔cache,
     /// H1↔H2, browser↔browser) parser disagreements, wafrift's deepest
     /// bypass seam. `wafrift diff <kind>` groups the whole family in one
@@ -315,7 +296,7 @@ enum Commands {
     /// query, cache, h2, method), it does NOT include `gql` / `jwt` /
     /// `cors` / `trailer`; run those individually. The legacy `<kind>-diff`
     /// commands and `attack` remain as deprecated hidden aliases (LAW 2).
-    Diff(diff_cmd::DiffArgs),
+    Diff(diff::diff_cmd::DiffArgs),
     /// Wrap a request body in one or more `Content-Encoding` layers
     /// (gzip / deflate / brotli / chain). The compression-confusion
     /// attack: WAFs that inspect raw bytes pass over the encoded
@@ -335,7 +316,7 @@ enum Commands {
     /// powering the `wafrift-smuggling` library, but exposed as
     /// a first-class CLI surface so pentesters don't need to
     /// roll their own runner.
-    Smuggle(smuggle_cmd::SmuggleArgs),
+    Smuggle(smuggle::smuggle_cmd::SmuggleArgs),
     /// Emit every wafrift smuggle probe as JSON (one per line)
     /// across the 11 probe families: cookie, auth, range, path, host,
     /// jwt, content-type, json, capsule, quic-datagram, compression.
@@ -344,7 +325,7 @@ enum Commands {
     /// `--kind headers|body|frames` filters by artifact shape;
     /// `--canary-header NAME` attaches an instrumentation header to
     /// each probe; exit 2 when zero probes match.
-    SmuggleEmit(smuggle_emit_cmd::SmuggleEmitArgs),
+    SmuggleEmit(smuggle::smuggle_emit_cmd::SmuggleEmitArgs),
     /// Emit the cartesian product of two smuggle-probe families as
     /// composed JSON artifacts. For every probe in family X × every
     /// probe in family Y, emit one merged artifact carrying both
@@ -352,7 +333,7 @@ enum Commands {
     /// no single technique produces. Bound output size with `--cap N`
     /// (default 64); exit 2 when either side matches zero probes.
     #[command(name = "smuggle-cross-product")]
-    SmuggleCrossProduct(smuggle_cross_cmd::SmuggleCrossProductArgs),
+    SmuggleCrossProduct(smuggle::smuggle_cross_cmd::SmuggleCrossProductArgs),
     /// Operator-facing probe-budget snapshot. Counts every probe
     /// wafrift can emit across the 11 smuggle families, broken down
     /// by family and artifact kind, and reports the total wire-byte
@@ -360,14 +341,14 @@ enum Commands {
     /// `jq` or CI gates. Useful for deciding whether you need to
     /// subsample before firing a scan against a rate-limited target.
     #[command(name = "smuggle-stats")]
-    SmuggleStats(smuggle_stats_cmd::SmuggleStatsArgs),
+    SmuggleStats(smuggle::smuggle_stats_cmd::SmuggleStatsArgs),
     /// N-way smuggle-probe composition. Takes 2+ `--family <NAME>`
     /// flags and emits the cartesian product of probes across all
     /// N families as composed JSON artifacts. The N-way generalization
     /// of `smuggle-cross-product`. Bound output size with `--cap N`
     /// (default 64); exit 2 when any family matches zero probes.
     #[command(name = "smuggle-chain")]
-    SmuggleChain(smuggle_chain_cmd::SmuggleChainArgs),
+    SmuggleChain(smuggle::smuggle_chain_cmd::SmuggleChainArgs),
     /// Fire every smuggle probe against a live target. The
     /// end-to-end execution pipeline, converts probe artifacts to
     /// real HTTP requests, fires via reqwest, captures
@@ -381,7 +362,7 @@ enum Commands {
     /// quic-datagram / compression) are skipped, they live below
     /// the HTTP layer.
     #[command(name = "smuggle-fire")]
-    SmuggleFire(smuggle_fire_cmd::SmuggleFireArgs),
+    SmuggleFire(smuggle::smuggle_fire_cmd::SmuggleFireArgs),
     /// Adversarial distillation via Zeller's ddmin: take a KNOWN-
     /// working bypass payload and find the minimum-edit-distance
     /// subset that STILL bypasses. Useful for pentest reports
@@ -401,7 +382,7 @@ enum Commands {
     /// disagree on what the header block means, exploit the seam
     /// without any payload mutation.
     #[command(name = "header-diff", hide = true)]
-    HeaderDiff(header_diff_cmd::HeaderDiffArgs),
+    HeaderDiff(diff::header_diff_cmd::HeaderDiffArgs),
     /// Body parser-disagreement scanner, third in the parser-diff
     /// family. Fires variant request BODIES that exercise known
     /// WAF↔origin parser disagreements (JSON dup-key precedence,
@@ -411,7 +392,7 @@ enum Commands {
     /// seam, disagreements here let an attacker pass content the
     /// WAF declines to parse, that the origin nonetheless processes.
     #[command(name = "body-diff", hide = true)]
-    BodyDiff(body_diff_cmd::BodyDiffArgs),
+    BodyDiff(diff::body_diff_cmd::BodyDiffArgs),
     /// Query-string parser-disagreement scanner, fourth in the
     /// parser-diff family. Fires variant URL QUERIES that exercise
     /// known WAF↔origin parser disagreements (HPP first-vs-last,
@@ -421,7 +402,7 @@ enum Commands {
     /// canonical place pentesters reach for first, every protected
     /// route the WAF gates by URL query is fair game.
     #[command(name = "query-diff", hide = true)]
-    QueryDiff(query_diff_cmd::QueryDiffArgs),
+    QueryDiff(diff::query_diff_cmd::QueryDiffArgs),
     /// Unified parser-disagreement orchestrator, runs ALL seven
     /// parser-diff family probes (URL path, headers, body, query,
     /// cache, h2, HTTP-method) against one target concurrently and
@@ -439,7 +420,7 @@ enum Commands {
     /// surface: attacker can poison via the variant, victims
     /// fetching the baseline get the poisoned response.
     #[command(name = "cache-diff", hide = true)]
-    CacheDiff(cache_diff_cmd::CacheDiffArgs),
+    CacheDiff(diff::cache_diff_cmd::CacheDiffArgs),
     /// HTTP/1.1 vs HTTP/2 differential scanner. Fires the same
     /// logical request via both protocols and reports any response
     /// divergence, evidence the WAF or origin treats H1 and H2
@@ -447,7 +428,7 @@ enum Commands {
     /// authored against H1 wire format + H2-to-H1 downgrade
     /// translation bugs.
     #[command(name = "h2-diff", hide = true)]
-    H2Diff(h2_diff_cmd::H2DiffArgs),
+    H2Diff(diff::h2_diff_cmd::H2DiffArgs),
     /// HTTP method parser-disagreement scanner. Fires the same URL
     /// with N HTTP method variants (POST/PUT/DELETE/PATCH,
     /// HEAD/OPTIONS/TRACE, WebDAV PROPFIND/MKCOL/MOVE/COPY/LOCK,
@@ -456,7 +437,7 @@ enum Commands {
     /// fires on GET/POST while the origin routes the unusual verb
     /// somewhere meaningful.
     #[command(name = "method-diff", hide = true)]
-    MethodDiff(method_diff_cmd::MethodDiffArgs),
+    MethodDiff(diff::method_diff_cmd::MethodDiffArgs),
     /// GraphQL parser / cost-limit disagreement scanner. Probes
     /// introspection leaks, alias bombing, batched operations,
     /// operation-name spoofing, mutation-as-query confusion, field
@@ -465,7 +446,7 @@ enum Commands {
     /// endpoints where most REST WAFs see only `POST /graphql` and
     /// miss the structure inside.
     #[command(name = "gql-diff", hide = true)]
-    GqlDiff(gql_diff_cmd::GqlDiffArgs),
+    GqlDiff(diff::gql_diff_cmd::GqlDiffArgs),
     /// JWT signature / claim validation scanner. Takes a KNOWN-
     /// valid bearer token (operator just logged in and captured it)
     /// and fires N mutations: alg:none case-family, kid traversal /
@@ -473,7 +454,7 @@ enum Commands {
     /// role elevation, empty signature with preserved alg. Any
     /// mutation accepted by the target = a JWT validation bug.
     #[command(name = "jwt-diff", hide = true)]
-    JwtDiff(jwt_diff_cmd::JwtDiffArgs),
+    JwtDiff(diff::jwt_diff_cmd::JwtDiffArgs),
     /// CORS misconfiguration scanner. Probes 10 known
     /// Access-Control-Allow-Origin validation pitfalls (arbitrary
     /// origin reflection, null origin, subdomain prefix/suffix
@@ -482,7 +463,7 @@ enum Commands {
     /// header, preflight DELETE permission). Reflection + ACAC:true
     /// = cookie-stealing credential leak.
     #[command(name = "cors-diff", hide = true)]
-    CorsDiff(cors_diff_cmd::CorsDiffArgs),
+    CorsDiff(diff::cors_diff_cmd::CorsDiffArgs),
     /// HTTP/1.1 chunked-trailer field injection scanner. WAFs typically
     /// inspect the initial header block but NOT trailing headers (the
     /// trailer fields after the final chunk in chunked Transfer-Encoding).
@@ -491,7 +472,7 @@ enum Commands {
     ///: and reports any response divergence. A divergence is evidence
     /// the backend processed the trailer while the WAF did not.
     #[command(name = "trailer-diff", hide = true)]
-    TrailerDiff(trailer_diff_cmd::TrailerDiffArgs),
+    TrailerDiff(diff::trailer_diff_cmd::TrailerDiffArgs),
     /// Per-browser-profile TLS-fingerprint differential scanner.
     /// Sends the same probe through N wreq/BoringSSL-backed browser
     /// emulations (Chrome 120/131, Firefox 133, Safari 17.5/18,
@@ -502,7 +483,7 @@ enum Commands {
     /// time (pulls in BoringSSL).
     #[cfg(feature = "tls-impersonate")]
     #[command(name = "ja3-diff", hide = true)]
-    Ja3Diff(ja3_diff_cmd::Ja3DiffArgs),
+    Ja3Diff(diff::ja3_diff_cmd::Ja3DiffArgs),
     /// Corpus minimization via Zeller's ddmin (alias for `wafrift distill`).
     /// Familiar to AFL/libFuzzer users as `afl-tmin` / `tmin`. Takes a
     /// KNOWN-working bypass payload and finds the minimum-edit-distance
@@ -1364,19 +1345,19 @@ fn main() -> ExitCode {
             &cfg,
             args,
             matches.subcommand_matches("header-diff"),
-            header_diff_cmd::run_header_diff,
+            diff::header_diff_cmd::run_header_diff,
         ),
         Some(Commands::BodyDiff(args)) => run_http_diff(
             &cfg,
             args,
             matches.subcommand_matches("body-diff"),
-            body_diff_cmd::run_body_diff,
+            diff::body_diff_cmd::run_body_diff,
         ),
         Some(Commands::QueryDiff(args)) => run_http_diff(
             &cfg,
             args,
             matches.subcommand_matches("query-diff"),
-            query_diff_cmd::run_query_diff,
+            diff::query_diff_cmd::run_query_diff,
         ),
         Some(Commands::Attack(args)) => run_http_diff(
             &cfg,
@@ -1388,46 +1369,46 @@ fn main() -> ExitCode {
             &cfg,
             args,
             matches.subcommand_matches("cache-diff"),
-            cache_diff_cmd::run_cache_diff,
+            diff::cache_diff_cmd::run_cache_diff,
         ),
         Some(Commands::H2Diff(args)) => run_http_diff(
             &cfg,
             args,
             matches.subcommand_matches("h2-diff"),
-            h2_diff_cmd::run_h2_diff,
+            diff::h2_diff_cmd::run_h2_diff,
         ),
         Some(Commands::MethodDiff(args)) => run_http_diff(
             &cfg,
             args,
             matches.subcommand_matches("method-diff"),
-            method_diff_cmd::run_method_diff,
+            diff::method_diff_cmd::run_method_diff,
         ),
         Some(Commands::GqlDiff(args)) => run_http_diff(
             &cfg,
             args,
             matches.subcommand_matches("gql-diff"),
-            gql_diff_cmd::run_gql_diff,
+            diff::gql_diff_cmd::run_gql_diff,
         ),
         Some(Commands::JwtDiff(args)) => run_http_diff(
             &cfg,
             args,
             matches.subcommand_matches("jwt-diff"),
-            jwt_diff_cmd::run_jwt_diff,
+            diff::jwt_diff_cmd::run_jwt_diff,
         ),
         Some(Commands::TrailerDiff(args)) => run_http_diff(
             &cfg,
             args,
             matches.subcommand_matches("trailer-diff"),
-            trailer_diff_cmd::run_trailer_diff,
+            diff::trailer_diff_cmd::run_trailer_diff,
         ),
         Some(Commands::CorsDiff(args)) => run_http_diff(
             &cfg,
             args,
             matches.subcommand_matches("cors-diff"),
-            cors_diff_cmd::run_cors_diff,
+            diff::cors_diff_cmd::run_cors_diff,
         ),
         #[cfg(feature = "tls-impersonate")]
-        Some(Commands::Ja3Diff(args)) => ja3_diff_cmd::run_ja3_diff(args),
+        Some(Commands::Ja3Diff(args)) => diff::ja3_diff_cmd::run_ja3_diff(args),
         Some(Commands::BenchWaf(args)) => {
             // R48 pass-10 I1 (CLAUDE.md §9 WIRING): consume
             // http.timeout_secs / http.insecure from config.
@@ -1599,7 +1580,7 @@ fn main() -> ExitCode {
         Some(Commands::Fingerprint(args)) => wafmodel_cmd::run_fingerprint(args),
         Some(Commands::Oneshot(args)) => oneshot::run_oneshot(args),
         Some(Commands::Listener(args)) => listener_cmd::run_listener(args),
-        Some(Commands::ParserDiff(args)) => match parser_diff_cmd::run_parser_diff(args) {
+        Some(Commands::ParserDiff(args)) => match diff::parser_diff_cmd::run_parser_diff(args) {
             Ok(()) => ExitCode::SUCCESS,
             Err(e) => {
                 eprintln!("parser-diff failed: {e}");
@@ -1617,92 +1598,92 @@ fn main() -> ExitCode {
         Some(Commands::Diff(d)) => {
             let dm = matches.subcommand_matches("diff");
             match d.kind {
-                diff_cmd::DiffKind::Path(args) => match parser_diff_cmd::run_parser_diff(args) {
+                diff::diff_cmd::DiffKind::Path(args) => match diff::parser_diff_cmd::run_parser_diff(args) {
                     Ok(()) => ExitCode::SUCCESS,
                     Err(e) => {
                         eprintln!("parser-diff failed: {e}");
                         ExitCode::from(1)
                     }
                 },
-                diff_cmd::DiffKind::Header(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Header(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("header")),
-                    header_diff_cmd::run_header_diff,
+                    diff::header_diff_cmd::run_header_diff,
                 ),
-                diff_cmd::DiffKind::Body(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Body(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("body")),
-                    body_diff_cmd::run_body_diff,
+                    diff::body_diff_cmd::run_body_diff,
                 ),
-                diff_cmd::DiffKind::Query(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Query(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("query")),
-                    query_diff_cmd::run_query_diff,
+                    diff::query_diff_cmd::run_query_diff,
                 ),
-                diff_cmd::DiffKind::Cache(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Cache(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("cache")),
-                    cache_diff_cmd::run_cache_diff,
+                    diff::cache_diff_cmd::run_cache_diff,
                 ),
-                diff_cmd::DiffKind::H2(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::H2(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("h2")),
-                    h2_diff_cmd::run_h2_diff,
+                    diff::h2_diff_cmd::run_h2_diff,
                 ),
-                diff_cmd::DiffKind::Method(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Method(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("method")),
-                    method_diff_cmd::run_method_diff,
+                    diff::method_diff_cmd::run_method_diff,
                 ),
-                diff_cmd::DiffKind::Gql(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Gql(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("gql")),
-                    gql_diff_cmd::run_gql_diff,
+                    diff::gql_diff_cmd::run_gql_diff,
                 ),
-                diff_cmd::DiffKind::Jwt(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Jwt(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("jwt")),
-                    jwt_diff_cmd::run_jwt_diff,
+                    diff::jwt_diff_cmd::run_jwt_diff,
                 ),
-                diff_cmd::DiffKind::Cors(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Cors(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("cors")),
-                    cors_diff_cmd::run_cors_diff,
+                    diff::cors_diff_cmd::run_cors_diff,
                 ),
-                diff_cmd::DiffKind::Trailer(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::Trailer(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("trailer")),
-                    trailer_diff_cmd::run_trailer_diff,
+                    diff::trailer_diff_cmd::run_trailer_diff,
                 ),
-                diff_cmd::DiffKind::All(args) => run_http_diff(
+                diff::diff_cmd::DiffKind::All(args) => run_http_diff(
                     &cfg,
                     args,
                     dm.and_then(|m| m.subcommand_matches("all")),
                     attack_cmd::run_attack,
                 ),
                 #[cfg(feature = "tls-impersonate")]
-                diff_cmd::DiffKind::Ja3(args) => ja3_diff_cmd::run_ja3_diff(args),
+                diff::diff_cmd::DiffKind::Ja3(args) => diff::ja3_diff_cmd::run_ja3_diff(args),
             }
         }
         Some(Commands::Compress(args)) => compress_cmd::run_compress(args),
-        Some(Commands::Smuggle(args)) => smuggle_cmd::run_smuggle(args),
-        Some(Commands::SmuggleEmit(args)) => smuggle_emit_cmd::run_smuggle_emit(args),
+        Some(Commands::Smuggle(args)) => smuggle::smuggle_cmd::run_smuggle(args),
+        Some(Commands::SmuggleEmit(args)) => smuggle::smuggle_emit_cmd::run_smuggle_emit(args),
         Some(Commands::SmuggleCrossProduct(args)) => {
-            smuggle_cross_cmd::run_smuggle_cross_product(args)
+            smuggle::smuggle_cross_cmd::run_smuggle_cross_product(args)
         }
-        Some(Commands::SmuggleStats(args)) => smuggle_stats_cmd::run_smuggle_stats(args),
-        Some(Commands::SmuggleChain(args)) => smuggle_chain_cmd::run_smuggle_chain(args),
-        Some(Commands::SmuggleFire(args)) => smuggle_fire_cmd::run_smuggle_fire(args),
+        Some(Commands::SmuggleStats(args)) => smuggle::smuggle_stats_cmd::run_smuggle_stats(args),
+        Some(Commands::SmuggleChain(args)) => smuggle::smuggle_chain_cmd::run_smuggle_chain(args),
+        Some(Commands::SmuggleFire(args)) => smuggle::smuggle_fire_cmd::run_smuggle_fire(args),
         Some(Commands::Tmin(args)) => {
             let args = cfg.apply_http_defaults(args, matches.subcommand_matches("tmin"));
             helpers::block_on_with_runtime(async {

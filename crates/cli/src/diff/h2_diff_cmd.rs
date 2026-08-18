@@ -53,7 +53,7 @@ use reqwest::Client;
 use serde_json::json;
 
 use crate::helpers::shell_single_quote;
-use crate::parser_diff_common::{body_delta_pct, severity_of};
+use crate::diff::parser_diff_common::{body_delta_pct, severity_of};
 
 #[derive(Args, Debug)]
 pub(crate) struct H2DiffArgs {
@@ -310,7 +310,7 @@ fn build_client(want_h2: bool, args: &H2DiffArgs) -> Result<Client, ExitCode> {
     })
 }
 
-use crate::parser_diff_common::fire_get_status_len as fire_get;
+use crate::diff::parser_diff_common::fire_get_status_len as fire_get;
 
 fn with_query(base: &str, new_query: &str) -> String {
     if new_query.is_empty() {
@@ -329,7 +329,7 @@ fn with_query(base: &str, new_query: &str) -> String {
 }
 
 fn emit_output(args: &H2DiffArgs, results: &[H2DiffResult]) {
-    let (high, medium) = crate::parser_diff_common::count_high_medium(results, |r| r.severity);
+    let (high, medium) = crate::diff::parser_diff_common::count_high_medium(results, |r| r.severity);
     let h2_errors = results.iter().filter(|r| r.h2_error.is_some()).count();
 
     if args.format == "json" {
@@ -342,7 +342,7 @@ fn emit_output(args: &H2DiffArgs, results: &[H2DiffResult]) {
             "divergences": { "high": high, "medium": medium },
             "results": results,
         });
-        crate::parser_diff_common::print_pretty_json(&out);
+        crate::diff::parser_diff_common::print_pretty_json(&out);
         return;
     }
 
@@ -371,7 +371,7 @@ fn emit_output(args: &H2DiffArgs, results: &[H2DiffResult]) {
     }
 
     for r in results.iter().filter(|r| r.severity != "none") {
-        let badge = crate::parser_diff_common::severity_badge(r.severity);
+        let badge = crate::diff::parser_diff_common::severity_badge(r.severity);
         println!();
         println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         println!(
@@ -525,7 +525,7 @@ mod tests {
                 });
             }
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         addr
     }
 

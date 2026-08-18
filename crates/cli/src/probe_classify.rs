@@ -44,7 +44,7 @@ pub(crate) fn is_throttle_or_unavailable(status: u16) -> bool {
 /// (content appeared); both empty = 0% (no change).
 ///
 /// R55 pass-18 I4 (CLAUDE.md §7 DEDUP): delegated to
-/// [`crate::parser_diff_common::body_delta_pct`] (which itself routes
+/// [`crate::diff::parser_diff_common::body_delta_pct`] (which itself routes
 /// through `respdiff::body_size_delta_pct`) so a tuning of the
 /// rule, e.g. switching from raw bytes to ratio of similarity
 /// reaches every diff family from one place. Pre-fix this module
@@ -53,7 +53,7 @@ pub(crate) fn is_throttle_or_unavailable(status: u16) -> bool {
 /// prone the next time either side was touched.
 #[must_use]
 pub(crate) fn body_delta_pct(baseline_len: usize, probe_len: usize) -> f64 {
-    crate::parser_diff_common::body_delta_pct(baseline_len, probe_len)
+    crate::diff::parser_diff_common::body_delta_pct(baseline_len, probe_len)
 }
 
 /// The "is this response meaningfully different from the baseline?"

@@ -605,7 +605,7 @@ async fn reverify_all(
     delay_ms: u64,
     prove: bool,
 ) -> Vec<Option<ReverifyProof>> {
-    let client = match crate::smuggle_transport::build_client(timeout_secs) {
+    let client = match crate::smuggle::smuggle_transport::build_client(timeout_secs) {
         Ok(c) => c,
         Err(e) => {
             eprintln!("error: build HTTP client: {e}");

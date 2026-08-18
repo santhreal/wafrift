@@ -230,7 +230,7 @@ pub(crate) fn generate_cors_variants(target_host: &str) -> Vec<CorsProbe> {
 
 pub(crate) async fn run_cors_diff(mut args: CorsDiffArgs) -> ExitCode {
     args.url = crate::helpers::normalize_target_url(&args.url);
-    let http = match crate::parser_diff_common::build_diff_http_client_for(&args) {
+    let http = match crate::diff::parser_diff_common::build_diff_http_client_for(&args) {
         Ok(c) => c,
         Err(code) => return code,
     };
@@ -431,7 +431,7 @@ fn extract_host(url: &str) -> Option<String> {
 }
 
 fn emit_output(args: &CorsDiffArgs, results: &[CorsDiffResult], errors: u32) {
-    let (high, medium) = crate::parser_diff_common::count_high_medium(results, |r| r.severity);
+    let (high, medium) = crate::diff::parser_diff_common::count_high_medium(results, |r| r.severity);
 
     if args.format == "json" {
         let out = json!({
@@ -441,12 +441,12 @@ fn emit_output(args: &CorsDiffArgs, results: &[CorsDiffResult], errors: u32) {
             "divergences": { "high": high, "medium": medium },
             "results": results,
         });
-        crate::parser_diff_common::print_pretty_json(&out);
+        crate::diff::parser_diff_common::print_pretty_json(&out);
         return;
     }
 
     if !args.quiet {
-        crate::parser_diff_common::print_text_summary(
+        crate::diff::parser_diff_common::print_text_summary(
             "cors-diff",
             "CORS issue(s)",
             high,
@@ -471,7 +471,7 @@ fn emit_output(args: &CorsDiffArgs, results: &[CorsDiffResult], errors: u32) {
     }
 
     for r in results.iter().filter(|r| r.severity != "none") {
-        let badge = crate::parser_diff_common::severity_badge(r.severity);
+        let badge = crate::diff::parser_diff_common::severity_badge(r.severity);
         println!();
         println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         println!("    {} {}", "↘".bright_black(), r.finding.bright_white());

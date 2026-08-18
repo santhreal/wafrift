@@ -514,7 +514,7 @@ fn build_http_client(args: &DistillArgs) -> Result<reqwest::Client, ExitCode> {
     } else {
         wafrift_types::DEFAULT_REQUEST_TIMEOUT_SECS
     };
-    crate::parser_diff_common::build_diff_http_client(
+    crate::diff::parser_diff_common::build_diff_http_client(
         timeout,
         args.insecure,
         args.proxy.as_deref(),

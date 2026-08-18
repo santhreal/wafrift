@@ -55,7 +55,7 @@ use reqwest::{Client, Url};
 use serde_json::json;
 use tokio::sync::Semaphore;
 
-use crate::parser_diff_common::severity_of_cache;
+use crate::diff::parser_diff_common::severity_of_cache;
 
 #[derive(Args, Debug)]
 pub(crate) struct CacheDiffArgs {
@@ -277,7 +277,7 @@ pub(crate) fn generate_cache_variants(baseline_url: &str, param: &str) -> Vec<Ca
 /// Run the cache-diff scanner.
 pub(crate) async fn run_cache_diff(mut args: CacheDiffArgs) -> ExitCode {
     args.url = crate::helpers::normalize_target_url(&args.url);
-    let http = match crate::parser_diff_common::build_diff_http_client_for(&args) {
+    let http = match crate::diff::parser_diff_common::build_diff_http_client_for(&args) {
         Ok(c) => c,
         Err(code) => return code,
     };
@@ -512,7 +512,7 @@ fn emit_output(
     baseline: &FireOutcome,
     errors: u32,
 ) {
-    let (high, medium) = crate::parser_diff_common::count_high_medium(results, |r| r.severity);
+    let (high, medium) = crate::diff::parser_diff_common::count_high_medium(results, |r| r.severity);
 
     if args.format == "json" {
         let out = json!({
@@ -526,7 +526,7 @@ fn emit_output(
             "divergences": { "high": high, "medium": medium },
             "results": results,
         });
-        crate::parser_diff_common::print_pretty_json(&out);
+        crate::diff::parser_diff_common::print_pretty_json(&out);
         return;
     }
 
@@ -546,7 +546,7 @@ fn emit_output(
     }
 
     for r in results.iter().filter(|r| r.severity != "none") {
-        let badge = crate::parser_diff_common::severity_badge(r.severity);
+        let badge = crate::diff::parser_diff_common::severity_badge(r.severity);
         println!();
         println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
         println!(
@@ -805,7 +805,7 @@ mod tests {
                 });
             }
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         addr
     }
 

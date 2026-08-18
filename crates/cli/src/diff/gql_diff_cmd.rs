@@ -31,7 +31,7 @@ use reqwest::Client;
 use serde_json::json;
 use tokio::sync::Semaphore;
 
-use crate::parser_diff_common::{body_delta_pct, severity_of};
+use crate::diff::parser_diff_common::{body_delta_pct, severity_of};
 
 #[derive(Args, Debug)]
 pub(crate) struct GqlDiffArgs {
@@ -220,7 +220,7 @@ pub(crate) fn generate_gql_variants() -> Vec<GqlProbe> {
 
 pub(crate) async fn run_gql_diff(mut args: GqlDiffArgs) -> ExitCode {
     args.url = crate::helpers::normalize_target_url(&args.url);
-    let http = match crate::parser_diff_common::build_diff_http_client_for(&args) {
+    let http = match crate::diff::parser_diff_common::build_diff_http_client_for(&args) {
         Ok(c) => c,
         Err(code) => return code,
     };
@@ -286,7 +286,7 @@ pub(crate) async fn run_gql_diff(mut args: GqlDiffArgs) -> ExitCode {
             let result = if v.http_get {
                 // Genuine GraphQL-over-GET: query rides the URL, no POST body.
                 let get_url = gql_get_url(&url, &v.body);
-                crate::parser_diff_common::fire_get_status_len(&http, &get_url).await
+                crate::diff::parser_diff_common::fire_get_status_len(&http, &get_url).await
             } else {
                 fire_gql(&http, &url, ct, &v.body).await
             };
@@ -410,7 +410,7 @@ fn emit_output(
     baseline_body_len: usize,
     errors: u32,
 ) {
-    let (high, medium) = crate::parser_diff_common::count_high_medium(results, |r| r.severity);
+    let (high, medium) = crate::diff::parser_diff_common::count_high_medium(results, |r| r.severity);
 
     if args.format == "json" {
         let out = json!({
@@ -422,12 +422,12 @@ fn emit_output(
             "divergences": { "high": high, "medium": medium },
             "results": results,
         });
-        crate::parser_diff_common::print_pretty_json(&out);
+        crate::diff::parser_diff_common::print_pretty_json(&out);
         return;
     }
 
     if !args.quiet {
-        crate::parser_diff_common::print_text_summary(
+        crate::diff::parser_diff_common::print_text_summary(
             "gql-diff",
             "divergence(s)",
             high,
@@ -437,10 +437,10 @@ fn emit_output(
     }
 
     for r in results.iter().filter(|r| r.severity != "none") {
-        let badge = crate::parser_diff_common::severity_badge(r.severity);
+        let badge = crate::diff::parser_diff_common::severity_badge(r.severity);
         println!();
         println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
-        crate::parser_diff_common::print_baseline_probe_arrow(
+        crate::diff::parser_diff_common::print_baseline_probe_arrow(
             r.baseline_status,
             r.baseline_body_len,
             r.probe_status,
@@ -634,7 +634,7 @@ mod tests {
                 });
             }
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         addr
     }
 

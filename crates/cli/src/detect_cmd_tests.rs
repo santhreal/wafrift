@@ -118,7 +118,7 @@
                 });
             }
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         addr
     }
 
@@ -159,7 +159,7 @@
             let _ = sock.write_all(resp.as_bytes()).await;
             let _ = sock.shutdown().await;
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         (addr, rx)
     }
 

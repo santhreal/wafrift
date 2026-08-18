@@ -47,7 +47,7 @@ use wafrift_core::probe_aggregator::{ProbeSeeds, all_probes};
 use wafrift_types::probe::{SmuggleArtifact, SmuggleProbe};
 
 use crate::permission;
-use crate::smuggle_transport;
+use crate::smuggle::smuggle_transport;
 
 #[derive(Debug, Parser)]
 pub struct SmuggleFireArgs {
