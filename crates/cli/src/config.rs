@@ -575,7 +575,7 @@ impl HasHttpConfig for crate::diff::trailer_diff_cmd::TrailerDiffArgs {
 // silently dropped on the floor, operators with a lab on a
 // self-signed cert had no way to make distill work short of passing
 // --insecure on every invocation.
-impl HasHttpConfig for crate::distill_cmd::DistillArgs {
+impl HasHttpConfig for crate::hunt::distill_cmd::DistillArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }

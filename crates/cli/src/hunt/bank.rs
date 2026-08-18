@@ -67,17 +67,17 @@ pub(crate) enum BankAction {
     /// Restore a previously-exported envelope onto this machine.
     Import(BankImportArgs),
     /// Generate a fresh ed25519 signing keypair.
-    GenKey(crate::bank_registry::GenKeyArgs),
+    GenKey(crate::hunt::bank_registry::GenKeyArgs),
     /// Sign a bank-export envelope.
-    Sign(crate::bank_registry::SignArgs),
+    Sign(crate::hunt::bank_registry::SignArgs),
     /// Verify a `*.signed.json` against the trust list.
-    Verify(crate::bank_registry::VerifyArgs),
+    Verify(crate::hunt::bank_registry::VerifyArgs),
     /// HTTP GET a signed bundle, verify, write to disk.
-    Pull(crate::bank_registry::PullArgs),
+    Pull(crate::hunt::bank_registry::PullArgs),
     /// Sign a local envelope and HTTP POST to a registry URL.
-    Submit(crate::bank_registry::SubmitArgs),
+    Submit(crate::hunt::bank_registry::SubmitArgs),
     /// Manage `~/.wafrift/trusted-keys.toml`.
-    Trust(crate::bank_registry::TrustArgs),
+    Trust(crate::hunt::bank_registry::TrustArgs),
 }
 
 #[derive(Args, Debug)]
@@ -150,7 +150,7 @@ struct SourcePaths {
 use wafrift_types::gene_bank_io::{PersistedGeneBank, PersistedHostState};
 
 pub(crate) fn run_bank(args: BankArgs) -> ExitCode {
-    use crate::bank_registry;
+    use crate::hunt::bank_registry;
     match args.action {
         BankAction::List(a) => run_list(a),
         BankAction::Export(a) => run_export(a),

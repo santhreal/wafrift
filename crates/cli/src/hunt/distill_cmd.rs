@@ -206,7 +206,7 @@ pub(crate) async fn run_distill(mut args: DistillArgs, cancel: CancellationToken
     // original, candidate)` is exactly the right question here.
     let class: Option<String> = match args.class.as_str() {
         "none" => None,
-        "auto" => crate::equiv_engine::class_for_payload_type(grammar::classify(&args.payload))
+        "auto" => crate::hunt::equiv_engine::class_for_payload_type(grammar::classify(&args.payload))
             .map(str::to_string),
         other => Some(other.to_string()),
     };
@@ -215,7 +215,7 @@ pub(crate) async fn run_distill(mut args: DistillArgs, cancel: CancellationToken
     // full input and ddmin would have no consistent starting point. Fall back to
     // WAF-bypass-only with a loud warning rather than silently producing nonsense.
     let class: Option<String> = match class {
-        Some(c) if crate::equiv_engine::oracle_valid(&c, &args.payload, &args.payload) => Some(c),
+        Some(c) if crate::hunt::equiv_engine::oracle_valid(&c, &args.payload, &args.payload) => Some(c),
         Some(c) => {
             eprintln!(
                 "{} the {c} oracle does not recognise the input as a valid attack of that \
@@ -256,7 +256,7 @@ pub(crate) async fn run_distill(mut args: DistillArgs, cancel: CancellationToken
             // fire, so a dead candidate costs zero requests against the (often
             // rate-limited) target.
             let attack_preserved = match class.as_deref() {
-                Some(c) => crate::equiv_engine::oracle_valid(c, &original_payload, &candidate),
+                Some(c) => crate::hunt::equiv_engine::oracle_valid(c, &original_payload, &candidate),
                 None => true,
             };
             let http = http_arc.clone();

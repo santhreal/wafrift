@@ -26,7 +26,7 @@ use std::process::ExitCode;
 use clap::Args;
 use tokio_util::sync::CancellationToken;
 
-use crate::distill_cmd::{DistillArgs, run_distill};
+use crate::hunt::distill_cmd::{DistillArgs, run_distill};
 
 /// Arguments for `wafrift tmin`: identical to `wafrift distill` by design
 /// (same algorithm, different entry-point name for AFL/fuzzer-familiar users).

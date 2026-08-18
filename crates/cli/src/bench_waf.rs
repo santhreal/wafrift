@@ -647,7 +647,7 @@ struct StrategyStat {
 // the shipped `wafrift scan` share exactly one definition of "bypass",
 // so a de-rig fix can never apply to one and not the other. Re-exported
 // here so existing call sites and the pinned anti-rig tests resolve.
-use crate::equiv_engine::{build_request_for_delivery, run_equiv_cegis, send, verified_bypass};
+use crate::hunt::equiv_engine::{build_request_for_delivery, run_equiv_cegis, send, verified_bypass};
 
 pub fn run_bench_waf(args: BenchWafArgs) -> ExitCode {
     // R48-I4 fix (dogfood pass 9): shared overwrite guard (also
@@ -1061,8 +1061,8 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     // hard-error-on-IO) is the canonical `info_gain_sched::load_history`: the same
     // loader `fingerprint --filter-history` uses, so warm-start semantics never drift.
     let mut sched_history = match args.history_file.as_ref() {
-        Some(path) => crate::info_gain_sched::load_history(path)?,
-        None => crate::info_gain_sched::History::new(),
+        Some(path) => crate::hunt::info_gain_sched::load_history(path)?,
+        None => crate::hunt::info_gain_sched::History::new(),
     };
 
     // --history-merge: fold zero-or-more additional history files
@@ -1076,7 +1076,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
             merge_path,
             crate::safe_body::GENE_BANK_FILE_MAX_BYTES,
         ) {
-            Ok(text) => match serde_json::from_str::<crate::info_gain_sched::History>(&text) {
+            Ok(text) => match serde_json::from_str::<crate::hunt::info_gain_sched::History>(&text) {
                 Ok(extra) => {
                     let prior_len = sched_history.len();
                     sched_history.merge(&extra);
@@ -1118,7 +1118,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
             // Get diagnostic entries so the eprintln can surface the
             // mean info_gain of the kept set, operators see the
             // schedule's actual quality, not just its cardinality.
-            let entries: Vec<crate::info_gain_sched::ScheduleEntry> = if args.fair_class {
+            let entries: Vec<crate::hunt::info_gain_sched::ScheduleEntry> = if args.fair_class {
                 // Per-class fairness: every class gets roughly equal
                 // slots. BTreeMap so per-class iteration order is
                 // deterministic (alphabetical), satisfying
@@ -1145,14 +1145,14 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
                         by_class.len() - budget,
                     );
                 }
-                crate::info_gain_sched::schedule_per_class_with_diagnostics(
+                crate::hunt::info_gain_sched::schedule_per_class_with_diagnostics(
                     &sched_history,
                     &by_class,
                     budget,
                 )
             } else {
                 let case_ids: Vec<&str> = cases.iter().map(|c| c.id.as_str()).collect();
-                crate::info_gain_sched::schedule_with_diagnostics(&sched_history, &case_ids, budget)
+                crate::hunt::info_gain_sched::schedule_with_diagnostics(&sched_history, &case_ids, budget)
             };
             let mean_info_gain = if entries.is_empty() {
                 0.0
@@ -1235,14 +1235,14 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
                     .or_default()
                     .push(c.id.clone());
             }
-            crate::info_gain_sched::schedule_per_class_with_diagnostics(
+            crate::hunt::info_gain_sched::schedule_per_class_with_diagnostics(
                 &sched_history,
                 &by_class,
                 effective_budget,
             )
         } else {
             let case_ids: Vec<&str> = cases.iter().map(|c| c.id.as_str()).collect();
-            crate::info_gain_sched::schedule_with_diagnostics(
+            crate::hunt::info_gain_sched::schedule_with_diagnostics(
                 &sched_history,
                 &case_ids,
                 effective_budget,
@@ -1406,7 +1406,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     // corpus + edge-POP coverage map can be populated end-to-end. Wrapped
     // in Arc<Mutex<>> so it can cross await points without changing the
     // strategy function signatures to async-bounded references.
-    let recorder: Option<std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>> =
+    let recorder: Option<std::sync::Arc<std::sync::Mutex<crate::hunt::corpus_recorder::CorpusRecorder>>> =
         if args.corpus_out.is_some() || args.coverage_out.is_some() {
             let fingerprint = if args.corpus_fingerprint.is_empty() {
                 format!("bench:{}", base_url)
@@ -1425,7 +1425,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
                 .clone()
                 .unwrap_or_else(|| std::path::PathBuf::from("wafrift-coverage.json"));
             Some(std::sync::Arc::new(std::sync::Mutex::new(
-                crate::corpus_recorder::CorpusRecorder::new(
+                crate::hunt::corpus_recorder::CorpusRecorder::new(
                     fingerprint,
                     corpus_path,
                     coverage_path,
@@ -1516,7 +1516,7 @@ async fn run_bench_waf_async(mut args: BenchWafArgs) -> Result<ExitCode, String>
     if let Some(path) = args.history_file.as_ref() {
         // §7 DEDUP: serialize + atomic write is the canonical
         // `info_gain_sched::save_history`; only the operator messaging is local.
-        match crate::info_gain_sched::save_history(path, &sched_history) {
+        match crate::hunt::info_gain_sched::save_history(path, &sched_history) {
             Ok(()) => {
                 eprintln!(
                     "info-gain scheduler: wrote {} payload entries to {} ({})",
@@ -1600,7 +1600,7 @@ async fn run_evade(
     base_url: &str,
     args: &BenchWafArgs,
     bypass_corpus: &mut Option<BypassCorpus>,
-    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>>,
+    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::hunt::corpus_recorder::CorpusRecorder>>>,
 ) -> Result<EvadeResult, String> {
     let mut by_strategy: BTreeMap<String, StrategyStat> = BTreeMap::new();
     let mut total = 0;
@@ -1822,7 +1822,7 @@ async fn run_payload_strategy(
     total: &mut usize,
     bypassed: &mut usize,
     bypass_techs: &mut Vec<String>,
-    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>>,
+    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::hunt::corpus_recorder::CorpusRecorder>>>,
 ) -> StrategyStat {
     let mut stat = StrategyStat::default();
     let Some(level) = pick_level(strat) else {
@@ -1855,7 +1855,7 @@ async fn run_payload_strategy(
         // the (body, headers) kept ONLY when proving execution, so a normal run
         // pays no extra clone.
         let probe_result = if recorder.is_some() || args.prove_execution {
-            match crate::equiv_engine::send_with_envelope(client, &req, args.timeout_secs).await {
+            match crate::hunt::equiv_engine::send_with_envelope(client, &req, args.timeout_secs).await {
                 Ok(env) => {
                     let is_bypass = verified_bypass(
                         &case.class,
@@ -1991,8 +1991,8 @@ fn detonate_bypass_body(body: &[u8], headers: &[(String, String)], url: &str) ->
 /// lives in ONE place (§7), the concrete payload is what makes a hunt
 /// corpus re-verifiable and submittable (`wafrift harvest`).
 fn record_equiv_bypass(
-    recorder: &std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>,
-    env: &crate::equiv_engine::ProbeEnvelope,
+    recorder: &std::sync::Arc<std::sync::Mutex<crate::hunt::corpus_recorder::CorpusRecorder>>,
+    env: &crate::hunt::equiv_engine::ProbeEnvelope,
     payload: &str,
     class: &str,
     rules: &[&str],
@@ -2039,7 +2039,7 @@ async fn run_equiv_strategy(
     total: &mut usize,
     bypassed: &mut usize,
     bypass_techs: &mut Vec<String>,
-    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>>,
+    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::hunt::corpus_recorder::CorpusRecorder>>>,
 ) -> StrategyStat {
     let mut stat = StrategyStat::default();
     // Only classes with a sound equivalence model are handled, see
@@ -2073,7 +2073,7 @@ async fn run_equiv_strategy(
         stat.variants += 1;
         *total += 1;
         let probe = if let Some(rec) = recorder {
-            match crate::equiv_engine::send_with_envelope(client, &req, args.timeout_secs).await {
+            match crate::hunt::equiv_engine::send_with_envelope(client, &req, args.timeout_secs).await {
                 Ok(env) => {
                     let (status, blocked) = (env.status, env.blocked);
                     if verified_bypass(&case.class, &case.payload, &m.payload, blocked, status) {
@@ -2138,7 +2138,7 @@ async fn run_equiv_adaptive_strategy(
     total: &mut usize,
     bypassed: &mut usize,
     bypass_techs: &mut Vec<String>,
-    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>>,
+    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::hunt::corpus_recorder::CorpusRecorder>>>,
 ) -> StrategyStat {
     let mut stat = StrategyStat::default();
     if !grammar::equiv::supports_class(&case.class) {
@@ -2176,7 +2176,7 @@ async fn run_equiv_adaptive_strategy(
             stat.variants += 1;
             *total += 1;
             let probe = if let Some(rec) = recorder {
-                match crate::equiv_engine::send_with_envelope(client, &req, args.timeout_secs).await
+                match crate::hunt::equiv_engine::send_with_envelope(client, &req, args.timeout_secs).await
                 {
                     Ok(env) => {
                         let (status, blocked) = (env.status, env.blocked);
@@ -2246,7 +2246,7 @@ async fn run_equiv_cegis_strategy(
     total: &mut usize,
     bypassed: &mut usize,
     bypass_techs: &mut Vec<String>,
-    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::corpus_recorder::CorpusRecorder>>>,
+    recorder: Option<&std::sync::Arc<std::sync::Mutex<crate::hunt::corpus_recorder::CorpusRecorder>>>,
 ) -> StrategyStat {
     // Thin adapter over the SINGLE shared moat engine. The corpus
     // bench drives `equiv_engine::run_equiv_cegis` with the

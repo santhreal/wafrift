@@ -264,7 +264,7 @@ pub(crate) async fn run_scan_raw(
                     }
                 }
             };
-            let minimum = crate::distill_cmd::ddmin(&record.payload, predicate).await;
+            let minimum = crate::hunt::distill_cmd::ddmin(&record.payload, predicate).await;
             distill_fires_total += u64::from(fires.load(std::sync::atomic::Ordering::SeqCst));
             // Only record if the distillation actually shortened
             // anything (or kept it identical, still record the

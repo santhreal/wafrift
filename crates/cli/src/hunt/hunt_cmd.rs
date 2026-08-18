@@ -626,7 +626,7 @@ async fn run_one_round(
     // technique tags survived in the campaign state, which can't
     // reconstruct the wire payload. The path is computed by the SINGLE
     // shared helper `harvest` also reads from, so the two can't diverge.
-    let (corpus_path, coverage_path) = crate::corpus_recorder::default_corpus_paths(base_url);
+    let (corpus_path, coverage_path) = crate::hunt::corpus_recorder::default_corpus_paths(base_url);
 
     let bench_args = BenchWafArgs {
         base_url: Some(base_url.to_string()),

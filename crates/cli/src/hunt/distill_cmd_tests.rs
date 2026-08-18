@@ -65,7 +65,7 @@
 
     #[tokio::test]
     async fn semantic_gate_keeps_a_valid_xss_attack_through_ddmin() {
-        use crate::equiv_engine::oracle_valid;
+        use crate::hunt::equiv_engine::oracle_valid;
 
         let original = "<svg onload=alert(1)>";
         assert!(
@@ -95,7 +95,7 @@
 
     #[tokio::test]
     async fn without_the_semantic_gate_ddmin_collapses_to_noise() {
-        use crate::equiv_engine::oracle_valid;
+        use crate::hunt::equiv_engine::oracle_valid;
 
         // The OLD (buggy) distill predicate: "WAF passes" ALONE, modelled as
         // constant-true. With nothing preserving the attack, ddmin shrinks a
@@ -115,7 +115,7 @@
 
     #[tokio::test]
     async fn semantic_gate_preserves_sql_injection_through_ddmin() {
-        use crate::equiv_engine::oracle_valid;
+        use crate::hunt::equiv_engine::oracle_valid;
 
         // The canonical SQL gate is SAME-EXPLOIT-preserving (`still_executes` +
         // valid-injection parse), so the distilled form must remain the same
@@ -141,7 +141,7 @@
 
     #[test]
     fn distill_class_resolution_matches_the_canonical_gate() {
-        use crate::equiv_engine::{class_for_payload_type, oracle_valid};
+        use crate::hunt::equiv_engine::{class_for_payload_type, oracle_valid};
         use wafrift_grammar::grammar::PayloadType;
 
         // `auto` resolves through the SAME PayloadType→class mapping bench/scan
