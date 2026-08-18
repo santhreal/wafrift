@@ -211,7 +211,7 @@ pub(crate) struct AttackClass {
 /// The embedded Tier-B attack-class data, the single source of `audit` /
 /// `harden`'s canonical attacks and detection tokens is this file, not a
 /// hardcoded `vec!`. Extend coverage by adding a `[[class]]` block to it.
-const ATTACK_CLASSES_TOML: &str = include_str!("../rules/classes/attack_classes.toml");
+const ATTACK_CLASSES_TOML: &str = include_str!("../../rules/classes/attack_classes.toml");
 
 /// Parse a Tier-B attack-class set from TOML. **Fails closed**: an empty set, or
 /// any class missing its attacks or its tokens, is rejected, a class whose
@@ -702,7 +702,7 @@ pub(crate) fn run_fingerprint(args: FingerprintArgs) -> ExitCode {
 fn run_fingerprint_inner(args: FingerprintArgs) -> u8 {
     // Live requests go out, gate on the same authorization check model-evade
     // uses (loopback / RFC1918 always allowed; public hosts need a reason).
-    if let Err(e) = crate::model_evade_cmd::check_permission(&args.url, &args.permission) {
+    if let Err(e) = crate::wafmodel::model_evade_cmd::check_permission(&args.url, &args.permission) {
         eprintln!("error: {e}");
         return 2;
     }
@@ -905,7 +905,7 @@ fn run_filter_characterization(
     rt: &Arc<tokio::runtime::Runtime>,
     args: &FingerprintArgs,
 ) -> Result<(FilterProfile, Vec<DecodeGap>), String> {
-    let mut oracle = crate::model_evade_cmd::build_http_oracle(
+    let mut oracle = crate::wafmodel::model_evade_cmd::build_http_oracle(
         rt.clone(),
         args.url.clone(),
         args.param.clone(),
@@ -1105,7 +1105,7 @@ fn build_solved_bypass(
     attack: &str,
     detected: &[Stage],
 ) -> Result<BypassOutcome, String> {
-    let mut waf = crate::model_evade_cmd::build_http_oracle(
+    let mut waf = crate::wafmodel::model_evade_cmd::build_http_oracle(
         rt.clone(),
         args.url.clone(),
         args.param.clone(),

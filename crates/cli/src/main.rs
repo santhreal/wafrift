@@ -29,7 +29,7 @@ mod interactive;
 // ja3_diff_cmd is gated behind tls-impersonate in diff/mod.rs
 mod listener_cmd;
 mod man_cmd;
-mod model_evade_cmd;
+mod wafmodel;
 mod oneshot;
 mod origin_hints;
 /// Target-permission gate. Refuse-by-default for non-bounty,
@@ -45,7 +45,6 @@ mod replay;
 mod report;
 mod retry_after;
 mod safe_body;
-mod sanitizer_decompile_cmd;
 mod sarif_cmd;
 mod scan;
 mod session_init;
@@ -56,7 +55,6 @@ mod tcp_overlap_cmd;
 mod technique_filter;
 mod tmin_cmd;
 mod transform_encode;
-mod wafmodel_cmd;
 
 // All per-command helpers are imported by their command modules now.
 // main.rs is reduced to dispatch + the top-level Cli/Commands surface.
@@ -229,27 +227,27 @@ enum Commands {
     /// Deduces bypasses from the WAF's decision boundary, not from
     /// mutation luck. Use `--budget` to cap live queries.
     #[command(name = "model-evade")]
-    ModelEvade(model_evade_cmd::ModelEvadeArgs),
+    ModelEvade(wafmodel::model_evade_cmd::ModelEvadeArgs),
     /// Decompile a CRS-class ruleset and report the holes an attacker
     /// can drive through it (the WAF X-ray). Zero-config; `--ruleset`
     /// audits a custom Tier-B config.
-    Audit(wafmodel_cmd::AuditArgs),
+    Audit(wafmodel::wafmodel_cmd::AuditArgs),
     /// Synthesize the minimal CRS-grade rules that close the holes
     /// `audit` finds, prove zero benign false positives, and exit
     /// non-zero unless closure is proven (usable as a CI gate).
-    Harden(wafmodel_cmd::HardenArgs),
+    Harden(wafmodel::wafmodel_cmd::HardenArgs),
     /// Fingerprint a live target's origin-normalization pipeline by
     /// reflection (which decode/normalize stages it applies), then
     /// optionally solve a TARGETED, live-verified bypass of `--attack`
     /// against that exact pipeline. The decompiler aimed at one host.
-    Fingerprint(wafmodel_cmd::FingerprintArgs),
+    Fingerprint(wafmodel::wafmodel_cmd::FingerprintArgs),
     /// Decompile a CLIENT-SIDE HTML sanitizer: recover its source from a JS
     /// source map (or raw JS), extract its allow/deny model (DOMPurify config,
     /// `sanitize-html` allowlist, hand-rolled `replace()` strips), then L*/SFA-
     /// mine the XSS vectors that survive it. The DOM-XSS dual of `fingerprint`;
     /// each surviving bypass is model-proven and flagged for scald DOM confirm.
     #[command(name = "sanitizer-decompile")]
-    SanitizerDecompile(sanitizer_decompile_cmd::SanitizerDecompileArgs),
+    SanitizerDecompile(wafmodel::sanitizer_decompile_cmd::SanitizerDecompileArgs),
     /// Plan a target-based TCP sequence-overlap desync: overlapping TCP segments
     /// a WAF/IDS reassembles to a BENIGN stream while the origin reassembles to
     /// the ATTACK (Ptacek-Newsham / Snort stream5 class). Each plan is self-
@@ -1238,7 +1236,7 @@ fn main() -> ExitCode {
         Some(Commands::Exploit(args)) => hunt::exploit_cmd::run_exploit(args),
         Some(Commands::ClientDeliver(args)) => client_deliver_cmd::run_client_deliver(args),
         Some(Commands::SanitizerDecompile(args)) => {
-            sanitizer_decompile_cmd::run_sanitizer_decompile(args)
+            wafmodel::sanitizer_decompile_cmd::run_sanitizer_decompile(args)
         }
         Some(Commands::TcpOverlap(args)) => tcp_overlap_cmd::run_tcp_overlap(args),
         Some(Commands::Detect(args)) => {
@@ -1564,10 +1562,10 @@ fn main() -> ExitCode {
             }
         },
         Some(Commands::Man(args)) => man_cmd::run_man(args),
-        Some(Commands::ModelEvade(args)) => model_evade_cmd::run_model_evade(args),
-        Some(Commands::Audit(args)) => wafmodel_cmd::run_audit(args),
-        Some(Commands::Harden(args)) => wafmodel_cmd::run_harden(args),
-        Some(Commands::Fingerprint(args)) => wafmodel_cmd::run_fingerprint(args),
+        Some(Commands::ModelEvade(args)) => wafmodel::model_evade_cmd::run_model_evade(args),
+        Some(Commands::Audit(args)) => wafmodel::wafmodel_cmd::run_audit(args),
+        Some(Commands::Harden(args)) => wafmodel::wafmodel_cmd::run_harden(args),
+        Some(Commands::Fingerprint(args)) => wafmodel::wafmodel_cmd::run_fingerprint(args),
         Some(Commands::Oneshot(args)) => oneshot::run_oneshot(args),
         Some(Commands::Listener(args)) => listener_cmd::run_listener(args),
         Some(Commands::ParserDiff(args)) => match diff::parser_diff_cmd::run_parser_diff(args) {
