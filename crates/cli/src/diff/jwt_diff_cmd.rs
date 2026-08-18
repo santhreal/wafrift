@@ -40,7 +40,7 @@ use tokio::sync::Semaphore;
 use wafrift_transport::jwt::b64url_decode;
 use wafrift_transport::jwt::{b64url_encode, decode_b64url_json};
 
-use crate::parser_diff_common::{body_delta_pct, severity_of};
+use crate::diff::parser_diff_common::{body_delta_pct, severity_of};
 
 #[derive(Args, Debug)]
 pub(crate) struct JwtDiffArgs {
@@ -258,7 +258,7 @@ pub(crate) async fn run_jwt_diff(mut args: JwtDiffArgs) -> ExitCode {
         );
         return ExitCode::from(2);
     }
-    let http = match crate::parser_diff_common::build_diff_http_client_for(&args) {
+    let http = match crate::diff::parser_diff_common::build_diff_http_client_for(&args) {
         Ok(c) => c,
         Err(code) => return code,
     };
@@ -413,7 +413,7 @@ fn emit_output(
     baseline_body_len: usize,
     errors: u32,
 ) {
-    let (high, medium) = crate::parser_diff_common::count_high_medium(results, |r| r.severity);
+    let (high, medium) = crate::diff::parser_diff_common::count_high_medium(results, |r| r.severity);
 
     if args.format == "json" {
         let out = json!({
@@ -425,12 +425,12 @@ fn emit_output(
             "divergences": { "high": high, "medium": medium },
             "results": results,
         });
-        crate::parser_diff_common::print_pretty_json(&out);
+        crate::diff::parser_diff_common::print_pretty_json(&out);
         return;
     }
 
     if !args.quiet {
-        crate::parser_diff_common::print_text_summary(
+        crate::diff::parser_diff_common::print_text_summary(
             "jwt-diff",
             "mutation(s) accepted by target",
             high,
@@ -440,10 +440,10 @@ fn emit_output(
     }
 
     for r in results.iter().filter(|r| r.severity != "none") {
-        let badge = crate::parser_diff_common::severity_badge(r.severity);
+        let badge = crate::diff::parser_diff_common::severity_badge(r.severity);
         println!();
         println!("  [{badge}] {}: {}", r.kind.bold(), r.description);
-        crate::parser_diff_common::print_baseline_probe_arrow(
+        crate::diff::parser_diff_common::print_baseline_probe_arrow(
             r.baseline_status,
             r.baseline_body_len,
             r.probe_status,

@@ -354,7 +354,7 @@ mod tests {
                 });
             }
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         addr
     }
 
@@ -413,7 +413,7 @@ mod tests {
             let _ = sock.write_all(response.as_bytes()).await;
             let _ = sock.shutdown().await;
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
 
         let parsed = curl_from_url(&format!("http://{addr}/login"));
         establish_from_curl(parsed, Duration::from_secs(3), false)
@@ -454,7 +454,7 @@ mod tests {
             let _ = sock.write_all(response.as_bytes()).await;
             let _ = sock.shutdown().await;
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
 
         let parsed = curl_from_url(&format!("http://{addr}/login"));
         let mut headers = HeaderMap::new();

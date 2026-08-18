@@ -42,33 +42,33 @@ pub(crate) struct DiffArgs {
 #[derive(Subcommand, Debug)]
 pub(crate) enum DiffKind {
     /// URL-path parser disagreement (was: `parser-diff`).
-    Path(crate::parser_diff_cmd::ParserDiffArgs),
+    Path(crate::diff::parser_diff_cmd::ParserDiffArgs),
     /// Request-header parser disagreement (was: `header-diff`).
-    Header(crate::header_diff_cmd::HeaderDiffArgs),
+    Header(crate::diff::header_diff_cmd::HeaderDiffArgs),
     /// Request-body parser disagreement (was: `body-diff`).
-    Body(crate::body_diff_cmd::BodyDiffArgs),
+    Body(crate::diff::body_diff_cmd::BodyDiffArgs),
     /// Query-string parser disagreement (was: `query-diff`).
-    Query(crate::query_diff_cmd::QueryDiffArgs),
+    Query(crate::diff::query_diff_cmd::QueryDiffArgs),
     /// Cache-key confusion / poisoning surface (was: `cache-diff`).
-    Cache(crate::cache_diff_cmd::CacheDiffArgs),
+    Cache(crate::diff::cache_diff_cmd::CacheDiffArgs),
     /// HTTP/1.1-vs-HTTP/2 differential (was: `h2-diff`).
     #[command(name = "h2")]
-    H2(crate::h2_diff_cmd::H2DiffArgs),
+    H2(crate::diff::h2_diff_cmd::H2DiffArgs),
     /// HTTP-method parser disagreement (was: `method-diff`).
-    Method(crate::method_diff_cmd::MethodDiffArgs),
+    Method(crate::diff::method_diff_cmd::MethodDiffArgs),
     /// GraphQL parser / cost-limit differential (was: `gql-diff`).
-    Gql(crate::gql_diff_cmd::GqlDiffArgs),
+    Gql(crate::diff::gql_diff_cmd::GqlDiffArgs),
     /// JWT signature / claim validation scan (was: `jwt-diff`).
-    Jwt(crate::jwt_diff_cmd::JwtDiffArgs),
+    Jwt(crate::diff::jwt_diff_cmd::JwtDiffArgs),
     /// CORS misconfiguration scan (was: `cors-diff`).
-    Cors(crate::cors_diff_cmd::CorsDiffArgs),
+    Cors(crate::diff::cors_diff_cmd::CorsDiffArgs),
     /// HTTP chunked-trailer injection differential (was: `trailer-diff`).
-    Trailer(crate::trailer_diff_cmd::TrailerDiffArgs),
+    Trailer(crate::diff::trailer_diff_cmd::TrailerDiffArgs),
     /// Run every core parser-diff probe concurrently and merge the
     /// results into one report (was: `attack`).
     All(crate::attack_cmd::AttackArgs),
     /// Per-browser TLS-fingerprint differential (was: `ja3-diff`).
     /// Requires the `tls-impersonate` build feature.
     #[cfg(feature = "tls-impersonate")]
-    Ja3(crate::ja3_diff_cmd::Ja3DiffArgs),
+    Ja3(crate::diff::ja3_diff_cmd::Ja3DiffArgs),
 }

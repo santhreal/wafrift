@@ -303,14 +303,14 @@ fn classify_severity(outcomes: &mut [ProbeOutcome]) {
             // its delta semantics (e.g., similarity score),
             // this site automatically tracks the change.
             let delta =
-                crate::parser_diff_common::body_delta_pct(baseline_body_len, body_len).abs();
+                crate::diff::parser_diff_common::body_delta_pct(baseline_body_len, body_len).abs();
             o.severity = if delta > 20.0 { "medium" } else { "none" };
         }
     }
 }
 
 fn print_outcome_text(o: &ProbeOutcome) {
-    let badge = crate::parser_diff_common::severity_badge(o.severity);
+    let badge = crate::diff::parser_diff_common::severity_badge(o.severity);
     print!("  [{badge:>6}] {:<12} ", o.profile.bold());
     if let Some(e) = &o.error {
         println!("{} {}", "error:".bright_red(), e.bright_red());

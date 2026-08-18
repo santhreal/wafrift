@@ -166,7 +166,7 @@ mod tests {
                 });
             }
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         (addr, counter)
     }
 
@@ -258,7 +258,7 @@ mod tests {
                 });
             }
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         let client = reqwest::Client::builder().build().unwrap();
         // Just verify the call completes, the IntelligenceLoop
         // surface for asserting block counts isn't directly

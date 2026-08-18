@@ -122,7 +122,7 @@ mod tests {
                 });
             }
         });
-        tokio::time::sleep(crate::parser_diff_common::TEST_SETTLE).await;
+        tokio::time::sleep(crate::diff::parser_diff_common::TEST_SETTLE).await;
         addr
     }
 

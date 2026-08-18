@@ -54,7 +54,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 
-use crate::parser_diff_common::{body_delta_pct, severity_of};
+use crate::diff::parser_diff_common::{body_delta_pct, severity_of};
 
 // ── CLI args ─────────────────────────────────────────────────────────────────
 
@@ -661,7 +661,7 @@ fn emit_output(format: &str, result: &TrailerDiffResult) {
 
     // Text output.
     println!();
-    let badge = crate::parser_diff_common::severity_badge(result.severity);
+    let badge = crate::diff::parser_diff_common::severity_badge(result.severity);
     println!(
         "  [{}] trailer-diff result for {}",
         badge,

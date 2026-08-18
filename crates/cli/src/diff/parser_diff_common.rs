@@ -251,7 +251,7 @@ pub(crate) fn build_diff_http_client_for(
 #[macro_export]
 macro_rules! impl_parser_diff_http_args {
     ($ty:ty) => {
-        impl $crate::parser_diff_common::ParserDiffHttpArgs for $ty {
+        impl $crate::diff::parser_diff_common::ParserDiffHttpArgs for $ty {
             #[inline]
             fn timeout_secs(&self) -> u64 {
                 self.timeout_secs

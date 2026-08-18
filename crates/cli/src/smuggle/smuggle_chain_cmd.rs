@@ -28,7 +28,7 @@ use wafrift_core::probe_aggregator::{ProbeSeeds, all_probes};
 use wafrift_types::probe::{SmuggleProbe, compose_n_product};
 
 use crate::permission;
-use crate::smuggle_transport;
+use crate::smuggle::smuggle_transport;
 
 #[derive(Debug, Parser)]
 pub struct SmuggleChainArgs {

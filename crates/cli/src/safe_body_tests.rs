@@ -809,7 +809,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn header_diff_fetch_body_read_is_bounded() {
-        let src = include_str!("header_diff_cmd.rs");
+        let src = include_str!("diff/header_diff_cmd.rs");
         let needle = "safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)";
         assert!(
             src.contains(needle),
@@ -819,7 +819,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn body_diff_fetch_body_read_is_bounded() {
-        let src = include_str!("body_diff_cmd.rs");
+        let src = include_str!("diff/body_diff_cmd.rs");
         let needle = "safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)";
         assert!(
             src.contains(needle),
@@ -829,7 +829,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn cache_diff_fetch_body_read_is_bounded() {
-        let src = include_str!("cache_diff_cmd.rs");
+        let src = include_str!("diff/cache_diff_cmd.rs");
         let needle = "safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)";
         assert!(
             src.contains(needle),
@@ -839,7 +839,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn cors_diff_drain_body_read_is_bounded() {
-        let src = include_str!("cors_diff_cmd.rs");
+        let src = include_str!("diff/cors_diff_cmd.rs");
         let needle = "safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)";
         assert!(
             src.contains(needle),
@@ -855,7 +855,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn gql_diff_fetch_body_read_is_bounded() {
-        let src = include_str!("gql_diff_cmd.rs");
+        let src = include_str!("diff/gql_diff_cmd.rs");
         let needle = "safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)";
         assert!(
             src.contains(needle),
@@ -865,7 +865,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn jwt_diff_fetch_body_read_is_bounded() {
-        let src = include_str!("jwt_diff_cmd.rs");
+        let src = include_str!("diff/jwt_diff_cmd.rs");
         let needle = "safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)";
         assert!(
             src.contains(needle),
@@ -875,7 +875,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn method_diff_fetch_body_read_is_bounded() {
-        let src = include_str!("method_diff_cmd.rs");
+        let src = include_str!("diff/method_diff_cmd.rs");
         let needle = "safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)";
         assert!(
             src.contains(needle),
@@ -895,7 +895,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn parser_diff_common_body_read_is_bounded() {
-        let src = include_str!("parser_diff_common.rs");
+        let src = include_str!("diff/parser_diff_common.rs");
         let needle = "safe_body::read_bounded(";
         assert!(
             src.contains(needle),
@@ -924,7 +924,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn smuggle_fire_priority_corpus_read_is_bounded() {
-        let src = include_str!("smuggle_fire_cmd.rs");
+        let src = include_str!("smuggle/smuggle_fire_cmd.rs");
         let needle = "safe_body::read_bounded_text_file(path, CORPUS_MAX_BYTES)";
         assert!(
             src.contains(needle),

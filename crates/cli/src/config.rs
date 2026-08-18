@@ -473,7 +473,7 @@ impl HasHttpConfig for crate::bench_waf::BenchWafArgs {
     }
 }
 
-impl HasHttpConfig for crate::body_diff_cmd::BodyDiffArgs {
+impl HasHttpConfig for crate::diff::body_diff_cmd::BodyDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -482,7 +482,7 @@ impl HasHttpConfig for crate::body_diff_cmd::BodyDiffArgs {
     }
 }
 
-impl HasHttpConfig for crate::cache_diff_cmd::CacheDiffArgs {
+impl HasHttpConfig for crate::diff::cache_diff_cmd::CacheDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -491,7 +491,7 @@ impl HasHttpConfig for crate::cache_diff_cmd::CacheDiffArgs {
     }
 }
 
-impl HasHttpConfig for crate::cors_diff_cmd::CorsDiffArgs {
+impl HasHttpConfig for crate::diff::cors_diff_cmd::CorsDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -500,7 +500,7 @@ impl HasHttpConfig for crate::cors_diff_cmd::CorsDiffArgs {
     }
 }
 
-impl HasHttpConfig for crate::header_diff_cmd::HeaderDiffArgs {
+impl HasHttpConfig for crate::diff::header_diff_cmd::HeaderDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -515,7 +515,7 @@ impl HasHttpConfig for crate::header_diff_cmd::HeaderDiffArgs {
 // silently applied to detect/attack/bench/header-diff/body-diff/cache-
 // diff/cors-diff and silently DID NOT apply to these six. Trait impls
 // + dispatch wiring in main.rs closes the gap.
-impl HasHttpConfig for crate::query_diff_cmd::QueryDiffArgs {
+impl HasHttpConfig for crate::diff::query_diff_cmd::QueryDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -524,7 +524,7 @@ impl HasHttpConfig for crate::query_diff_cmd::QueryDiffArgs {
     }
 }
 
-impl HasHttpConfig for crate::h2_diff_cmd::H2DiffArgs {
+impl HasHttpConfig for crate::diff::h2_diff_cmd::H2DiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -533,7 +533,7 @@ impl HasHttpConfig for crate::h2_diff_cmd::H2DiffArgs {
     }
 }
 
-impl HasHttpConfig for crate::method_diff_cmd::MethodDiffArgs {
+impl HasHttpConfig for crate::diff::method_diff_cmd::MethodDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -542,7 +542,7 @@ impl HasHttpConfig for crate::method_diff_cmd::MethodDiffArgs {
     }
 }
 
-impl HasHttpConfig for crate::gql_diff_cmd::GqlDiffArgs {
+impl HasHttpConfig for crate::diff::gql_diff_cmd::GqlDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -551,7 +551,7 @@ impl HasHttpConfig for crate::gql_diff_cmd::GqlDiffArgs {
     }
 }
 
-impl HasHttpConfig for crate::jwt_diff_cmd::JwtDiffArgs {
+impl HasHttpConfig for crate::diff::jwt_diff_cmd::JwtDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
@@ -560,7 +560,7 @@ impl HasHttpConfig for crate::jwt_diff_cmd::JwtDiffArgs {
     }
 }
 
-impl HasHttpConfig for crate::trailer_diff_cmd::TrailerDiffArgs {
+impl HasHttpConfig for crate::diff::trailer_diff_cmd::TrailerDiffArgs {
     fn set_timeout_secs(&mut self, secs: u64) {
         self.timeout_secs = secs;
     }
