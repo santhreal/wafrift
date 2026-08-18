@@ -37,14 +37,14 @@ use wafrift_evolution::hunt_corpus_bridge::{
 use wafrift_evolution::rule_corpus::RuleBypassCorpus;
 use wafrift_oracle::cloudflare::parse_cf_block;
 
-use crate::equiv_engine::ProbeEnvelope;
+use crate::hunt::equiv_engine::ProbeEnvelope;
 
 /// Accumulate probe results from bench/hunt loops and persist them to
 /// the rule-bypass corpus + edge-POP coverage maps on disk.
 ///
 /// # Production callers
 ///
-/// - `wafrift corpus stats` (read-only inspection, via `crate::corpus_cmd::run_stats`)
+/// - `wafrift corpus stats` (read-only inspection, via `crate::hunt::corpus_cmd::run_stats`)
 ///   constructs via [`Self::new`] and reads via [`Self::corpus`] / [`Self::coverage`].
 /// - `wafrift bench-waf --corpus-out <PATH>` (write path, via
 ///   `crate::bench_waf::run_payload_strategy` and the equiv-cegis

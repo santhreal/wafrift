@@ -6,8 +6,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 mod attack_cmd;
-mod bank;
-mod bank_registry;
+mod hunt;
 mod bench_diff;
 mod diff;
 mod bench_waf;
@@ -17,22 +16,14 @@ mod client_deliver_cmd;
 mod cluster_cmd;
 mod compress_cmd;
 mod config;
-mod corpus_cmd;
-mod corpus_recorder;
 mod detect_cmd;
 mod discover_cmd;
-mod distill_cmd;
 mod egress_example;
-mod equiv_engine;
 mod evade_cmd;
 mod exec_proof;
 mod explain;
-mod exploit_cmd;
-mod harvest_cmd;
 mod helpers;
-mod hunt_cmd;
 mod import_curl;
-mod info_gain_sched;
 mod init_cmd;
 mod interactive;
 // ja3_diff_cmd is gated behind tls-impersonate in diff/mod.rs
@@ -57,7 +48,6 @@ mod safe_body;
 mod sanitizer_decompile_cmd;
 mod sarif_cmd;
 mod scan;
-mod seed;
 mod session_init;
 mod smuggle;
 mod split_param;
@@ -149,7 +139,7 @@ enum Commands {
     Evade(evade_cmd::EvadeArgs),
     /// Detonation-guided evasion, find a payload that bypasses the WAF AND
     /// actually executes (`alert(1)` fires), proven by the `detonate` sandbox.
-    Exploit(exploit_cmd::ExploitArgs),
+    Exploit(hunt::exploit_cmd::ExploitArgs),
     /// Emit the WAF-blind CLIENT-SIDE delivery plan for an XSS payload: the
     /// fragment / window.name / postMessage / storage / client-route channels
     /// whose taint source never reaches the server, so no WAF/CDN inspects them.
@@ -219,12 +209,12 @@ enum Commands {
     /// Scaffold a `.wafrift.toml` config in the current directory.
     Init(init_cmd::InitArgs),
     /// Pre-load a gene-bank with known-working techniques (per-WAF or per-host).
-    Seed(seed::SeedArgs),
+    Seed(hunt::seed::SeedArgs),
     /// Take a curl invocation (e.g. from Burp's "Copy as cURL"), run scan against the parsed target.
     #[command(name = "import-curl")]
     ImportCurl(import_curl::ImportCurlArgs),
     /// Manage gene-banks: list / export / import.
-    Bank(bank::BankArgs),
+    Bank(hunt::bank::BankArgs),
     /// Differential bypass scanner against a single protected URL.
     /// Fires 230 auth-bypass header probes + path-routing-disagreement
     /// variants + HTTP method overrides; reports any probe that diverges
@@ -370,7 +360,7 @@ enum Commands {
     /// the reduction reveals which payload features the WAF
     /// actually objected to vs. which were noise. Typically chained
     /// from `wafrift scan --format json | jq .bypass_variants[0].payload`.
-    Distill(distill_cmd::DistillArgs),
+    Distill(hunt::distill_cmd::DistillArgs),
     /// Header parser-disagreement scanner, sister to `parser-diff`
     /// (which probes URL-path disagreements). Fires variants of the
     /// request header block that exercise known WAF↔origin
@@ -522,7 +512,7 @@ enum Commands {
     ///
     /// Environment variables (CLAUDE.md §10):
     ///   - `WAFRIFT_BENCH_URL`: fallback target when `--base-url` / `--target` omitted.
-    Hunt(hunt_cmd::HuntArgs),
+    Hunt(hunt::hunt_cmd::HuntArgs),
     /// Inspect a `wafrift corpus` artifact (rule_corpus + edge-POP coverage
     /// maps written by `wafrift bench-waf --corpus-out`). Subcommands:
     ///
@@ -530,7 +520,7 @@ enum Commands {
     /// blocks, and edge POPs covered. Supports `--format json` for CI
     /// gate integration (if rules_seen < N, fail the hunt).
     #[command(name = "corpus", hide = true)]
-    Corpus(corpus_cmd::CorpusArgs),
+    Corpus(hunt::corpus_cmd::CorpusArgs),
     /// Turn a hunt/bench bypass corpus into review-ready HackerOne reports.
     ///
     /// Reads the per-target rule-bypass corpus (`~/.wafrift/corpus-<target>.json`),
@@ -539,13 +529,13 @@ enum Commands {
     /// not a stale hit), and writes one Markdown report per still-working
     /// bypass. NEVER submits, use `wafrift submit` to file reviewed reports
     /// one at a time.
-    Harvest(harvest_cmd::HarvestArgs),
+    Harvest(hunt::harvest_cmd::HarvestArgs),
     /// File a SINGLE reviewed harvest report to HackerOne (guarded).
     ///
     /// Dry-run by default; pass `--confirm` to actually file the one report.
     /// wafrift never auto-submits and never batch-submits, mass-filing
     /// machine-generated reports at a bounty program is a ban risk.
-    Submit(harvest_cmd::SubmitArgs),
+    Submit(hunt::harvest_cmd::SubmitArgs),
 }
 
 // Per-command structs + entry points live in their own modules:
@@ -1245,7 +1235,7 @@ fn main() -> ExitCode {
     match cli.command {
         None => interactive::run_interactive(),
         Some(Commands::Evade(args)) => evade_cmd::run_evade(args, quiet),
-        Some(Commands::Exploit(args)) => exploit_cmd::run_exploit(args),
+        Some(Commands::Exploit(args)) => hunt::exploit_cmd::run_exploit(args),
         Some(Commands::ClientDeliver(args)) => client_deliver_cmd::run_client_deliver(args),
         Some(Commands::SanitizerDecompile(args)) => {
             sanitizer_decompile_cmd::run_sanitizer_decompile(args)
@@ -1338,7 +1328,7 @@ fn main() -> ExitCode {
                         cancel_clone.cancel();
                     }
                 });
-                distill_cmd::run_distill(args, cancel).await
+                hunt::distill_cmd::run_distill(args, cancel).await
             })
         }
         Some(Commands::HeaderDiff(args)) => run_http_diff(
@@ -1561,9 +1551,9 @@ fn main() -> ExitCode {
         ),
         Some(Commands::Report(args)) => report::run_report(args),
         Some(Commands::Init(args)) => init_cmd::run_init(args),
-        Some(Commands::Seed(args)) => seed::run_seed(args),
+        Some(Commands::Seed(args)) => hunt::seed::run_seed(args),
         Some(Commands::ImportCurl(args)) => import_curl::run_import_curl(args),
-        Some(Commands::Bank(args)) => bank::run_bank(args),
+        Some(Commands::Bank(args)) => hunt::bank::run_bank(args),
         Some(Commands::BypassProbe(args)) => match bypass_probe::run_bypass_probe(
             cfg.apply_http_defaults(args, matches.subcommand_matches("bypass-probe")),
         ) {
@@ -1705,10 +1695,10 @@ fn main() -> ExitCode {
         }
         Some(Commands::Cluster(args)) => cluster_cmd::run_cluster(args),
         Some(Commands::Sarif(args)) => sarif_cmd::run_sarif(args),
-        Some(Commands::Hunt(args)) => hunt_cmd::run_hunt(args),
-        Some(Commands::Corpus(args)) => corpus_cmd::run_corpus(args),
-        Some(Commands::Harvest(args)) => harvest_cmd::run_harvest(args),
-        Some(Commands::Submit(args)) => harvest_cmd::run_submit(args),
+        Some(Commands::Hunt(args)) => hunt::hunt_cmd::run_hunt(args),
+        Some(Commands::Corpus(args)) => hunt::corpus_cmd::run_corpus(args),
+        Some(Commands::Harvest(args)) => hunt::harvest_cmd::run_harvest(args),
+        Some(Commands::Submit(args)) => hunt::harvest_cmd::run_submit(args),
     }
 }
 

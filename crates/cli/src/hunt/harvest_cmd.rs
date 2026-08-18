@@ -31,7 +31,7 @@ use wafrift_evolution::rule_corpus::{RecordedBypass, RuleBypassCorpus, Submissio
 use wafrift_grammar::grammar::equiv::DeliveryShape;
 
 use crate::bench_waf::build_request_for_payload;
-use crate::equiv_engine::{
+use crate::hunt::equiv_engine::{
     ProbeEnvelope, build_request_for_delivery, differential_confirmed, send_with_envelope,
     verified_bypass,
 };
@@ -40,7 +40,7 @@ use crate::equiv_engine::{
 /// class that a competent WAF should block. Used by the differential-baseline
 /// gate to tell a genuine evasion from a never-policed sink (see
 /// [`differential_credits`]).
-const POLICING_PROBES_TOML: &str = include_str!("../rules/policing_probes.toml");
+const POLICING_PROBES_TOML: &str = include_str!("../../rules/policing_probes.toml");
 
 /// Parse the Tier-B policing-probe table: `[[probe]] class=.. payload=..`.
 /// Fails closed on an empty table or an empty payload.
@@ -292,7 +292,7 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
     let corpus_path = args
         .corpus
         .clone()
-        .unwrap_or_else(|| crate::corpus_recorder::default_corpus_paths(&base_url).0);
+        .unwrap_or_else(|| crate::hunt::corpus_recorder::default_corpus_paths(&base_url).0);
     if !corpus_path.exists() {
         eprintln!(
             "error: corpus {} does not exist.\n\
@@ -365,8 +365,8 @@ fn run_harvest_inner(args: HarvestArgs) -> u8 {
 
     let host = host_of(&base_url);
     let out_dir = args.out.clone().unwrap_or_else(|| {
-        let slug = crate::corpus_recorder::target_slug(&base_url);
-        crate::corpus_recorder::default_corpus_paths(&base_url)
+        let slug = crate::hunt::corpus_recorder::target_slug(&base_url);
+        crate::hunt::corpus_recorder::default_corpus_paths(&base_url)
             .0
             .parent()
             .map(|p| p.join(format!("harvest-{slug}")))

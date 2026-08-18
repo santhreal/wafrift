@@ -2,7 +2,7 @@ use super::*;
 // Pinned anti-rig tests exercise the single-source oracle/escaper
 // directly (non-test bench code reaches them only via
 // `verified_bypass`); imported here, not at module scope.
-use crate::equiv_engine::{json_escape, oracle_valid, request_reached_app};
+use crate::hunt::equiv_engine::{json_escape, oracle_valid, request_reached_app};
 use wafrift_types::Method;
 
 // ───────── anti-rig invariants (pinned forever) ─────────

@@ -938,12 +938,12 @@ fn run_filter_characterization(
     // deterministic battery order; the scheduler never introduces RNG.
     let history_path = args.filter_history.as_ref().map(std::path::PathBuf::from);
     let mut history = match &history_path {
-        Some(p) => crate::info_gain_sched::load_history(p)?,
-        None => crate::info_gain_sched::History::new(),
+        Some(p) => crate::hunt::info_gain_sched::load_history(p)?,
+        None => crate::hunt::info_gain_sched::History::new(),
     };
     let battery_total = battery.len();
     let battery = if args.filter_budget > 0 || history_path.is_some() {
-        crate::info_gain_sched::order_items_by_info_gain(
+        crate::hunt::info_gain_sched::order_items_by_info_gain(
             &history,
             battery,
             args.filter_budget,
@@ -974,7 +974,7 @@ fn run_filter_characterization(
     if let Some(p) = &history_path {
         // Warn, don't die: the profile is already computed and worth returning
         // a write hiccup must not discard a run that already spent live queries.
-        if let Err(e) = crate::info_gain_sched::save_history(p, &history) {
+        if let Err(e) = crate::hunt::info_gain_sched::save_history(p, &history) {
             eprintln!("warn: filter history write to {} failed: {e}", p.display());
         }
     }
@@ -987,7 +987,7 @@ fn run_filter_characterization(
 /// [`Verdict::Inconclusive`] is never fed in, oracle noise must not move the
 /// posterior (the same anti-rig discipline `characterize` itself applies).
 fn observe_findings_into_history(
-    history: &mut crate::info_gain_sched::History,
+    history: &mut crate::hunt::info_gain_sched::History,
     profile: &FilterProfile,
 ) {
     for f in &profile.findings {

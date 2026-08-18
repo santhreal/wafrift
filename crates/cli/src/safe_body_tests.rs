@@ -626,7 +626,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn hunt_bench_output_read_is_bounded() {
-        let src = include_str!("hunt_cmd.rs");
+        let src = include_str!("hunt/hunt_cmd.rs");
         let needle = "safe_body::read_bounded_text_file(&tmp, HUNT_BENCH_OUTPUT_MAX_BYTES)";
         assert!(
             src.contains(needle),
@@ -644,7 +644,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn hunt_campaign_state_read_is_bounded() {
-        let src = include_str!("hunt_cmd.rs");
+        let src = include_str!("hunt/hunt_cmd.rs");
         let needle = "safe_body::read_bounded_text_file(path, HUNT_CAMPAIGN_STATE_MAX_BYTES)";
         assert!(
             src.contains(needle),
@@ -661,7 +661,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn seed_gene_bank_read_is_bounded() {
-        let src = include_str!("seed.rs");
+        let src = include_str!("hunt/seed.rs");
         let needle = concat!(
             "safe_body::read_bounded_text_file(\n",
             "        &path,\n",
@@ -885,7 +885,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn distill_cmd_body_read_is_bounded() {
-        let src = include_str!("distill_cmd.rs");
+        let src = include_str!("hunt/distill_cmd.rs");
         let needle = "safe_body::read_bounded(resp, crate::safe_body::DEFAULT_MAX_RESPONSE_BYTES)";
         assert!(
             src.contains(needle),
@@ -908,7 +908,7 @@ mod round19_bounded_input_audit {
         // The H1 submission path moved from hunt_cmd to harvest_cmd when
         // auto-submit was removed (filing is now the guarded `wafrift
         // submit`). The bounded-read invariant moved with it.
-        let src = include_str!("harvest_cmd.rs");
+        let src = include_str!("hunt/harvest_cmd.rs");
         let needle = "safe_body::read_bounded_text(resp, 64 * 1024)";
         assert!(
             src.contains(needle),
@@ -942,7 +942,7 @@ mod round19_bounded_input_audit {
     fn exploit_seed_payloads_read_is_bounded() {
         // `wafrift exploit --seed-payloads <path>` is operator-supplied input;
         // an unbounded read is an OOM (/dev/zero) + TOCTOU (symlink swap) hole.
-        let src = include_str!("exploit_cmd.rs");
+        let src = include_str!("hunt/exploit_cmd.rs");
         let needle = "safe_body::read_bounded_text_file(path, EXPLOIT_SEED_PAYLOADS_MAX_BYTES)";
         assert!(
             src.contains(needle),
@@ -958,7 +958,7 @@ mod round19_bounded_input_audit {
 
     #[test]
     fn bank_genome_dir_read_is_bounded() {
-        let src = include_str!("bank.rs");
+        let src = include_str!("hunt/bank.rs");
         let needle = "safe_body::read_bounded_text_file(";
         assert!(
             src.contains(needle),

@@ -21,7 +21,7 @@
             queries: 6,
             transport_errors: 0,
         };
-        let mut h = crate::info_gain_sched::History::new();
+        let mut h = crate::hunt::info_gain_sched::History::new();
         observe_findings_into_history(&mut h, &profile);
         // Policed → blocked.
         assert_eq!(h.stats("<script").n_blocked, 1);
@@ -42,7 +42,7 @@
             queries: 2,
             transport_errors: 1,
         };
-        let mut h = crate::info_gain_sched::History::new();
+        let mut h = crate::hunt::info_gain_sched::History::new();
         observe_findings_into_history(&mut h, &profile);
         assert!(
             h.is_empty(),
@@ -55,7 +55,7 @@
         // A token blocked on run 1 and passed on run 2 (WAF config drift) must
         // accumulate to θ≈0.5, exactly the high-info-gain token a budget run
         // should keep probing.
-        let mut h = crate::info_gain_sched::History::new();
+        let mut h = crate::hunt::info_gain_sched::History::new();
         observe_findings_into_history(
             &mut h,
             &FilterProfile {

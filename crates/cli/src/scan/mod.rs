@@ -49,7 +49,7 @@ use wafrift_strategy::pipeline::EvasionPipeline;
 use wafrift_transport::is_waf_block;
 
 pub(crate) use crate::ScanArgs;
-use crate::equiv_engine::{class_for_payload_type, verified_bypass};
+use crate::hunt::equiv_engine::{class_for_payload_type, verified_bypass};
 use crate::helpers::{
     build_variants, confidence_badge, max_mutations_for_level, payload_type_label,
     strategies_for_level, variant_confidence,
@@ -1460,7 +1460,7 @@ pub(crate) async fn run_scan(
     // the per-class oracle confirms it is still a structurally-valid
     // attack. No member is counted on shape alone.
     if !cancel.is_cancelled() && !budget_exhausted(total_fired) && count_meaningful_bypass {
-        if let Some(class) = crate::equiv_engine::class_for_payload_type(payload_type) {
+        if let Some(class) = crate::hunt::equiv_engine::class_for_payload_type(payload_type) {
             if scan_text {
                 eprintln!(
                     "\n{}",
@@ -1479,9 +1479,9 @@ pub(crate) async fn run_scan(
             // Use the budgeted variant so the global --max-fires cap is
             // honoured. bench_waf / hunt callers use `run_equiv_cegis`
             // (unlimited) and are unaffected by this call site.
-            let moat = crate::equiv_engine::run_equiv_cegis_with_budget(
+            let moat = crate::hunt::equiv_engine::run_equiv_cegis_with_budget(
                 &http,
-                |d, p| crate::equiv_engine::build_live_request_for_delivery(target, d, p),
+                |d, p| crate::hunt::equiv_engine::build_live_request_for_delivery(target, d, p),
                 class,
                 &args.payload,
                 target,
@@ -2993,7 +2993,7 @@ pub(crate) async fn run_scan(
                     }
                 }
             };
-            let minimum = crate::distill_cmd::ddmin(original_payload, predicate).await;
+            let minimum = crate::hunt::distill_cmd::ddmin(original_payload, predicate).await;
             auto_distill_fires_total += u64::from(fires.load(std::sync::atomic::Ordering::SeqCst));
             minimal_payloads[i] = Some(minimum);
         }

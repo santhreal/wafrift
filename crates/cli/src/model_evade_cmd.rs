@@ -37,7 +37,7 @@ use wafrift_wafmodel::{
     attack_grammar, l_star_budgeted, mine_bypasses,
 };
 
-use crate::equiv_engine::verified_bypass;
+use crate::hunt::equiv_engine::verified_bypass;
 
 /// Map the user-facing `--class` names (`sqli`, `xss`, `all`) to the
 /// canonical attack-class keys consumed by `equiv_engine::verified_bypass`.

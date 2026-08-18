@@ -2,7 +2,7 @@
 //! corpus + edge-POP coverage map.
 //!
 //! Closes the "first production caller" gap for
-//! [`crate::corpus_recorder::CorpusRecorder`]. Without this command
+//! [`crate::hunt::corpus_recorder::CorpusRecorder`]. Without this command
 //! the recorder would compile but never be constructed in any
 //! shipped binary; the read-only inspection path is the lowest-risk
 //! integration that proves the wire-up.
@@ -20,7 +20,7 @@ use serde_json::json;
 use wafrift_evolution::encoding_lattice::LatticeSearch;
 use wafrift_evolution::rule_alphabet::infer_alphabet_default;
 
-use crate::corpus_recorder::CorpusRecorder;
+use crate::hunt::corpus_recorder::CorpusRecorder;
 
 #[derive(Args, Debug)]
 pub(crate) struct CorpusArgs {
