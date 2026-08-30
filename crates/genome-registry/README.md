@@ -62,4 +62,4 @@ edit the TOML directly.
 
 ## License
 
-MIT OR Apache-2.0. Copyright 2026 CORUM COLLECTIVE LLC.
+MIT OR Apache-2.0. Copyright 2026 Santh.

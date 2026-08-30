@@ -55,4 +55,4 @@ edits don't break the claim.
 
 ## License
 
-MIT. Copyright 2026 CORUM COLLECTIVE LLC.
+MIT. Copyright 2026 Santh.

@@ -56,4 +56,4 @@ If a WAF blocks all current encodings, open a PR with the WAF and the bypass.
 
 ## License
 
-MIT. Copyright 2026 CORUM COLLECTIVE LLC.
+MIT. Copyright 2026 Santh.

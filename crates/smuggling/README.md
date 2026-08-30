@@ -92,4 +92,4 @@ let exploit = smuggling::cl_te("target.com", "GET /admin HTTP/1.1\r\n");
 
 ## License
 
-MIT. Copyright 2026 CORUM COLLECTIVE LLC.
+MIT. Copyright 2026 Santh.
