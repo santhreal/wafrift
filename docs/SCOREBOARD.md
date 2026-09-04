@@ -1,43 +1,43 @@
 # WafRift bypass scoreboard
 
-_Generated 2026-09-03 from `wafrift-bench/results/` via `wafrift-bench/scripts/render-scoreboard.py`. Numbers are the **verified-bypass** rate per payload class, oracle-gated, transport-reached, no inflation. Cell = % of variants for that class that wafrift found a working bypass for; `: ` = class not exercised on that stack._
+_Generated 2026-09-04 from `wafrift-bench/results/` via `wafrift-bench/scripts/render-scoreboard.py`. Numbers are the **verified-bypass** rate per payload class, oracle-gated, transport-reached, no inflation. Cell = % of variants for that class that wafrift found a working bypass for; `: ` = class not exercised on that stack._
 
 | class | modsec-pl1 | modsec-pl2 | modsec-pl3 | modsec-pl4 | coraza | bunkerweb | naxsi |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| sql | 33.7 | 30.3 | 30.1 | 27.3 | 0.2 | 0.4 | 21.9 |
-| xss | 28.6 | 26.2 | 26.2 | 25.9 | 0.0 | 0.0 | 0.0 |
-| cmdi | 44.8 | 29.0 | 28.9 | 27.3 | 8.0 | 70.9 | 9.9 |
-| ssti | 42.8 | 32.1 | 30.8 | 27.6 | 12.2 | 12.2 | 2.5 |
-| path | 37.8 | 29.7 | 29.1 | 28.4 | 0.0 | 0.0 | 0.0 |
-| ldap | 55.7 | 38.5 | 29.5 | 28.8 | 19.2 | 19.2 | 16.7 |
-| xxe | 27.3 | 25.9 | 25.9 | 25.8 | 0.0 | 0.0 | 0.0 |
-| ssrf | 43.0 | 27.1 | 27.4 | 26.5 | 12.6 | 12.6 | 10.4 |
-| nosql | 45.0 | 33.1 | 30.7 | 29.3 | 0.0 | 0.0 | 0.0 |
-| log4shell | 41.7 | 33.0 | 32.0 | 30.4 | 0.0 | 0.0 | 50.7 |
+| sql | 36.2 | 30.3 | 30.1 | 39.1 | 8.7 | 39.4 | 30.0 |
+| xss | 30.6 | 26.2 | 26.2 | :  | :  | :  | :  |
+| cmdi | 46.4 | 29.0 | 28.9 | :  | :  | :  | :  |
+| ssti | 42.4 | 32.1 | 30.8 | :  | :  | :  | :  |
+| path | 40.4 | 29.7 | 29.1 | :  | :  | :  | :  |
+| ldap | 60.2 | 38.5 | 29.5 | :  | :  | :  | :  |
+| xxe | 28.7 | 25.9 | 25.9 | :  | :  | :  | :  |
+| ssrf | 44.6 | 27.1 | 27.4 | :  | :  | :  | :  |
+| nosql | 47.9 | 33.1 | 30.7 | :  | :  | :  | :  |
+| log4shell | 45.6 | 33.0 | 32.0 | :  | :  | :  | :  |
 
 ## Per-stack roll-up
 
 | stack | classes exercised | total variants | total bypassed | overall rate |
 |---|---:|---:|---:|---:|
-| modsec-pl1 | 10 | 59,941 | 21,857 | 36.5% |
+| modsec-pl1 | 10 | 55,486 | 21,409 | 38.6% |
 | modsec-pl2 | 10 | 59,941 | 17,571 | 29.3% |
 | modsec-pl3 | 10 | 59,941 | 17,260 | 28.8% |
-| modsec-pl4 | 10 | 59,941 | 16,319 | 27.2% |
-| coraza | 10 | 4,660 | 163 | 3.5% |
-| bunkerweb | 10 | 4,660 | 409 | 8.8% |
-| naxsi | 10 | 4,660 | 518 | 11.1% |
+| modsec-pl4 | 1 | 1,730 | 676 | 39.1% |
+| coraza | 1 | 1,730 | 150 | 8.7% |
+| bunkerweb | 1 | 1,730 | 682 | 39.4% |
+| naxsi | 1 | 1,730 | 519 | 30.0% |
 
 ## Source
 
 Latest result file picked per stack:
 
-- `modsec-pl1-multi-with-ast.json` -> **modsec-pl1**
+- `modsec-pl1-multi.json` -> **modsec-pl1**
 - `modsec-pl2-multi.json` -> **modsec-pl2**
 - `modsec-pl3-multi.json` -> **modsec-pl3**
-- `modsec-pl4-multi.json` -> **modsec-pl4**
-- `coraza-20260903.json` -> **coraza**
-- `bunkerweb-20260903.json` -> **bunkerweb**
-- `naxsi-20260903.json` -> **naxsi**
+- `v022-quotefree-modsec-pl4.json` -> **modsec-pl4**
+- `v022-quotefree-coraza.json` -> **coraza**
+- `v022-quotefree-bunkerweb.json` -> **bunkerweb**
+- `v022-quotefree-naxsi.json` -> **naxsi**
 
 ## Reproduce
 
