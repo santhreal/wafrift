@@ -1,6 +1,6 @@
 # WafRift bypass scoreboard
 
-_Generated 2026-10-18 from `wafrift-bench/results/` via `wafrift-bench/scripts/render-scoreboard.py`. Numbers are the **verified-bypass** rate per payload class, oracle-gated, transport-reached, no inflation. Cell = % of variants for that class that wafrift found a working bypass for; `: ` = class not exercised on that stack._
+_Generated 2026-10-19 from `wafrift-bench/results/` via `wafrift-bench/scripts/render-scoreboard.py`. Numbers are the **verified-bypass** rate per payload class, oracle-gated, transport-reached, no inflation. Cell = % of variants for that class that wafrift found a working bypass for; `: ` = class not exercised on that stack._
 
 | class | modsec-pl1 | modsec-pl2 | modsec-pl3 | modsec-pl4 | coraza | bunkerweb | naxsi |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -24,7 +24,7 @@ _Generated 2026-10-18 from `wafrift-bench/results/` via `wafrift-bench/scripts/r
 | modsec-pl3 | 10 | 59,941 | 17,260 | 28.8% |
 | modsec-pl4 | 10 | 59,941 | 16,319 | 27.2% |
 | coraza | 10 | 4,660 | 163 | 3.5% |
-| bunkerweb | 10 | 4,660 | 403 | 8.6% |
+| bunkerweb | 10 | 4,660 | 407 | 8.7% |
 | naxsi | 10 | 4,660 | 518 | 11.1% |
 
 ## Source
@@ -35,9 +35,9 @@ Latest result file picked per stack:
 - `modsec-pl2-multi.json` -> **modsec-pl2**
 - `modsec-pl3-multi.json` -> **modsec-pl3**
 - `modsec-pl4-multi.json` -> **modsec-pl4**
-- `coraza-20261018.json` -> **coraza**
-- `bunkerweb-20261018.json` -> **bunkerweb**
-- `naxsi-20261018.json` -> **naxsi**
+- `coraza-20261019.json` -> **coraza**
+- `bunkerweb-20261019.json` -> **bunkerweb**
+- `naxsi-20261019.json` -> **naxsi**
 
 ## Reproduce
 
